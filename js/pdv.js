@@ -1342,6 +1342,17 @@ const PDVModule = {
       return;
     }
 
+    try {
+      const sessao = await api.getCaixaSessaoAtiva();
+      if (!sessao) {
+        this.showMessage('Abra o caixa antes de registrar uma venda.', 'error');
+        return;
+      }
+    } catch {
+      this.showMessage('Não foi possível verificar o caixa. Tente novamente.', 'error');
+      return;
+    }
+
     const subtotal = Math.round(this.getSubtotal() * 100) / 100;
     const desconto = Number(this.state.desconto || 0);
     const acrescimo = Number(this.state.acrescimo || 0);
