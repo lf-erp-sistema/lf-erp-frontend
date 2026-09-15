@@ -7,7 +7,10 @@ const AlertasModule = {
     config: null,
     historico: [],
     resultadoDisparo: null,
-    carregando: false
+    carregando: false,
+    promissorias: [],
+    promissoriasCarregando: false,
+    previewModal: null
   },
 
   init() {
@@ -37,6 +40,21 @@ const AlertasModule = {
     }
   },
 
+  async loadPromissorias() {
+    if (this.state.promissoriasCarregando) return;
+    this.state.promissoriasCarregando = true;
+    try {
+      const res = await api.getPromissorias();
+      this.state.promissorias = res?.clientes || [];
+      this.renderConteudo();
+    } catch (err) {
+      console.error('[alertas] loadPromissorias:', err);
+      showToast('Erro ao carregar promissórias.', 'error');
+    } finally {
+      this.state.promissoriasCarregando = false;
+    }
+  },
+
   render() {
     const c = document.getElementById('alertasContainer');
     if (!c) return;
@@ -46,6 +64,7 @@ const AlertasModule = {
         <div class="module-toolbar">
           <div class="table-actions">
             <button class="btn-inline btn-inline--active" data-al-aba="disparar">Disparar Alertas</button>
+            <button class="btn-inline" data-al-aba="promissorias"><i class="fa-solid fa-file-invoice-dollar"></i> Promissórias</button>
             <button class="btn-inline" data-al-aba="config">Configuração</button>
             <button class="btn-inline" data-al-aba="historico">Histórico</button>
           </div>
@@ -55,6 +74,27 @@ const AlertasModule = {
         </div>
         <div id="alertasConteudo"></div>
       </section>
+      <div id="alertasPreviewModal" class="modal-overlay" style="display:none">
+        <div class="modal-box" style="max-width:520px">
+          <div class="modal-header">
+            <h3><i class="fa-brands fa-whatsapp" style="color:#25d366"></i> Mensagem WhatsApp</h3>
+            <button class="modal-close" id="alertasPreviewFechar">&times;</button>
+          </div>
+          <div class="modal-body">
+            <pre id="alertasPreviewTexto" style="white-space:pre-wrap;font-family:inherit;font-size:13px;background:var(--surface-2);padding:16px;border-radius:10px;border:1px solid var(--border);max-height:340px;overflow-y:auto"></pre>
+            <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+              <button class="btn btn-light" id="alertasPreviewCopiar" style="flex:1">
+                <i class="fa-solid fa-copy"></i> Copiar mensagem
+              </button>
+              <a id="alertasPreviewLink" href="#" target="_blank" rel="noopener"
+                 class="btn btn-primary" style="flex:1;text-align:center;text-decoration:none">
+                <i class="fa-brands fa-whatsapp"></i> Abrir WhatsApp
+              </a>
+            </div>
+            <div class="module-feedback" id="alertasPreviewFeedback" style="margin-top:10px"></div>
+          </div>
+        </div>
+      </div>
     `;
   },
 
@@ -71,7 +111,11 @@ const AlertasModule = {
         this.state.aba = abaBtn.dataset.alAba;
         document.querySelectorAll('[data-al-aba]').forEach((b) => b.classList.remove('btn-inline--active'));
         abaBtn.classList.add('btn-inline--active');
-        this.renderConteudo();
+        if (this.state.aba === 'promissorias' && !this.state.promissorias.length) {
+          this.loadPromissorias();
+        } else {
+          this.renderConteudo();
+        }
       }
     };
   },
@@ -79,8 +123,9 @@ const AlertasModule = {
   renderConteudo() {
     const c = document.getElementById('alertasConteudo');
     if (!c) return;
-    if (this.state.aba === 'config')    { c.innerHTML = this.renderConfig();    this.bindConfigEvents();    return; }
-    if (this.state.aba === 'historico') { c.innerHTML = this.renderHistorico(); return; }
+    if (this.state.aba === 'config')       { c.innerHTML = this.renderConfig();       this.bindConfigEvents();       return; }
+    if (this.state.aba === 'historico')    { c.innerHTML = this.renderHistorico();     return; }
+    if (this.state.aba === 'promissorias') { c.innerHTML = this.renderPromissorias();  this.bindPromissoriasEvents(); return; }
     c.innerHTML = this.renderDisparar();
     this.bindDispararEvents();
   },
@@ -422,6 +467,238 @@ const AlertasModule = {
         </table>
       </div>
     `;
+  },
+
+  // ── PROMISSÓRIAS ──────────────────────────────────────────────────────────
+
+  renderPromissorias() {
+    const lista = this.state.promissorias;
+    const cfg   = this.state.config || {};
+    const preventiva = cfg.cobranca_preventiva_ativa;
+
+    if (this.state.promissoriasCarregando) {
+      return `<div style="margin-top:24px;text-align:center;color:var(--text-muted)"><i class="fa-solid fa-spinner fa-spin"></i> Carregando...</div>`;
+    }
+
+    const cartoes = lista.length === 0
+      ? `<div class="empty-table-state" style="margin-top:24px">
+           <i class="fa-solid fa-file-invoice-dollar" style="font-size:2rem;opacity:.22;margin-bottom:8px"></i>
+           <strong>Nenhuma promissória em aberto</strong>
+           <span>Todos os clientes estão com saldo zerado.</span>
+         </div>`
+      : lista.map(cli => {
+          const hojeStr = new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Fortaleza' });
+          const itensHtml = cli.itens.map(item => {
+            const temParcial = Number(item.valor_original || 0) > Number(item.valor || 0) + 0.01;
+            const dataVenc   = item.data_vencimento
+              ? new Date(String(item.data_vencimento).slice(0, 10) + 'T12:00:00').toLocaleDateString('pt-BR')
+              : '—';
+            const venceHoje = item.data_vencimento &&
+              new Date(String(item.data_vencimento).slice(0, 10) + 'T12:00:00').toLocaleDateString('pt-BR') === hojeStr;
+
+            const badgeStatus = venceHoje
+              ? `<span class="badge badge--warning" style="font-size:10px">Vence hoje</span>`
+              : item.status === 'atrasado' || item.status === 'parcial_atrasado'
+                ? `<span class="badge badge--danger" style="font-size:10px">Atrasado</span>`
+                : `<span class="badge badge--info" style="font-size:10px">${dataVenc}</span>`;
+
+            return `
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${this.esc(item.descricao)}</div>
+                  <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${badgeStatus}</div>
+                </div>
+                <div style="text-align:right;white-space:nowrap">
+                  ${temParcial
+                    ? `<div style="font-size:13px;font-weight:700;color:var(--warning)">${this.fmtCur(item.valor)}</div>
+                       <div style="font-size:11px;color:var(--text-muted);text-decoration:line-through">${this.fmtCur(item.valor_original)}</div>`
+                    : `<div style="font-size:13px;font-weight:700">${this.fmtCur(item.valor)}</div>`
+                  }
+                </div>
+              </div>`;
+          }).join('');
+
+          const temTel = Boolean(cli.telefone);
+          const cliAttr = `data-cli-id="${this.esc(String(cli.cliente_id || ''))}" data-cli-nome="${this.esc(cli.cliente_nome)}"`;
+
+          return `
+            <div class="panel-card" style="margin-bottom:14px">
+              <div class="panel-card__header">
+                <div style="flex:1">
+                  <h3 style="margin:0">${this.esc(cli.cliente_nome)}</h3>
+                  <p style="margin:0;font-size:12px;color:var(--text-muted)">
+                    ${temTel ? `<i class="fa-solid fa-phone" style="font-size:11px"></i> ${this.esc(cli.telefone)}` : 'Sem telefone cadastrado'}
+                    · ${cli.itens.length} produto(s)
+                  </p>
+                </div>
+                <div style="text-align:right">
+                  <div style="font-size:16px;font-weight:700">${this.fmtCur(cli.total)}</div>
+                  ${Number(cli.total_original || 0) > Number(cli.total || 0) + 0.01
+                    ? `<div style="font-size:11px;color:var(--text-muted);text-decoration:line-through">${this.fmtCur(cli.total_original)}</div>`
+                    : ''}
+                </div>
+              </div>
+              <div class="panel-card__body">
+                ${itensHtml}
+                <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+                  <button class="btn btn-light btn-sm al-preview-btn" ${cliAttr} style="font-size:12px">
+                    <i class="fa-solid fa-eye"></i> Ver mensagem
+                  </button>
+                  <button class="btn btn-light btn-sm al-copiar-btn" ${cliAttr} style="font-size:12px">
+                    <i class="fa-solid fa-copy"></i> Copiar
+                  </button>
+                  ${temTel
+                    ? `<button class="btn btn-primary btn-sm al-enviar-btn" ${cliAttr} style="font-size:12px;background:#25d366;border-color:#25d366">
+                         <i class="fa-brands fa-whatsapp"></i> Enviar WhatsApp
+                       </button>`
+                    : `<span style="font-size:11px;color:var(--text-muted);align-self:center">Cadastre o telefone para enviar</span>`
+                  }
+                </div>
+              </div>
+            </div>`;
+        }).join('');
+
+    return `
+      <div style="max-width:680px;margin-top:20px">
+
+        <div class="panel-card" style="margin-bottom:18px">
+          <div class="panel-card__body" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+            <div>
+              <strong style="font-size:14px"><i class="fa-solid fa-clock" style="color:var(--primary)"></i> Aviso automático às 8h</strong>
+              <p style="margin:4px 0 0;font-size:12px;color:var(--text-muted)">
+                Envia mensagem WhatsApp no dia do vencimento via cron-job.org
+              </p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="alertasPreventivaToogle" ${preventiva ? 'checked' : ''}>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div id="alertasPreventivaCronInfo" style="display:${preventiva ? 'block' : 'none'};padding:0 16px 14px">
+            <div class="module-feedback module-feedback--info" style="font-size:12px">
+              Configure o <strong>cron-job.org</strong> (gratuito) para chamar:<br>
+              <code style="font-size:11px;background:var(--surface-2);padding:2px 6px;border-radius:4px;word-break:break-all">
+                POST ${window.location.origin.replace('vercel.app', 'onrender.com') || 'https://seu-backend.onrender.com'}/alertas/disparar-preventivo
+              </code><br>
+              Header: <code style="font-size:11px">x-cron-secret: &lt;CRON_SECRET&gt;</code> · Body: <code style="font-size:11px">{"empresa_id": ID}</code> · Horário: <strong>11:00 UTC</strong> (= 8h Fortaleza)
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <h3 style="margin:0;font-size:15px">Clientes com promissórias em aberto (${lista.length})</h3>
+          <button class="btn btn-light btn-sm" id="alertasPromissoriasRecarregar">
+            <i class="fa-solid fa-rotate"></i> Recarregar
+          </button>
+        </div>
+
+        ${cartoes}
+        <div class="module-feedback" id="alertasPromissoriasFeedback" style="margin-top:10px"></div>
+      </div>`;
+  },
+
+  bindPromissoriasEvents() {
+    // Toggle auto-alert
+    document.getElementById('alertasPreventivaToogle')?.addEventListener('change', async (e) => {
+      const ativo = e.target.checked;
+      const info  = document.getElementById('alertasPreventivaCronInfo');
+      if (info) info.style.display = ativo ? 'block' : 'none';
+      try {
+        await api.salvarAlertasConfig({ cobranca_preventiva_ativa: ativo });
+        if (this.state.config) this.state.config.cobranca_preventiva_ativa = ativo;
+        showToast(ativo ? 'Aviso automático ativado.' : 'Aviso automático desativado.', 'success');
+      } catch {
+        showToast('Erro ao salvar configuração.', 'error');
+        e.target.checked = !ativo;
+      }
+    });
+
+    // Recarregar lista
+    document.getElementById('alertasPromissoriasRecarregar')?.addEventListener('click', () => this.loadPromissorias());
+
+    // Preview / Copiar / Enviar — delegação no container
+    const c = document.getElementById('alertasConteudo');
+    if (!c) return;
+
+    const getCliData = (btn) => ({
+      cliente_id:   btn.dataset.cliId   || null,
+      cliente_nome: btn.dataset.cliNome || null
+    });
+
+    const abrirPreview = async (btn) => {
+      const { cliente_id, cliente_nome } = getCliData(btn);
+      const fb = document.getElementById('alertasPromissoriasFeedback');
+      try {
+        const res = await api.previewPromissoria({ cliente_id, cliente_nome });
+        this.abrirModalPreview(res.mensagem, res.link);
+      } catch (err) {
+        if (fb) { fb.className = 'module-feedback module-feedback--error'; fb.textContent = err.message || 'Erro ao gerar mensagem.'; }
+      }
+    };
+
+    const copiarMsg = async (btn) => {
+      const { cliente_id, cliente_nome } = getCliData(btn);
+      const fb = document.getElementById('alertasPromissoriasFeedback');
+      try {
+        const res = await api.previewPromissoria({ cliente_id, cliente_nome });
+        await navigator.clipboard.writeText(res.mensagem);
+        showToast('Mensagem copiada!', 'success');
+      } catch {
+        if (fb) { fb.className = 'module-feedback module-feedback--error'; fb.textContent = 'Erro ao copiar.'; }
+      }
+    };
+
+    const enviarWpp = async (btn) => {
+      const { cliente_id, cliente_nome } = getCliData(btn);
+      const fb = document.getElementById('alertasPromissoriasFeedback');
+      try {
+        const res = await api.previewPromissoria({ cliente_id, cliente_nome });
+        if (res.link) {
+          window.open(res.link, '_blank', 'noopener');
+        } else {
+          if (fb) { fb.className = 'module-feedback module-feedback--error'; fb.textContent = 'Cliente sem telefone cadastrado.'; }
+        }
+      } catch (err) {
+        if (fb) { fb.className = 'module-feedback module-feedback--error'; fb.textContent = err.message || 'Erro.'; }
+      }
+    };
+
+    c.addEventListener('click', (e) => {
+      const preview = e.target.closest('.al-preview-btn');
+      const copiar  = e.target.closest('.al-copiar-btn');
+      const enviar  = e.target.closest('.al-enviar-btn');
+      if (preview) abrirPreview(preview);
+      if (copiar)  copiarMsg(copiar);
+      if (enviar)  enviarWpp(enviar);
+    });
+  },
+
+  abrirModalPreview(mensagem, link) {
+    const modal = document.getElementById('alertasPreviewModal');
+    const texto = document.getElementById('alertasPreviewTexto');
+    const linkEl = document.getElementById('alertasPreviewLink');
+    const copiarBtn = document.getElementById('alertasPreviewCopiar');
+    const fecharBtn = document.getElementById('alertasPreviewFechar');
+    const fb = document.getElementById('alertasPreviewFeedback');
+
+    if (!modal) return;
+    if (texto)  texto.textContent = mensagem || '';
+    if (linkEl) { linkEl.href = link || '#'; linkEl.style.opacity = link ? '1' : '0.5'; linkEl.style.pointerEvents = link ? '' : 'none'; }
+    if (fb)     { fb.className = 'module-feedback'; fb.textContent = ''; }
+    modal.style.display = 'flex';
+
+    copiarBtn?.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(mensagem || '');
+        showToast('Mensagem copiada!', 'success');
+        if (fb) { fb.className = 'module-feedback module-feedback--success'; fb.textContent = 'Copiado!'; }
+      } catch {
+        if (fb) { fb.className = 'module-feedback module-feedback--error'; fb.textContent = 'Erro ao copiar.'; }
+      }
+    }, { once: true });
+
+    fecharBtn?.addEventListener('click', () => { modal.style.display = 'none'; }, { once: true });
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; }, { once: true });
   },
 
   // ── HELPERS ───────────────────────────────────────────────────────────────

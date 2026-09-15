@@ -1332,6 +1332,18 @@ async function getAlertasHistorico() {
   return request('/alertas/historico', { method: 'GET', query: { empresa_id: getEmpresaId() } });
 }
 
+async function getPromissorias() {
+  return request('/contas-receber/promissorias', { method: 'GET', query: { empresa_id: getEmpresaId() } });
+}
+
+async function previewPromissoria({ cliente_id, cliente_nome }) {
+  return request('/alertas/preview-promissoria', { method: 'GET', query: { empresa_id: getEmpresaId(), cliente_id, cliente_nome } });
+}
+
+async function dispararAlertaPreventivo(payload = {}) {
+  return request('/alertas/disparar-preventivo', { method: 'POST', body: { ...payload, empresa_id: getEmpresaId() } });
+}
+
 function setApiBaseUrl(url) {
   if (!url || typeof url !== 'string') {
     throw new Error('Informe uma URL válida para a API.');
@@ -1531,6 +1543,9 @@ const api = {
   salvarAlertasConfig,
   dispararAlertas,
   getAlertasHistorico,
+  getPromissorias,
+  previewPromissoria,
+  dispararAlertaPreventivo,
 
   getSseNonce,
   getAuthToken,
