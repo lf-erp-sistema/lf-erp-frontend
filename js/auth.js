@@ -54,8 +54,7 @@ export function getAuth() {
     }
     const sessionRaw = sessionStorage.getItem(AUTH_STORAGE_KEY);
     return sessionRaw ? JSON.parse(sessionRaw) : null;
-  } catch (error) {
-    console.warn('Erro ao recuperar sessão', error);
+  } catch {
     return null;
   }
 }
@@ -139,6 +138,7 @@ export function scheduleTokenRefresh() {
 
 async function _doRefresh() {
   if (_refreshInProgress) return;
+  if (!getAuth()?.authToken) return; // sessão encerrada — não re-agendar
   _refreshInProgress = true;
   _refreshTimerId = null;
   try {

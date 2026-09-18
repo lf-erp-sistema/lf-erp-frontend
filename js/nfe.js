@@ -627,7 +627,7 @@ const NfeModule = {
                      <tr>
                        <td style="font-size:.78rem;color:var(--text-muted)">${esc(n.ref)}</td>
                        <td>${n.venda_id ? `#${n.venda_id}` : '—'}</td>
-                       <td>${n.numero || '—'}</td>
+                       <td>${n.numero ? esc(String(n.numero)) : '—'}</td>
                        <td>${statusBadge(n.status)}</td>
                        <td><span class="badge ${n.ambiente === 1 ? 'badge--success' : ''}">${n.ambiente === 1 ? 'Produção' : 'Homologação'}</span></td>
                        <td>${new Date(n.criado_em).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Fortaleza' })}</td>

@@ -32,8 +32,7 @@ function getStoredAuth() {
     if (!raw) return null;
 
     return JSON.parse(raw);
-  } catch (error) {
-    console.warn('Não foi possível ler a autenticação salva.', error);
+  } catch {
     return null;
   }
 }

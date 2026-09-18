@@ -38,7 +38,7 @@ async function carregar() {
     bind();
   } catch (err) {
     container.innerHTML = `<div class="module-feedback module-feedback--error" style="margin:16px">
-      <i class="fa-solid fa-triangle-exclamation"></i> ${err.message || 'Erro ao carregar lixeira'}
+      <i class="fa-solid fa-triangle-exclamation"></i> ${String(err.message || 'Erro ao carregar lixeira').replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#039;'}[c]))}
     </div>`;
   } finally {
     state.loading = false;
