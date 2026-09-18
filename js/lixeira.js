@@ -123,7 +123,7 @@ function bind() {
       );
       if (!ok) return;
       try {
-        await api.request(`/lixeira/recuperar/${tabela}/${id}`, { method: 'PUT' });
+        await api.request(`/lixeira/recuperar/${tabela}/${id}`, { method: 'PUT', query: { empresa_id: api.getEmpresaId() } });
         showToast(`"${nome}" recuperado com sucesso!`, 'success');
         await carregar();
       } catch (err) {
@@ -138,7 +138,7 @@ function bind() {
       );
       if (!ok) return;
       try {
-        await api.request(`/lixeira/excluir/${tabela}/${id}`, { method: 'DELETE' });
+        await api.request(`/lixeira/excluir/${tabela}/${id}`, { method: 'DELETE', query: { empresa_id: api.getEmpresaId() } });
         showToast(`"${nome}" excluído permanentemente.`, 'success');
         await carregar();
       } catch (err) {

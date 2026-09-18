@@ -206,6 +206,8 @@ async function request(path, options = {}) {
       API_CONFIG._isRedirecting401 = true;
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('lferp:session-expired'));
+        // Reset flag when SPA re-renders login so future 401s are caught
+        window.addEventListener('lferp:auth-changed', () => { API_CONFIG._isRedirecting401 = false; }, { once: true });
       }
     }
     return parseResponse(response);
@@ -262,6 +264,7 @@ async function login(usuario, senha, timeout) {
     ...(timeout ? { timeout } : {})
   });
   API_CONFIG._isRedirecting401 = false;
+  if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('lferp:auth-changed'));
   return normalizeLoginResponse(response);
 }
 

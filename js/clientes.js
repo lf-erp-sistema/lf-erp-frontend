@@ -882,7 +882,7 @@ const ClientesModule = {
              <tbody>
                ${parcelas.map((p) => `
                  <tr>
-                   <td><small>#${p.venda_id || '-'}</small></td>
+                   <td><small>#${escapeHtml(String(p.venda_id || '-'))}</small></td>
                    <td>${p.parcela}/${p.total_parcelas}</td>
                    <td>${dt(p.data_vencimento)}${p.dias_atraso > 0 ? `<br><small style="color:var(--danger,#e53e3e)">${p.dias_atraso}d atraso</small>` : ''}</td>
                    <td class="text-right">${cur(p.valor)}</td>

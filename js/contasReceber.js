@@ -722,7 +722,8 @@ async function excluirConta(id) {
 
   try {
     await api.request(`/contas-receber/${id}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      query: { empresa_id: api.getEmpresaId() }
     });
 
     showMessage('Conta manual excluída com sucesso.', 'success');

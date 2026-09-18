@@ -226,7 +226,7 @@
       cancelado: '<span class="badge badge-inativo">Cancelado</span>',
       expirado: '<span class="badge badge-expirado">Expirado</span>'
     };
-    return map[s] || `<span class="badge badge-inativo">${s}</span>`;
+    return map[s] || `<span class="badge badge-inativo">${esc(s)}</span>`;
   }
 
   function renderEmpresas(empresas) {

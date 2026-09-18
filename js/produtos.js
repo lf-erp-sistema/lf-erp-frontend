@@ -1580,7 +1580,7 @@ const ProdutosModule = {
   async _desvincular(id) {
     if (!await confirmarAcao('Remover vínculo com esta plataforma?', 'Remover', 'danger')) return;
     try {
-      await api.request(`/marketplace/vincular/${id}`, { method: 'DELETE' });
+      await api.request(`/marketplace/vincular/${id}`, { method: 'DELETE', query: { empresa_id: api.getEmpresaId() } });
       showToast('Vínculo removido', 'success');
       await this._renderMarketplace();
     } catch (e) { showToast(e.message, 'error'); }

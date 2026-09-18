@@ -1336,8 +1336,10 @@ const PDVModule = {
 
   async finalizarVenda() {
     if (this.state.salvando) return;
+    this.state.salvando = true; // set before first async to prevent race condition on double-click
 
     if (!this.state.carrinho.length) {
+      this.state.salvando = false;
       this.showMessage('Adicione pelo menos um produto ao carrinho.', 'error');
       return;
     }
@@ -1345,10 +1347,12 @@ const PDVModule = {
     try {
       const sessao = await api.getCaixaSessaoAtiva();
       if (!sessao) {
+        this.state.salvando = false;
         this.showMessage('Abra o caixa antes de registrar uma venda.', 'error');
         return;
       }
     } catch {
+      this.state.salvando = false;
       this.showMessage('Não foi possível verificar o caixa. Tente novamente.', 'error');
       return;
     }
