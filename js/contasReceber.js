@@ -851,7 +851,8 @@ async function estornarRecebimentoParcial(lancamentoId, modal) {
 
   try {
     await api.request(`/contas-receber/estornar-parcial/${lancamentoId}`, {
-      method: 'POST'
+      method: 'POST',
+      body: { empresa_id: api.getEmpresaId() }
     });
 
     showMessage('Recebimento parcial estornado com sucesso.', 'success');

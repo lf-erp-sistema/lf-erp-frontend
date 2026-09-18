@@ -146,7 +146,7 @@ const PedidosModule = {
       <tr>
         <td><strong>#${p.numero}</strong>${p.orcamento_id ? `<div class="table-muted">Orc. #${p.orcamento_id}</div>` : ''}</td>
         <td>${this.esc(p.cliente_nome || 'Sem cliente')}</td>
-        <td><span class="badge ${badge}">${STATUS_LABEL[p.status] || p.status}</span></td>
+        <td><span class="badge ${badge}">${STATUS_LABEL[p.status] || this.esc(p.status)}</span></td>
         <td>${this.esc(p.forma_pagamento || '-')}</td>
         <td>${prev}</td>
         <td>${Number(p.total_itens || 0)}</td>
