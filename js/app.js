@@ -1290,8 +1290,15 @@ async function restoreAuthSession() {
         plano_nome: meData.plano_nome || null
       };
     }
-    // SaaS Owner restaurado → redireciona para painel administrativo
+    // SaaS Owner restaurado → atualiza storage com is_saas_owner e redireciona
     if (AppState.user?.is_saas_owner) {
+      const currentAuth = getAuth();
+      if (currentAuth) {
+        saveAuth(
+          { ...currentAuth, user: { ...currentAuth.user, is_saas_owner: true } },
+          !!localStorage.getItem('lf_erp_auth')
+        );
+      }
       window.location.assign('./admin.html');
       return;
     }
