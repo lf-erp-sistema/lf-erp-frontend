@@ -59,13 +59,15 @@ const ProdutosModule = {
   },
 
   async aplicarPermissoesUI() {
+    // Apenas funcionario passa pela checagem; admin/gerente sempre mantêm acesso
+    if (api.getUserTipo() !== 'funcionario') return;
     try {
       const perm = await api.getMinhasPermissoes();
       const podeCriar = perm?.isAdmin || perm?.permissoes?.produtos?.pode_criar === true;
-      if (!podeCriar) {
-        document.getElementById('produtosNewBtn')?.remove();
-        document.getElementById('produtosEmptyNewBtn')?.remove();
-      }
+      const newBtn   = document.getElementById('produtosNewBtn');
+      const emptyBtn = document.getElementById('produtosEmptyNewBtn');
+      if (newBtn)   newBtn.style.display   = podeCriar ? '' : 'none';
+      if (emptyBtn) emptyBtn.style.display = podeCriar ? '' : 'none';
     } catch { /* falha silenciosa — botão permanece visível */ }
   },
 
