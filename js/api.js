@@ -1289,6 +1289,20 @@ async function excluirOrdemServico(id) {
   });
 }
 
+async function getCatalogoServicos(params = {}) {
+  return request('/ordens-servico/catalogo', {
+    method: 'GET',
+    query: { ...params, empresa_id: getEmpresaId() }
+  });
+}
+
+async function getCategoriasServicos() {
+  return request('/ordens-servico/catalogo/categorias', {
+    method: 'GET',
+    query: { empresa_id: getEmpresaId() }
+  });
+}
+
 // ── COMISSÕES ─────────────────────────────────────────────────────────────────
 
 async function getComissoesConfig() {
@@ -1574,6 +1588,8 @@ const api = {
   atualizarOrdemServico,
   atualizarStatusOS,
   excluirOrdemServico,
+  getCatalogoServicos,
+  getCategoriasServicos,
 
   getComissoesConfig,
   salvarComissaoConfig,

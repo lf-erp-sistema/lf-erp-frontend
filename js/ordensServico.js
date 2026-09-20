@@ -278,11 +278,25 @@ const OrdensServicoModule = {
 
         <div style="background:var(--bg-subtle,#f8fafc);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:16px">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-            <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0">Peças / Insumos Utilizados</p>
-            <button type="button" class="btn btn-light btn-sm" id="osAddItemBtn" style="font-size:12px;padding:4px 10px"><i class="fa-solid fa-plus"></i> Adicionar</button>
+            <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0">Peças / Serviços</p>
+            <div style="display:flex;gap:6px">
+              <button type="button" class="btn btn-light btn-sm" id="osCatalogoBtn" style="font-size:12px;padding:4px 10px"><i class="fa-solid fa-list"></i> Do Catálogo</button>
+              <button type="button" class="btn btn-light btn-sm" id="osAddItemBtn" style="font-size:12px;padding:4px 10px"><i class="fa-solid fa-plus"></i> Item livre</button>
+            </div>
           </div>
+
+          <!-- Painel do catálogo (oculto por padrão) -->
+          <div id="osCatalogoPanel" style="display:none;border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:10px;margin-bottom:10px">
+            <div style="display:flex;gap:6px;margin-bottom:8px">
+              <input type="search" id="osCatalogoBusca" class="input" style="flex:1;font-size:13px" placeholder="Buscar serviço...">
+              <button type="button" class="icon-button" id="osCatalogoFechar" title="Fechar catálogo"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="osCategoriaChips" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px"></div>
+            <div id="osCatalogoLista" style="max-height:200px;overflow-y:auto;font-size:13px"></div>
+          </div>
+
           <div id="osItensLista"></div>
-          <p id="osItensVazio" style="font-size:12px;color:var(--text-muted);margin:0;${itens.length ? 'display:none' : ''}">Nenhuma peça adicionada. Clique em "+ Adicionar" para incluir itens.</p>
+          <p id="osItensVazio" style="font-size:12px;color:var(--text-muted);margin:0;${itens.length ? 'display:none' : ''}">Nenhum item adicionado. Use "Do Catálogo" para buscar serviços ou "Item livre" para digitar manualmente.</p>
         </div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
@@ -335,6 +349,27 @@ const OrdensServicoModule = {
     document.getElementById('osAddItemBtn').addEventListener('click', () => {
       this.adicionarLinhaItem(document.getElementById('osItensLista'));
     });
+
+    document.getElementById('osCatalogoBtn').addEventListener('click', () => {
+      this._catFiltro = '';
+      this._catBusca  = '';
+      this.toggleCatalogo();
+    });
+
+    document.getElementById('osCatalogoFechar').addEventListener('click', () => {
+      const panel = document.getElementById('osCatalogoPanel');
+      if (panel) panel.style.display = 'none';
+    });
+
+    const catBuscaInput = document.getElementById('osCatalogoBusca');
+    if (catBuscaInput) {
+      let catTimer;
+      catBuscaInput.addEventListener('input', () => {
+        clearTimeout(catTimer);
+        this._catBusca = catBuscaInput.value.trim();
+        catTimer = setTimeout(() => this.carregarCatalogo(this._catFiltro || '', this._catBusca), 300);
+      });
+    }
 
     document.getElementById('osModalCancelarBtn').addEventListener('click', () => this.fecharModal());
 
@@ -686,6 +721,96 @@ ${os.observacoes ? `<div class="field" style="margin-bottom:12px"><label>Observa
     const fechar  = document.getElementById('osModalFechar');
     if (overlay) overlay.addEventListener('click', (e) => { if (e.target === overlay) this.fecharModal(); });
     if (fechar)  fechar.addEventListener('click', () => this.fecharModal());
+  },
+
+  // ── Catálogo de serviços ─────────────────────────────────────────────────
+  toggleCatalogo() {
+    const panel = document.getElementById('osCatalogoPanel');
+    if (!panel) return;
+    if (panel.style.display !== 'none') {
+      panel.style.display = 'none';
+      return;
+    }
+    panel.style.display = 'block';
+    const lista = document.getElementById('osCatalogoLista');
+    if (lista && !lista.dataset.loaded) {
+      this.carregarCatalogo('', '');
+    }
+  },
+
+  async carregarCatalogo(categoriaFiltro = '', busca = '') {
+    const lista = document.getElementById('osCatalogoLista');
+    if (!lista) return;
+
+    lista.innerHTML = '<p style="color:var(--text-muted);font-size:12px;padding:8px 0">Carregando...</p>';
+
+    try {
+      const params = { limit: 200 };
+      if (categoriaFiltro) params.categoria = categoriaFiltro;
+      if (busca)           params.busca      = busca;
+
+      const result   = await api.getCatalogoServicos(params);
+      const servicos = result?.servicos || [];
+
+      const chipsEl = document.getElementById('osCategoriaChips');
+      if (chipsEl && !chipsEl.dataset.loaded) {
+        try {
+          const cats = await api.getCategoriasServicos();
+          this.renderCategoriaChips(cats?.categorias || []);
+          chipsEl.dataset.loaded = 'true';
+        } catch { /* silent */ }
+      }
+
+      lista.dataset.loaded = 'true';
+
+      if (!servicos.length) {
+        lista.innerHTML = '<p style="color:var(--text-muted);font-size:12px;padding:8px 0">Nenhum serviço encontrado.</p>';
+        return;
+      }
+
+      lista.innerHTML = servicos.map(s => `
+        <div class="os-catalogo-item"
+             data-catalogo-nome="${(s.nome || '').replace(/"/g, '&quot;')}"
+             data-catalogo-valor="${s.valor_padrao || 0}"
+             style="padding:6px 8px;cursor:pointer;border-radius:4px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border)">
+          <span>${s.nome}</span>
+          <span style="color:var(--text-muted);font-size:11px;white-space:nowrap;margin-left:8px">${s.categoria}</span>
+        </div>`).join('');
+
+      lista.querySelectorAll('.os-catalogo-item').forEach(el => {
+        el.addEventListener('mouseenter', () => { el.style.background = 'var(--bg-subtle,#f8fafc)'; });
+        el.addEventListener('mouseleave', () => { el.style.background = ''; });
+        el.addEventListener('click', () => {
+          this.adicionarLinhaItem(document.getElementById('osItensLista'), {
+            descricao:      el.dataset.catalogoNome,
+            quantidade:     1,
+            valor_unitario: Number(el.dataset.catalogoValor) || 0
+          });
+          showToast(`"${el.dataset.catalogoNome}" adicionado.`, 'success');
+        });
+      });
+    } catch (err) {
+      console.error('[os] catálogo:', err);
+      lista.innerHTML = '<p style="color:var(--danger,#ef4444);font-size:12px;padding:8px 0">Erro ao carregar catálogo.</p>';
+    }
+  },
+
+  renderCategoriaChips(categorias) {
+    const chips = document.getElementById('osCategoriaChips');
+    if (!chips) return;
+
+    chips.innerHTML = `<button class="btn-inline btn-inline--active" data-cat-chip="" style="font-size:11px;padding:2px 8px">Todos</button>` +
+      categorias.map(cat => `<button class="btn-inline" data-cat-chip="${cat.replace(/"/g, '&quot;')}" style="font-size:11px;padding:2px 8px">${cat}</button>`).join('');
+
+    chips.querySelectorAll('[data-cat-chip]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        chips.querySelectorAll('[data-cat-chip]').forEach(b => b.classList.remove('btn-inline--active'));
+        btn.classList.add('btn-inline--active');
+        this._catFiltro = btn.dataset.catChip;
+        const buscaInput = document.getElementById('osCatalogoBusca');
+        this.carregarCatalogo(this._catFiltro, buscaInput?.value.trim() || '');
+      });
+    });
   },
 
   setFeedback(msg, type) {
