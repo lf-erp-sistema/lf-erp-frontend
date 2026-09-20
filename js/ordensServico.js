@@ -119,17 +119,19 @@ const OrdensServicoModule = {
 
       <!-- Modal OS -->
       <div class="modal-overlay hidden" id="osModal" role="dialog" aria-modal="true">
-        <div class="modal modal--lg">
-          <div class="modal-header">
-            <h3 id="osModalTitulo">Nova Ordem de Serviço</h3>
-            <button class="modal-close" id="osModalFechar" aria-label="Fechar">&times;</button>
+        <div class="modal-card modal-card--large">
+          <div class="modal-card__header">
+            <div>
+              <h3 id="osModalTitulo">Nova Ordem de Serviço</h3>
+              <p style="margin:0;font-size:13px;color:var(--text-muted)">Preencha os dados do equipamento e do serviço</p>
+            </div>
+            <button type="button" class="icon-button" id="osModalFechar" aria-label="Fechar">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
           </div>
-          <div class="modal-body" id="osModalBody"></div>
+          <div id="osModalBody" style="padding:24px;overflow-y:auto;max-height:calc(90vh - 90px)"></div>
         </div>
       </div>
-
-      <!-- Template de impressão (oculto) -->
-      <div id="osImpressaoTemplate" style="display:none"></div>
     `;
   },
 
@@ -282,7 +284,7 @@ const OrdensServicoModule = {
         <div class="form-grid form-grid--3">
           <div class="form-group">
             <label>Mão de Obra (R$)</label>
-            <input type="text" id="osMaoObra" class="input" placeholder="0,00" value="${fmtVal(os?.valor_mao_obra)}">
+            <input type="text" id="osMaoObra" class="input" placeholder="0,00" value="${os ? fmtVal(os.valor_mao_obra) : ''}">
           </div>
           <div class="form-group">
             <label>Data Prevista de Entrega</label>
@@ -293,14 +295,14 @@ const OrdensServicoModule = {
             <input type="text" id="osObs" class="input" placeholder="Informações adicionais" value="${os?.observacoes || ''}">
           </div>
         </div>
+      </form>
 
-        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
-          <button type="button" class="btn btn-light" id="osModalCancelarBtn">Cancelar</button>
-          <button type="submit" class="btn btn-primary" id="osSalvarBtn">
-            <i class="fa-solid fa-floppy-disk"></i> ${os ? 'Salvar alterações' : 'Abrir OS'}
-          </button>
-        </div>
-      </form>`;
+      <div style="display:flex;gap:8px;justify-content:flex-end;padding-top:16px;border-top:1px solid var(--border);margin-top:4px">
+        <button type="button" class="btn btn-light" id="osModalCancelarBtn">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="osSalvarBtn">
+          <i class="fa-solid fa-floppy-disk"></i> ${os ? 'Salvar alterações' : 'Abrir OS'}
+        </button>
+      </div>`;
 
     // Renderiza itens existentes
     const listaItens = document.getElementById('osItensLista');
@@ -331,8 +333,7 @@ const OrdensServicoModule = {
 
     document.getElementById('osModalCancelarBtn').addEventListener('click', () => this.fecharModal());
 
-    document.getElementById('osForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
+    document.getElementById('osSalvarBtn').addEventListener('click', async () => {
       await this.salvarOS(id);
     });
 
@@ -415,7 +416,7 @@ const OrdensServicoModule = {
       console.error('[os] salvarOS:', err);
       showToast(err?.message || 'Erro ao salvar OS.', 'error');
     } finally {
-      if (btn) { btn.disabled = false; btn.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> ${id ? 'Salvar alterações' : 'Abrir OS'}`; }
+      if (btn) { btn.disabled = false; btn.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> ${id ? 'Salvar alterações' : 'Abrir OS'}`; btn.type = 'button'; }
     }
   },
 
