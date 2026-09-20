@@ -67,6 +67,11 @@ function getEmpresaId() {
   );
 }
 
+function getUserTipo() {
+  const auth = getStoredAuth();
+  return auth?.user?.perfil || auth?.user?.tipo || null;
+}
+
 function buildHeaders(customHeaders = {}) {
   const token = getAuthToken();
 
@@ -1557,6 +1562,7 @@ const api = {
   getAuthToken,
   getEmpresaId,
   getEmpresaNome,
+  getUserTipo,
   ensureEmpresa,
   ensureEmpresaId,
   getApiBaseUrl,

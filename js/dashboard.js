@@ -1036,12 +1036,13 @@ export async function loadDashboard({ filters = {}, state = {} } = {}) {
       busca: filters.busca || ''
     };
 
+    const isFuncionario = api.getUserTipo() === 'funcionario';
     const [rawDashboard, rawResumoFinanceiro, rawEmpresaStatus, rawAlertas, rawTabelaPrecos] = await Promise.all([
       api.getDashboard(params).catch(() => ({})),
-      api.getRelatorioFinanceiroResumo(params).catch(() => ({})),
+      isFuncionario ? Promise.resolve({}) : api.getRelatorioFinanceiroResumo(params).catch(() => ({})),
       api.getEmpresaStatus().catch(() => null),
-      api.getAlertas().catch(() => ({ alertas: [] })),
-      api.getTabelaPrecosDashboard().catch(() => null)
+      isFuncionario ? Promise.resolve({ alertas: [] }) : api.getAlertas().catch(() => ({ alertas: [] })),
+      isFuncionario ? Promise.resolve(null) : api.getTabelaPrecosDashboard().catch(() => null)
     ]);
 
     if (reqId !== _dashReqId) return;
