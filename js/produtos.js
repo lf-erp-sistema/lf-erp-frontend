@@ -55,6 +55,18 @@ const ProdutosModule = {
     } else {
       this.cacheElements();
     }
+    this.aplicarPermissoesUI();
+  },
+
+  async aplicarPermissoesUI() {
+    try {
+      const perm = await api.getMinhasPermissoes();
+      const podeCriar = perm?.isAdmin || perm?.permissoes?.produtos?.pode_criar === true;
+      if (!podeCriar) {
+        document.getElementById('produtosNewBtn')?.remove();
+        document.getElementById('produtosEmptyNewBtn')?.remove();
+      }
+    } catch { /* falha silenciosa — botão permanece visível */ }
   },
 
   resolveEmpresa() {
