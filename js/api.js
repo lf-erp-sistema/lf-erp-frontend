@@ -284,6 +284,10 @@ async function getSseNonce() {
   return request('/auth/sse-token', { method: 'GET' });
 }
 
+async function getMinhasPermissoes() {
+  return request('/permissoes/minhas', { method: 'GET' });
+}
+
 async function refreshToken() {
   return request('/auth/refresh', { method: 'POST' });
 }
@@ -1558,6 +1562,8 @@ const api = {
   getApiBaseUrl,
   setApiBaseUrl,
   clearApiBaseUrl,
+
+  getMinhasPermissoes,
 
   formatPlanError,
   warmupServer

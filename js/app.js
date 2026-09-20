@@ -16,6 +16,7 @@ const AppState = {
   empresaId: null,
   rememberSession: false,
   loadingCount: 0,
+  permissoes: null,
   filters: {
     periodo: '7dias',
     dataInicial: '',
@@ -67,6 +68,99 @@ const VIEW_CONFIG = {
   marketplace:          { icon: 'shop',                  title: 'Marketplace',           subtitle: 'Integração com Mercado Livre e Shopee' },
   configuracoes:        { icon: 'gear',                  title: 'Configurações',         subtitle: 'Parâmetros e preferências do sistema' }
 };
+
+// Mapeamento view → módulo de permissão (backend)
+const VIEW_MODULO = {
+  dashboard:             'dashboard',
+  pdv:                   'vendas',
+  produtos:              'produtos',
+  clientes:              'clientes',
+  fornecedores:          'fornecedores',
+  usuarios:              'usuarios',
+  vendas:                'vendas',
+  compras:               'compras',
+  estoque:               'estoque',
+  devolucoes:            'devolucoes',
+  caixa:                 'caixa',
+  'contas-receber':      'financeiro',
+  'contas-pagar':        'financeiro',
+  'fluxo-caixa':         'financeiro',
+  lancamentos:           'financeiro',
+  conciliacao:           'financeiro',
+  'auditoria-financeira':'financeiro',
+  nfe:                   'nfe',
+  orcamentos:            'orcamentos',
+  pedidos:               'pedidos',
+  relatorios:            'relatorios',
+  bi:                    'bi',
+  'exportacao-contabil': 'exportacao',
+  crm:                   'crm',
+  comissoes:             'comissoes',
+  fidelidade:            'fidelidade',
+  alertas:               'alertas',
+  whatsapp:              'whatsapp',
+  marketplace:           'marketplace',
+  'api-publica':         'configuracoes',
+  'checkout-links':      'checkout',
+  filiais:               'filiais',
+  rastreabilidade:       'rastreabilidade',
+  configuracoes:         'configuracoes',
+};
+
+async function carregarPermissoes() {
+  try {
+    const data = await api.getMinhasPermissoes();
+    AppState.permissoes = data;
+  } catch {
+    AppState.permissoes = { isAdmin: true };
+  }
+  aplicarPermissoesMenu();
+}
+
+function aplicarPermissoesMenu() {
+  const perm = AppState.permissoes;
+  const isAdmin = !perm || perm.isAdmin
+    || AppState.user?.tipo === 'admin'
+    || AppState.user?.is_saas_owner;
+
+  // Admin: restaura visibilidade de tudo (exceto itens com lógica própria)
+  if (isAdmin) {
+    document.querySelectorAll('[data-view]').forEach(el => {
+      if (el.id === 'lixeiraNavBtn' || el.id === 'adminNavLink') return;
+      el.style.removeProperty('display');
+    });
+    document.querySelectorAll('.nav-group').forEach(g => g.style.removeProperty('display'));
+    document.getElementById('navAdvancedToggle')?.style.removeProperty('display');
+    return;
+  }
+
+  // Outros perfis: aplica visibilidade por módulo
+  document.querySelectorAll('[data-view]').forEach(el => {
+    const view = el.getAttribute('data-view');
+    if (!view || view === 'lixeira') return;
+    const modulo = VIEW_MODULO[view];
+    if (!modulo) return;
+    const podeVer = perm.permissoes?.[modulo]?.pode_ver === true;
+    el.style.display = podeVer ? '' : 'none';
+  });
+
+  // Esconde grupos sem nenhum subitem visível
+  document.querySelectorAll('.nav-group').forEach(group => {
+    const algumVisivel = [...group.querySelectorAll('.nav-subitem[data-view]')]
+      .some(s => s.style.display !== 'none');
+    group.style.display = algumVisivel ? '' : 'none';
+  });
+
+  // Esconde seção "Mais recursos" se todos os grupos dentro dela estiverem ocultos
+  const advSection = document.getElementById('navAdvancedSection');
+  const advToggle  = document.getElementById('navAdvancedToggle');
+  if (advSection && advToggle) {
+    const algumVisivel = [...advSection.querySelectorAll('.nav-group')]
+      .some(g => g.style.display !== 'none');
+    advToggle.style.display  = algumVisivel ? '' : 'none';
+    advSection.style.display = algumVisivel ? '' : 'none';
+  }
+}
 
 // ── Tema (dark / light) ────────────────────────────────────────────────────────
 
@@ -206,6 +300,7 @@ function bindLoginEvents() {
       applyAuthData(authPayload);
       renderAuthenticatedUser();
       renderTrialBanner();
+      await carregarPermissoes();
       showMainScreen();
       await setActiveView('dashboard');
       showToast(`Bem-vindo! Seu trial de 14 dias começou.`, 'success');
@@ -736,6 +831,7 @@ async function handleLoginSubmit(event) {
 
     applyAuthData(loginResult);
     renderAuthenticatedUser();
+    await carregarPermissoes();
     showMainScreen();
     scheduleTokenRefresh();
     await setActiveView('dashboard');
@@ -1186,6 +1282,7 @@ async function restoreAuthSession() {
     }
     renderAuthenticatedUser();
     renderTrialBanner();
+    await carregarPermissoes();
     showMainScreen();
     scheduleTokenRefresh();
     await setActiveView(AppState.currentView || 'dashboard');
@@ -1399,6 +1496,7 @@ function handleLogout(showMessage = true) {
   AppState.user = null;
   AppState.empresa = null;
   AppState.empresaId = null;
+  AppState.permissoes = null;
   AppState.currentView = 'dashboard';
 
   localStorage.removeItem(STORAGE_KEYS.currentView);
