@@ -49,6 +49,7 @@ const VIEW_CONFIG = {
   lancamentos:          { icon: 'pen-to-square',         title: 'Lançamentos',           subtitle: 'Receitas e despesas manuais' },
   conciliacao:          { icon: 'building-columns',      title: 'Conciliação Bancária',  subtitle: 'Reconciliação de extratos OFX e CSV' },
   relatorios:           { icon: 'file-lines',            title: 'Relatórios',            subtitle: 'Relatórios gerenciais e operacionais' },
+  'ordens-servico':     { icon: 'screwdriver-wrench',     title: 'Ordens de Serviço',     subtitle: 'Manutenção de celulares e computadores — abertura, acompanhamento e entrega' },
   orcamentos:           { icon: 'file-lines',            title: 'Orçamentos',            subtitle: 'Cotações emitidas — gerencie aprovações e converta em pedidos' },
   pedidos:              { icon: 'clipboard-list',        title: 'Pedidos',               subtitle: 'Pedidos em andamento — confirme, separe e converta em venda' },
   comissoes:            { icon: 'percent',               title: 'Comissões',             subtitle: 'Comissões de vendedores por venda realizada' },
@@ -89,6 +90,7 @@ const VIEW_MODULO = {
   conciliacao:           'financeiro',
   'auditoria-financeira':'financeiro',
   nfe:                   'nfe',
+  'ordens-servico':      'ordens_servico',
   orcamentos:            'orcamentos',
   pedidos:               'pedidos',
   relatorios:            'relatorios',
@@ -996,6 +998,7 @@ const VIEW_LOADERS = {
   'devolucoes':          loadDevolucoesReal,
   'caixa':               loadCaixaReal,
   'comissoes':           loadComissoesReal,
+  'ordens-servico':      loadOrdensServicoReal,
   'orcamentos':          loadOrcamentosReal,
   'pedidos':             loadPedidosReal,
   'nfe':                 loadNfeReal,
@@ -1999,6 +2002,21 @@ async function loadComissoesReal() {
     console.error('Erro ao carregar comissões:', error);
     showToast('Falha ao carregar comissões.', 'error');
     renderModuleError('comissoesContainer', 'Comissões', 'Não foi possível carregar comissões.');
+  } finally {
+    hideGlobalLoader();
+  }
+}
+
+async function loadOrdensServicoReal() {
+  showGlobalLoader('Carregando ordens de serviço...');
+  try {
+    const { initOrdensServicoModule } = await import('./ordensServico.js');
+    await initOrdensServicoModule();
+    showToast('Ordens de serviço carregadas.', 'success');
+  } catch (error) {
+    console.error('Erro ao carregar ordens de serviço:', error);
+    showToast('Falha ao carregar ordens de serviço.', 'error');
+    renderModuleError('ordensServicoContainer', 'Ordens de Serviço', 'Não foi possível carregar o módulo.');
   } finally {
     hideGlobalLoader();
   }

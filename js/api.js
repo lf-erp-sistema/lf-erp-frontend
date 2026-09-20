@@ -1251,6 +1251,44 @@ async function converterPedidoVenda(id, payload = {}) {
   return request(`/pedidos/${id}/converter-venda`, { method: 'POST', body: { ...payload, empresa_id: getEmpresaId() } });
 }
 
+// ── ORDENS DE SERVIÇO ─────────────────────────────────────────────────────────
+
+async function getOrdensServico(params = {}) {
+  return request('/ordens-servico', { method: 'GET', query: { ...params, empresa_id: getEmpresaId() } });
+}
+
+async function getOrdemServico(id) {
+  return request(`/ordens-servico/${id}`, { method: 'GET', query: { empresa_id: getEmpresaId() } });
+}
+
+async function criarOrdemServico(payload) {
+  return request('/ordens-servico', {
+    method: 'POST',
+    body: { ...payload, empresa: getEmpresaNome(), empresa_id: getEmpresaId() }
+  });
+}
+
+async function atualizarOrdemServico(id, payload) {
+  return request(`/ordens-servico/${id}`, {
+    method: 'PUT',
+    body: { ...payload, empresa: getEmpresaNome(), empresa_id: getEmpresaId() }
+  });
+}
+
+async function atualizarStatusOS(id, status) {
+  return request(`/ordens-servico/${id}/status`, {
+    method: 'PATCH',
+    body: { status, empresa: getEmpresaNome(), empresa_id: getEmpresaId() }
+  });
+}
+
+async function excluirOrdemServico(id) {
+  return request(`/ordens-servico/${id}`, {
+    method: 'DELETE',
+    query: { empresa: getEmpresaNome(), empresa_id: getEmpresaId() }
+  });
+}
+
 // ── COMISSÕES ─────────────────────────────────────────────────────────────────
 
 async function getComissoesConfig() {
@@ -1529,6 +1567,13 @@ const api = {
   separacaoPedido,
   cancelarPedido,
   converterPedidoVenda,
+
+  getOrdensServico,
+  getOrdemServico,
+  criarOrdemServico,
+  atualizarOrdemServico,
+  atualizarStatusOS,
+  excluirOrdemServico,
 
   getComissoesConfig,
   salvarComissaoConfig,
