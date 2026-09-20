@@ -112,7 +112,9 @@ async function carregarPermissoes() {
     const data = await api.getMinhasPermissoes();
     AppState.permissoes = data;
   } catch {
-    AppState.permissoes = { isAdmin: true };
+    const tipo = AppState.user?.tipo;
+    const isAdminFallback = tipo === 'admin' || !!AppState.user?.is_saas_owner;
+    AppState.permissoes = { isAdmin: isAdminFallback };
   }
   aplicarPermissoesMenu();
 }
