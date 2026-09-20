@@ -221,83 +221,88 @@ const OrdensServicoModule = {
     const fmtDate = (d) => d ? d.slice(0, 10) : '';
 
     body.innerHTML = `
-      <form id="osForm" autocomplete="off">
-        <div class="form-grid form-grid--2">
-          <div class="form-group">
-            <label>Cliente</label>
+      <div id="osFormWrap" autocomplete="off">
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+          <div class="form-field">
+            <label class="form-label">Cliente</label>
             <input type="text" id="osClienteNome" class="input" placeholder="Nome do cliente" value="${os?.cliente_nome || ''}">
             <input type="hidden" id="osClienteId" value="${os?.cliente_id || ''}">
           </div>
-          <div class="form-group">
-            <label>Técnico Responsável</label>
+          <div class="form-field">
+            <label class="form-label">Técnico Responsável</label>
             <input type="text" id="osTecnico" class="input" placeholder="Nome do técnico" value="${os?.tecnico || ''}">
           </div>
         </div>
 
-        <fieldset class="form-fieldset">
-          <legend>Equipamento</legend>
-          <div class="form-grid form-grid--4">
-            <div class="form-group">
-              <label>Tipo *</label>
+        <div style="background:var(--bg-subtle,#f8fafc);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:16px">
+          <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 10px">Equipamento</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px">
+            <div class="form-field">
+              <label class="form-label">Tipo *</label>
               <select id="osEquipTipo" class="input">
                 <option value="">Selecione</option>
                 ${EQUIPAMENTOS.map(e => `<option value="${e}" ${os?.equipamento_tipo === e ? 'selected' : ''}>${e}</option>`).join('')}
               </select>
             </div>
-            <div class="form-group">
-              <label>Marca</label>
+            <div class="form-field">
+              <label class="form-label">Marca</label>
               <input type="text" id="osEquipMarca" class="input" placeholder="Ex: Samsung" value="${os?.equipamento_marca || ''}">
             </div>
-            <div class="form-group">
-              <label>Modelo</label>
+            <div class="form-field">
+              <label class="form-label">Modelo</label>
               <input type="text" id="osEquipModelo" class="input" placeholder="Ex: Galaxy A54" value="${os?.equipamento_modelo || ''}">
             </div>
-            <div class="form-group">
-              <label>Nº Série / IMEI</label>
+            <div class="form-field">
+              <label class="form-label">Nº Série / IMEI</label>
               <input type="text" id="osEquipSerie" class="input" placeholder="Nº série ou IMEI" value="${os?.equipamento_serie || ''}">
             </div>
           </div>
-        </fieldset>
+        </div>
 
-        <div class="form-grid form-grid--2">
-          <div class="form-group">
-            <label>Problema Relatado *</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+          <div class="form-field">
+            <label class="form-label">Problema Relatado *</label>
             <textarea id="osProblema" class="input" rows="3" placeholder="Descreva o defeito informado pelo cliente">${os?.problema_relatado || ''}</textarea>
           </div>
-          <div class="form-group">
-            <label>Diagnóstico Técnico</label>
+          <div class="form-field">
+            <label class="form-label">Diagnóstico Técnico</label>
             <textarea id="osDiagnostico" class="input" rows="3" placeholder="Diagnóstico após análise">${os?.diagnostico || ''}</textarea>
           </div>
         </div>
 
-        <div class="form-group">
-          <label>Serviços Realizados</label>
+        <div class="form-field" style="margin-bottom:16px">
+          <label class="form-label">Serviços Realizados</label>
           <textarea id="osServicos" class="input" rows="2" placeholder="Descreva os serviços executados">${os?.servicos_realizados || ''}</textarea>
         </div>
 
-        <fieldset class="form-fieldset">
-          <legend>Peças / Insumos Utilizados</legend>
+        <div style="background:var(--bg-subtle,#f8fafc);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0">Peças / Insumos Utilizados</p>
+            <button type="button" class="btn btn-light btn-sm" id="osAddItemBtn" style="font-size:12px;padding:4px 10px"><i class="fa-solid fa-plus"></i> Adicionar</button>
+          </div>
           <div id="osItensLista"></div>
-          <button type="button" class="btn btn-light btn-sm" id="osAddItemBtn"><i class="fa-solid fa-plus"></i> Adicionar item</button>
-        </fieldset>
+          <p id="osItensVazio" style="font-size:12px;color:var(--text-muted);margin:0;${itens.length ? 'display:none' : ''}">Nenhuma peça adicionada. Clique em "+ Adicionar" para incluir itens.</p>
+        </div>
 
-        <div class="form-grid form-grid--3">
-          <div class="form-group">
-            <label>Mão de Obra (R$)</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+          <div class="form-field">
+            <label class="form-label">Mão de Obra (R$)</label>
             <input type="text" id="osMaoObra" class="input" placeholder="0,00" value="${os ? fmtVal(os.valor_mao_obra) : ''}">
           </div>
-          <div class="form-group">
-            <label>Data Prevista de Entrega</label>
+          <div class="form-field">
+            <label class="form-label">Previsão de Entrega</label>
             <input type="date" id="osDataPrevista" class="input" value="${fmtDate(os?.data_prevista)}">
           </div>
-          <div class="form-group">
-            <label>Observações</label>
+          <div class="form-field">
+            <label class="form-label">Observações</label>
             <input type="text" id="osObs" class="input" placeholder="Informações adicionais" value="${os?.observacoes || ''}">
           </div>
         </div>
-      </form>
 
-      <div style="display:flex;gap:8px;justify-content:flex-end;padding-top:16px;border-top:1px solid var(--border);margin-top:4px">
+      </div>
+
+      <div style="display:flex;gap:8px;justify-content:flex-end;padding-top:16px;border-top:1px solid var(--border);margin-top:20px">
         <button type="button" class="btn btn-light" id="osModalCancelarBtn">Cancelar</button>
         <button type="button" class="btn btn-primary" id="osSalvarBtn">
           <i class="fa-solid fa-floppy-disk"></i> ${os ? 'Salvar alterações' : 'Abrir OS'}
@@ -363,8 +368,15 @@ const OrdensServicoModule = {
     if (item) calc();
     qty.addEventListener('input', calc);
     vunit.addEventListener('input', calc);
-    row.querySelector('.os-item-rm').addEventListener('click', () => row.remove());
+    row.querySelector('.os-item-rm').addEventListener('click', () => {
+      row.remove();
+      const vazio = document.getElementById('osItensVazio');
+      const lista = document.getElementById('osItensLista');
+      if (vazio && lista && !lista.children.length) vazio.style.display = '';
+    });
 
+    const vazio = document.getElementById('osItensVazio');
+    if (vazio) vazio.style.display = 'none';
     container.appendChild(row);
   },
 
