@@ -1037,8 +1037,8 @@ export async function loadDashboard({ filters = {}, state = {} } = {}) {
     };
 
     const [rawDashboard, rawResumoFinanceiro, rawEmpresaStatus, rawAlertas, rawTabelaPrecos] = await Promise.all([
-      api.getDashboard(params),
-      api.getRelatorioFinanceiroResumo(params),
+      api.getDashboard(params).catch(() => ({})),
+      api.getRelatorioFinanceiroResumo(params).catch(() => ({})),
       api.getEmpresaStatus().catch(() => null),
       api.getAlertas().catch(() => ({ alertas: [] })),
       api.getTabelaPrecosDashboard().catch(() => null)
