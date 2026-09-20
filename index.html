@@ -64,9 +64,7 @@
       <section id="loginScreen" class="login-screen" aria-label="Login">
         <div class="login-screen__left">
           <div class="login-brand">
-            <div class="login-brand__badge">
-              <i class="fa-solid fa-layer-group"></i>
-            </div>
+            <div class="login-brand__logo" aria-hidden="true">LF</div>
             <div>
               <h1>LF ERP</h1>
               <p>Gestão empresarial profissional</p>
@@ -74,45 +72,51 @@
           </div>
 
           <div class="login-highlight">
-            <span class="login-highlight__tag">SaaS Multiempresa</span>
-            <h2>Controle completo da sua operação em um só lugar</h2>
+            <span class="login-highlight__tag">
+              <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+              SaaS Multiempresa
+            </span>
+            <h2>Controle completo<br>da sua operação<br>em um só lugar</h2>
             <p>
-              Plataforma profissional com dashboard, PDV, compras, vendas, financeiro, relatórios e
-              gestão por empresa com segurança.
+              Plataforma profissional com PDV, compras, vendas, financeiro e relatórios — tudo integrado com segurança empresarial.
             </p>
 
-            <div class="login-highlight__cards">
-              <article class="login-mini-card">
-                <i class="fa-solid fa-chart-line"></i>
+            <ul class="login-features">
+              <li class="login-feature">
+                <span class="login-feature__icon login-feature__icon--blue" aria-hidden="true">
+                  <i class="fa-solid fa-chart-line"></i>
+                </span>
                 <div>
                   <strong>Dashboard inteligente</strong>
-                  <small>Indicadores e visão gerencial em tempo real</small>
+                  <span>Indicadores e visão gerencial em tempo real</span>
                 </div>
-              </article>
-
-              <article class="login-mini-card">
-                <i class="fa-solid fa-cash-register"></i>
+              </li>
+              <li class="login-feature">
+                <span class="login-feature__icon login-feature__icon--cyan" aria-hidden="true">
+                  <i class="fa-solid fa-cash-register"></i>
+                </span>
                 <div>
-                  <strong>PDV ágil</strong>
-                  <small>Venda rápida com foco em operação profissional</small>
+                  <strong>PDV profissional</strong>
+                  <span>Venda rápida com foco em operação ágil</span>
                 </div>
-              </article>
-
-              <article class="login-mini-card">
-                <i class="fa-solid fa-building"></i>
+              </li>
+              <li class="login-feature">
+                <span class="login-feature__icon login-feature__icon--indigo" aria-hidden="true">
+                  <i class="fa-solid fa-building"></i>
+                </span>
                 <div>
                   <strong>Multiempresa</strong>
-                  <small>Dados de cada empresa isolados com segurança</small>
+                  <span>Dados de cada empresa isolados com segurança</span>
                 </div>
-              </article>
-            </div>
+              </li>
+            </ul>
           </div>
         </div>
 
         <div class="login-screen__right">
           <div class="login-card">
             <div class="login-card__header">
-              <h3>Acessar sistema</h3>
+              <h3>Bem-vindo de volta</h3>
               <p>Entre com seu usuário e senha</p>
             </div>
 
@@ -171,14 +175,18 @@
                 Entrar
               </button>
 
-              <div id="loginMessage" class="form-message" role="alert"></div>
+              <div id="loginMessage" class="form-message" role="alert" aria-live="polite"></div>
             </form>
 
             <div class="login-card__footer">
-              <small> Ambiente seguro • Controle por perfil • Operação multiempresa </small>
-              <div style="margin-top:12px;text-align:center">
-                <span style="font-size:.85rem;color:var(--text-muted)">Novo por aqui? </span>
-                <button type="button" id="abrirRegistroBtn" class="link-button" style="font-size:.85rem">
+              <div class="login-trust">
+                <span><i class="fa-solid fa-shield-halved"></i> Ambiente seguro</span>
+                <span><i class="fa-solid fa-users"></i> Controle por perfil</span>
+                <span><i class="fa-solid fa-building"></i> Multiempresa</span>
+              </div>
+              <div class="login-card__register">
+                <span>Novo por aqui?</span>
+                <button type="button" id="abrirRegistroBtn" class="link-button">
                   Criar conta grátis (14 dias)
                 </button>
               </div>
@@ -191,7 +199,7 @@
       <section id="registroScreen" class="login-screen hidden" aria-label="Criar conta">
         <div class="login-screen__left">
           <div class="login-brand">
-            <div class="login-brand__badge"><i class="fa-solid fa-layer-group"></i></div>
+            <div class="login-brand__logo" aria-hidden="true">LF</div>
             <div><h1>LF ERP</h1><p>Gestão empresarial profissional</p></div>
           </div>
           <div class="login-highlight">
