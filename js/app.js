@@ -832,6 +832,14 @@ async function handleLoginSubmit(event) {
     }
 
     applyAuthData(loginResult);
+
+    // SaaS Owner vai direto para o painel administrativo
+    if (AppState.user?.is_saas_owner) {
+      saveAuth(loginResult, AppState.rememberSession);
+      window.location.assign('./admin.html');
+      return;
+    }
+
     renderAuthenticatedUser();
     await carregarPermissoes();
     showMainScreen();
@@ -1282,6 +1290,12 @@ async function restoreAuthSession() {
         plano_nome: meData.plano_nome || null
       };
     }
+    // SaaS Owner restaurado → redireciona para painel administrativo
+    if (AppState.user?.is_saas_owner) {
+      window.location.assign('./admin.html');
+      return;
+    }
+
     renderAuthenticatedUser();
     renderTrialBanner();
     await carregarPermissoes();
