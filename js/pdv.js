@@ -61,6 +61,8 @@ const PDVModule = {
     this.el = {
       container: document.getElementById('pdvContainer'),
       clienteSelect: document.getElementById('pdvCliente'),
+      clienteBusca: document.getElementById('pdvClienteBusca'),
+      clienteDropdown: document.getElementById('pdvClienteDropdown'),
       clienteNomeInfo: document.getElementById('pdvClienteNomeInfo'),
       buscaProduto: document.getElementById('pdvBuscaProduto'),
       listaProdutos: document.getElementById('pdvListaProdutos'),
@@ -106,8 +108,18 @@ const PDVModule = {
       this.state.observacao = event.target.value || '';
     });
 
-    this.el.clienteSelect?.addEventListener('change', (event) => {
-      this.handleClienteChange(event.target.value);
+    // Autocomplete de cliente
+    this.el.clienteBusca?.addEventListener('input', () => {
+      const term = this.el.clienteBusca.value.trim();
+      if (!term) { this.limparCliente(); this.renderClienteDropdown([]); return; }
+      this.renderClienteDropdown(this.filterClientes(term));
+    });
+    this.el.clienteBusca?.addEventListener('blur', () => {
+      setTimeout(() => this.renderClienteDropdown([]), 200);
+    });
+    this.el.clienteBusca?.addEventListener('focus', () => {
+      const term = this.el.clienteBusca.value.trim();
+      if (term) this.renderClienteDropdown(this.filterClientes(term));
     });
 
     // â”€â”€ Split de pagamento — delegação de eventos â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -184,6 +196,14 @@ const PDVModule = {
       this.resetVenda();
     });
 
+    document.getElementById('pdvNovoClienteBtn')?.addEventListener('click', () => {
+      this.abrirNovoClienteModal();
+    });
+
+    document.getElementById('pdvCobrarOSBtn')?.addEventListener('click', () => {
+      this.abrirCobrarOS();
+    });
+
     this.el.atualizarBtn?.addEventListener('click', async (event) => {
       event.preventDefault();
       await this.load();
@@ -191,6 +211,7 @@ const PDVModule = {
 
     this.el.limparBtn?.addEventListener('click', (event) => {
       event.preventDefault();
+      if (this.state.carrinho.length > 0 && !confirm('Excluir venda e limpar o carrinho?')) return;
       this.resetVenda();
     });
 
@@ -238,22 +259,33 @@ const PDVModule = {
     });
 
     this.el.carrinhoBody?.addEventListener('input', (e) => {
-      if (!e.target.classList.contains('pdv-item-desc')) return;
       const idx = Number(e.target.dataset.index);
       if (isNaN(idx) || !this.state.carrinho[idx]) return;
-      this.state.carrinho[idx].desconto_pct = Math.min(100, Math.max(0, Number(e.target.value) || 0));
-      this.renderResumo();
+      if (e.target.classList.contains('pdv-item-desc')) {
+        this.state.carrinho[idx].desconto_pct = Math.min(100, Math.max(0, Number(e.target.value) || 0));
+        this.renderResumo();
+      } else if (e.target.classList.contains('pdv-item-preco')) {
+        this.state.carrinho[idx].preco_unitario = parseFloat(String(e.target.value).replace(',', '.')) || 0;
+        this.renderResumo();
+      }
     });
 
     this.el.carrinhoBody?.addEventListener('change', (e) => {
-      if (!e.target.classList.contains('pdv-item-desc')) return;
       const idx = Number(e.target.dataset.index);
       if (isNaN(idx) || !this.state.carrinho[idx]) return;
-      const val = Math.min(100, Math.max(0, Number(e.target.value) || 0));
-      e.target.value = val || '';
-      this.state.carrinho[idx].desconto_pct = val;
-      this.renderCarrinho();
-      this.renderResumo();
+      if (e.target.classList.contains('pdv-item-desc')) {
+        const val = Math.min(100, Math.max(0, Number(e.target.value) || 0));
+        e.target.value = val || '';
+        this.state.carrinho[idx].desconto_pct = val;
+        this.renderCarrinho();
+        this.renderResumo();
+      } else if (e.target.classList.contains('pdv-item-preco')) {
+        const preco = parseFloat(String(e.target.value).replace(',', '.')) || 0;
+        this.state.carrinho[idx].preco_unitario = preco;
+        e.target.value = preco.toFixed(2).replace('.', ',');
+        this.renderCarrinho();
+        this.renderResumo();
+      }
     });
 
     this.bindKeyboardShortcuts();
@@ -501,6 +533,9 @@ const PDVModule = {
             <div class="module-feedback pdv-v2__feedback" id="pdvFormFeedback"></div>
           </div>
           <div class="pdv-v2__header-right">
+            <button type="button" class="btn btn-light btn-sm" id="pdvCobrarOSBtn">
+              <i class="fa-solid fa-screwdriver-wrench"></i> Cobrar OS
+            </button>
             <button type="button" class="btn btn-light btn-sm" id="pdvSalvarOrcamentoBtn">
               <i class="fa-solid fa-file-lines"></i> Orçamento
             </button>
@@ -554,10 +589,18 @@ const PDVModule = {
             <!-- Painel: Cliente -->
             <div class="pdv-v2__panel" data-pdv-panel="cliente">
               <div class="form-field" style="margin-bottom:14px">
-                <label for="pdvCliente">Cliente</label>
-                <select id="pdvCliente">
-                  <option value="">Consumidor sem cadastro</option>
-                </select>
+                <label>Cliente</label>
+                <div style="display:flex;gap:6px;align-items:flex-start">
+                  <div style="position:relative;flex:1">
+                    <input type="text" id="pdvClienteBusca" class="pdv-v2__search-input" autocomplete="off"
+                      placeholder="Buscar pelo nome — ou deixar vazio para consumidor sem cadastro">
+                    <input type="hidden" id="pdvCliente" value="">
+                    <div id="pdvClienteDropdown" style="display:none;position:absolute;left:0;right:0;top:calc(100% + 2px);z-index:200;background:var(--surface);border:1px solid var(--border);border-radius:10px;max-height:220px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.12)"></div>
+                  </div>
+                  <button type="button" class="btn btn-light btn-sm" id="pdvNovoClienteBtn" style="white-space:nowrap;height:40px" title="Cadastrar novo cliente">
+                    <i class="fa-solid fa-user-plus"></i> Novo
+                  </button>
+                </div>
                 <small class="pdv-helper" id="pdvClienteNomeInfo">Nenhum cliente selecionado.</small>
               </div>
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
@@ -639,6 +682,7 @@ const PDVModule = {
             <i class="fa-solid fa-check"></i> Finalizar venda
           </button>
           <div class="pdv-v2__total">
+            <span id="pdvFooterItens" style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:1px;min-height:14px"></span>
             <span>Total</span>
             <strong id="pdvTotal">R$ 0,00</strong>
           </div>
@@ -648,6 +692,64 @@ const PDVModule = {
     `;
 
     this.injectStyles();
+
+    // Modal: novo cliente rápido
+    if (!document.getElementById('pdvNovoClienteModal')) {
+      const m = document.createElement('div');
+      m.className = 'modal-overlay hidden';
+      m.id = 'pdvNovoClienteModal';
+      m.innerHTML = `
+        <div class="modal-card" style="max-width:440px">
+          <div class="modal-card__header">
+            <div><h3>Novo Cliente</h3><p style="margin:0;font-size:13px;color:var(--text-muted)">Cadastro rápido durante a venda</p></div>
+            <button type="button" class="icon-button" id="pdvNovoClienteFechar"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <div style="padding:20px 24px 24px;display:flex;flex-direction:column;gap:12px">
+            <div class="form-field">
+              <label class="form-label">Nome *</label>
+              <input type="text" id="pdvNCNome" class="input" placeholder="Nome completo">
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div class="form-field">
+                <label class="form-label">Telefone</label>
+                <input type="text" id="pdvNCTelefone" class="input" placeholder="(00) 00000-0000">
+              </div>
+              <div class="form-field">
+                <label class="form-label">CPF</label>
+                <input type="text" id="pdvNCCpf" class="input" placeholder="000.000.000-00">
+              </div>
+            </div>
+            <div id="pdvNCFeedback"></div>
+            <div style="display:flex;gap:8px;justify-content:flex-end;padding-top:4px">
+              <button type="button" class="btn btn-light" id="pdvNCCancelarBtn">Cancelar</button>
+              <button type="button" class="btn btn-primary" id="pdvNCSalvarBtn"><i class="fa-solid fa-floppy-disk"></i> Salvar e selecionar</button>
+            </div>
+          </div>
+        </div>`;
+      document.body.appendChild(m);
+    }
+
+    // Modal: cobrar OS
+    if (!document.getElementById('pdvCobrarOSModal')) {
+      const m = document.createElement('div');
+      m.className = 'modal-overlay hidden';
+      m.id = 'pdvCobrarOSModal';
+      m.innerHTML = `
+        <div class="modal-card" style="max-width:560px">
+          <div class="modal-card__header">
+            <div><h3>Cobrar Ordem de Serviço</h3><p style="margin:0;font-size:13px;color:var(--text-muted)">Busque a OS pelo número ou nome do cliente</p></div>
+            <button type="button" class="icon-button" id="pdvCobrarOSFechar"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <div style="padding:20px 24px 24px">
+            <div style="display:flex;gap:8px;margin-bottom:14px">
+              <input type="text" id="pdvCobrarOSBusca" class="input" style="flex:1" placeholder="Nº OS (ex: OS-0001) ou nome do cliente...">
+              <button type="button" class="btn btn-primary btn-sm" id="pdvCobrarOSBuscarBtn"><i class="fa-solid fa-magnifying-glass"></i> Buscar</button>
+            </div>
+            <div id="pdvCobrarOSResultados" style="max-height:320px;overflow-y:auto"></div>
+          </div>
+        </div>`;
+      document.body.appendChild(m);
+    }
 
     // Modal de seleção de grade (injetado uma vez)
     if (!document.getElementById('pdvGradeModal')) {
@@ -692,20 +794,7 @@ const PDVModule = {
   },
 
   renderClientes() {
-    this.cache();
-    if (!this.el.clienteSelect) return;
-
-    const currentValue = this.state.clienteId ? String(this.state.clienteId) : '';
-    const options = [
-      `<option value="">Consumidor sem cadastro</option>`,
-      ...this.state.clientes.map((cliente) => {
-        return `<option value="${cliente.id}">${this.escapeHtml(cliente.nome || 'Cliente')}</option>`;
-      })
-    ];
-
-    this.el.clienteSelect.innerHTML = options.join('');
-    this.el.clienteSelect.value = currentValue;
-
+    // Clientes armazenados em state.clientes; autocomplete via filterClientes()
     this.updateClienteInfo();
   },
 
@@ -718,6 +807,7 @@ const PDVModule = {
         <div class="pdv-v2__prod-hint">
           <i class="fa-solid fa-magnifying-glass"></i>
           <span>${this.state._buscaAtiva ? 'Nenhum produto encontrado.' : 'Pesquise para ver produtos.'}</span>
+          ${!this.state._buscaAtiva ? '<small style="display:block;margin-top:6px;color:var(--text-muted);font-size:11px">Dica: pressione <kbd style="border:1px solid var(--border);border-radius:4px;padding:0 4px;font-size:10px">F2</kbd> para focar a busca</small>' : ''}
         </div>
       `;
       return;
@@ -800,10 +890,15 @@ const PDVModule = {
             </td>
 
             <td data-label="Preço">
-              ${descPct > 0
-                ? `<span style="text-decoration:line-through;color:var(--text-muted);font-size:.82em;display:block">${this.toCurrency(item.preco_unitario)}</span><span style="color:var(--success,#16a34a);font-weight:700">${this.toCurrency(precoComDesconto)}</span>`
-                : this.toCurrency(item.preco_unitario)
-              }
+              <input
+                type="text"
+                class="pdv-item-preco"
+                data-index="${index}"
+                value="${Number(item.preco_unitario || 0).toFixed(2).replace('.', ',')}"
+                inputmode="decimal"
+                style="width:80px;text-align:right;padding:3px 6px;border:1px solid var(--border);border-radius:6px;font-size:.88rem;background:var(--surface);color:var(--text)"
+              >
+              ${descPct > 0 ? `<small style="color:var(--success,#16a34a);display:block;font-size:.78em;margin-top:2px">${this.toCurrency(precoComDesconto)} c/desc</small>` : ''}
             </td>
 
             <td data-label="Desc%">
@@ -855,6 +950,9 @@ const PDVModule = {
     if (this.el.subtotal) this.el.subtotal.textContent = this.toCurrency(subtotal);
     if (this.el.total) this.el.total.textContent = this.toCurrency(total);
     if (this.el.totalItens) this.el.totalItens.textContent = String(totalItens);
+
+    const footerItens = document.getElementById('pdvFooterItens');
+    if (footerItens) footerItens.textContent = totalItens > 0 ? `${totalItens} item${totalItens > 1 ? 's' : ''}` : '';
 
     // Sticky mobile footer
     const stickyTotal = document.getElementById('pdvMobileStickyTotal');
@@ -1443,11 +1541,13 @@ const PDVModule = {
         const descPct = Number(item.desconto_pct || 0);
         const precoFinal = Number((Number(item.preco_unitario || 0) * (1 - descPct / 100)).toFixed(2));
         return {
-          produto_id: Number(item.produto_id),
+          produto_id: item.produto_id ? Number(item.produto_id) : null,
           grade_id: item.grade_id ? Number(item.grade_id) : null,
           quantidade: Number(item.quantidade),
           preco_unitario: precoFinal,
-          custo_unitario: Number(item.custo_unitario)
+          custo_unitario: Number(item.custo_unitario || 0),
+          descricao: item.produto_id ? undefined : item.produto_nome,
+          os_id: item._os_id || undefined
         };
       }),
       subtotal,
@@ -1786,6 +1886,230 @@ const PDVModule = {
       this.state._salOrc = false;
       if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-file-lines"></i> Orçamento'; }
     }
+  },
+
+  // ── Autocomplete de clientes ─────────────────────────────────────────────
+
+  filterClientes(term) {
+    const t = String(term || '').toLowerCase().trim();
+    if (!t) return this.state.clientes.slice(0, 8);
+    return this.state.clientes
+      .filter(c => (c.nome || '').toLowerCase().includes(t) || (c.telefone || '').includes(t))
+      .slice(0, 10);
+  },
+
+  renderClienteDropdown(items) {
+    this.cache();
+    const dd = this.el.clienteDropdown || document.getElementById('pdvClienteDropdown');
+    if (!dd) return;
+    if (!items.length) { dd.style.display = 'none'; return; }
+
+    dd.innerHTML = [
+      `<div class="pdv-cliente-item" data-id="" data-nome="" style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px;color:var(--text-muted)"><i class="fa-solid fa-user-slash" style="margin-right:6px"></i>Consumidor sem cadastro</div>`,
+      ...items.map(c => `
+        <div class="pdv-cliente-item" data-id="${c.id}" data-nome="${this.escapeHtml(c.nome)}"
+          style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px">
+          <strong>${this.escapeHtml(c.nome)}</strong>
+          ${c.telefone ? `<small style="display:block;color:var(--text-muted);font-size:11px">${c.telefone}</small>` : ''}
+        </div>`)
+    ].join('');
+
+    dd.style.display = 'block';
+    dd.querySelectorAll('.pdv-cliente-item').forEach(el => {
+      el.addEventListener('mouseenter', () => { el.style.background = 'var(--bg-subtle,#f8fafc)'; });
+      el.addEventListener('mouseleave', () => { el.style.background = ''; });
+      el.addEventListener('mousedown', e => {
+        e.preventDefault();
+        this.selecionarCliente(el.dataset.id, el.dataset.nome);
+      });
+    });
+  },
+
+  selecionarCliente(id, nome) {
+    this.cache();
+    const dd = document.getElementById('pdvClienteDropdown');
+    if (dd) dd.style.display = 'none';
+    if (this.el.clienteBusca) this.el.clienteBusca.value = nome || '';
+    if (this.el.clienteSelect) this.el.clienteSelect.value = id || '';
+    this.handleClienteChange(id || '');
+  },
+
+  limparCliente() {
+    this.cache();
+    if (this.el.clienteSelect) this.el.clienteSelect.value = '';
+    this.handleClienteChange('');
+  },
+
+  // ── Novo cliente rápido ──────────────────────────────────────────────────
+
+  abrirNovoClienteModal() {
+    const m = document.getElementById('pdvNovoClienteModal');
+    if (!m) return;
+    const nome = document.getElementById('pdvNCNome');
+    const tel  = document.getElementById('pdvNCTelefone');
+    const cpf  = document.getElementById('pdvNCCpf');
+    const fb   = document.getElementById('pdvNCFeedback');
+    if (nome) nome.value = '';
+    if (tel)  tel.value  = '';
+    if (cpf)  cpf.value  = '';
+    if (fb)   fb.innerHTML = '';
+    m.classList.remove('hidden');
+
+    if (!this._ncBound) {
+      this._ncBound = true;
+      document.getElementById('pdvNovoClienteFechar')?.addEventListener('click', () => {
+        document.getElementById('pdvNovoClienteModal')?.classList.add('hidden');
+      });
+      document.getElementById('pdvNCCancelarBtn')?.addEventListener('click', () => {
+        document.getElementById('pdvNovoClienteModal')?.classList.add('hidden');
+      });
+      document.getElementById('pdvNCSalvarBtn')?.addEventListener('click', () => {
+        this.salvarNovoCliente();
+      });
+      document.getElementById('pdvNovoClienteModal')?.addEventListener('click', e => {
+        if (e.target === document.getElementById('pdvNovoClienteModal'))
+          document.getElementById('pdvNovoClienteModal').classList.add('hidden');
+      });
+    }
+
+    setTimeout(() => document.getElementById('pdvNCNome')?.focus(), 50);
+  },
+
+  async salvarNovoCliente() {
+    const nome = document.getElementById('pdvNCNome')?.value.trim();
+    const tel  = document.getElementById('pdvNCTelefone')?.value.trim();
+    const cpf  = document.getElementById('pdvNCCpf')?.value.trim();
+    const fb   = document.getElementById('pdvNCFeedback');
+    const btn  = document.getElementById('pdvNCSalvarBtn');
+
+    if (!nome) {
+      if (fb) fb.innerHTML = '<p style="color:var(--danger,#ef4444);font-size:12px;margin:0">Informe o nome do cliente.</p>';
+      return;
+    }
+
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Salvando...'; }
+    if (fb)  fb.innerHTML = '';
+
+    try {
+      const result = await api.createCliente({ nome, telefone: tel || '', cpf: cpf || '' });
+      const cliente = result?.cliente || result;
+      this.state.clientes.unshift(cliente);
+      document.getElementById('pdvNovoClienteModal')?.classList.add('hidden');
+      this.cache();
+      if (this.el.clienteBusca) this.el.clienteBusca.value = cliente.nome;
+      this.selecionarCliente(String(cliente.id), cliente.nome);
+      showToast(`Cliente "${cliente.nome}" cadastrado e selecionado.`, 'success');
+    } catch (err) {
+      if (fb) fb.innerHTML = `<p style="color:var(--danger,#ef4444);font-size:12px;margin:0">${err.message || 'Erro ao cadastrar cliente.'}</p>`;
+    } finally {
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Salvar e selecionar'; }
+    }
+  },
+
+  // ── Cobrar OS no PDV ─────────────────────────────────────────────────────
+
+  abrirCobrarOS() {
+    const m = document.getElementById('pdvCobrarOSModal');
+    if (!m) return;
+    const busca = document.getElementById('pdvCobrarOSBusca');
+    const res   = document.getElementById('pdvCobrarOSResultados');
+    if (busca) busca.value = '';
+    if (res)   res.innerHTML = '<p style="color:var(--text-muted);font-size:13px;text-align:center;padding:24px 0">Digite para buscar ordens de serviço prontas para retirada.</p>';
+    m.classList.remove('hidden');
+
+    if (!this._osBound) {
+      this._osBound = true;
+      document.getElementById('pdvCobrarOSFechar')?.addEventListener('click', () => {
+        document.getElementById('pdvCobrarOSModal')?.classList.add('hidden');
+      });
+      document.getElementById('pdvCobrarOSModal')?.addEventListener('click', e => {
+        if (e.target === document.getElementById('pdvCobrarOSModal'))
+          document.getElementById('pdvCobrarOSModal').classList.add('hidden');
+      });
+      document.getElementById('pdvCobrarOSBuscarBtn')?.addEventListener('click', () => {
+        const t = document.getElementById('pdvCobrarOSBusca')?.value.trim();
+        if (t) this.buscarOSCobranca(t);
+      });
+      document.getElementById('pdvCobrarOSBusca')?.addEventListener('keydown', e => {
+        if (e.key === 'Enter') {
+          const t = e.target.value.trim();
+          if (t) this.buscarOSCobranca(t);
+        }
+      });
+    }
+
+    setTimeout(() => document.getElementById('pdvCobrarOSBusca')?.focus(), 50);
+  },
+
+  async buscarOSCobranca(termo) {
+    const res = document.getElementById('pdvCobrarOSResultados');
+    if (!res) return;
+    res.innerHTML = '<p style="color:var(--text-muted);font-size:13px;text-align:center;padding:16px"><i class="fa-solid fa-spinner fa-spin"></i> Buscando...</p>';
+    try {
+      const result = await api.getOrdensServico({ busca: termo, limit: 20 });
+      const ordens = result?.ordens || [];
+      const STATUS_LABEL_OS = { aberta:'Aberta', diagnostico:'Em Diagnóstico', aguardando_peca:'Aguardando Peça', em_execucao:'Em Execução', pronto:'Pronto p/ Retirada', entregue:'Entregue', cancelada:'Cancelada' };
+      const fmt = v => Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+
+      if (!ordens.length) {
+        res.innerHTML = '<p style="color:var(--text-muted);font-size:13px;text-align:center;padding:16px">Nenhuma OS encontrada.</p>';
+        return;
+      }
+
+      res.innerHTML = ordens.map(os => {
+        const equip = [os.equipamento_tipo, os.equipamento_marca, os.equipamento_modelo].filter(Boolean).join(' · ') || '—';
+        const pode = os.status !== 'entregue' && os.status !== 'cancelada';
+        return `
+          <div style="padding:10px 12px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px">
+            <div style="min-width:0">
+              <strong style="font-size:13px">${os.numero}</strong>
+              <span style="font-size:12px;color:var(--text-muted);margin-left:8px">${STATUS_LABEL_OS[os.status]||os.status}</span>
+              <p style="margin:2px 0 0;font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${os.cliente_nome||'—'} · ${equip}</p>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+              <strong style="font-size:13px;font-variant-numeric:tabular-nums">${fmt(os.valor_total)}</strong>
+              ${pode ? `<button class="btn btn-primary btn-sm pdv-os-cobrar-btn" data-os-id="${os.id}" data-os-num="${os.numero}" data-os-nome="${this.escapeHtml(os.cliente_nome||'')}" data-os-equip="${this.escapeHtml(equip)}" data-os-valor="${os.valor_total||0}" style="font-size:12px;padding:4px 10px">Cobrar</button>` : '<span style="font-size:11px;color:var(--text-muted)">Encerrada</span>'}
+            </div>
+          </div>`;
+      }).join('');
+
+      res.querySelectorAll('.pdv-os-cobrar-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          this.adicionarOSAoCarrinho({
+            id:     btn.dataset.osId,
+            numero: btn.dataset.osNum,
+            cliente_nome: btn.dataset.osNome,
+            equipamento: btn.dataset.osEquip,
+            valor_total: btn.dataset.osValor
+          });
+          document.getElementById('pdvCobrarOSModal')?.classList.add('hidden');
+        });
+      });
+    } catch (err) {
+      res.innerHTML = `<p style="color:var(--danger,#ef4444);font-size:13px;text-align:center;padding:16px">${err.message||'Erro ao buscar OS.'}</p>`;
+    }
+  },
+
+  adicionarOSAoCarrinho(os) {
+    const nome = `OS ${os.numero}${os.equipamento ? ' — ' + os.equipamento : ''}`;
+    this.state.carrinho.push({
+      produto_id: null,
+      produto_nome: nome,
+      grade_id: null,
+      grade_label: os.cliente_nome || '',
+      quantidade: 1,
+      preco_unitario: Number(os.valor_total) || 0,
+      preco_padrao: Number(os.valor_total) || 0,
+      custo_unitario: 0,
+      estoque_disponivel: 999,
+      desconto_pct: 0,
+      _is_os: true,
+      _os_id: Number(os.id) || null
+    });
+    this.renderCarrinho();
+    this.renderResumo();
+    this.switchTab('pagamento');
+    showToast(`${nome} adicionado ao carrinho.`, 'success');
   },
 
   setLoading(value) {
