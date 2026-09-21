@@ -2,8 +2,11 @@ import api from './api.js';
 import { getAuth } from './auth.js';
 import { showToast, confirmarAcao } from './feedback.js';
 import { escapeHtml, maskPhone, debounce } from './utils.js';
+import { exportCSV, numCSV } from './exportUtils.js';
 
 const FornecedoresModule = {
+  ITENS_POR_PAGINA: 20,
+
   state: {
     items: [],
     filteredItems: [],
@@ -11,7 +14,11 @@ const FornecedoresModule = {
     editingId: null,
     initialized: false,
     eventsBound: false,
-    loading: false
+    loading: false,
+    pagina: 1,
+    ordem: 'nome',
+    ordemDir: 'asc',
+    filtroTipo: ''
   },
 
   init() {
@@ -34,19 +41,23 @@ const FornecedoresModule = {
 
   cache() {
     this.el = {
-      container: document.getElementById('fornecedoresContainer'),
-      table: document.getElementById('fornecedoresTable'),
-      search: document.getElementById('fornecedoresSearch'),
-      modal: document.getElementById('fornecedorModal'),
-      form: document.getElementById('fornecedorForm'),
-      nome: document.getElementById('fornecedorNome'),
-      telefone: document.getElementById('fornecedorTelefone'),
-      cnpj: document.getElementById('fornecedorCnpj'),
-      email: document.getElementById('fornecedorEmail'),
-      endereco: document.getElementById('fornecedorEndereco'),
-      observacao: document.getElementById('fornecedorObservacao'),
-      feedback: document.getElementById('fornecedoresFeedback'),
-      modalTitle: document.getElementById('fornecedorModalTitle')
+      container:     document.getElementById('fornecedoresContainer'),
+      table:         document.getElementById('fornecedoresTable'),
+      search:        document.getElementById('fornecedoresSearch'),
+      modal:         document.getElementById('fornecedorModal'),
+      form:          document.getElementById('fornecedorForm'),
+      nome:          document.getElementById('fornecedorNome'),
+      telefone:      document.getElementById('fornecedorTelefone'),
+      cnpj:          document.getElementById('fornecedorCnpj'),
+      email:         document.getElementById('fornecedorEmail'),
+      endereco:      document.getElementById('fornecedorEndereco'),
+      observacao:    document.getElementById('fornecedorObservacao'),
+      contato:       document.getElementById('fornecedorContato'),
+      site:          document.getElementById('fornecedorSite'),
+      prazo:         document.getElementById('fornecedorPrazoPagamento'),
+      feedback:      document.getElementById('fornecedoresFeedback'),
+      modalTitle:    document.getElementById('fornecedorModalTitle'),
+      emailHint:     document.getElementById('fornecedorEmailHint')
     };
   },
 
@@ -58,37 +69,76 @@ const FornecedoresModule = {
 
     document.addEventListener('input', (e) => {
       if (e.target.id === 'fornecedoresSearch') {
+        this.state.pagina = 1;
         debouncedSearch(e.target.value);
       }
-
       if (e.target.id === 'fornecedorTelefone') {
         e.target.value = maskPhone(e.target.value);
       }
-
       if (e.target.id === 'fornecedorCnpj') {
-        e.target.value = maskCNPJ(e.target.value);
+        e.target.value = maskDocumento(e.target.value);
+      }
+      // Validação visual de e-mail
+      if (e.target.id === 'fornecedorEmail') {
+        const hint = document.getElementById('fornecedorEmailHint');
+        if (!hint) return;
+        const v = e.target.value.trim();
+        if (v && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) {
+          hint.textContent = 'E-mail inválido';
+          hint.style.color = 'var(--danger, #ef4444)';
+        } else {
+          hint.textContent = '';
+        }
+      }
+    });
+
+    document.addEventListener('change', (e) => {
+      if (e.target.id === 'fornecedoresFiltroTipo') {
+        this.state.filtroTipo = e.target.value;
+        this.state.pagina = 1;
+        this.search(document.getElementById('fornecedoresSearch')?.value || '');
       }
     });
 
     document.addEventListener('click', async (e) => {
+      // Fechar modal ao clicar no overlay
+      if (e.target?.id === 'fornecedorModal') { this.closeModal(); return; }
+
+      // Ordenação por coluna
+      const th = e.target.closest('th.sortable');
+      if (th) {
+        const col = th.dataset.sort;
+        if (this.state.ordem === col) {
+          this.state.ordemDir = this.state.ordemDir === 'asc' ? 'desc' : 'asc';
+        } else {
+          this.state.ordem = col;
+          this.state.ordemDir = 'asc';
+        }
+        this.state.pagina = 1;
+        this.applyFilterSort();
+        return;
+      }
+
+      // Paginação
+      const btnPag = e.target.closest('[data-action="forn-pagina"]');
+      if (btnPag) {
+        const total = Math.ceil(this.state.filteredItems.length / this.ITENS_POR_PAGINA);
+        if (btnPag.dataset.page === 'prev' && this.state.pagina > 1) this.state.pagina--;
+        else if (btnPag.dataset.page === 'next' && this.state.pagina < total) this.state.pagina++;
+        this.renderTable();
+        this.renderPagination();
+        return;
+      }
+
       const btn = e.target.closest('button');
       if (!btn) return;
 
-      if (btn.id === 'novoFornecedorBtn') {
-        this.openModal(false);
-      }
-
-      if (btn.id === 'cancelFornecedor' || btn.id === 'cancelFornecedorFooter') {
-        this.closeModal();
-      }
-
-      if (btn.dataset.action === 'edit-fornecedor') {
-        this.edit(btn.dataset.id);
-      }
-
-      if (btn.dataset.action === 'delete-fornecedor') {
-        await this.delete(btn.dataset.id);
-      }
+      if (btn.id === 'novoFornecedorBtn')          { this.openModal(false); return; }
+      if (btn.id === 'fornecedoresExportBtn')       { this.exportarCSV(); return; }
+      if (btn.id === 'cancelFornecedor' || btn.id === 'cancelFornecedorFooter') { this.closeModal(); return; }
+      if (btn.dataset.action === 'edit-fornecedor') { this.edit(btn.dataset.id); return; }
+      if (btn.dataset.action === 'delete-fornecedor') { await this.delete(btn.dataset.id); return; }
+      if (btn.dataset.action === 'historico-fornecedor') { this.abrirHistoricoCompras(Number(btn.dataset.id)); return; }
     });
 
     document.addEventListener('submit', async (e) => {
@@ -109,10 +159,15 @@ const FornecedoresModule = {
     try {
       const data = await api.getFornecedores();
       this.state.items = Array.isArray(data) ? data : [];
-      this.state.filteredItems = [...this.state.items];
+      this.state.filteredItems = this._sortItems([...this.state.items]);
 
       this.render();
       this.cache();
+      // Restaura filtros visuais
+      const selTipo = document.getElementById('fornecedoresFiltroTipo');
+      if (selTipo) selTipo.value = this.state.filtroTipo;
+      const searchEl = document.getElementById('fornecedoresSearch');
+      if (searchEl && searchEl.value) this.search(searchEl.value);
       this.renderTable();
       this.setFeedback('', '');
     } catch (error) {
@@ -142,20 +197,28 @@ const FornecedoresModule = {
         <div class="module-toolbar">
           <div class="module-toolbar__search">
             <i class="fa-solid fa-search"></i>
-            <input
-              id="fornecedoresSearch"
+            <input id="fornecedoresSearch"
               placeholder="Buscar por nome, telefone ou e-mail..."
-              value="${escapeHtml(this.getCurrentSearchValue())}"
-            />
+              value="${escapeHtml(this.getCurrentSearchValue())}" />
           </div>
+
+          <select id="fornecedoresFiltroTipo" class="input" style="height:38px;min-width:130px;width:auto;font-size:13px">
+            <option value="">PF + PJ</option>
+            <option value="pj">CNPJ (PJ)</option>
+            <option value="pf">CPF (PF)</option>
+            <option value="sem">Sem documento</option>
+          </select>
 
           <div class="module-toolbar__stats">
             <div class="mini-stat">
               <span>Total</span>
-              <strong>${this.state.filteredItems.length}</strong>
+              <strong id="fornecedoresCont">${this.state.filteredItems.length}</strong>
             </div>
           </div>
           <div class="module-card__actions">
+            <button class="btn btn-light" id="fornecedoresExportBtn">
+              <i class="fa-solid fa-file-csv"></i> CSV
+            </button>
             <button class="btn btn-primary" id="novoFornecedorBtn">
               <i class="fa-solid fa-plus"></i> Novo Fornecedor
             </button>
@@ -166,10 +229,16 @@ const FornecedoresModule = {
           <table class="data-table">
             <thead>
               <tr>
-                <th>Nome</th>
+                <th class="sortable" data-sort="nome" style="cursor:pointer;user-select:none">
+                  Nome <i class="fa-solid fa-sort" style="font-size:10px;opacity:.5"></i>
+                </th>
                 <th>Telefone</th>
-                <th>CNPJ</th>
-                <th>E-mail</th>
+                <th class="sortable" data-sort="cnpj" style="cursor:pointer;user-select:none">
+                  CNPJ/CPF <i class="fa-solid fa-sort" style="font-size:10px;opacity:.5"></i>
+                </th>
+                <th class="sortable" data-sort="email" style="cursor:pointer;user-select:none">
+                  E-mail <i class="fa-solid fa-sort" style="font-size:10px;opacity:.5"></i>
+                </th>
                 <th>Endereço</th>
                 <th class="text-right">Ações</th>
               </tr>
@@ -177,16 +246,17 @@ const FornecedoresModule = {
             <tbody id="fornecedoresTable"></tbody>
           </table>
         </div>
+        <div id="fornecedoresPagination"></div>
       </section>
 
+      <!-- MODAL FORNECEDOR -->
       <div class="modal-overlay hidden" id="fornecedorModal">
-        <div class="modal-card">
+        <div class="modal-card modal-card--large">
           <div class="modal-card__header">
             <div>
-              <h3 id="fornecedorModalTitle">${this.state.editingId ? 'Editar fornecedor' : 'Novo fornecedor'}</h3>
+              <h3 id="fornecedorModalTitle">Novo fornecedor</h3>
               <p>Cadastre os dados do fornecedor no sistema</p>
             </div>
-
             <button type="button" class="icon-button" id="cancelFornecedor" aria-label="Fechar">
               <i class="fa-solid fa-xmark"></i>
             </button>
@@ -194,13 +264,13 @@ const FornecedoresModule = {
 
           <form id="fornecedorForm" class="form-grid">
             <div class="form-field form-field--span-2">
-              <label for="fornecedorNome">Nome</label>
+              <label for="fornecedorNome">Nome *</label>
               <input id="fornecedorNome" required />
             </div>
 
             <div class="form-field">
-              <label for="fornecedorCnpj">CNPJ</label>
-              <input id="fornecedorCnpj" placeholder="00.000.000/0000-00" />
+              <label for="fornecedorCnpj">CNPJ / CPF</label>
+              <input id="fornecedorCnpj" placeholder="00.000.000/0000-00 ou 000.000.000-00" />
             </div>
 
             <div class="form-field">
@@ -209,8 +279,26 @@ const FornecedoresModule = {
             </div>
 
             <div class="form-field">
-              <label for="fornecedorEmail">E-mail</label>
-              <input id="fornecedorEmail" type="email" />
+              <label for="fornecedorEmail">
+                E-mail
+                <small id="fornecedorEmailHint" style="font-weight:400;font-size:11px;margin-left:6px"></small>
+              </label>
+              <input id="fornecedorEmail" type="text" autocomplete="email" />
+            </div>
+
+            <div class="form-field">
+              <label for="fornecedorContato">Pessoa de contato</label>
+              <input id="fornecedorContato" placeholder="Nome do responsável" />
+            </div>
+
+            <div class="form-field">
+              <label for="fornecedorSite">Site</label>
+              <input id="fornecedorSite" placeholder="https://..." />
+            </div>
+
+            <div class="form-field">
+              <label for="fornecedorPrazoPagamento">Prazo de pagamento (dias)</label>
+              <input id="fornecedorPrazoPagamento" type="number" min="0" step="1" placeholder="Ex: 30" />
             </div>
 
             <div class="form-field form-field--span-2">
@@ -223,13 +311,9 @@ const FornecedoresModule = {
               <textarea id="fornecedorObservacao" rows="3"></textarea>
             </div>
 
-            <div class="modal-card__footer">
-              <button type="button" class="btn btn-light" id="cancelFornecedorFooter">
-                Cancelar
-              </button>
-              <button type="submit" class="btn btn-primary">
-                Salvar
-              </button>
+            <div class="modal-card__footer form-field--span-2">
+              <button type="button" class="btn btn-light" id="cancelFornecedorFooter">Cancelar</button>
+              <button type="submit" class="btn btn-primary">Salvar</button>
             </div>
           </form>
         </div>
@@ -240,84 +324,159 @@ const FornecedoresModule = {
   renderTable() {
     if (!this.el.table) return;
 
+    // Atualiza contador
+    const cont = document.getElementById('fornecedoresCont');
+    if (cont) cont.textContent = this.state.filteredItems.length;
+
+    // Atualiza ícones de sort nos cabeçalhos
+    document.querySelectorAll('th.sortable').forEach((th) => {
+      const col = th.dataset.sort;
+      const icon = th.querySelector('i');
+      if (!icon) return;
+      if (col === this.state.ordem) {
+        icon.className = `fa-solid fa-sort-${this.state.ordemDir === 'asc' ? 'up' : 'down'}`;
+        icon.style.opacity = '1';
+        icon.style.color = 'var(--primary)';
+      } else {
+        icon.className = 'fa-solid fa-sort';
+        icon.style.opacity = '.4';
+        icon.style.color = '';
+      }
+    });
+
     if (!this.state.filteredItems.length) {
       this.el.table.innerHTML = `
-        <tr>
-          <td colspan="6">
-            <div class="empty-state" style="padding:36px 24px">
-              <i class="fa-solid fa-truck"></i>
-              <strong>Nenhum fornecedor encontrado</strong>
-              <p>Tente ajustar a busca ou cadastre um novo fornecedor.</p>
-            </div>
-          </td>
-        </tr>
-      `;
+        <tr><td colspan="6">
+          <div class="empty-state" style="padding:36px 24px">
+            <i class="fa-solid fa-truck"></i>
+            <strong>Nenhum fornecedor encontrado</strong>
+            <p>Tente ajustar a busca ou cadastre um novo fornecedor.</p>
+          </div>
+        </td></tr>`;
+      const pag = document.getElementById('fornecedoresPagination');
+      if (pag) pag.innerHTML = '';
       return;
     }
 
-    this.el.table.innerHTML = this.state.filteredItems
-      .map((fornecedor) => {
-        const totalCompras = Number(fornecedor.total_compras || 0);
-        const valorCompras = Number(fornecedor.valor_total_compras || 0);
-        const comprasHtml = totalCompras > 0
-          ? `<span style="display:inline-block;margin-top:3px;padding:1px 8px;background:rgba(37,99,235,0.08);color:var(--primary,#2563eb);border-radius:99px;font-size:11px;font-weight:700">${totalCompras} compra(s) · ${valorCompras.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</span>`
-          : '';
-        return `
-      <tr>
-        <td>
-          <div class="table-primary">
-            <strong>${escapeHtml(fornecedor.nome || '-')}</strong>
-            <small style="display:block; color: var(--text-muted); margin-top:4px;">
-              ID: ${fornecedor.id}
-            </small>
-            ${comprasHtml}
-          </div>
-        </td>
+    const start = (this.state.pagina - 1) * this.ITENS_POR_PAGINA;
+    const page  = this.state.filteredItems.slice(start, start + this.ITENS_POR_PAGINA);
 
-        <td>${escapeHtml(fornecedor.telefone || '-')}</td>
-        <td>${escapeHtml(fornecedor.cnpj || '-')}</td>
-        <td>${escapeHtml(fornecedor.email || '-')}</td>
-        <td>${escapeHtml(fornecedor.endereco || '-')}</td>
+    this.el.table.innerHTML = page.map((f) => {
+      const totalCompras = Number(f.total_compras || 0);
+      const valorCompras = Number(f.valor_total_compras || 0);
+      const comprasHtml = totalCompras > 0
+        ? `<button class="btn-inline" data-action="historico-fornecedor" data-id="${f.id}"
+             style="padding:1px 8px;font-size:11px;margin-top:3px">
+             ${totalCompras} compra(s) · ${valorCompras.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}
+           </button>`
+        : '';
+      const contatoHtml = f.contato ? `<small style="display:block;color:var(--text-muted);font-size:11px;margin-top:2px">${escapeHtml(f.contato)}</small>` : '';
+      return `
+        <tr>
+          <td>
+            <div class="table-primary">
+              <strong>${escapeHtml(f.nome || '-')}</strong>
+              ${contatoHtml}
+              ${comprasHtml}
+            </div>
+          </td>
+          <td>${escapeHtml(f.telefone || '-')}</td>
+          <td>${escapeHtml(f.cnpj || '-')}</td>
+          <td>${escapeHtml(f.email || '-')}</td>
+          <td>${escapeHtml(f.endereco || '-')}</td>
+          <td class="text-right">
+            <div class="table-actions">
+              <button class="btn-inline" data-action="edit-fornecedor" data-id="${f.id}">
+                <i class="fa-solid fa-pen"></i> Editar
+              </button>
+              <button class="btn-inline btn-inline--danger" data-action="delete-fornecedor" data-id="${f.id}">
+                <i class="fa-solid fa-trash"></i> Excluir
+              </button>
+            </div>
+          </td>
+        </tr>`;
+    }).join('');
 
-        <td class="text-right">
-          <div class="table-actions">
-            <button class="btn-inline" data-action="edit-fornecedor" data-id="${fornecedor.id}">
-              <i class="fa-solid fa-pen"></i> Editar
-            </button>
-            <button class="btn-inline btn-inline--danger" data-action="delete-fornecedor" data-id="${fornecedor.id}">
-              <i class="fa-solid fa-trash"></i> Excluir
-            </button>
-          </div>
-        </td>
-      </tr>
-    `;
-      })
-      .join('');
+    this.renderPagination();
+  },
+
+  renderPagination() {
+    const el = document.getElementById('fornecedoresPagination');
+    if (!el) return;
+    const total = this.state.filteredItems.length;
+    const totalPag = Math.max(1, Math.ceil(total / this.ITENS_POR_PAGINA));
+    if (totalPag <= 1) { el.innerHTML = ''; return; }
+    const p = this.state.pagina;
+    const ini = (p - 1) * this.ITENS_POR_PAGINA + 1;
+    const fim = Math.min(p * this.ITENS_POR_PAGINA, total);
+    el.innerHTML = `
+      <div class="lf-pagination">
+        <button class="lf-pagination__btn" type="button" data-action="forn-pagina" data-page="prev"
+          ${p <= 1 ? 'disabled' : ''} aria-label="Anterior"><i class="fa-solid fa-chevron-left"></i></button>
+        <span class="lf-pagination__info">Página ${p} de ${totalPag}
+          <small>(${ini}–${fim} de ${total})</small></span>
+        <button class="lf-pagination__btn" type="button" data-action="forn-pagina" data-page="next"
+          ${p >= totalPag ? 'disabled' : ''} aria-label="Próxima"><i class="fa-solid fa-chevron-right"></i></button>
+      </div>`;
   },
 
   search(term) {
-    const normalized = String(term || '')
-      .trim()
-      .toLowerCase();
+    const q = String(term || '').trim().toLowerCase();
+    const qDigits = q.replace(/\D/g, '');
+    const tipo = this.state.filtroTipo;
 
-    this.state.filteredItems = this.state.items.filter((fornecedor) => {
-      const nome = String(fornecedor.nome || '').toLowerCase();
-      const telefone = String(fornecedor.telefone || '').toLowerCase();
-      const email = String(fornecedor.email || '').toLowerCase();
-      const endereco = String(fornecedor.endereco || '').toLowerCase();
-      const cnpj = String(fornecedor.cnpj || '').replace(/\D/g, '');
-      const normalizedDigits = normalized.replace(/\D/g, '');
+    let result = this.state.items.filter((f) => {
+      // Filtro por tipo de documento
+      if (tipo === 'pj') {
+        const d = String(f.cnpj || '').replace(/\D/g, '');
+        if (d.length !== 14) return false;
+      } else if (tipo === 'pf') {
+        const d = String(f.cnpj || '').replace(/\D/g, '');
+        if (d.length !== 11) return false;
+      } else if (tipo === 'sem') {
+        if (String(f.cnpj || '').replace(/\D/g, '').length > 0) return false;
+      }
+
+      if (!q) return true;
+      const nome    = String(f.nome || '').toLowerCase();
+      const tel     = String(f.telefone || '').toLowerCase();
+      const email   = String(f.email || '').toLowerCase();
+      const end     = String(f.endereco || '').toLowerCase();
+      const cnpjD   = String(f.cnpj || '').replace(/\D/g, '');
+      const contato = String(f.contato || '').toLowerCase();
 
       return (
-        nome.includes(normalized) ||
-        telefone.includes(normalized) ||
-        email.includes(normalized) ||
-        endereco.includes(normalized) ||
-        (normalizedDigits.length >= 3 && cnpj.includes(normalizedDigits))
+        nome.includes(q) ||
+        tel.includes(q) ||
+        email.includes(q) ||
+        end.includes(q) ||
+        contato.includes(q) ||
+        (qDigits.length >= 3 && cnpjD.includes(qDigits))
       );
     });
 
+    this.state.filteredItems = this._sortItems(result);
+    this.state.pagina = Math.min(
+      this.state.pagina,
+      Math.max(1, Math.ceil(this.state.filteredItems.length / this.ITENS_POR_PAGINA))
+    );
     this.renderTable();
+  },
+
+  applyFilterSort() {
+    this.state.filteredItems = this._sortItems(this.state.filteredItems);
+    this.renderTable();
+  },
+
+  _sortItems(arr) {
+    const { ordem, ordemDir } = this.state;
+    if (!ordem) return arr;
+    return [...arr].sort((a, b) => {
+      const va = String(a[ordem] || '').toLowerCase();
+      const vb = String(b[ordem] || '').toLowerCase();
+      const cmp = va.localeCompare(vb, 'pt-BR');
+      return ordemDir === 'asc' ? cmp : -cmp;
+    });
   },
 
   getCurrentSearchValue() {
@@ -364,12 +523,15 @@ const FornecedoresModule = {
 
     this.cache();
 
-    if (this.el.nome) this.el.nome.value = fornecedor.nome || '';
+    if (this.el.nome)     this.el.nome.value     = fornecedor.nome || '';
     if (this.el.telefone) this.el.telefone.value = fornecedor.telefone || '';
-    if (this.el.email) this.el.email.value = fornecedor.email || '';
+    if (this.el.email)    this.el.email.value    = fornecedor.email || '';
     if (this.el.endereco) this.el.endereco.value = fornecedor.endereco || '';
-    if (this.el.cnpj) this.el.cnpj.value = fornecedor.cnpj || '';
+    if (this.el.cnpj)     this.el.cnpj.value     = fornecedor.cnpj || '';
     if (this.el.observacao) this.el.observacao.value = fornecedor.observacao || '';
+    if (this.el.contato)  this.el.contato.value  = fornecedor.contato || '';
+    if (this.el.site)     this.el.site.value     = fornecedor.site || '';
+    if (this.el.prazo)    this.el.prazo.value    = fornecedor.prazo_pagamento ?? '';
   },
 
   async save() {
@@ -379,12 +541,15 @@ const FornecedoresModule = {
     const payload = {
       empresa: this.state.empresa,
       empresa_id: api.getEmpresaId(),
-      nome: this.el.nome?.value?.trim() || '',
-      telefone: this.el.telefone?.value?.trim() || '',
-      cnpj: this.el.cnpj?.value?.trim() || '',
-      email: this.el.email?.value?.trim() || '',
-      endereco: this.el.endereco?.value?.trim() || '',
-      observacao: this.el.observacao?.value?.trim() || ''
+      nome:            this.el.nome?.value?.trim() || '',
+      telefone:        this.el.telefone?.value?.trim() || '',
+      cnpj:            this.el.cnpj?.value?.trim() || '',
+      email:           this.el.email?.value?.trim() || '',
+      endereco:        this.el.endereco?.value?.trim() || '',
+      observacao:      this.el.observacao?.value?.trim() || '',
+      contato:         this.el.contato?.value?.trim() || '',
+      site:            this.el.site?.value?.trim() || '',
+      prazo_pagamento: Number(this.el.prazo?.value || 0) || null
     };
 
     if (!payload.nome) {
@@ -497,6 +662,81 @@ const FornecedoresModule = {
     }
   },
 
+  exportarCSV() {
+    const lista = this.state.filteredItems.length ? this.state.filteredItems : this.state.items;
+    exportCSV(lista.map((f) => ({
+      'Nome':             f.nome || '',
+      'Contato':          f.contato || '',
+      'Telefone':         f.telefone || '',
+      'CNPJ/CPF':         f.cnpj || '',
+      'E-mail':           f.email || '',
+      'Site':             f.site || '',
+      'Endereço':         f.endereco || '',
+      'Prazo Pgto (dias)': f.prazo_pagamento ?? '',
+      'Total Compras':    numCSV(f.total_compras || 0),
+      'Valor Compras':    numCSV(f.valor_total_compras || 0),
+      'Observação':       f.observacao || ''
+    })), 'fornecedores');
+  },
+
+  async abrirHistoricoCompras(id) {
+    const forn = this.state.items.find((f) => Number(f.id) === id);
+    if (!forn) return;
+
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px';
+    overlay.innerHTML = `
+      <div style="background:var(--surface);border-radius:16px;max-width:700px;width:100%;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 24px 50px rgba(0,0,0,.2)">
+        <div style="padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <h3 style="margin:0;font-size:16px">Histórico de Compras</h3>
+            <p style="margin:2px 0 0;font-size:13px;color:var(--text-muted)">${escapeHtml(forn.nome)}</p>
+          </div>
+          <button id="_histFechar" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--text-muted)">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div id="_histCorpo" style="padding:20px 24px;overflow-y:auto;flex:1">
+          <p style="color:var(--text-muted)">Carregando...</p>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.querySelector('#_histFechar').addEventListener('click', () => document.body.removeChild(overlay));
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) document.body.removeChild(overlay); });
+
+    const corpo = overlay.querySelector('#_histCorpo');
+    try {
+      const res = await api.request(`/compras?empresa_id=${api.getEmpresaId()}&fornecedor_id=${id}&limit=50`);
+      const compras = Array.isArray(res) ? res : (res?.data || res?.compras || []);
+      if (!compras.length) {
+        corpo.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px 0">Nenhuma compra registrada para este fornecedor.</p>';
+        return;
+      }
+      const total = compras.reduce((s, c) => s + Number(c.valor_total || 0), 0);
+      corpo.innerHTML = `
+        <p style="margin:0 0 12px;font-size:13px;color:var(--text-muted)">${compras.length} compra(s) · Total: <strong>${total.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</strong></p>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead><tr>
+              <th>Data</th><th>Nº / Referência</th><th class="text-right">Valor</th><th>Status</th>
+            </tr></thead>
+            <tbody>
+              ${compras.map((c) => `
+                <tr>
+                  <td>${c.data_compra ? new Date(c.data_compra).toLocaleDateString('pt-BR') : '-'}</td>
+                  <td>${escapeHtml(c.numero_nota || c.referencia || String(c.id))}</td>
+                  <td class="text-right">${Number(c.valor_total||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</td>
+                  <td><span class="badge badge--${c.status==='pago'?'success':c.status==='pendente'?'warning':'secondary'}">${escapeHtml(c.status||'-')}</span></td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>`;
+    } catch (err) {
+      corpo.innerHTML = `<p style="color:var(--danger)">${escapeHtml(err.message || 'Erro ao carregar compras.')}</p>`;
+    }
+  },
+
   buildFriendlyError(error) {
     const message = error?.message || '';
 
@@ -513,14 +753,21 @@ const FornecedoresModule = {
 };
 
 
-function maskCNPJ(value) {
-  return String(value || '')
-    .replace(/\D/g, '')
+function maskDocumento(value) {
+  const d = String(value || '').replace(/\D/g, '').slice(0, 14);
+  if (d.length <= 11) {
+    // CPF: 000.000.000-00
+    return d
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
+      .replace(/(\d{3})\.(\d{3})\.(\d{3})(\d)/, '$1.$2.$3-$4');
+  }
+  // CNPJ: 00.000.000/0000-00
+  return d
     .replace(/^(\d{2})(\d)/, '$1.$2')
     .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
     .replace(/\.(\d{3})(\d)/, '.$1/$2')
-    .replace(/(\d{4})(\d)/, '$1-$2')
-    .slice(0, 18);
+    .replace(/(\d{4})(\d)/, '$1-$2');
 }
 
 function validarCNPJ(cnpj) {
