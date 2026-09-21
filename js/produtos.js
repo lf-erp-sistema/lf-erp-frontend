@@ -42,10 +42,15 @@ const ProdutosModule = {
     // imagens
     imagens: [],
     // preço sugerido
-    precoEditado: false
+    precoEditado: false,
+    margemAlvo: 30
   },
 
   init() {
+    try {
+      const m = parseInt(localStorage.getItem('lf_margem_alvo') || '30', 10);
+      if (m > 0) this.state.margemAlvo = m;
+    } catch { /* silent */ }
     this.resolveEmpresa();
     if (!this.state.initialized) {
       this.state.initialized = true;
@@ -87,6 +92,8 @@ const ProdutosModule = {
       promocaoAtiva:  document.getElementById('produtoPromocaoAtiva'),
       estoque:        document.getElementById('produtoEstoque'),
       estoqueMinimo:  document.getElementById('produtoEstoqueMinimo'),
+      ncm:            document.getElementById('produtoNcm'),
+      unidade:        document.getElementById('produtoUnidade'),
       saveBtn:        document.getElementById('produtoSaveBtn'),
       cancelBtn:      document.getElementById('produtoCancelBtn'),
       closeBtn:       document.getElementById('produtoModalCloseBtn'),
@@ -112,7 +119,13 @@ const ProdutosModule = {
     if (!document.getElementById('prod-lote-styles')) {
       const s = document.createElement('style');
       s.id = 'prod-lote-styles';
-      s.textContent = '.row--selected { background: color-mix(in srgb, var(--primary) 8%, transparent); }';
+      s.textContent = `
+        .row--selected { background: color-mix(in srgb, var(--primary) 8%, transparent); }
+        .row--alert > td:first-child { border-left: 3px solid var(--danger, #ef4444); }
+        mark.search-hl { background: #fff3cd; color: inherit; border-radius: 2px; }
+        @media (max-width: 768px) { #produtosFiltrosToggle { display:inline-flex!important } #produtosFiltrosContent.filtros-collapsed { display:none!important } }
+        @media (min-width: 769px) { #produtosFiltrosToggle { display:none!important } #produtosFiltrosContent { display:flex!important } }
+      `;
       document.head.appendChild(s);
     }
 
@@ -133,15 +146,24 @@ const ProdutosModule = {
           const preco = this.el.preco;
           const hint  = document.getElementById('produtoPrecoHint');
           if (custo > 0 && preco) {
-            const sugerido = parseFloat((custo * 1.3).toFixed(2));
+            const m = this.state.margemAlvo;
+            const sugerido = parseFloat((custo * (1 + m / 100)).toFixed(2));
             preco.value = sugerido;
             preco.classList.add('input--sugerido');
-            if (hint) hint.textContent = '— sugerido (+30%)';
+            if (hint) hint.textContent = `— sugerido (+${m}%)`;
           } else if (preco) {
             preco.value = '';
             preco.classList.remove('input--sugerido');
             if (hint) hint.textContent = '';
           }
+        }
+      }
+      // Margem alvo configurável
+      if (e.target?.id === 'produtoMargemAlvo') {
+        const m = parseInt(e.target.value, 10);
+        if (m > 0) {
+          this.state.margemAlvo = m;
+          try { localStorage.setItem('lf_margem_alvo', String(m)); } catch { /* silent */ }
         }
       }
 
@@ -232,9 +254,19 @@ const ProdutosModule = {
       if (action === 'produtoCancelBtn' || action === 'produtoModalCloseBtn') {
         this.closeModal(); return;
       }
-      if (t.dataset.action === 'etiqueta') { this.abrirEtiqueta(Number(t.dataset.id)); return; }
-      if (t.dataset.action === 'edit')    { this.openEditModal(Number(t.dataset.id)).catch((err) => { console.error('Erro ao abrir modal de edição:', err); showToast('Erro ao abrir produto para edição.', 'error'); }); return; }
-      if (t.dataset.action === 'delete')  { await this.handleDelete(Number(t.dataset.id)); return; }
+      if (t.dataset.action === 'etiqueta')      { this.abrirEtiqueta(Number(t.dataset.id)); return; }
+      if (t.dataset.action === 'edit')          { this.openEditModal(Number(t.dataset.id)).catch((err) => { console.error('Erro ao abrir modal de edição:', err); showToast('Erro ao abrir produto para edição.', 'error'); }); return; }
+      if (t.dataset.action === 'delete')        { await this.handleDelete(Number(t.dataset.id)); return; }
+      if (t.dataset.action === 'duplicate')     { this.duplicarProduto(Number(t.dataset.id)); return; }
+      if (t.dataset.action === 'adjust-stock')  { this.ajustarEstoqueInline(Number(t.dataset.id)); return; }
+      if (action === 'produtosFiltrosToggle') {
+        const content = document.getElementById('produtosFiltrosContent');
+        const chevron = document.getElementById('produtosFiltrosChevron');
+        if (!content) return;
+        const collapsed = content.classList.toggle('filtros-collapsed');
+        if (chevron) chevron.style.transform = collapsed ? '' : 'rotate(180deg)';
+        return;
+      }
 
       // ── paginação
       if (t.dataset.action === 'prod-pagina') {
@@ -425,6 +457,7 @@ const ProdutosModule = {
     if (!this.el.tableBody) return;
     if (!this.state.filteredItems.length) { this.el.tableBody.innerHTML = ''; return; }
     const pageItems = this._getPagedItems();
+    const q = this.state.searchTerm || '';
     this.el.tableBody.innerHTML = pageItems.map((item) => {
       const alerta = Boolean(item.alerta_estoque);
       const statusClass = alerta ? 'badge badge--danger' : 'badge badge--success';
@@ -436,7 +469,7 @@ const ProdutosModule = {
 
       const selecionado = this.state.selectedIds.has(item.id);
       return `
-        <tr class="${selecionado ? 'row--selected' : ''}">
+        <tr class="${selecionado ? 'row--selected' : ''}${alerta ? ' row--alert' : ''}">
           <td style="padding-right:0">
             <input type="checkbox" class="prod-sel-chk" data-id="${item.id}"
               ${selecionado ? 'checked' : ''}
@@ -444,7 +477,7 @@ const ProdutosModule = {
           </td>
           <td>
             <div class="table-primary">
-              <strong>${escapeHtml(item.nome || '-')}</strong>
+              <strong>${this._highlight(item.nome || '-', q)}</strong>
               ${badges ? `<div style="margin-top:4px">${badges}</div>` : ''}
             </div>
           </td>
@@ -456,13 +489,19 @@ const ProdutosModule = {
           <td>${toCurrency(item.custo_medio || item.custo)}</td>
           <td class="${Number(item.lucro_unitario || 0) >= 0 ? 'text-success' : 'text-danger'}">${toCurrency(item.lucro_unitario || 0)}</td>
           <td><span class="badge ${Number(item.margem_lucro||0)>=30?'badge--success':Number(item.margem_lucro||0)>=10?'badge--warning':'badge--danger'}">${Number(item.margem_lucro||0).toFixed(1)}%</span></td>
-          <td>${Number(item.estoque || 0)}</td>
+          <td>
+            <span>${Number(item.estoque || 0)}</span>
+            <button type="button" class="btn-inline" data-action="adjust-stock" data-id="${item.id}" title="Ajustar estoque" style="padding:2px 6px;margin-left:4px;font-size:11px">±</button>
+          </td>
           <td>${Number(item.estoque_minimo || 0)}</td>
           <td><span class="${statusClass}">${alerta ? 'Alerta' : 'Ok'}</span></td>
           <td class="text-right">
             <div class="table-actions">
               <button type="button" class="btn-inline" data-action="etiqueta" data-id="${item.id}">
                 <i class="fa-solid fa-tag"></i> Etiqueta
+              </button>
+              <button type="button" class="btn-inline" data-action="duplicate" data-id="${item.id}" title="Duplicar produto">
+                <i class="fa-solid fa-copy"></i>
               </button>
               <button type="button" class="btn-inline" data-action="edit" data-id="${item.id}">Editar</button>
               <button type="button" class="btn-inline btn-inline--danger" data-action="delete" data-id="${item.id}">Excluir</button>
@@ -530,6 +569,9 @@ const ProdutosModule = {
     const prev = sel.value;
     sel.innerHTML = '<option value="">Todas as categorias</option>' +
       cats.map((c) => `<option value="${escapeHtml(c)}" ${prev === c ? 'selected' : ''}>${escapeHtml(c)}</option>`).join('');
+    // Preenche datalist para autocomplete no formulário
+    const dl = document.getElementById('produtosCatList');
+    if (dl) dl.innerHTML = cats.map((c) => `<option value="${escapeHtml(c)}">`).join('');
   },
 
   // ── Modal ──────────────────────────────────────────────────────────────────
@@ -544,37 +586,43 @@ const ProdutosModule = {
             <i class="fa-solid fa-magnifying-glass"></i>
             <input type="text" id="produtosSearchInput" placeholder="Buscar por nome, categoria ou código" />
           </div>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <select id="produtosFiltroCategoria" class="input" style="height:38px;min-width:150px;width:auto;font-size:13px">
-              <option value="">Todas as categorias</option>
-            </select>
-            <select id="produtosFiltroAlerta" class="input" style="height:38px;min-width:140px;width:auto;font-size:13px">
-              <option value="">Todos os status</option>
-              <option value="alerta">Em alerta</option>
-              <option value="ok">Estoque ok</option>
-            </select>
-            <select id="produtosFiltroPromocao" class="input" style="height:38px;min-width:140px;width:auto;font-size:13px">
-              <option value="">Promoção: Todas</option>
-              <option value="sim">Em promoção</option>
-              <option value="nao">Sem promoção</option>
-            </select>
-            <select id="produtosFiltroTipo" class="input" style="height:38px;min-width:130px;width:auto;font-size:13px">
-              <option value="">Tipo: Todos</option>
-              <option value="normal">Normal</option>
-              <option value="grade">Com grade</option>
-              <option value="kit">Kit</option>
-            </select>
-            <select id="produtosFiltroOrdem" class="input" style="height:38px;min-width:155px;width:auto;font-size:13px">
-              <option value="">Ordenar: Padrão</option>
-              <option value="nome_az">Nome A→Z</option>
-              <option value="nome_za">Nome Z→A</option>
-              <option value="preco_a">Preço ↑</option>
-              <option value="preco_d">Preço ↓</option>
-              <option value="estoque_a">Estoque ↑</option>
-              <option value="estoque_d">Estoque ↓</option>
-              <option value="margem_a">Margem ↑</option>
-              <option value="margem_d">Margem ↓</option>
-            </select>
+          <div>
+            <button type="button" class="btn btn-light btn-sm" id="produtosFiltrosToggle" style="display:none" aria-expanded="false">
+              <i class="fa-solid fa-sliders"></i> Filtros
+              <i id="produtosFiltrosChevron" class="fa-solid fa-chevron-down" style="font-size:10px;margin-left:2px"></i>
+            </button>
+            <div id="produtosFiltrosContent" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <select id="produtosFiltroCategoria" class="input" style="height:38px;min-width:150px;width:auto;font-size:13px">
+                <option value="">Todas as categorias</option>
+              </select>
+              <select id="produtosFiltroAlerta" class="input" style="height:38px;min-width:140px;width:auto;font-size:13px">
+                <option value="">Todos os status</option>
+                <option value="alerta">Em alerta</option>
+                <option value="ok">Estoque ok</option>
+              </select>
+              <select id="produtosFiltroPromocao" class="input" style="height:38px;min-width:140px;width:auto;font-size:13px">
+                <option value="">Promoção: Todas</option>
+                <option value="sim">Em promoção</option>
+                <option value="nao">Sem promoção</option>
+              </select>
+              <select id="produtosFiltroTipo" class="input" style="height:38px;min-width:130px;width:auto;font-size:13px">
+                <option value="">Tipo: Todos</option>
+                <option value="normal">Normal</option>
+                <option value="grade">Com grade</option>
+                <option value="kit">Kit</option>
+              </select>
+              <select id="produtosFiltroOrdem" class="input" style="height:38px;min-width:155px;width:auto;font-size:13px">
+                <option value="">Ordenar: Padrão</option>
+                <option value="nome_az">Nome A→Z</option>
+                <option value="nome_za">Nome Z→A</option>
+                <option value="preco_a">Preço ↑</option>
+                <option value="preco_d">Preço ↓</option>
+                <option value="estoque_a">Estoque ↑</option>
+                <option value="estoque_d">Estoque ↓</option>
+                <option value="margem_a">Margem ↑</option>
+                <option value="margem_d">Margem ↓</option>
+              </select>
+            </div>
           </div>
           <div class="module-toolbar__stats">
             <div class="mini-stat"><span>Total</span><strong id="produtosStatsTotal">0</strong></div>
@@ -698,18 +746,46 @@ const ProdutosModule = {
               </div>
               <div class="form-field">
                 <label for="produtoCategoria">Categoria</label>
-                <input type="text" id="produtoCategoria" />
+                <input type="text" id="produtoCategoria" list="produtosCatList" autocomplete="off" />
+                <datalist id="produtosCatList"></datalist>
               </div>
               <div class="form-field">
                 <label for="produtoCodigoBarras">Código de barras</label>
                 <input type="text" id="produtoCodigoBarras" placeholder="Gerado automaticamente" />
               </div>
               <div class="form-field">
+                <label for="produtoNcm">NCM</label>
+                <input type="text" id="produtoNcm" placeholder="Ex: 8517.12.31" maxlength="15" />
+              </div>
+              <div class="form-field">
+                <label for="produtoUnidade">Unidade</label>
+                <select id="produtoUnidade" class="input">
+                  <option value="UN">UN — Unidade</option>
+                  <option value="PC">PC — Peça</option>
+                  <option value="KG">KG — Quilograma</option>
+                  <option value="G">G — Grama</option>
+                  <option value="L">L — Litro</option>
+                  <option value="ML">ML — Mililitro</option>
+                  <option value="M">M — Metro</option>
+                  <option value="M2">M² — Metro quadrado</option>
+                  <option value="CX">CX — Caixa</option>
+                  <option value="SC">SC — Saco</option>
+                  <option value="PCT">PCT — Pacote</option>
+                </select>
+              </div>
+              <div class="form-field">
                 <label for="produtoCusto">Custo *</label>
                 <input type="number" id="produtoCusto" min="0" step="0.01" required />
               </div>
               <div class="form-field">
-                <label for="produtoPreco">Preço de venda * <small id="produtoPrecoHint" style="font-weight:400;color:var(--text-muted);font-size:11px"></small></label>
+                <label for="produtoPreco">
+                  Preço de venda *
+                  <small id="produtoPrecoHint" style="font-weight:400;color:var(--text-muted);font-size:11px"></small>
+                  <span style="font-size:11px;font-weight:400;color:var(--text-muted);margin-left:6px" title="Margem padrão usada na sugestão automática de preço">
+                    Margem: <input type="number" id="produtoMargemAlvo" min="1" max="999" step="1"
+                      style="width:44px;font-size:11px;padding:1px 4px;border:1px solid var(--border);border-radius:3px;background:var(--surface)" /> %
+                  </span>
+                </label>
                 <input type="number" id="produtoPreco" min="0" step="0.01" required />
               </div>
               <div class="form-field">
@@ -849,6 +925,8 @@ const ProdutosModule = {
     if (this.el.preco) this.el.preco.classList.remove('input--sugerido');
     const hint = document.getElementById('produtoPrecoHint');
     if (hint) hint.textContent = '';
+    const margemEl = document.getElementById('produtoMargemAlvo');
+    if (margemEl) margemEl.value = this.state.margemAlvo;
     if (this.el.tabs) this.el.tabs.classList.add('hidden');
     this.switchTab('dados');
     this.setFormFeedback('', 'info');
@@ -874,6 +952,10 @@ const ProdutosModule = {
     if (this.el.promocaoAtiva) this.el.promocaoAtiva.checked = Boolean(item.promocao_ativa);
     if (this.el.estoque) this.el.estoque.value = Number(item.estoque || 0);
     if (this.el.estoqueMinimo) this.el.estoqueMinimo.value = Number(item.estoque_minimo || 0);
+    if (this.el.ncm) this.el.ncm.value = item.ncm || '';
+    if (this.el.unidade) this.el.unidade.value = item.unidade || 'UN';
+    const margemEl = document.getElementById('produtoMargemAlvo');
+    if (margemEl) margemEl.value = this.state.margemAlvo;
 
     if (this.el.tabs) this.el.tabs.classList.remove('hidden');
     this.switchTab('dados');
@@ -925,7 +1007,9 @@ const ProdutosModule = {
       preco_promocional: Number(this.el.precoPromocional?.value || 0),
       promocao_ativa: Boolean(this.el.promocaoAtiva?.checked),
       estoque: Number(this.el.estoque?.value || 0),
-      estoque_minimo: Number(this.el.estoqueMinimo?.value || 0)
+      estoque_minimo: Number(this.el.estoqueMinimo?.value || 0),
+      ncm: this.el.ncm?.value?.trim() || '',
+      unidade: this.el.unidade?.value || 'UN'
     };
     if (!payload.nome) { this.setFormFeedback('Informe o nome do produto.', 'error'); return; }
     if (payload.preco <= 0) { this.setFormFeedback('O preço de venda deve ser maior que R$0,00.', 'error'); return; }
@@ -1747,6 +1831,99 @@ const ProdutosModule = {
       localStorage.setItem('lf_erp_etiquetas', JSON.stringify(dados));
       window.open('./etiquetas.html', '_blank');
     });
+  },
+
+  // ── Helpers de destaque de busca ──────────────────────────────────────────
+
+  _highlight(text, term) {
+    const safe = escapeHtml(String(text || ''));
+    if (!term) return safe;
+    const q = escapeHtml(term.trim()).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if (!q) return safe;
+    return safe.replace(new RegExp(`(${q})`, 'gi'), '<mark class="search-hl">$1</mark>');
+  },
+
+  // ── Duplicar produto ───────────────────────────────────────────────────────
+
+  duplicarProduto(id) {
+    const item = this.state.items.find((p) => Number(p.id) === Number(id));
+    if (!item) return;
+    this.state.editingId = null;
+    this.state.activeTab = 'dados';
+    this.state.precoEditado = true;
+    this.cacheElements();
+    if (this.el.modalTitle) this.el.modalTitle.textContent = 'Duplicar produto';
+    if (this.el.form) this.el.form.reset();
+    if (this.el.id) this.el.id.value = '';
+    if (this.el.nome) this.el.nome.value = `Cópia de ${item.nome}`;
+    if (this.el.categoria) this.el.categoria.value = item.categoria || '';
+    if (this.el.codigoBarras) this.el.codigoBarras.value = '';
+    if (this.el.preco) { this.el.preco.value = Number(item.preco || 0); this.el.preco.classList.remove('input--sugerido'); }
+    if (this.el.custo) this.el.custo.value = Number(item.custo || 0);
+    if (this.el.precoPromocional) this.el.precoPromocional.value = 0;
+    if (this.el.promocaoAtiva) this.el.promocaoAtiva.checked = false;
+    if (this.el.estoque) this.el.estoque.value = 0;
+    if (this.el.estoqueMinimo) this.el.estoqueMinimo.value = Number(item.estoque_minimo || 0);
+    if (this.el.ncm) this.el.ncm.value = item.ncm || '';
+    if (this.el.unidade) this.el.unidade.value = item.unidade || 'UN';
+    const margemEl = document.getElementById('produtoMargemAlvo');
+    if (margemEl) margemEl.value = this.state.margemAlvo;
+    if (this.el.tabs) this.el.tabs.classList.add('hidden');
+    this.switchTab('dados');
+    this.setFormFeedback('', 'info');
+    this.el.modal?.classList.remove('hidden');
+  },
+
+  // ── Ajuste de estoque inline ───────────────────────────────────────────────
+
+  ajustarEstoqueInline(id) {
+    const item = this.state.items.find((p) => Number(p.id) === Number(id));
+    if (!item) return;
+
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px';
+    overlay.innerHTML = `
+      <div style="background:var(--surface);border-radius:16px;padding:24px;max-width:360px;width:100%;box-shadow:0 24px 50px rgba(0,0,0,.2)">
+        <h3 style="margin:0 0 6px;font-size:16px;font-weight:700"><i class="fa-solid fa-boxes-stacked"></i> Ajustar Estoque</h3>
+        <p style="font-size:13px;color:var(--text-muted);margin:0 0 16px">${escapeHtml(String(item.nome).substring(0, 50))}</p>
+        <p style="font-size:13px;margin:0 0 12px">Estoque atual: <strong>${Number(item.estoque || 0)}</strong></p>
+        <div style="margin-bottom:16px">
+          <label style="font-size:11px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:4px;text-transform:uppercase">Novo valor de estoque</label>
+          <input type="number" id="_adjEstoque" value="${Number(item.estoque || 0)}" min="0" step="1"
+            style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:15px;font-weight:700;box-sizing:border-box" />
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end">
+          <button id="_adjCancelar" style="padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface-3);font-size:13px;cursor:pointer">Cancelar</button>
+          <button id="_adjSalvar" style="padding:8px 16px;border-radius:8px;border:none;background:var(--primary);color:#fff;font-size:13px;font-weight:600;cursor:pointer">
+            <i class="fa-solid fa-check"></i> Salvar
+          </button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    const input = overlay.querySelector('#_adjEstoque');
+    input.focus(); input.select();
+
+    overlay.querySelector('#_adjCancelar').addEventListener('click', () => document.body.removeChild(overlay));
+    overlay.querySelector('#_adjSalvar').addEventListener('click', async () => {
+      const novoEstoque = Number(input.value);
+      if (isNaN(novoEstoque) || novoEstoque < 0) { showToast('Informe um estoque válido.', 'error'); return; }
+      const btn = overlay.querySelector('#_adjSalvar');
+      btn.disabled = true;
+      try {
+        await api.updateProduto(id, {
+          empresa: this.state.empresa,
+          empresa_id: api.getEmpresaId(),
+          estoque: novoEstoque
+        });
+        document.body.removeChild(overlay);
+        showToast('Estoque atualizado.', 'success');
+        await this.load();
+      } catch (err) {
+        showToast(buildFriendlyError(err), 'error');
+        btn.disabled = false;
+      }
+    });
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) document.body.removeChild(overlay); });
   },
 
   showModuleMessage(message, type = 'info') {
