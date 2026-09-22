@@ -1,7 +1,7 @@
 import api from './api.js';
 import { exportCSV, numCSV } from './exportUtils.js';
 import { showToast } from './feedback.js';
-import { escapeHtml, todayFortaleza, calcPeriodoLocal } from './utils.js';
+import { escapeHtml, todayFortaleza, buildFriendlyError } from './utils.js';
 
 const state = {
   resumo: null,
@@ -31,14 +31,40 @@ function statusBadge(status) {
   return `<span class="badge ${cls}">${label}</span>`;
 }
 
+function injectRelatoriosStyles() {
+  if (document.getElementById('relStyles')) return;
+  const s = document.createElement('style');
+  s.id = 'relStyles';
+  s.textContent = `
+    .rel-preset-btn {
+      font-size: 12px;
+      padding: 4px 10px;
+      height: 30px;
+    }
+    .rel-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 48px 20px;
+      text-align: center;
+    }
+    .rel-empty i { font-size: 2rem; opacity: .2; margin-bottom: 4px; color: var(--text-muted); }
+    .rel-empty strong { font-size: 15px; color: var(--text); }
+    .rel-empty p { font-size: 13px; margin: 0; color: var(--text-muted); }
+  `;
+  document.head.appendChild(s);
+}
+
 export async function initRelatoriosFinanceirosModule() {
+  injectRelatoriosStyles();
   try {
     renderLoading();
     await carregarDados();
     render();
   } catch (error) {
     console.error('Erro ao iniciar relatórios financeiros:', error);
-    renderErro(error?.message || 'Não foi possível carregar os relatórios financeiros.');
+    renderErro(buildFriendlyError(error));
   }
 }
 
@@ -106,8 +132,8 @@ function renderLoading() {
 
   c.innerHTML = `
     <div class="module-card">
-      <div class="module-feedback module-feedback--info">
-        Carregando relatórios financeiros...
+      <div class="module-skeleton" style="padding:20px">
+        ${Array.from({length: 6}).map(() => '<div class="skeleton-line" style="height:36px;margin-bottom:12px;border-radius:6px"></div>').join('')}
       </div>
     </div>
   `;
@@ -123,11 +149,11 @@ function render() {
 
       <div class="rel-periodo-rapido" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:10px 0 4px">
         <span style="font-size:12px;color:var(--text-muted);font-weight:700;white-space:nowrap">Período rápido:</span>
-        <button type="button" class="btn btn-light" style="font-size:12px;padding:4px 10px;height:30px" data-rel-preset="hoje">Hoje</button>
-        <button type="button" class="btn btn-light" style="font-size:12px;padding:4px 10px;height:30px" data-rel-preset="semana">Esta semana</button>
-        <button type="button" class="btn btn-light" style="font-size:12px;padding:4px 10px;height:30px" data-rel-preset="mes">Este mês</button>
-        <button type="button" class="btn btn-light" style="font-size:12px;padding:4px 10px;height:30px" data-rel-preset="trimestre">3 meses</button>
-        <button type="button" class="btn btn-light" style="font-size:12px;padding:4px 10px;height:30px" data-rel-preset="ano">Este ano</button>
+        <button type="button" class="btn btn-light rel-preset-btn" data-rel-preset="hoje">Hoje</button>
+        <button type="button" class="btn btn-light rel-preset-btn" data-rel-preset="semana">Esta semana</button>
+        <button type="button" class="btn btn-light rel-preset-btn" data-rel-preset="mes">Este mês</button>
+        <button type="button" class="btn btn-light rel-preset-btn" data-rel-preset="trimestre">3 meses</button>
+        <button type="button" class="btn btn-light rel-preset-btn" data-rel-preset="ano">Este ano</button>
       </div>
 
       <div class="module-toolbar">
@@ -324,7 +350,11 @@ function renderDRE() {
   const d = state.dre;
 
   if (!d) {
-    return `<div class="module-feedback module-feedback--info">Nenhum dado de DRE encontrado no período.</div>`;
+    return `<div class="rel-empty">
+      <i class="fa-solid fa-table"></i>
+      <strong>Nenhum dado de DRE encontrado</strong>
+      <p>Não há dados para montar a Demonstração de Resultado no período selecionado.</p>
+    </div>`;
   }
 
   function pct(v) { return `${Number(v || 0).toFixed(1)}%`; }
@@ -475,7 +505,11 @@ function renderDRE() {
 
 function renderTabelaGrade() {
   if (!state.grade.length) {
-    return `<div class="module-feedback module-feedback--info">Nenhuma venda por variação encontrada no período.<br><small>Apenas produtos com grade (tamanho/cor) aparecem aqui.</small></div>`;
+    return `<div class="rel-empty">
+      <i class="fa-solid fa-layer-group"></i>
+      <strong>Nenhuma venda por variação encontrada</strong>
+      <p>Apenas produtos com grade (tamanho/cor) aparecem aqui.</p>
+    </div>`;
   }
 
   const totalFat  = state.grade.reduce((s, r) => s + r.faturamento_total, 0);
@@ -666,7 +700,11 @@ function renderResumo() {
 
 function renderTabelaReceber() {
   if (!state.receber.length) {
-    return `<div class="module-feedback module-feedback--info">Nenhum registro de contas a receber no período.</div>`;
+    return `<div class="rel-empty">
+      <i class="fa-solid fa-hand-holding-dollar"></i>
+      <strong>Nenhum registro de contas a receber</strong>
+      <p>Não há contas a receber no período selecionado.</p>
+    </div>`;
   }
 
   return `
@@ -703,7 +741,11 @@ function renderTabelaReceber() {
 
 function renderTabelaPagar() {
   if (!state.pagar.length) {
-    return `<div class="module-feedback module-feedback--info">Nenhum registro de contas a pagar no período.</div>`;
+    return `<div class="rel-empty">
+      <i class="fa-solid fa-file-invoice-dollar"></i>
+      <strong>Nenhum registro de contas a pagar</strong>
+      <p>Não há contas a pagar no período selecionado.</p>
+    </div>`;
   }
 
   return `
@@ -756,7 +798,11 @@ function _thSort(label, key) {
 
 function renderTabelaLucratividade() {
   if (!state.lucratividade.length) {
-    return `<div class="module-feedback module-feedback--info">Nenhum dado de lucratividade encontrado no período.</div>`;
+    return `<div class="rel-empty">
+      <i class="fa-solid fa-chart-line"></i>
+      <strong>Nenhum dado de lucratividade encontrado</strong>
+      <p>Não há vendas com dados de lucratividade no período selecionado.</p>
+    </div>`;
   }
 
   const sub = state.lucratSubAba;
@@ -859,7 +905,11 @@ function renderTabelaLucratividade() {
 
 function renderTabelaFluxo() {
   if (!state.fluxo.length) {
-    return `<div class="module-feedback module-feedback--info">Nenhum movimento de fluxo de caixa no período.</div>`;
+    return `<div class="rel-empty">
+      <i class="fa-solid fa-money-bill-transfer"></i>
+      <strong>Nenhum movimento de fluxo de caixa</strong>
+      <p>Não há movimentos no período selecionado.</p>
+    </div>`;
   }
 
   return `
@@ -1066,7 +1116,7 @@ async function recarregarModulo(mensagem = '') {
     if (mensagem) renderFeedback(mensagem, 'success');
   } catch (error) {
     console.error(error);
-    renderErro('Não foi possível atualizar os relatórios financeiros.');
+    renderErro(buildFriendlyError(error));
   } finally {
     state.loading = false;
   }
@@ -1097,12 +1147,16 @@ function renderErro(message) {
   if (!c) return;
 
   c.innerHTML = `
-    <div class="module-card">
-      <div class="module-feedback module-feedback--error">
-        ${escapeHtml(message)}
+    <div class="module-card" style="text-align:center;padding:40px 20px">
+      <div class="module-feedback module-feedback--error" style="margin-bottom:16px">
+        <i class="fa-solid fa-triangle-exclamation"></i> ${escapeHtml(message)}
       </div>
+      <button class="btn btn-light" id="relBtnRetry" type="button">
+        <i class="fa-solid fa-rotate"></i> Tentar novamente
+      </button>
     </div>
   `;
+  document.getElementById('relBtnRetry')?.addEventListener('click', () => recarregarModulo());
 }
 
 function formatOrigem(origem) {
