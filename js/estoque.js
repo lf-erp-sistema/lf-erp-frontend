@@ -11,6 +11,8 @@ const EstoqueModule = {
     eventsBound: false,
     loading: false,
     empresa: '',
+    ordem: 'nome',
+    ordemDir: 'asc',
     viewMode: 'em_estoque' // 'em_estoque' | 'em_falta'
   },
 
@@ -46,6 +48,7 @@ const EstoqueModule = {
   bind() {
     if (this.state.eventsBound) return;
     this.state.eventsBound = true;
+    this._injectStyles();
 
     const debouncedFilters = debounce(() => this.applyFilters(), 350);
 
@@ -62,6 +65,21 @@ const EstoqueModule = {
     });
 
     document.addEventListener('click', async (e) => {
+      const th = e.target.closest('th[data-sort-col]');
+      if (th) {
+        const col = th.dataset.sortCol;
+        if (this.state.ordem === col) {
+          this.state.ordemDir = this.state.ordemDir === 'asc' ? 'desc' : 'asc';
+        } else {
+          this.state.ordem = col;
+          this.state.ordemDir = (col === 'estoque' || col === 'preco' || col === 'custo') ? 'desc' : 'asc';
+        }
+        this.render();
+        this.cache();
+        this.applyFilters();
+        return;
+      }
+
       const btn = e.target.closest('button');
       if (!btn) return;
 
@@ -146,6 +164,13 @@ const EstoqueModule = {
     const c = document.getElementById('estoqueContainer');
     if (!c) return;
 
+    const si = (col) => {
+      if (this.state.ordem !== col) return '<span class="sort-icon sort-icon--idle">⇅</span>';
+      return this.state.ordemDir === 'asc'
+        ? '<span class="sort-icon sort-icon--asc">↑</span>'
+        : '<span class="sort-icon sort-icon--desc">↓</span>';
+    };
+
     c.innerHTML = `
       <section class="module-card">
         <div id="estoqueFeedback" class="module-feedback"></div>
@@ -186,6 +211,7 @@ const EstoqueModule = {
               <option value="">Todos</option>
               <option value="normal" ${this.getCurrentStatusValue() === 'normal' ? 'selected' : ''}>Estoque normal</option>
               <option value="baixo" ${this.getCurrentStatusValue() === 'baixo' ? 'selected' : ''}>Baixo estoque</option>
+              <option value="sem_estoque" ${this.getCurrentStatusValue() === 'sem_estoque' ? 'selected' : ''}>Sem estoque</option>
             </select>
           </div>
         </div>
@@ -211,18 +237,25 @@ const EstoqueModule = {
               <strong id="estoqueTotalZerado">0</strong>
             </div>
           </div>
+
+          <div class="kpi-card">
+            <div class="kpi-card__content">
+              <span>Valor em estoque</span>
+              <strong id="estoqueValorTotal">R$ 0,00</strong>
+            </div>
+          </div>
         </div>
 
         <div class="table-wrapper">
           <table class="data-table">
             <thead>
               <tr>
-                <th>Produto</th>
-                <th>Categoria</th>
+                <th data-sort-col="nome" style="cursor:pointer">Produto ${si('nome')}</th>
+                <th data-sort-col="categoria" style="cursor:pointer">Categoria ${si('categoria')}</th>
                 <th>Código</th>
-                <th>Preço</th>
-                <th>Custo</th>
-                <th>Estoque</th>
+                <th data-sort-col="preco" style="cursor:pointer">Preço ${si('preco')}</th>
+                <th data-sort-col="custo" style="cursor:pointer">Custo ${si('custo')}</th>
+                <th data-sort-col="estoque" style="cursor:pointer">Estoque ${si('estoque')}</th>
                 <th>Mínimo</th>
                 <th>Status</th>
               </tr>
@@ -238,13 +271,17 @@ const EstoqueModule = {
     if (!this.el.table) return;
 
     if (!this.state.filteredItems.length) {
+      const emFalta = this.state.viewMode === 'em_falta';
+      const msg = emFalta
+        ? 'Nenhum produto com estoque zerado no momento.'
+        : 'Nenhum produto encontrado com os filtros aplicados.';
       this.el.table.innerHTML = `
         <tr>
           <td colspan="8">
-            <div class="empty-state" style="padding:36px 24px">
-              <i class="fa-solid fa-warehouse"></i>
+            <div class="empty-table-state">
+              <i class="fa-solid fa-warehouse" style="font-size:2rem;opacity:.22;margin-bottom:4px"></i>
               <strong>Nenhum produto encontrado</strong>
-              <p>Tente ajustar os filtros de busca ou status.</p>
+              <span>${msg}</span>
             </div>
           </td>
         </tr>
@@ -252,25 +289,39 @@ const EstoqueModule = {
       return;
     }
 
+    const termo = String(this.el.search?.value || '').trim().toLowerCase();
+
     this.el.table.innerHTML = this.state.filteredItems
       .map((produto) => {
         const estoque = Number(produto.estoque || 0);
         const estoqueMinimo = Number(produto.estoque_minimo || 0);
         const status = this.getStatusProduto(produto);
+        const preco = Number(produto.preco || 0);
+        const custo = Number(produto.custo || 0);
+        const margem = preco > 0 ? Math.round(((preco - custo) / preco) * 100) : null;
+        const margemHtml = margem !== null
+          ? `<span class="est-margem ${margem < 0 ? 'est-margem--neg' : margem < 20 ? 'est-margem--low' : 'est-margem--ok'}">${margem}% mg</span>`
+          : '';
+        const estoqueClass = estoque === 0 ? 'est-qty--zero' : (estoqueMinimo > 0 && estoque <= estoqueMinimo ? 'est-qty--baixo' : '');
+        const codigo = produto.codigo_barras || '';
+        const codigoDisplay = codigo.length > 14 ? codigo.slice(0, 13) + '…' : codigo;
 
         return `
         <tr>
           <td>
             <div class="table-primary">
-              <strong>${escapeHtml(produto.nome || '-')}</strong>
+              <strong>${this._highlight(escapeHtml(produto.nome || '-'), termo)}</strong>
             </div>
           </td>
-          <td>${escapeHtml(produto.categoria || '-')}</td>
-          <td>${escapeHtml(produto.codigo_barras || '-')}</td>
-          <td>${formatCurrency(produto.preco)}</td>
-          <td>${formatCurrency(produto.custo)}</td>
-          <td>${estoque}</td>
-          <td>${estoqueMinimo}</td>
+          <td>${this._highlight(escapeHtml(produto.categoria || '-'), termo)}</td>
+          <td>${codigo ? `<span title="${escapeHtml(codigo)}">${this._highlight(escapeHtml(codigoDisplay), termo)}</span>` : '-'}</td>
+          <td>${formatCurrency(preco)}</td>
+          <td>
+            ${formatCurrency(custo)}
+            ${margemHtml}
+          </td>
+          <td class="${estoqueClass}">${estoque}</td>
+          <td>${estoqueMinimo || '-'}</td>
           <td>${status}</td>
         </tr>
       `;
@@ -282,13 +333,15 @@ const EstoqueModule = {
     const termo = String(this.el.search?.value || '').trim().toLowerCase();
     const status = String(this.el.status?.value || '').trim();
     const emFalta = this.state.viewMode === 'em_falta';
+    const mostrarSemEstoque = status === 'sem_estoque';
 
     this.state.filteredItems = this.state.items.filter((produto) => {
       const estoque = Number(produto.estoque || 0);
       const estoqueMinimo = Number(produto.estoque_minimo || 0);
 
-      // Separação principal: zerados ficam na view "em falta"
-      if (emFalta) {
+      if (mostrarSemEstoque) {
+        if (estoque !== 0) return false;
+      } else if (emFalta) {
         if (estoque !== 0) return false;
       } else {
         if (estoque === 0) return false;
@@ -300,8 +353,7 @@ const EstoqueModule = {
       const matchTexto = !termo || nome.includes(termo) || categoria.includes(termo) || codigo.includes(termo);
       if (!matchTexto) return false;
 
-      // Filtro de status só se aplica na view principal
-      if (!emFalta && status) {
+      if (!emFalta && !mostrarSemEstoque && status) {
         if (status === 'baixo') return estoqueMinimo > 0 && estoque <= estoqueMinimo;
         if (status === 'normal') return estoqueMinimo <= 0 || estoque > estoqueMinimo;
       }
@@ -309,6 +361,7 @@ const EstoqueModule = {
       return true;
     });
 
+    this._sortItems();
     this.updateStats();
     this.renderTable();
 
@@ -333,9 +386,13 @@ const EstoqueModule = {
     // Total zerado calculado sobre TODOS os itens (não só filtrados)
     const totalZerado = this.state.items.filter((p) => Number(p.estoque || 0) === 0).length;
 
+    const valorEstoque = this.getValorEstoque();
+
     if (this.el.totalProdutos) this.el.totalProdutos.textContent = String(totalProdutos);
     if (this.el.totalBaixo) this.el.totalBaixo.textContent = String(totalBaixo);
     if (this.el.totalZerado) this.el.totalZerado.textContent = String(totalZerado);
+    const elValor = document.getElementById('estoqueValorTotal');
+    if (elValor) elValor.textContent = valorEstoque;
 
     this.updateFaltaBtn(totalZerado);
   },
@@ -439,6 +496,58 @@ const EstoqueModule = {
     }
 
     return message || 'Não foi possível concluir a operação.';
+  },
+
+  getValorEstoque() {
+    const total = this.state.items.reduce((acc, p) => {
+      return acc + Number(p.estoque || 0) * Number(p.custo || 0);
+    }, 0);
+    return formatCurrency(total);
+  },
+
+  _sortItems() {
+    const { ordem, ordemDir } = this.state;
+    const dir = ordemDir === 'asc' ? 1 : -1;
+    this.state.filteredItems.sort((a, b) => {
+      if (ordem === 'estoque') return dir * (Number(a.estoque || 0) - Number(b.estoque || 0));
+      if (ordem === 'preco')   return dir * (Number(a.preco || 0) - Number(b.preco || 0));
+      if (ordem === 'custo')   return dir * (Number(a.custo || 0) - Number(b.custo || 0));
+      if (ordem === 'nome')    return dir * String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR');
+      if (ordem === 'categoria') return dir * String(a.categoria || '').localeCompare(String(b.categoria || ''), 'pt-BR');
+      return 0;
+    });
+  },
+
+  _highlight(text, term) {
+    if (!term) return text;
+    const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return text.replace(new RegExp(`(${escaped})`, 'gi'), '<mark class="est-hl">$1</mark>');
+  },
+
+  _injectStyles() {
+    if (document.getElementById('_estoqueStyles')) return;
+    const style = document.createElement('style');
+    style.id = '_estoqueStyles';
+    style.textContent = `
+      .sort-icon { font-size:.75rem; margin-left:3px; }
+      .sort-icon--idle { opacity:.35; }
+      .sort-icon--asc, .sort-icon--desc { color:var(--primary,#2563eb); opacity:.9; }
+      mark.est-hl { background:rgba(234,179,8,.35); color:inherit; border-radius:2px; padding:0 1px; }
+      .est-qty--zero  { color:var(--danger,#dc2626); font-weight:700; }
+      .est-qty--baixo { color:var(--warning,#d97706); font-weight:700; }
+      .est-margem { display:inline-block; font-size:.7rem; font-weight:600; padding:1px 5px; border-radius:8px; margin-top:2px; }
+      .est-margem--ok  { background:rgba(34,197,94,.14); color:#15803d; }
+      .est-margem--low { background:rgba(234,179,8,.18); color:#92400e; }
+      .est-margem--neg { background:rgba(239,68,68,.13); color:#b91c1c; }
+      @media (prefers-color-scheme:dark) {
+        .est-qty--zero  { color:#f87171; }
+        .est-qty--baixo { color:#fbbf24; }
+        .est-margem--ok  { background:rgba(34,197,94,.18); color:#4ade80; }
+        .est-margem--low { background:rgba(234,179,8,.2); color:#fbbf24; }
+        .est-margem--neg { background:rgba(239,68,68,.18); color:#f87171; }
+      }
+    `;
+    document.head.appendChild(style);
   },
 
   // ── Sugestão automática de compra ─────────────────────────────────────────
