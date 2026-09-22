@@ -1,5 +1,6 @@
 import api from './api.js';
 import { showToast, confirmarAcao } from './feedback.js';
+import { escapeHtml, buildFriendlyError } from './utils.js';
 
 const STATUS_LABEL = {
   aberta:           'Aberta',
@@ -32,6 +33,26 @@ const PROXIMO_STATUS = {
 
 const EQUIPAMENTOS = ['Celular', 'Notebook', 'Computador', 'Tablet', 'Smartwatch', 'Impressora', 'Outro'];
 
+function injectOsStyles() {
+  if (document.getElementById('osStyles')) return;
+  const s = document.createElement('style');
+  s.id = 'osStyles';
+  s.textContent = `
+    .os-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 48px 20px;
+      text-align: center;
+    }
+    .os-empty i { font-size: 2.2rem; opacity: .2; margin-bottom: 4px; color: var(--text-muted); }
+    .os-empty strong { font-size: 15px; color: var(--text); }
+    .os-empty p { font-size: 13px; margin: 0; color: var(--text-muted); }
+  `;
+  document.head.appendChild(s);
+}
+
 const OrdensServicoModule = {
   state: {
     ordens: [],
@@ -44,14 +65,19 @@ const OrdensServicoModule = {
   },
 
   init() {
+    injectOsStyles();
     this.render();
     this.bindShellEvents();
     this.load();
   },
 
   async load() {
+    if (this.state.carregando) return;
     this.state.carregando = true;
-    this.setFeedback('Carregando ordens de serviço...', 'info');
+    const tbody = document.getElementById('osTbody');
+    if (tbody) tbody.innerHTML = `<tr><td colspan="10" style="padding:0"><div class="module-skeleton" style="padding:12px">${
+      Array.from({length: 4}).map(() => '<div class="skeleton-line" style="height:36px;margin-bottom:8px;border-radius:6px"></div>').join('')
+    }</div></td></tr>`;
     try {
       const q = { limit: this.state.porPagina, offset: this.state.paginaAtual * this.state.porPagina };
       if (this.state.filtroStatus) q.status = this.state.filtroStatus;
@@ -61,10 +87,9 @@ const OrdensServicoModule = {
       this.state.ordens = result?.ordens || [];
       this.state.total  = result?.total  || 0;
       this.renderLista();
-      this.setFeedback('', '');
     } catch (err) {
       console.error('[os] load:', err);
-      this.setFeedback('Erro ao carregar ordens de serviço.', 'error');
+      if (tbody) tbody.innerHTML = `<tr><td colspan="10"><div class="module-feedback module-feedback--error" style="margin:12px">${escapeHtml(buildFriendlyError(err))}</div></td></tr>`;
     } finally {
       this.state.carregando = false;
     }
@@ -94,6 +119,7 @@ const OrdensServicoModule = {
           </div>
         </div>
 
+        <div id="osContador" style="font-size:.82rem;color:var(--text-muted);margin-bottom:8px"></div>
         <div class="table-wrapper">
           <table class="data-table" id="osTabela">
             <thead>
@@ -140,7 +166,14 @@ const OrdensServicoModule = {
     if (!tbody) return;
 
     if (!this.state.ordens.length) {
-      tbody.innerHTML = `<tr><td colspan="10" class="text-center text-muted">Nenhuma ordem encontrada.</td></tr>`;
+      const filtro = this.state.filtroStatus;
+      tbody.innerHTML = `<tr><td colspan="10"><div class="os-empty">
+        <i class="fa-solid fa-screwdriver-wrench"></i>
+        <strong>${filtro ? `Nenhuma OS com status "${STATUS_LABEL[filtro] || filtro}"` : 'Nenhuma ordem encontrada'}</strong>
+        <p>${filtro ? 'Tente selecionar outro filtro de status.' : 'Crie a primeira OS clicando em "Nova OS".'}</p>
+      </div></td></tr>`;
+      const contador = document.getElementById('osContador');
+      if (contador) contador.textContent = '';
       this.renderPaginacao();
       return;
     }
@@ -148,6 +181,9 @@ const OrdensServicoModule = {
     const fmt = (v) => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     const fmtData = (d) => d ? new Date(d).toLocaleDateString('pt-BR') : '—';
     const trunc = (t, n = 40) => t && t.length > n ? t.slice(0, n) + '...' : (t || '—');
+
+    const contador = document.getElementById('osContador');
+    if (contador) contador.textContent = `${this.state.total} ordem(ns) encontrada(s)`;
 
     tbody.innerHTML = this.state.ordens.map(os => {
       const prox = PROXIMO_STATUS[os.status];
@@ -327,23 +363,31 @@ const OrdensServicoModule = {
     const listaItens = document.getElementById('osItensLista');
     itens.forEach(item => this.adicionarLinhaItem(listaItens, item));
 
-    // Busca de cliente (simples — digita e abre OS com nome livre)
+    // Busca de cliente com sincronização do ID ao selecionar da autocomplete
     const clienteNomeInput = document.getElementById('osClienteNome');
+    const clienteIdInput   = document.getElementById('osClienteId');
+    let _clienteCache = [];
     clienteNomeInput.addEventListener('input', async () => {
       const v = clienteNomeInput.value.trim();
+      if (clienteIdInput) clienteIdInput.value = '';
       if (v.length < 2) return;
       try {
         const r = await api.getClientes({ busca: v, limit: 5 });
-        const lista = r?.clientes || r || [];
+        _clienteCache = r?.clientes || r || [];
         const old = document.getElementById('osClienteSugestoes');
         if (old) old.remove();
-        if (!lista.length) return;
+        if (!_clienteCache.length) return;
         const dl = document.createElement('datalist');
         dl.id = 'osClienteSugestoes';
-        lista.forEach(c => { const opt = document.createElement('option'); opt.value = c.nome; opt.dataset.id = c.id; dl.appendChild(opt); });
+        _clienteCache.forEach(c => { const opt = document.createElement('option'); opt.value = c.nome; dl.appendChild(opt); });
         clienteNomeInput.setAttribute('list', 'osClienteSugestoes');
         clienteNomeInput.parentNode.appendChild(dl);
       } catch { /* silencia */ }
+    });
+    clienteNomeInput.addEventListener('change', () => {
+      const nome = clienteNomeInput.value.trim();
+      const match = _clienteCache.find(c => c.nome === nome);
+      if (match && clienteIdInput) clienteIdInput.value = match.id;
     });
 
     document.getElementById('osAddItemBtn').addEventListener('click', () => {
@@ -377,6 +421,9 @@ const OrdensServicoModule = {
       await this.salvarOS(id);
     });
 
+    setTimeout(() => document.getElementById('osClienteNome')?.focus(), 50);
+    const _escHandler = (e) => { if (e.key === 'Escape') { modal.removeEventListener('keydown', _escHandler); this.fecharModal(); } };
+    modal.addEventListener('keydown', _escHandler);
     modal.classList.remove('hidden');
   },
 
@@ -461,7 +508,7 @@ const OrdensServicoModule = {
       await this.load();
     } catch (err) {
       console.error('[os] salvarOS:', err);
-      showToast(err?.message || 'Erro ao salvar OS.', 'error');
+      showToast(buildFriendlyError(err), 'error');
     } finally {
       if (btn) { btn.disabled = false; btn.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> ${id ? 'Salvar alterações' : 'Abrir OS'}`; btn.type = 'button'; }
     }
@@ -618,7 +665,7 @@ ${os.observacoes ? `<div class="field" style="margin-bottom:12px"><label>Observa
       }
     } catch (err) {
       console.error('[os] imprimir:', err);
-      showToast('Erro ao gerar impressão da OS.', 'error');
+      showToast(buildFriendlyError(err), 'error');
     }
   },
 
@@ -658,7 +705,7 @@ ${os.observacoes ? `<div class="field" style="margin-bottom:12px"><label>Observa
           showToast('Status atualizado.', 'success');
           await this.load();
         } catch (err) {
-          showToast(err?.message || 'Erro ao atualizar status.', 'error');
+          showToast(buildFriendlyError(err), 'error');
         }
         return;
       }
@@ -671,7 +718,7 @@ ${os.observacoes ? `<div class="field" style="margin-bottom:12px"><label>Observa
           showToast('OS cancelada.', 'success');
           await this.load();
         } catch (err) {
-          showToast(err?.message || 'Erro ao cancelar.', 'error');
+          showToast(buildFriendlyError(err), 'error');
         }
         return;
       }
@@ -684,7 +731,7 @@ ${os.observacoes ? `<div class="field" style="margin-bottom:12px"><label>Observa
           showToast('OS excluída.', 'success');
           await this.load();
         } catch (err) {
-          showToast(err?.message || 'Erro ao excluir.', 'error');
+          showToast(buildFriendlyError(err), 'error');
         }
         return;
       }
@@ -702,7 +749,10 @@ ${os.observacoes ? `<div class="field" style="margin-bottom:12px"><label>Observa
     if (novaBtn) novaBtn.addEventListener('click', () => this.abrirModal());
 
     const atualizarBtn = document.getElementById('osAtualizarBtn');
-    if (atualizarBtn) atualizarBtn.addEventListener('click', () => this.load());
+    if (atualizarBtn) atualizarBtn.addEventListener('click', () => {
+      if (this.state.carregando) return;
+      this.load();
+    });
 
     const busca = document.getElementById('osBusca');
     if (busca) {
