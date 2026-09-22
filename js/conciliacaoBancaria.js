@@ -1,12 +1,13 @@
 import api from './api.js';
 import { showToast, confirmarAcao } from './feedback.js';
-import { escapeHtml, buildFriendlyError } from './utils.js';
+import { escapeHtml, buildFriendlyError, debounce } from './utils.js';
 
 const state = {
   sessoes:   [],
   sessaoId:  null,   // sessão aberta
   itens:     [],
   filtroStatus: '',  // '' | 'pendente' | 'conciliado' | 'ignorado'
+  buscaDetalhe: '',
   loading:   false
 };
 
@@ -37,10 +38,154 @@ function showMsg(msg, type = 'info') {
   showToast(msg, type);
 }
 
+// ─── Highlight / Filter / Styles ─────────────────────────────────────────────
+
+function _highlight(text, term) {
+  if (!term || !text) return esc(text || '');
+  const safeRe = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp(`(${safeRe})`, 'gi');
+  return String(text).split(re).map((part, i) =>
+    i % 2 === 1 ? `<mark class="cb-hl">${esc(part)}</mark>` : esc(part)
+  ).join('');
+}
+
+function filtrarItensBusca() {
+  const term = state.buscaDetalhe.toLowerCase().trim();
+  if (!term) return state.itens;
+  return state.itens.filter(i =>
+    String(i.descricao || '').toLowerCase().includes(term)
+  );
+}
+
+function injectConciliacaoStyles() {
+  if (document.getElementById('cbStyles')) return;
+  const s = document.createElement('style');
+  s.id = 'cbStyles';
+  s.textContent = `
+    .cb-sessoes-lista { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+    .cb-sessao-card {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 16px; padding: 14px 16px;
+      border: 1px solid var(--border, #e5e7eb); border-radius: 12px;
+      background: var(--bg, #f8f9fa); transition: box-shadow .15s;
+    }
+    .cb-sessao-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+    .cb-sessao-card__left { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
+    .cb-sessao-card__icon {
+      width: 40px; height: 40px; border-radius: 10px;
+      background: var(--primary-light, #dbeafe); color: var(--primary, #3b82f6);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .cb-sessao-card__nome {
+      display: block; font-size: 14px; font-weight: 600;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .cb-sessao-card__meta { display: block; font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .cb-sessao-card__right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+    .cb-sessao-card__badges { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+    .cb-progresso-wrap { display: flex; align-items: center; gap: 6px; }
+    .cb-progresso {
+      width: 80px; height: 6px;
+      background: var(--border, #e5e7eb); border-radius: 3px; overflow: hidden;
+    }
+    .cb-progresso__bar {
+      height: 100%; border-radius: 3px;
+      background: var(--primary, #3b82f6); transition: width .4s;
+    }
+    .cb-progresso__bar--warning { background: var(--warning, #f59e0b); }
+    .cb-progresso__bar--success { background: var(--success, #22c55e); }
+    .cb-progresso__pct {
+      font-size: 11px; font-weight: 600; color: var(--text-muted);
+      min-width: 28px; text-align: right;
+    }
+    .cb-info-card {
+      display: flex; align-items: flex-start; gap: 10px;
+      background: var(--info-bg, #eff6ff); border: 1px solid var(--info-border, #bfdbfe);
+      border-radius: 10px; padding: 12px 14px; margin-bottom: 16px;
+      color: var(--info-text, #1d4ed8); font-size: 14px;
+    }
+    .cb-info-card i { margin-top: 2px; flex-shrink: 0; }
+    .cb-info-card strong { display: block; margin-bottom: 2px; }
+    .cb-info-card p { margin: 0; color: var(--text, #374151); font-size: 13px; }
+    .cb-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+    .cb-stat--credito  { border-top: 3px solid var(--success, #22c55e); }
+    .cb-stat--debito   { border-top: 3px solid var(--danger, #ef4444); }
+    .cb-stat--pendente { border-top: 3px solid var(--warning, #f59e0b); }
+    .cb-stat--ok       { border-top: 3px solid var(--primary, #3b82f6); }
+    .cb-filtro-status { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+    .cb-filtro-btn {
+      padding: 5px 14px; border: 1px solid var(--border, #e5e7eb);
+      border-radius: 20px; background: var(--surface, #fff);
+      font-size: 13px; cursor: pointer; color: var(--text); transition: all .15s;
+    }
+    .cb-filtro-btn--ativo {
+      background: var(--primary, #3b82f6); border-color: var(--primary, #3b82f6);
+      color: #fff; font-weight: 600;
+    }
+    .cb-filtro-btn:not(.cb-filtro-btn--ativo):hover { background: var(--bg, #f8f9fa); }
+    .cb-drop-area {
+      border: 2px dashed var(--border, #e5e7eb); border-radius: 10px; padding: 28px;
+      text-align: center; cursor: pointer; transition: all .2s;
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+    }
+    .cb-drop-area i { font-size: 28px; color: var(--text-muted); }
+    .cb-drop-area p, .cb-drop-area small { margin: 0; color: var(--text-muted); }
+    .cb-drop-area p { font-size: 14px; }
+    .cb-drop-area small { font-size: 12px; }
+    .cb-drop-area--over, .cb-drop-area:hover {
+      border-color: var(--primary, #3b82f6); background: var(--info-bg, #eff6ff);
+    }
+    .cb-drop-area--over i, .cb-drop-area:hover i { color: var(--primary, #3b82f6); }
+    .cb-empty {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 8px; padding: 48px 24px; text-align: center;
+    }
+    .cb-empty i { font-size: 48px; color: var(--border, #e5e7eb); margin-bottom: 4px; }
+    .cb-empty strong { font-size: 16px; }
+    .cb-empty p { color: var(--text-muted); font-size: 14px; margin: 0; }
+    .cb-busca-detalhe {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--bg, #f8f9fa); border: 1px solid var(--border, #e5e7eb);
+      border-radius: 8px; padding: 0 12px; height: 38px;
+      margin-bottom: 12px; max-width: 360px;
+    }
+    .cb-busca-detalhe input {
+      border: none; background: transparent;
+      flex: 1; font-size: 13px; outline: none; color: var(--text);
+    }
+    mark.cb-hl { background: #fef08a; color: #713f12; border-radius: 2px; padding: 0 2px; }
+    @media (max-width: 700px) {
+      .cb-stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .cb-sessao-card { flex-direction: column; align-items: flex-start; }
+      .cb-sessao-card__right { width: 100%; justify-content: flex-end; }
+      .cb-busca-detalhe { max-width: 100%; }
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) mark.cb-hl { background: #854d0e; color: #fef9c3; }
+      :root:not([data-theme="light"]) .cb-info-card {
+        background: rgba(59,130,246,.1); border-color: rgba(59,130,246,.25); color: #93c5fd;
+      }
+      :root:not([data-theme="light"]) .cb-info-card p { color: var(--text); }
+      :root:not([data-theme="light"]) .cb-sessao-card { background: var(--bg); }
+      :root:not([data-theme="light"]) .cb-busca-detalhe { background: var(--bg); border-color: var(--border); }
+    }
+    :root[data-theme="dark"] mark.cb-hl { background: #854d0e; color: #fef9c3; }
+    :root[data-theme="dark"] .cb-info-card {
+      background: rgba(59,130,246,.1); border-color: rgba(59,130,246,.25); color: #93c5fd;
+    }
+    :root[data-theme="dark"] .cb-info-card p { color: var(--text); }
+    :root[data-theme="dark"] .cb-sessao-card { background: var(--bg); }
+    :root[data-theme="dark"] .cb-busca-detalhe { background: var(--bg); border-color: var(--border); }
+  `;
+  document.head.appendChild(s);
+}
+
 // ─── Init ─────────────────────────────────────────────────────────────────────
 
 export async function initConciliacaoModule() {
   try {
+    injectConciliacaoStyles();
     renderSkeleton();
     await carregarSessoes();
     renderLista();
@@ -70,7 +215,16 @@ function renderSkeleton() {
 
 function renderErro(msg) {
   const c = container();
-  if (c) c.innerHTML = `<div class="module-card"><div class="module-feedback module-feedback--error">${esc(msg)}</div></div>`;
+  if (c) {
+    c.innerHTML = `
+      <div class="module-card" style="text-align:center;padding:40px 20px">
+        <div class="module-feedback module-feedback--error" style="margin-bottom:16px">${esc(msg)}</div>
+        <button class="btn btn-light" id="cbBtnRetry" type="button">
+          <i class="fa-solid fa-rotate"></i> Tentar novamente
+        </button>
+      </div>`;
+    document.getElementById('cbBtnRetry')?.addEventListener('click', initConciliacaoModule);
+  }
 }
 
 function container() { return document.getElementById('conciliacaoContainer'); }
@@ -105,8 +259,11 @@ function renderLista() {
         ? `<div class="cb-sessoes-lista">${state.sessoes.map(renderCardSessao).join('')}</div>`
         : `<div class="empty-state cb-empty">
             <i class="fa-solid fa-bank"></i>
-            <p>Nenhum extrato importado ainda.</p>
-            <p style="font-size:.85rem;color:var(--text-muted)">Clique em "Importar Extrato" para começar.</p>
+            <strong>Nenhum extrato importado ainda.</strong>
+            <p>Exporte o extrato do seu banco em OFX ou CSV e importe aqui.</p>
+            <button class="btn btn-primary" id="cbBtnNovaEmpty" type="button" style="margin-top:8px">
+              <i class="fa-solid fa-upload"></i> Importar primeiro extrato
+            </button>
           </div>`
       }
     </div>
@@ -139,8 +296,11 @@ function renderCardSessao(s) {
         </div>
       </div>
       <div class="cb-sessao-card__right">
-        <div class="cb-progresso">
-          <div class="cb-progresso__bar" style="width:${pct}%"></div>
+        <div class="cb-progresso-wrap">
+          <div class="cb-progresso">
+            <div class="cb-progresso__bar ${pct === 100 ? 'cb-progresso__bar--success' : pct < 50 ? 'cb-progresso__bar--warning' : ''}" style="width:${pct}%"></div>
+          </div>
+          <span class="cb-progresso__pct">${pct}%</span>
         </div>
         <div class="cb-sessao-card__badges">
           ${pendentes   > 0 ? `<span class="badge badge--warning">${pendentes} pendentes</span>`   : ''}
@@ -214,6 +374,8 @@ function bindLista() {
   document.getElementById('cbBtnFecharImport').onclick = fecharModalImport;
   document.getElementById('cbBtnCancelarImport').onclick = fecharModalImport;
   document.getElementById('cbModalImport').onclick  = (e) => { if (e.target.id === 'cbModalImport') fecharModalImport(); };
+
+  document.getElementById('cbBtnNovaEmpty')?.onclick = () => document.getElementById('cbModalImport').classList.remove('hidden');
 
   document.getElementById('cbBtnAtualizar').onclick = async () => {
     try { await carregarSessoes(); renderLista(); } catch (e) { showMsg(buildFriendlyError(e), 'error'); }
@@ -318,6 +480,7 @@ function lerArquivo(file) {
 async function abrirSessao(id) {
   state.sessaoId    = id;
   state.filtroStatus = '';
+  state.buscaDetalhe = '';
   try {
     renderDetalheLoading();
     await carregarItens();
@@ -392,6 +555,12 @@ function renderDetalhe() {
           </button>`).join('')}
       </div>
 
+      <!-- Busca -->
+      <div class="cb-busca-detalhe">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="cbBuscaDetalhe" placeholder="Buscar por descrição..." value="${esc(state.buscaDetalhe)}"/>
+      </div>
+
       <!-- Tabela -->
       ${renderTabelaItens()}
 
@@ -404,10 +573,13 @@ function renderDetalhe() {
 }
 
 function renderTabelaItens() {
-  if (!state.itens.length) {
+  const itens = filtrarItensBusca();
+  const hasFilter = !!(state.filtroStatus || state.buscaDetalhe);
+  if (!itens.length) {
     return `<div class="empty-state cb-empty">
       <i class="fa-solid fa-check-double"></i>
-      <p>Nenhuma transação encontrada com este filtro.</p>
+      <strong>${hasFilter ? 'Nenhuma transação com os filtros aplicados' : 'Nenhuma transação encontrada'}</strong>
+      ${hasFilter ? '<p>Tente remover ou ajustar os filtros.</p>' : ''}
     </div>`;
   }
 
@@ -425,7 +597,7 @@ function renderTabelaItens() {
           </tr>
         </thead>
         <tbody>
-          ${state.itens.map(renderLinhaItem).join('')}
+          ${itens.map(renderLinhaItem).join('')}
         </tbody>
       </table>
     </div>`;
@@ -458,7 +630,7 @@ function renderLinhaItem(item) {
   return `
     <tr>
       <td style="white-space:nowrap">${formatDate(item.data)}</td>
-      <td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(item.descricao)}">${esc(item.descricao)}</td>
+      <td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(item.descricao)}">${_highlight(item.descricao, state.buscaDetalhe)}</td>
       <td><span class="badge ${isCredito ? 'badge--success' : 'badge--danger'}">${isCredito ? 'Crédito' : 'Débito'}</span></td>
       <td class="text-right" style="color:${isCredito ? 'var(--success)' : 'var(--danger)'}">
         <strong>${toCurrency(item.valor)}</strong>
@@ -501,6 +673,7 @@ function renderModalLancamento() {
 
 function bindDetalhe() {
   document.getElementById('cbBtnVoltar').onclick = async () => {
+    state.buscaDetalhe = '';
     await carregarSessoes();
     renderLista();
   };
@@ -521,6 +694,16 @@ function bindDetalhe() {
       }
     };
   });
+
+  // Busca na tela de detalhe (client-side)
+  const debouncedBuscaDetalhe = debounce(() => {
+    const curval = document.getElementById('cbBuscaDetalhe')?.value ?? '';
+    state.buscaDetalhe = curval;
+    renderDetalhe();
+    const restored = document.getElementById('cbBuscaDetalhe');
+    if (restored) { restored.focus(); restored.setSelectionRange(curval.length, curval.length); }
+  }, 200);
+  document.getElementById('cbBuscaDetalhe')?.addEventListener('input', debouncedBuscaDetalhe);
 
   // Ações da tabela
   document.querySelectorAll('[data-action="ignorar"]').forEach(btn => {
