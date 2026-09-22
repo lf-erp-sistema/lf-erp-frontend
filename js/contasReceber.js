@@ -231,6 +231,117 @@ function _highlight(text, term) {
   return escaped.replace(new RegExp(`(${safe})`, 'gi'), '<mark class="cr-hl">$1</mark>');
 }
 
+function getStatusIconClass(status, dataVencimento) {
+  const st = normalizarStatus(status);
+  if (st === 'pago') return 'verde';
+  const hoje = todayFortaleza();
+  const venc = (dataVencimento || '').split('T')[0];
+  if (!venc || venc < hoje || st === 'atrasado' || st === 'parcial_atrasado') return 'vermelho';
+  const diffDays = Math.round((new Date(`${venc}T12:00:00`) - new Date(`${hoje}T12:00:00`)) / 86400000);
+  if (diffDays <= 3) return 'amarelo';
+  return 'cinza';
+}
+
+function getStatusIconHtml(conta) {
+  const cor = getStatusIconClass(conta.status, conta.data_vencimento);
+  const cfg = {
+    verde:    { fa: 'fa-solid fa-circle-check',      title: 'Recebido — clique para estornar' },
+    vermelho: { fa: 'fa-solid fa-circle-xmark',       title: 'Vencido — clique para registrar recebimento' },
+    amarelo:  { fa: 'fa-solid fa-circle-exclamation', title: 'Vence em breve — clique para registrar recebimento' },
+    cinza:    { fa: 'fa-regular fa-clock',            title: 'Pendente — clique para registrar recebimento' }
+  };
+  const { fa, title } = cfg[cor];
+  return `<button class="cr-status-icon cr-status-icon--${cor}" data-action="toggle-status-cr" data-id="${conta.id}" title="${title}" type="button"><i class="${fa}"></i></button>`;
+}
+
+function mostrarPopoverBaixa(btn, conta) {
+  document.getElementById('crStatusPopover')?.remove();
+  const rect = btn.getBoundingClientRect();
+  const hojeISO = todayFortaleza();
+  const formaAtual = (conta.forma_pagamento || '').toLowerCase();
+
+  const pop = document.createElement('div');
+  pop.id = 'crStatusPopover';
+  pop.className = 'cr-popover';
+  pop.style.cssText = `top:${rect.bottom + window.scrollY + 6}px;left:${Math.max(8, Math.min(rect.left + window.scrollX - 10, window.innerWidth - 272))}px`;
+
+  const selOpt = (val, label) =>
+    `<option value="${val}" ${formaAtual === val || (val === 'promissoria' && formaAtual.includes('promiss')) ? 'selected' : ''}>${label}</option>`;
+
+  pop.innerHTML = `
+    <div class="cr-popover__header">
+      <span class="cr-popover__cliente">${escapeHtml(conta.cliente_nome || 'Cliente')}</span>
+      <span class="cr-popover__valor">${formatCurrency(conta.valor)}</span>
+    </div>
+    ${conta.observacao ? `<div class="cr-popover__desc">${escapeHtml(conta.observacao.slice(0, 40))}${conta.observacao.length > 40 ? '…' : ''}</div>` : ''}
+    <div class="cr-popover__fields">
+      <input type="date" id="crPopData" class="cr-popover__input" value="${hojeISO}">
+      <select id="crPopForma" class="cr-popover__input">
+        <option value="">Forma de pagamento</option>
+        ${selOpt('dinheiro','Dinheiro')}
+        ${selOpt('pix','PIX')}
+        ${selOpt('promissoria','Promissória')}
+        ${selOpt('cartao_credito','Cartão crédito')}
+        ${selOpt('cartao_debito','Cartão débito')}
+        ${selOpt('transferencia','Transferência')}
+        ${selOpt('boleto','Boleto')}
+      </select>
+    </div>
+    <div class="cr-popover__btns">
+      <button class="btn btn-primary btn-sm" id="crPopConfirmar" type="button"><i class="fa-solid fa-check"></i> Confirmar</button>
+      <button class="btn btn-light btn-sm" id="crPopCancelar" type="button">Cancelar</button>
+    </div>`;
+
+  document.body.appendChild(pop);
+
+  const fechar = () => {
+    pop.remove();
+    document.removeEventListener('click', outsideClick);
+    document.removeEventListener('keydown', escKey);
+  };
+  const outsideClick = (e) => { if (!pop.contains(e.target) && e.target !== btn) fechar(); };
+  const escKey = (e) => { if (e.key === 'Escape') fechar(); };
+  setTimeout(() => { document.addEventListener('click', outsideClick); document.addEventListener('keydown', escKey); }, 0);
+
+  document.getElementById('crPopCancelar')?.addEventListener('click', fechar);
+  document.getElementById('crPopConfirmar')?.addEventListener('click', async () => {
+    const data = document.getElementById('crPopData')?.value;
+    const forma = document.getElementById('crPopForma')?.value || '';
+    if (!data) { showToast('Informe a data do recebimento.', 'error'); return; }
+    const btnConf = document.getElementById('crPopConfirmar');
+    if (btnConf) { btnConf.disabled = true; btnConf.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>'; }
+    try {
+      await api.baixarContaReceber(conta.id, {
+        valor_pago: Number(conta.valor),
+        data_pagamento: data,
+        ...(forma ? { forma_pagamento: forma } : {})
+      });
+      fechar();
+      const idx = state.contas.findIndex(c => String(c.id) === String(conta.id));
+      if (idx !== -1) {
+        const val = Number(conta.valor || 0);
+        const stOld = normalizarStatus(conta.status);
+        state.contas[idx].status = 'pago';
+        state.contas[idx].data_pagamento = data;
+        state.resumo.total_pago = (state.resumo.total_pago || 0) + val;
+        state.resumo.qtd_pago = (state.resumo.qtd_pago || 0) + 1;
+        if (stOld === 'atrasado' || stOld === 'parcial_atrasado') {
+          state.resumo.total_atrasado = Math.max(0, (state.resumo.total_atrasado || 0) - val);
+          state.resumo.qtd_atrasado = Math.max(0, (state.resumo.qtd_atrasado || 0) - 1);
+        } else {
+          state.resumo.total_pendente = Math.max(0, (state.resumo.total_pendente || 0) - val);
+          state.resumo.qtd_pendente = Math.max(0, (state.resumo.qtd_pendente || 0) - 1);
+        }
+      }
+      render();
+      showToast('Recebimento registrado!', 'success');
+    } catch (err) {
+      showToast(buildFriendlyError(err), 'error');
+      if (btnConf) { btnConf.disabled = false; btnConf.innerHTML = '<i class="fa-solid fa-check"></i> Confirmar'; }
+    }
+  });
+}
+
 function render() {
   const container = document.getElementById('contasReceberContainer');
   if (!container) return;
@@ -275,7 +386,7 @@ function render() {
           <input
             type="text"
             id="crBusca"
-            placeholder="Buscar cliente, observação ou nº da venda..."
+            placeholder="Buscar cliente, produto ou nº da venda..."
             value="${escapeHtml(state.filtros.busca || '')}"
           />
         </div>
@@ -365,11 +476,11 @@ function render() {
         <table class="data-table cr-table">
           <thead>
             <tr>
+              <th class="cr-th-situacao">Situação</th>
               <th data-sort-col="id" style="cursor:pointer;user-select:none">Título${si('id')}</th>
               <th data-sort-col="cliente_nome" style="cursor:pointer;user-select:none">Cliente${si('cliente_nome')}</th>
               <th>Origem</th>
               <th data-sort-col="data_vencimento" style="cursor:pointer;user-select:none">Vencimento${si('data_vencimento')}</th>
-              <th data-sort-col="status" style="cursor:pointer;user-select:none">Status${si('status')}</th>
               <th class="text-right" data-sort-col="valor" style="cursor:pointer;user-select:none">Valor${si('valor')}</th>
               <th class="text-right">Ações</th>
             </tr>
@@ -378,6 +489,18 @@ function render() {
           <tbody>
             ${renderLinhas()}
           </tbody>
+          ${state.contas.length ? `
+          <tfoot>
+            <tr class="cr-tfoot-row">
+              <td colspan="5" style="text-align:right;padding:10px 12px;font-size:.82rem;font-weight:700;color:var(--text-muted);">
+                Total da página (${state.contas.length} registro${state.contas.length !== 1 ? 's' : ''}):
+              </td>
+              <td class="text-right" style="padding:10px 12px;font-weight:800;color:var(--text);">
+                ${formatCurrency(state.contas.reduce((s, c) => s + Number(c.valor || 0), 0))}
+              </td>
+              <td></td>
+            </tr>
+          </tfoot>` : ''}
         </table>
       </div>
 
@@ -392,6 +515,16 @@ function render() {
         </button>
       </div>` : ''}
     </section>
+
+    <div class="cr-sticky-bar">
+      <span><i class="fa-regular fa-clock" style="font-size:.85rem"></i> Pendentes <strong>${formatCurrency(state.resumo.total_pendente)}</strong></span>
+      <span class="cr-sticky-bar__sep">|</span>
+      <span class="cr-sticky-bar--vermelho"><i class="fa-solid fa-circle-xmark" style="font-size:.85rem"></i> Atrasados <strong>${formatCurrency(state.resumo.total_atrasado)}</strong></span>
+      <span class="cr-sticky-bar__sep">|</span>
+      <span class="cr-sticky-bar--verde"><i class="fa-solid fa-circle-check" style="font-size:.85rem"></i> Recebidos <strong>${formatCurrency(state.resumo.total_pago)}</strong></span>
+      <span class="cr-sticky-bar__sep">|</span>
+      <span>Total <strong>${formatCurrency(state.resumo.total)}</strong></span>
+    </div>
   `;
 
   bindEventos();
@@ -421,22 +554,27 @@ function renderLinhas() {
   return state.contas
     .map((conta) => {
       const status = normalizarStatus(conta.status);
-      const statusLabel = getStatusLabel(status);
-      const diasAtrasoHtml = getDiasAtrasoHtml(status, conta.data_vencimento);
+      const statusColor = getStatusIconClass(status, conta.data_vencimento);
+      const _obs = conta.observacao ? conta.observacao.slice(0, 40) + (conta.observacao.length > 40 ? '…' : '') : '';
+      const _parc = Number(conta.total_parcelas || 1) > 1 ? `${Number(conta.parcela || 1)}/${Number(conta.total_parcelas || 1)}` : '';
+      const descParcela = [escapeHtml(_obs), _parc].filter(Boolean).join(' · ');
 
       return `
-      <tr>
+      <tr class="cr-row--${statusColor}">
+        <td style="text-align:center;width:52px;padding:8px 4px;">
+          ${getStatusIconHtml(conta)}
+        </td>
+
         <td>
           <div class="table-primary">
             <strong>#${escapeHtml(conta.id)}</strong>
-            <small>Parcela ${Number(conta.parcela || 1)}/${Number(conta.total_parcelas || 1)}</small>
           </div>
         </td>
 
         <td>
           <div class="table-primary">
             <strong>${_highlight(conta.cliente_nome || 'Cliente não informado', termo)}</strong>
-            <small>Cliente</small>
+            ${descParcela ? `<span class="cr-desc-parcela">${descParcela}</span>` : ''}
           </div>
         </td>
 
@@ -450,15 +588,10 @@ function renderLinhas() {
         <td>
           <div class="table-primary">
             <strong>${formatDate(conta.data_vencimento)}</strong>
-            <small>${status === 'pago' ? `Recebido em ${formatDate(conta.data_pagamento)}` : getVencimentoInfo(conta.data_vencimento)}</small>
+            ${status === 'pago'
+              ? `<small>Recebido em ${formatDate(conta.data_pagamento)}</small>`
+              : `<span class="cr-venc-chip cr-venc-chip--${statusColor}">${getVencimentoInfo(conta.data_vencimento)}</span>`}
           </div>
-        </td>
-
-        <td>
-          <span class="${getStatusBadgeClass(status)}">
-            ${statusLabel}
-          </span>
-          ${diasAtrasoHtml}
         </td>
 
         <td class="text-right">
@@ -720,6 +853,20 @@ function bindEventos() {
   document.querySelectorAll("[data-action='origem-venda-cr']").forEach((button) => {
     button.addEventListener('click', async () => {
       await abrirOrigemVenda(button.dataset.id);
+    });
+  });
+
+  document.querySelectorAll("[data-action='toggle-status-cr']").forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const conta = state.contas.find(c => String(c.id) === String(btn.dataset.id));
+      if (!conta) return;
+      const st = normalizarStatus(conta.status);
+      if (st === 'pago') {
+        await estornarConta(conta.id);
+      } else {
+        mostrarPopoverBaixa(btn, conta);
+      }
     });
   });
 }
@@ -2367,6 +2514,104 @@ function injectContasReceberStyles() {
     .cr-alertas-venc.cp-alertas-venc {
       margin-bottom: 16px;
     }
+
+    /* ── Coluna Situação ── */
+    .cr-th-situacao { width: 60px; text-align: center; }
+    .cr-status-icon {
+      display: flex; align-items: center; justify-content: center;
+      width: 34px; height: 34px; border-radius: 50%; border: none;
+      cursor: pointer; margin: 0 auto; font-size: 1.22rem; background: transparent;
+      transition: transform .12s, opacity .12s;
+    }
+    .cr-status-icon:hover { transform: scale(1.2); opacity: .8; }
+    .cr-status-icon--verde    { color: #16a34a; }
+    .cr-status-icon--vermelho { color: #dc2626; }
+    .cr-status-icon--amarelo  { color: #d97706; }
+    .cr-status-icon--cinza    { color: var(--text-muted); }
+
+    /* ── Destaque de linha ── */
+    tr.cr-row--vermelho td:first-child { border-left: 3px solid rgba(220,38,38,.55); }
+    tr.cr-row--vermelho { background: rgba(220,38,38,.03); }
+    tr.cr-row--amarelo  { background: rgba(217,119,6,.04); }
+
+    /* ── Chip de vencimento ── */
+    .cr-venc-chip {
+      display: inline-block; padding: 2px 8px; border-radius: 20px;
+      font-size: .73rem; font-weight: 700; margin-top: 3px;
+    }
+    .cr-venc-chip--verde    { background: var(--success-soft); color: #15803d; }
+    .cr-venc-chip--vermelho { background: var(--danger-soft);  color: #b91c1c; }
+    .cr-venc-chip--amarelo  { background: var(--warning-soft); color: #b45309; }
+    .cr-venc-chip--cinza    { background: var(--surface-2);    color: var(--text-muted); }
+
+    /* ── Descrição + parcela abaixo do cliente ── */
+    .cr-desc-parcela {
+      color: var(--text-muted); font-size: .75rem; font-weight: 600;
+      display: block; margin-top: 2px; white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis; max-width: 220px;
+    }
+
+    /* ── Tfoot ── */
+    .cr-tfoot-row td { background: var(--surface-2); border-top: 1px solid var(--border); }
+
+    /* ── Barra sticky de resumo ── */
+    .cr-sticky-bar {
+      position: sticky; bottom: 0; z-index: 10;
+      background: var(--surface); border-top: 1px solid var(--border);
+      padding: 9px 20px; display: flex; align-items: center;
+      gap: 10px; flex-wrap: wrap; font-size: .84rem; font-weight: 600;
+      color: var(--text-muted); box-shadow: 0 -2px 12px rgba(0,0,0,.07);
+    }
+    .cr-sticky-bar strong { color: var(--text); font-weight: 800; margin-left: 4px; }
+    .cr-sticky-bar__sep { opacity: .28; }
+    .cr-sticky-bar--vermelho { color: #dc2626; }
+    .cr-sticky-bar--verde    { color: #16a34a; }
+
+    /* ── Popover de baixa rápida ── */
+    .cr-popover {
+      position: absolute; z-index: 9999;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,.18);
+      padding: 14px 16px; width: 260px;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .cr-popover__header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+    .cr-popover__cliente { font-weight: 800; font-size: .9rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cr-popover__valor   { font-weight: 800; font-size: 1rem; color: var(--primary); white-space: nowrap; }
+    .cr-popover__desc    { font-size: .76rem; color: var(--text-muted); font-weight: 600; margin-top: -4px; }
+    .cr-popover__fields  { display: flex; flex-direction: column; gap: 7px; }
+    .cr-popover__input {
+      width: 100%; min-height: 36px; border: 1px solid var(--border); border-radius: 10px;
+      padding: 0 10px; background: var(--surface); color: var(--text);
+      font-size: .88rem; font-weight: 700; outline: none; box-sizing: border-box;
+    }
+    .cr-popover__input:focus { border-color: var(--primary); }
+    .cr-popover__btns { display: flex; gap: 8px; }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) .cr-popover { box-shadow: 0 8px 32px rgba(0,0,0,.42); }
+      :root:not([data-theme="light"]) tr.cr-row--vermelho { background: rgba(220,38,38,.06); }
+      :root:not([data-theme="light"]) tr.cr-row--amarelo  { background: rgba(217,119,6,.07); }
+      :root:not([data-theme="light"]) .cr-venc-chip--verde    { background: rgba(22,163,74,.18);  color: #4ade80; }
+      :root:not([data-theme="light"]) .cr-venc-chip--vermelho { background: rgba(220,38,38,.18);  color: #f87171; }
+      :root:not([data-theme="light"]) .cr-venc-chip--amarelo  { background: rgba(217,119,6,.18);  color: #fbbf24; }
+      :root:not([data-theme="light"]) .cr-sticky-bar--vermelho { color: #f87171; }
+      :root:not([data-theme="light"]) .cr-sticky-bar--verde    { color: #4ade80; }
+      :root:not([data-theme="light"]) .cr-status-icon--verde   { color: #4ade80; }
+      :root:not([data-theme="light"]) .cr-status-icon--vermelho{ color: #f87171; }
+      :root:not([data-theme="light"]) .cr-status-icon--amarelo { color: #fbbf24; }
+    }
+    :root[data-theme="dark"] .cr-popover { box-shadow: 0 8px 32px rgba(0,0,0,.42); }
+    :root[data-theme="dark"] tr.cr-row--vermelho { background: rgba(220,38,38,.06); }
+    :root[data-theme="dark"] tr.cr-row--amarelo  { background: rgba(217,119,6,.07); }
+    :root[data-theme="dark"] .cr-venc-chip--verde    { background: rgba(22,163,74,.18);  color: #4ade80; }
+    :root[data-theme="dark"] .cr-venc-chip--vermelho { background: rgba(220,38,38,.18);  color: #f87171; }
+    :root[data-theme="dark"] .cr-venc-chip--amarelo  { background: rgba(217,119,6,.18);  color: #fbbf24; }
+    :root[data-theme="dark"] .cr-sticky-bar--vermelho { color: #f87171; }
+    :root[data-theme="dark"] .cr-sticky-bar--verde    { color: #4ade80; }
+    :root[data-theme="dark"] .cr-status-icon--verde   { color: #4ade80; }
+    :root[data-theme="dark"] .cr-status-icon--vermelho{ color: #f87171; }
+    :root[data-theme="dark"] .cr-status-icon--amarelo { color: #fbbf24; }
   `;
 
   document.head.appendChild(style);
