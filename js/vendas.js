@@ -24,7 +24,9 @@ const VendasModule = {
       status: '',
       dataInicial: '',
       dataFinal: ''
-    }
+    },
+    ordem: 'data',
+    ordemDir: 'desc'
   },
 
   init() {
@@ -143,6 +145,20 @@ const VendasModule = {
     document.addEventListener('click', async (event) => {
       if (event.target.closest('#vendasEmptyPdvBtn')) {
         document.querySelector('.nav-item[data-view=pdv], .nav-subitem[data-view=pdv]')?.click();
+        return;
+      }
+
+      // Ordenação por coluna
+      const th = event.target.closest('th[data-sort-col]');
+      if (th) {
+        const col = th.dataset.sortCol;
+        if (this.state.ordem === col) {
+          this.state.ordemDir = this.state.ordemDir === 'asc' ? 'desc' : 'asc';
+        } else {
+          this.state.ordem = col;
+          this.state.ordemDir = col === 'data' ? 'desc' : 'asc';
+        }
+        this.applyLocalFilters();
         return;
       }
 
@@ -457,6 +473,12 @@ const VendasModule = {
     const container = document.getElementById('vendasContainer');
     if (!container) return;
 
+    const si = (col) => {
+      if (this.state.ordem !== col) return `<i class="fa-solid fa-sort vnd-sort-icon"></i>`;
+      const ic = this.state.ordemDir === 'asc' ? 'fa-sort-up' : 'fa-sort-down';
+      return `<i class="fa-solid ${ic} vnd-sort-icon vnd-sort-icon--active"></i>`;
+    };
+
     container.innerHTML = `
       <section class="module-card vendas-module-card">
         <div id="vendasFeedback" class="module-feedback"></div>
@@ -486,6 +508,11 @@ const VendasModule = {
             <div class="mini-stat">
               <span>Itens vendidos</span>
               <strong id="vendasStatsItens">0</strong>
+            </div>
+
+            <div class="mini-stat">
+              <span>Ticket médio</span>
+              <strong id="vendasStatsTicket">R$ 0,00</strong>
             </div>
           </div>
           <div class="module-card__actions">
@@ -571,11 +598,11 @@ const VendasModule = {
             <thead>
               <tr>
                 <th>Venda</th>
-                <th>Cliente</th>
-                <th>Data</th>
+                <th data-sort-col="cliente_nome">Cliente ${si('cliente_nome')}</th>
+                <th data-sort-col="data">Data ${si('data')}</th>
                 <th>Pagamento</th>
-                <th>Status</th>
-                <th class="text-right">Total</th>
+                <th data-sort-col="status_pagamento">Status ${si('status_pagamento')}</th>
+                <th class="text-right" data-sort-col="total">Total ${si('total')}</th>
                 <th class="text-right">Ações</th>
               </tr>
             </thead>
@@ -630,9 +657,30 @@ const VendasModule = {
       return matchBusca && matchPagamento && matchStatus;
     });
 
+    this.state.vendasFiltradas = this._sortVendas(this.state.vendasFiltradas);
+
     this.renderStats();
     this.renderTable();
     this.toggleEmptyState();
+  },
+
+  _sortVendas(arr) {
+    const { ordem, ordemDir } = this.state;
+    return [...arr].sort((a, b) => {
+      let va = a[ordem] ?? '';
+      let vb = b[ordem] ?? '';
+      if (ordem === 'total') {
+        va = Number(va); vb = Number(vb);
+        return ordemDir === 'asc' ? va - vb : vb - va;
+      }
+      if (ordem === 'data') {
+        va = String(va); vb = String(vb);
+        return ordemDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+      }
+      va = String(va).toLowerCase(); vb = String(vb).toLowerCase();
+      const c = va.localeCompare(vb, 'pt-BR');
+      return ordemDir === 'asc' ? c : -c;
+    });
   },
 
   renderStats() {
@@ -648,9 +696,13 @@ const VendasModule = {
       return acc + Number(venda.total_itens || venda.quantidade_itens || 0);
     }, 0);
 
+    const ticketMedio = totalVendas > 0 ? valorTotal / totalVendas : 0;
+    const ticketEl = document.getElementById('vendasStatsTicket');
+
     if (this.el.totalVendas) this.el.totalVendas.textContent = String(totalVendas);
     if (this.el.totalValor) this.el.totalValor.textContent = formatCurrency(valorTotal);
-    if (this.el.totalItens) this.el.totalItens.textContent = String(totalItens);
+    if (this.el.totalItens) this.el.totalItens.textContent = totalItens > 0 ? String(totalItens) : '—';
+    if (ticketEl) ticketEl.textContent = formatCurrency(ticketMedio);
   },
 
   renderTable() {
@@ -663,40 +715,39 @@ const VendasModule = {
       return;
     }
 
+    const busca = String(this.state.filtros.busca || '').trim();
+
     this.el.tbody.innerHTML = this.state.vendasFiltradas
       .map((venda) => {
         const id = Number(venda.id || 0);
         const cliente = venda.cliente_nome || 'Consumidor não informado';
         const pagamento = venda.pagamento || '-';
         const status = venda.status_pagamento || 'pago';
+        const numItens = Number(venda.total_itens || venda.quantidade_itens || 0);
+        const desconto = Number(venda.desconto || 0);
 
         return `
         <tr>
           <td>
             <div class="table-primary">
               <strong>#${id}</strong>
-              <small>Venda registrada</small>
+              <small>${numItens > 0 ? `${numItens} item(ns)` : 'Venda'}${desconto > 0 ? ` · <span class="vnd-desc-badge">DESC</span>` : ''}</small>
             </div>
           </td>
 
           <td>
             <div class="table-primary">
-              <strong>${escapeHtml(cliente)}</strong>
-              <small>Cliente</small>
+              <strong>${this._highlight(cliente, busca)}</strong>
             </div>
           </td>
 
           <td>${formatDate(venda.data)}</td>
 
-          <td>
-            <span class="badge badge--info">
-              ${escapeHtml(pagamento)}
-            </span>
-          </td>
+          <td>${badgePagamento(pagamento)}</td>
 
           <td>
             <span class="${this.getStatusBadgeClass(status)}">
-              ${escapeHtml(capitalize(status))}
+              ${formatStatusVenda(status)}
             </span>
           </td>
 
@@ -706,35 +757,14 @@ const VendasModule = {
 
           <td class="text-right">
             <div class="table-actions">
-              <button
-                type="button"
-                class="btn-inline"
-                data-action="detalhar-venda"
-                data-id="${id}"
-              >
-                <i class="fa-solid fa-eye"></i>
-                Detalhes
+              <button type="button" class="btn-inline" data-action="detalhar-venda" data-id="${id}">
+                <i class="fa-solid fa-eye"></i> Detalhes
               </button>
-              <button
-                type="button"
-                class="btn-inline"
-                data-action="imprimir-recibo-venda"
-                data-id="${id}"
-                title="Imprimir recibo simples"
-              >
-                <i class="fa-solid fa-receipt"></i>
-                Recibo
+              <button type="button" class="btn-inline" data-action="imprimir-recibo-venda" data-id="${id}" title="Imprimir recibo simples">
+                <i class="fa-solid fa-receipt"></i> Recibo
               </button>
-              <button
-                type="button"
-                class="btn-inline"
-                style="color:var(--info)"
-                data-action="emitir-nfce-venda"
-                data-id="${id}"
-                title="Emitir NFC-e para esta venda"
-              >
-                <i class="fa-solid fa-file-invoice"></i>
-                NFC-e
+              <button type="button" class="btn-inline" data-action="emitir-nfce-venda" data-id="${id}" title="Emitir NFC-e para esta venda">
+                <i class="fa-solid fa-file-invoice"></i> NFC-e
               </button>
             </div>
           </td>
@@ -1685,6 +1715,13 @@ const VendasModule = {
     return 'badge badge--info';
   },
 
+  _highlight(text, term) {
+    const safe = escapeHtml(String(text || ''));
+    if (!term) return safe;
+    const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return safe.replace(new RegExp(`(${escaped})`, 'gi'), '<mark class="vnd-hl">$1</mark>');
+  },
+
   buildFriendlyError(error) {
     const message = error?.message || '';
 
@@ -1709,6 +1746,38 @@ const VendasModule = {
     const style = document.createElement('style');
     style.id = 'vendasProfessionalStyles';
     style.textContent = `
+      th[data-sort-col] { cursor: pointer; user-select: none; white-space: nowrap; }
+      th[data-sort-col]:hover { color: var(--primary); }
+      .vnd-sort-icon { margin-left: 4px; font-size: .7rem; opacity: .45; }
+      .vnd-sort-icon--active { opacity: 1; color: var(--primary); }
+
+      mark.vnd-hl { background: #fef08a; color: inherit; border-radius: 2px; padding: 0 1px; }
+      [data-theme="dark"] mark.vnd-hl { background: #854d0e; }
+
+      .vnd-desc-badge {
+        display: inline-block; padding: 1px 5px; border-radius: 4px;
+        font-size: .62rem; font-weight: 800; letter-spacing: .03em;
+        background: #fee2e2; color: #dc2626;
+      }
+      [data-theme="dark"] .vnd-desc-badge { background: #450a0a; color: #fca5a5; }
+
+      .vnd-pay {
+        display: inline-block; padding: 2px 9px; border-radius: 99px;
+        font-size: .72rem; font-weight: 700; letter-spacing: .02em;
+      }
+      .vnd-pay--pix         { background: #d1fae5; color: #065f46; }
+      .vnd-pay--dinheiro    { background: #f1f5f9; color: #475569; }
+      .vnd-pay--debito      { background: #dbeafe; color: #1e40af; }
+      .vnd-pay--credito     { background: #ede9fe; color: #5b21b6; }
+      .vnd-pay--promissoria { background: #fef3c7; color: #92400e; }
+      .vnd-pay--other       { background: var(--info-soft, #e0f2fe); color: #0e7490; }
+      [data-theme="dark"] .vnd-pay--pix         { background: #052e16; color: #6ee7b7; }
+      [data-theme="dark"] .vnd-pay--dinheiro    { background: #1e293b; color: #94a3b8; }
+      [data-theme="dark"] .vnd-pay--debito      { background: #1e3a5f; color: #93c5fd; }
+      [data-theme="dark"] .vnd-pay--credito     { background: #2e1065; color: #c4b5fd; }
+      [data-theme="dark"] .vnd-pay--promissoria { background: #3b2a00; color: #fcd34d; }
+      [data-theme="dark"] .vnd-pay--other       { background: #0c4a6e; color: #7dd3fc; }
+
       .vendas-filters-grid {
         display: grid;
         grid-template-columns: repeat(4, minmax(150px, 1fr)) auto;
@@ -2560,6 +2629,30 @@ function capitalize(value) {
   if (!text) return '';
 
   return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function formatStatusVenda(status) {
+  const mapa = {
+    pago:             'Pago',
+    pendente:         'Pendente',
+    parcial:          'Parcial',
+    atrasado:         'Atrasado',
+    parcial_atrasado: 'Parcial em atraso',
+    cancelado:        'Cancelado'
+  };
+  return escapeHtml(mapa[String(status || '').toLowerCase()] || capitalize(status));
+}
+
+function badgePagamento(pagamento) {
+  const p = String(pagamento || '').trim();
+  const pl = p.toLowerCase();
+  let cls = 'vnd-pay--other';
+  if (pl === 'pix')                                          cls = 'vnd-pay--pix';
+  else if (pl === 'dinheiro')                                cls = 'vnd-pay--dinheiro';
+  else if (pl.includes('débito') || pl.includes('debito'))   cls = 'vnd-pay--debito';
+  else if (pl.includes('crédito') || pl.includes('credito')) cls = 'vnd-pay--credito';
+  else if (pl === 'promissória' || pl === 'promissoria')     cls = 'vnd-pay--promissoria';
+  return `<span class="vnd-pay ${cls}">${escapeHtml(p || '-')}</span>`;
 }
 
 export function initVendasModule() {
