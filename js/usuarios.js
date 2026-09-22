@@ -11,7 +11,10 @@ const UsuariosModule = {
     editingId: null,
     initialized: false,
     eventsBound: false,
-    loading: false
+    loading: false,
+    filtroTipo: '',
+    ordem: 'nome',
+    ordemDir: 'asc'
   },
 
   init() {
@@ -42,6 +45,7 @@ const UsuariosModule = {
       nome: document.getElementById('usuarioNome'),
       usuario: document.getElementById('usuarioLogin'),
       senha: document.getElementById('usuarioSenha'),
+      email: document.getElementById('usuarioEmail'),
       tipo: document.getElementById('usuarioTipo'),
       feedback: document.getElementById('usuariosFeedback'),
       modalTitle: document.getElementById('usuarioModalTitle')
@@ -51,6 +55,8 @@ const UsuariosModule = {
   bind() {
     if (this.state.eventsBound) return;
     this.state.eventsBound = true;
+
+    this._injectStyles();
 
     const debouncedSearch = debounce((v) => this.search(v), 350);
 
@@ -63,7 +69,46 @@ const UsuariosModule = {
       }
     });
 
+    document.addEventListener('change', (e) => {
+      if (e.target.id === 'usuariosFiltroTipo') {
+        this.state.filtroTipo = e.target.value;
+        this.search(document.getElementById('usuariosSearch')?.value || '');
+      }
+    });
+
     document.addEventListener('click', async (e) => {
+      // Fechar modal ao clicar no overlay
+      if (e.target.id === 'usuarioModal') {
+        this.closeModal();
+        return;
+      }
+
+      // Toggle mostrar/ocultar senha
+      if (e.target.closest('#usuarioSenhaToggle')) {
+        const input = document.getElementById('usuarioSenha');
+        const icon = document.querySelector('#usuarioSenhaToggle i');
+        if (input && icon) {
+          const show = input.type === 'password';
+          input.type = show ? 'text' : 'password';
+          icon.className = show ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
+        }
+        return;
+      }
+
+      // Ordenação por coluna
+      const th = e.target.closest('th[data-sort-col]');
+      if (th) {
+        const col = th.dataset.sortCol;
+        if (this.state.ordem === col) {
+          this.state.ordemDir = this.state.ordemDir === 'asc' ? 'desc' : 'asc';
+        } else {
+          this.state.ordem = col;
+          this.state.ordemDir = 'asc';
+        }
+        this.search(document.getElementById('usuariosSearch')?.value || '');
+        return;
+      }
+
       const btn = e.target.closest('button');
       if (!btn) return;
 
@@ -90,6 +135,53 @@ const UsuariosModule = {
         await this.save();
       }
     });
+  },
+
+  _injectStyles() {
+    if (document.getElementById('usuarios-styles')) return;
+    const s = document.createElement('style');
+    s.id = 'usuarios-styles';
+    s.textContent = `
+      .usuario-avatar {
+        width: 34px; height: 34px; border-radius: 50%;
+        background: var(--primary-soft, rgba(59,130,246,.15));
+        color: var(--primary, #3b82f6);
+        font-size: .75rem; font-weight: 700;
+        display: inline-flex; align-items: center; justify-content: center;
+        flex-shrink: 0; user-select: none;
+      }
+      .usuario-nome-cell { display: flex; align-items: center; gap: 10px; }
+      .badge-perfil {
+        display: inline-block; padding: 2px 10px; border-radius: 99px;
+        font-size: .72rem; font-weight: 700; letter-spacing: .03em;
+      }
+      .badge-perfil--admin    { background: #dbeafe; color: #1d4ed8; }
+      .badge-perfil--gerente  { background: #fef3c7; color: #92400e; }
+      .badge-perfil--func     { background: #f1f5f9; color: #475569; }
+      @media (prefers-color-scheme: dark) {
+        .badge-perfil--admin   { background: #1e3a5f; color: #93c5fd; }
+        .badge-perfil--gerente { background: #3b2a00; color: #fcd34d; }
+        .badge-perfil--func    { background: #1e293b; color: #94a3b8; }
+      }
+      [data-theme="dark"] .badge-perfil--admin   { background: #1e3a5f; color: #93c5fd; }
+      [data-theme="dark"] .badge-perfil--gerente { background: #3b2a00; color: #fcd34d; }
+      [data-theme="dark"] .badge-perfil--func    { background: #1e293b; color: #94a3b8; }
+      mark.search-hl { background: #fef08a; color: inherit; border-radius: 2px; padding: 0 1px; }
+      [data-theme="dark"] mark.search-hl { background: #854d0e; }
+      th[data-sort-col] { cursor: pointer; user-select: none; white-space: nowrap; }
+      th[data-sort-col]:hover { color: var(--primary); }
+      .sort-icon { margin-left: 4px; font-size: .7rem; opacity: .5; }
+      .sort-icon--active { opacity: 1; color: var(--primary); }
+      .senha-wrapper { position: relative; }
+      .senha-wrapper input { padding-right: 38px; }
+      #usuarioSenhaToggle {
+        position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+        background: none; border: none; cursor: pointer; color: var(--text-muted);
+        padding: 4px; display: flex; align-items: center;
+      }
+      #usuarioSenhaToggle:hover { color: var(--text); }
+    `;
+    document.head.appendChild(s);
   },
 
   async load() {
@@ -124,6 +216,12 @@ const UsuariosModule = {
     const c = document.getElementById('usuariosContainer');
     if (!c) return;
 
+    const sortIcon = (col) => {
+      if (this.state.ordem !== col) return `<i class="fa-solid fa-sort sort-icon"></i>`;
+      const ic = this.state.ordemDir === 'asc' ? 'fa-sort-up' : 'fa-sort-down';
+      return `<i class="fa-solid ${ic} sort-icon sort-icon--active"></i>`;
+    };
+
     c.innerHTML = `
       <section class="module-card">
         <div id="usuariosFeedback" class="module-feedback"></div>
@@ -137,6 +235,13 @@ const UsuariosModule = {
               value="${escapeHtml(this.getCurrentSearchValue())}"
             />
           </div>
+
+          <select id="usuariosFiltroTipo" class="filter-input" style="min-width:140px">
+            <option value="">Todos os perfis</option>
+            <option value="admin" ${this.state.filtroTipo === 'admin' ? 'selected' : ''}>Admin</option>
+            <option value="gerente" ${this.state.filtroTipo === 'gerente' ? 'selected' : ''}>Gerente</option>
+            <option value="funcionario" ${this.state.filtroTipo === 'funcionario' ? 'selected' : ''}>Funcionário</option>
+          </select>
 
           <div class="module-toolbar__stats">
             <div class="mini-stat">
@@ -155,9 +260,9 @@ const UsuariosModule = {
           <table class="data-table">
             <thead>
               <tr>
-                <th>Nome</th>
-                <th>Login</th>
-                <th>Perfil</th>
+                <th data-sort-col="nome">Nome ${sortIcon('nome')}</th>
+                <th data-sort-col="usuario">Login ${sortIcon('usuario')}</th>
+                <th data-sort-col="tipo">Perfil ${sortIcon('tipo')}</th>
                 <th class="text-right">Ações</th>
               </tr>
             </thead>
@@ -191,12 +296,22 @@ const UsuariosModule = {
             </div>
 
             <div class="form-field">
+              <label for="usuarioEmail">E-mail <span style="font-weight:400;color:var(--text-muted)">(opcional)</span></label>
+              <input id="usuarioEmail" type="email" autocomplete="email" placeholder="usuario@email.com" />
+            </div>
+
+            <div class="form-field">
               <label for="usuarioSenha">Senha</label>
-              <input
-                id="usuarioSenha"
-                type="password"
-                placeholder="${this.state.editingId ? 'Deixe em branco para manter a senha atual' : 'Informe a senha inicial'}"
-              />
+              <div class="senha-wrapper">
+                <input
+                  id="usuarioSenha"
+                  type="password"
+                  placeholder="${this.state.editingId ? 'Deixe em branco para manter a senha atual' : 'Informe a senha inicial'}"
+                />
+                <button type="button" id="usuarioSenhaToggle" tabindex="-1" aria-label="Mostrar/ocultar senha">
+                  <i class="fa-solid fa-eye"></i>
+                </button>
+              </div>
               <div id="senhaMedidor" class="senha-medidor hidden">
                 <div class="senha-barra"><div id="senhaBarra" class="senha-barra__fill"></div></div>
                 <span id="senhaLabel" class="senha-label"></span>
@@ -254,53 +369,75 @@ const UsuariosModule = {
       return;
     }
 
+    const term = document.getElementById('usuariosSearch')?.value?.trim() || '';
+
     this.el.table.innerHTML = this.state.filteredItems
-      .map(
-        (u) => `
+      .map((u) => `
       <tr>
         <td>
-          <div class="table-primary">
-            <strong>${escapeHtml(u.nome || '-')}</strong>
-            <small style="display:block; color: var(--text-muted); margin-top:4px;">
-              ID: ${u.id}
-            </small>
+          <div class="usuario-nome-cell">
+            <div class="usuario-avatar">${this._getInitials(u.nome)}</div>
+            <div class="table-primary">
+              <strong>${this._highlight(u.nome || '-', term)}</strong>
+              <small style="display:block; color: var(--text-muted); margin-top:2px;">ID: ${u.id}</small>
+            </div>
           </div>
         </td>
 
-        <td>${escapeHtml(u.usuario || '-')}</td>
+        <td>${this._highlight(u.usuario || '-', term)}</td>
 
-        <td>${formatTipo(u.tipo)}</td>
+        <td>${formatTipoBadge(u.tipo)}</td>
 
         <td class="text-right">
           <div class="table-actions">
-            <button class="btn-inline" data-action="edit-usuario" data-id="${u.id}">
-              Editar
-            </button>
-            <button class="btn-inline btn-inline--danger" data-action="delete-usuario" data-id="${u.id}">
-              Excluir
-            </button>
+            <button class="btn-inline" data-action="edit-usuario" data-id="${u.id}">Editar</button>
+            <button class="btn-inline btn-inline--danger" data-action="delete-usuario" data-id="${u.id}">Excluir</button>
           </div>
         </td>
       </tr>
-    `
-      )
+    `)
       .join('');
   },
 
   search(term) {
-    const normalized = String(term || '')
-      .trim()
-      .toLowerCase();
+    const normalized = String(term || '').trim().toLowerCase();
 
-    this.state.filteredItems = this.state.items.filter((item) => {
-      const nome = String(item.nome || '').toLowerCase();
+    let result = this.state.items.filter((item) => {
+      if (this.state.filtroTipo && item.tipo !== this.state.filtroTipo) return false;
+      const nome    = String(item.nome || '').toLowerCase();
       const usuario = String(item.usuario || '').toLowerCase();
-      const tipo = String(item.tipo || '').toLowerCase();
-
-      return nome.includes(normalized) || usuario.includes(normalized) || tipo.includes(normalized);
+      const tipo    = String(item.tipo || '').toLowerCase();
+      return !normalized || nome.includes(normalized) || usuario.includes(normalized) || tipo.includes(normalized);
     });
 
+    result = this._sortItems(result);
+    this.state.filteredItems = result;
+    this.render();
+    this.cache();
     this.renderTable();
+  },
+
+  _sortItems(arr) {
+    const { ordem, ordemDir } = this.state;
+    return [...arr].sort((a, b) => {
+      const va = String(a[ordem] || '').toLowerCase();
+      const vb = String(b[ordem] || '').toLowerCase();
+      const cmp = va.localeCompare(vb, 'pt-BR');
+      return ordemDir === 'asc' ? cmp : -cmp;
+    });
+  },
+
+  _highlight(text, term) {
+    const safe = escapeHtml(String(text || ''));
+    if (!term) return safe;
+    const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return safe.replace(new RegExp(`(${escaped})`, 'gi'), '<mark class="search-hl">$1</mark>');
+  },
+
+  _getInitials(nome) {
+    const parts = String(nome || '').trim().split(/\s+/);
+    if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    return String(nome || '?')[0].toUpperCase();
   },
 
   getCurrentSearchValue() {
@@ -389,6 +526,7 @@ const UsuariosModule = {
     if (this.el.nome) this.el.nome.value = usuario.nome || '';
     if (this.el.usuario) this.el.usuario.value = usuario.usuario || '';
     if (this.el.senha) this.el.senha.value = '';
+    if (this.el.email) this.el.email.value = usuario.email || '';
     if (this.el.tipo) this.el.tipo.value = usuario.tipo || 'funcionario';
 
     if (!document.getElementById('permissoesGrid') && this.el.form) {
@@ -481,12 +619,14 @@ const UsuariosModule = {
     const saveBtn = this.el.form?.querySelector('button[type="submit"]');
     if (saveBtn) saveBtn.disabled = true;
 
+    const emailVal = this.el.email?.value?.trim() || '';
     const payload = {
       empresa: this.state.empresa,
       empresa_id: api.getEmpresaId(),
       nome: this.el.nome?.value?.trim() || '',
       usuario: this.el.usuario?.value?.trim() || '',
-      tipo: this.el.tipo?.value || 'funcionario'
+      tipo: this.el.tipo?.value || 'funcionario',
+      ...(emailVal ? { email: emailVal } : {})
     };
 
     const senha = this.el.senha?.value?.trim() || '';
@@ -611,14 +751,15 @@ const UsuariosModule = {
   }
 };
 
-function formatTipo(tipo) {
+function formatTipoBadge(tipo) {
   const mapa = {
-    admin: 'Admin',
-    gerente: 'Gerente',
-    funcionario: 'Funcionário'
+    admin:       { label: 'Admin',       cls: 'badge-perfil--admin' },
+    gerente:     { label: 'Gerente',     cls: 'badge-perfil--gerente' },
+    funcionario: { label: 'Funcionário', cls: 'badge-perfil--func' }
   };
-
-  return mapa[tipo] || escapeHtml(tipo || '-');
+  const entry = mapa[tipo];
+  if (entry) return `<span class="badge-perfil ${entry.cls}">${entry.label}</span>`;
+  return `<span class="badge-perfil badge-perfil--func">${escapeHtml(tipo || '-')}</span>`;
 }
 
 
