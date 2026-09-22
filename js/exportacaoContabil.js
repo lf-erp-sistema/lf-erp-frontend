@@ -1,7 +1,6 @@
-import { getAuth } from './auth.js';
 import { showToast } from './feedback.js';
 import api from './api.js';
-import { escapeHtml } from './utils.js';
+import { escapeHtml, buildFriendlyError } from './utils.js';
 
 const _EXPORT_ALLOWED_HOSTS = ['lf-erp-backend.onrender.com', 'localhost', '127.0.0.1'];
 function _validateExportBase(url) {
@@ -69,10 +68,33 @@ const EXPORTS = [
   { id: 'efd',             icon: 'fa-file-code',       titulo: 'EFD / SPED (rascunho)', ext: 'txt', endpoint: '/exportacao/efd', destaque: true }
 ];
 
+let _painelCarregando = false;
+
+function injectExportStyles() {
+  if (document.getElementById('expStyles')) return;
+  const s = document.createElement('style');
+  s.id = 'expStyles';
+  s.textContent = `
+    .exp-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 32px 20px;
+      text-align: center;
+      color: var(--text-muted, #94a3b8);
+      font-size: 13px;
+    }
+    .exp-empty i { font-size: 1.8rem; opacity: .2; margin-bottom: 4px; }
+  `;
+  document.head.appendChild(s);
+}
+
 const ExportacaoModule = {
   state: { initialized: false, tabAtiva: 'downloads', painelTimer: null },
 
   init() {
+    injectExportStyles();
     if (!this.state.initialized) {
       this.render();
       this.bindEvents();
@@ -241,7 +263,14 @@ const ExportacaoModule = {
 
     this.state.tabAtiva = novaTab;
 
-    if (novaTab === 'painel') this.carregarPainel();
+    if (novaTab === 'painel') {
+      const hojeStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Fortaleza' }).format(new Date());
+      const ini = document.getElementById('expPainelInicio');
+      const fim = document.getElementById('expPainelFim');
+      if (ini && !ini.value) ini.value = `${hojeStr.slice(0, 7)}-01`;
+      if (fim && !fim.value) fim.value = hojeStr;
+      this.carregarPainel();
+    }
     if (novaTab === 'integracao') this.carregarIntegracao();
   },
 
@@ -260,29 +289,29 @@ const ExportacaoModule = {
     const mesAno = document.getElementById('expMesAno')?.value;
     const suf    = mesAno ? sufixo(mesAno) : inicio.replace(/-/g, '').substring(0, 6);
     const nome   = `${id.replace('-', '_')}_${suf}.${ext}`;
-    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>'; }
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Baixando...'; }
     try {
       await downloadArquivo(endpoint, { inicio, fim }, nome);
     } catch (err) {
-      showToast(`Erro ao gerar ${id}: ${err.message}`, 'error');
+      showToast(buildFriendlyError(err), 'error');
     } finally {
       if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa fa-download"></i> Baixar'; }
     }
   },
 
   async baixarTodos() {
+    const { inicio } = this.getPeriodo();
+    if (!inicio) { showToast('Selecione um período antes de baixar', 'error'); return; }
     const endpoints = EXPORTS.filter((e) => e.ext === 'csv');
     const btn = document.getElementById('expBaixarTudoBtn');
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Gerando...';
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Gerando...'; }
     let erros = 0;
     for (const item of endpoints) {
       try { await this.baixar(item.endpoint, item.ext, item.id, null); }
       catch { erros++; }
       await new Promise((r) => setTimeout(r, 400));
     }
-    btn.disabled = false;
-    btn.innerHTML = '<i class="fa fa-download"></i> Baixar todos (exceto EFD)';
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa fa-download"></i> Baixar todos (exceto EFD)'; }
     if (erros === 0) showToast('Todos os arquivos gerados!', 'success');
     else showToast(`${erros} arquivo(s) com erro. Verifique o período.`, 'error');
   },
@@ -290,9 +319,11 @@ const ExportacaoModule = {
   // ── Painel ao Vivo ──────────────────────────────────────────────────────
 
   async carregarPainel() {
+    if (_painelCarregando) return;
+    _painelCarregando = true;
     const kpisEl = document.getElementById('expPainelKpis');
     const tsEl   = document.getElementById('expPainelTs');
-    if (!kpisEl) return;
+    if (!kpisEl) { _painelCarregando = false; return; }
 
     const inicio = document.getElementById('expPainelInicio')?.value;
     const fim    = document.getElementById('expPainelFim')?.value;
@@ -306,7 +337,12 @@ const ExportacaoModule = {
 
     try {
       const data = await api.request('/exportacao/painel?' + new URLSearchParams(params));
-      const p = data.painel;
+      const p = data?.painel;
+
+      if (!p) {
+        kpisEl.innerHTML = `<div class="exp-empty" style="grid-column:1/-1"><i class="fa-solid fa-chart-bar"></i>Nenhum dado disponível para o período</div>`;
+        return;
+      }
 
       const res = p.resultado;
       const resCor  = res >= 0 ? 'var(--success)' : 'var(--danger)';
@@ -353,8 +389,10 @@ const ExportacaoModule = {
       if (tsEl) tsEl.textContent = `Atualizado às ${p.atualizado_em?.substring(11, 16)}`;
     } catch (err) {
       kpisEl.innerHTML = `<div class="module-feedback module-feedback--error" style="grid-column:1/-1">
-        <i class="fa fa-triangle-exclamation"></i> ${err.message || 'Erro ao carregar painel'}
+        <i class="fa fa-triangle-exclamation"></i> ${escapeHtml(buildFriendlyError(err))}
       </div>`;
+    } finally {
+      _painelCarregando = false;
     }
   },
 
@@ -430,9 +468,15 @@ const ExportacaoModule = {
         </div>
       `;
     } catch (err) {
-      form.innerHTML = `<div class="module-feedback module-feedback--error">
-        <i class="fa fa-triangle-exclamation"></i> ${err.message || 'Erro ao carregar configuração'}
+      form.innerHTML = `<div style="text-align:center;padding:32px 20px">
+        <div class="module-feedback module-feedback--error" style="margin-bottom:16px">
+          <i class="fa fa-triangle-exclamation"></i> ${escapeHtml(buildFriendlyError(err))}
+        </div>
+        <button class="btn btn-light" id="expIntegracaoRetryBtn" type="button">
+          <i class="fa fa-rotate"></i> Tentar novamente
+        </button>
       </div>`;
+      document.getElementById('expIntegracaoRetryBtn')?.addEventListener('click', () => this.carregarIntegracao());
     }
   },
 
@@ -459,7 +503,7 @@ const ExportacaoModule = {
       // Recarrega para atualizar estado do botão Testar
       await this.carregarIntegracao();
     } catch (err) {
-      showToast(err.message || 'Erro ao salvar', 'error');
+      showToast(buildFriendlyError(err), 'error');
     } finally {
       if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa fa-floppy-disk"></i> Salvar Configuração'; }
     }
@@ -472,7 +516,7 @@ const ExportacaoModule = {
       const data = await api.request('/exportacao/integracao/testar', { method: 'POST' });
       showToast(data.mensagem || 'Webhook disparado!', data.status_http < 400 ? 'success' : 'error');
     } catch (err) {
-      showToast(err.message || 'Falha ao disparar webhook', 'error');
+      showToast(buildFriendlyError(err), 'error');
     } finally {
       if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa fa-paper-plane"></i> Testar Webhook'; }
     }
