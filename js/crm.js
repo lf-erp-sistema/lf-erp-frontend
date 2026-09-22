@@ -1,10 +1,9 @@
 import api from './api.js';
 import { getAuth } from './auth.js';
 import { showToast, confirmarAcao } from './feedback.js';
+import { escapeHtml, buildFriendlyError } from './utils.js';
 
-function esc(v) {
-  return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
+const esc = escapeHtml;
 
 function moeda(v) {
   return Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -46,7 +45,7 @@ const CrmModule = {
 
   async init() {
     if (!this.state.initialized) {
-      this.injectStyles();
+      injectCrmStyles();
       this.render();
       this.bindEvents();
       this.state.initialized = true;
@@ -57,6 +56,10 @@ const CrmModule = {
   async load() {
     if (this.state.loading) return;
     this.state.loading = true;
+    const viewEl = document.getElementById('crmViewContent');
+    if (viewEl) viewEl.innerHTML = `<div class="module-skeleton" style="padding:16px">${
+      Array.from({length: 4}).map(() => '<div class="skeleton-line" style="height:52px;margin-bottom:10px;border-radius:8px"></div>').join('')
+    }</div>`;
     try {
       const params = {};
       if (this.state.filtroEstagio) params.estagio = this.state.filtroEstagio;
@@ -72,7 +75,7 @@ const CrmModule = {
       this.renderDashboard();
       this.renderView();
     } catch (err) {
-      showToast(err.message || 'Erro ao carregar CRM', 'error');
+      showToast(buildFriendlyError(err), 'error');
     } finally {
       this.state.loading = false;
     }
@@ -105,6 +108,9 @@ const CrmModule = {
           <button class="btn btn-primary btn-sm" id="crmNovaBtn"><i class="fa fa-plus"></i> Nova oportunidade</button>
         </div>
       </div>
+
+      <!-- Contador -->
+      <div id="crmContador" style="font-size:.82rem;color:var(--text-muted);margin-bottom:8px"></div>
 
       <!-- Conteúdo -->
       <div id="crmViewContent"></div>
@@ -210,6 +216,9 @@ const CrmModule = {
   },
 
   renderView() {
+    const ops = this.getOpsFiltradas();
+    const contador = document.getElementById('crmContador');
+    if (contador) contador.textContent = ops.length ? `${ops.length} oportunidade${ops.length !== 1 ? 's' : ''} encontrada${ops.length !== 1 ? 's' : ''}` : '';
     if (this.state.view === 'kanban') this.renderKanban();
     else this.renderLista();
   },
@@ -238,7 +247,7 @@ const CrmModule = {
             ${total > 0 ? `<div style="font-size:11px;color:var(--text-muted);padding:0 12px 8px;">${moeda(total)}</div>` : ''}
             <div class="crm-kanban-cards">
               ${lista.length === 0
-                ? `<div style="padding:16px;text-align:center;font-size:12px;color:var(--text-muted);">Nenhuma</div>`
+                ? `<div class="crm-kanban-empty"><i class="fa fa-inbox"></i><span>Nenhuma</span></div>`
                 : lista.map((op) => this.renderCard(op)).join('')
               }
             </div>
@@ -283,7 +292,12 @@ const CrmModule = {
     const ops = this.getOpsFiltradas();
 
     if (!ops.length) {
-      el.innerHTML = `<div class="crm-empty"><i class="fa fa-chart-gantt" style="font-size:36px;margin-bottom:12px;display:block;"></i>Nenhuma oportunidade encontrada.<br>Clique em "Nova oportunidade" para começar.</div>`;
+      const filtro = this.state.filtroEstagio;
+      el.innerHTML = `<div class="crm-empty">
+        <i class="fa fa-chart-gantt"></i>
+        <strong>${filtro ? `Nenhuma oportunidade em "${ESTAGIOS.find(e=>e.key===filtro)?.label || filtro}"` : 'Nenhuma oportunidade encontrada'}</strong>
+        <p>${filtro ? 'Tente selecionar outro estágio.' : 'Clique em "Nova oportunidade" para começar.'}</p>
+      </div>`;
       return;
     }
 
@@ -411,11 +425,16 @@ const CrmModule = {
     }
 
     document.getElementById('crmModal').style.display = 'flex';
-    document.getElementById('crmTitulo').focus();
+    setTimeout(() => document.getElementById('crmTitulo')?.focus(), 50);
+
+    if (this._escHandlerModal) document.removeEventListener('keydown', this._escHandlerModal);
+    this._escHandlerModal = (e) => { if (e.key === 'Escape') this.fecharModal(); };
+    document.addEventListener('keydown', this._escHandlerModal);
   },
 
   fecharModal() {
     document.getElementById('crmModal').style.display = 'none';
+    if (this._escHandlerModal) { document.removeEventListener('keydown', this._escHandlerModal); this._escHandlerModal = null; }
   },
 
   async salvar() {
@@ -447,7 +466,7 @@ const CrmModule = {
       this.fecharModal();
       await this.load();
     } catch (err) {
-      showToast(err.message || 'Erro ao salvar', 'error');
+      showToast(buildFriendlyError(err), 'error');
     } finally {
       btn.disabled = false; btn.textContent = 'Salvar';
     }
@@ -461,7 +480,7 @@ const CrmModule = {
       showToast('Oportunidade excluída', 'success');
       await this.load();
     } catch (err) {
-      showToast(err.message || 'Erro ao excluir', 'error');
+      showToast(buildFriendlyError(err), 'error');
     }
   },
 
@@ -475,7 +494,7 @@ const CrmModule = {
       this.renderView();
       await this.load();
     } catch (err) {
-      showToast(err.message || 'Erro ao mover oportunidade', 'error');
+      showToast(buildFriendlyError(err), 'error');
     } finally {
       this.state._movingEstagio = false;
     }
@@ -488,12 +507,16 @@ const CrmModule = {
     document.getElementById('crmDetalheModal').style.display = 'flex';
     document.getElementById('crmDetalheBody').innerHTML = `<div style="padding:20px;text-align:center;color:var(--text-muted);">Carregando...</div>`;
 
+    if (this._escHandlerDetalhe) document.removeEventListener('keydown', this._escHandlerDetalhe);
+    this._escHandlerDetalhe = (e) => { if (e.key === 'Escape') this.fecharDetalhe(); };
+    document.addEventListener('keydown', this._escHandlerDetalhe);
+
     try {
       const data = await api.fetchAPI(`/crm/oportunidades/${id}`, 'GET', null, { empresa: api.getEmpresaNome(), empresa_id: api.getEmpresaId() });
       if (!data.oportunidade) throw new Error('Oportunidade não encontrada');
       this.renderDetalhe(data.oportunidade, data.atividades || []);
     } catch (err) {
-      document.getElementById('crmDetalheBody').innerHTML = `<div style="padding:20px;color:var(--danger);">${esc(err.message)}</div>`;
+      document.getElementById('crmDetalheBody').innerHTML = `<div style="padding:20px;color:var(--danger);">${esc(buildFriendlyError(err))}</div>`;
     }
   },
 
@@ -577,6 +600,7 @@ const CrmModule = {
   fecharDetalhe() {
     document.getElementById('crmDetalheModal').style.display = 'none';
     this.state.detalheId = null;
+    if (this._escHandlerDetalhe) { document.removeEventListener('keydown', this._escHandlerDetalhe); this._escHandlerDetalhe = null; }
   },
 
   async converter(id) {
@@ -588,7 +612,7 @@ const CrmModule = {
       this.fecharDetalhe();
       await this.load();
     } catch (err) {
-      showToast(err.message || 'Erro ao converter', 'error');
+      showToast(buildFriendlyError(err), 'error');
     }
   },
 
@@ -606,7 +630,7 @@ const CrmModule = {
       await api.fetchAPI(`/crm/oportunidades/${opId}/atividades`, 'POST', { tipo, descricao, data, empresa: api.getEmpresaNome(), empresa_id: api.getEmpresaId() });
       await this.abrirDetalhe(opId);
     } catch (err) {
-      showToast(err.message || 'Erro ao registrar atividade', 'error');
+      showToast(buildFriendlyError(err), 'error');
       if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Registrar'; }
     }
   },
@@ -618,70 +642,41 @@ const CrmModule = {
       await api.request(`/crm/oportunidades/${opId}/atividades/${atId}`, { method: 'DELETE', query: { empresa_id: api.getEmpresaId() } });
       await this.abrirDetalhe(opId);
     } catch (err) {
-      showToast(err.message || 'Erro ao remover', 'error');
+      showToast(buildFriendlyError(err), 'error');
     }
   },
 
-  // ── Estilos ───────────────────────────────────────────────────────────────
-
-  injectStyles() {
-    // estilos migrados para style.css
-    if (true) return;
-    const s = document.createElement('style');
-    s.id = 'crm-styles';
-    s.textContent = `
-      .crm-kpis { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px; }
-      .crm-kpi-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px 20px; min-width:140px; flex:1; }
-      .crm-kpi-card--green { border-color:#86efac; }
-      .crm-kpi-label { font-size:11px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px; }
-      .crm-kpi-value { font-size:1.6rem; font-weight:700; color:var(--text); line-height:1; }
-      .crm-kpi-sub { font-size:12px; color:var(--text-muted); margin-top:4px; }
-
-      .crm-toolbar { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:16px; }
-      .crm-view-toggle { display:flex; border:1px solid var(--border); border-radius:8px; overflow:hidden; }
-      .crm-view-btn { background:none; border:none; padding:6px 12px; cursor:pointer; color:var(--text-muted); font-size:13px; transition:.15s; }
-      .crm-view-btn.active { background:var(--primary); color:#fff; }
-
-      .crm-kanban { display:flex; gap:12px; overflow-x:auto; padding-bottom:8px; align-items:flex-start; }
-      .crm-kanban-col { min-width:220px; flex:0 0 220px; background:var(--surface-2); border-radius:12px; border:1px solid var(--border); }
-      .crm-kanban-col-header { display:flex; align-items:center; justify-content:space-between; padding:12px 12px 8px; }
-      .crm-kanban-cards { padding:0 8px 8px; display:flex; flex-direction:column; gap:8px; }
-      .crm-badge { display:inline-flex; align-items:center; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:600; }
-
-      .crm-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:12px; cursor:pointer; transition:.15s; }
-      .crm-card:hover { border-color:var(--primary); box-shadow:0 2px 8px rgba(0,0,0,.08); }
-      .crm-card-title { font-size:13px; font-weight:600; margin-bottom:5px; line-height:1.3; }
-      .crm-card-sub { font-size:11px; color:var(--text-muted); margin-top:3px; display:flex; align-items:center; gap:5px; }
-      .crm-card-valor { font-size:12px; font-weight:700; color:var(--success); margin-top:4px; }
-      .crm-card-footer { display:flex; align-items:center; justify-content:space-between; margin-top:8px; padding-top:8px; border-top:1px solid var(--border); }
-      .crm-estagio-sel { font-size:11px; border:none; background:var(--surface-2); border-radius:6px; padding:3px 6px; cursor:pointer; color:var(--text); max-width:110px; }
-
-      .crm-empty { padding:60px; text-align:center; color:var(--text-muted); font-size:13px; }
-
-      .crm-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:1000; align-items:center; justify-content:center; }
-      .crm-modal-card { background:var(--surface); border-radius:16px; width:100%; max-width:560px; max-height:90vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,.3); margin:16px; }
-      .crm-modal-header { display:flex; align-items:center; justify-content:space-between; padding:20px 24px 16px; border-bottom:1px solid var(--border); flex-shrink:0; }
-      .crm-modal-header h3 { margin:0; font-size:16px; font-weight:700; }
-      .crm-modal-footer { display:flex; justify-content:flex-end; gap:10px; padding:16px 24px; border-top:1px solid var(--border); flex-shrink:0; }
-
-      .crm-form { padding:16px 24px; overflow-y:auto; }
-      .crm-form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
-      .crm-form-group { display:flex; flex-direction:column; gap:5px; }
-      .crm-form-group--full { grid-column:1/-1; }
-      .crm-form-group label { font-size:12px; font-weight:600; color:var(--text-muted); }
-      @media(max-width:480px) { .crm-form-row { grid-template-columns:1fr; } }
-
-      .crm-detalhe-info { padding:16px 0; border-bottom:1px solid var(--border); margin-bottom:12px; display:flex; flex-direction:column; gap:8px; font-size:13px; }
-      .crm-detalhe-row { display:flex; align-items:center; gap:8px; }
-      .crm-ativ-item { display:flex; align-items:flex-start; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); }
-      .crm-ativ-icon { width:28px; height:28px; border-radius:50%; background:var(--surface-2); display:flex; align-items:center; justify-content:center; font-size:12px; flex-shrink:0; }
-
-      .btn-icon.danger:hover { color:var(--danger); }
-      .text-right { text-align:right; }
-    `;
-    document.head.appendChild(s);
-  }
 };
+
+function injectCrmStyles() {
+  if (document.getElementById('crmStyles')) return;
+  const s = document.createElement('style');
+  s.id = 'crmStyles';
+  s.textContent = `
+    .crm-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 48px 20px;
+      text-align: center;
+    }
+    .crm-empty i { font-size: 2.2rem; opacity: .25; margin-bottom: 4px; color: var(--text-muted); }
+    .crm-empty strong { font-size: 15px; color: var(--text); }
+    .crm-empty p { font-size: 13px; margin: 0; color: var(--text-muted); }
+    .crm-kanban-empty {
+      padding: 16px 8px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .crm-kanban-empty i { font-size: 1.2rem; opacity: .2; color: var(--text-muted); }
+    .crm-kanban-empty span { font-size: 12px; color: var(--text-muted); }
+  `;
+  document.head.appendChild(s);
+}
 
 export async function initCrmModule() {
   return CrmModule.init();
