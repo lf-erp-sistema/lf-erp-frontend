@@ -1,5 +1,6 @@
 import api from './api.js';
 import { showToast, confirmarAcao } from './feedback.js';
+import { escapeHtml, buildFriendlyError } from './utils.js';
 
 const STATUS_BADGE = {
   rascunho:   'badge--info',
@@ -19,6 +20,28 @@ const STATUS_LABEL = {
   convertido: 'Convertido'
 };
 
+const esc = escapeHtml;
+
+function injectOrcamentosStyles() {
+  if (document.getElementById('orcStyles')) return;
+  const s = document.createElement('style');
+  s.id = 'orcStyles';
+  s.textContent = `
+    .orc-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 48px 20px;
+      text-align: center;
+    }
+    .orc-empty i { font-size: 2.2rem; opacity: .25; margin-bottom: 4px; color: var(--text-muted); }
+    .orc-empty strong { font-size: 15px; color: var(--text); }
+    .orc-empty p { font-size: 13px; margin: 0; color: var(--text-muted); }
+  `;
+  document.head.appendChild(s);
+}
+
 const OrcamentosModule = {
   state: {
     orcamentos: [],
@@ -27,24 +50,29 @@ const OrcamentosModule = {
   },
 
   init() {
+    injectOrcamentosStyles();
     this.render();
     this.bindShellEvents();
     this.load();
   },
 
   async load() {
+    if (this.state.carregando) return;
     this.state.carregando = true;
-    this.setFeedback('Carregando orçamentos...', 'info');
+    this.setFeedback('', '');
+    const listEl = document.getElementById('orcLista');
+    if (listEl) listEl.innerHTML = `<div class="module-skeleton" style="padding:16px">${
+      Array.from({length: 4}).map(() => '<div class="skeleton-line" style="height:40px;margin-bottom:10px;border-radius:6px"></div>').join('')
+    }</div>`;
     try {
       const q = {};
       if (this.state.filtroStatus) q.status = this.state.filtroStatus;
       const result = await api.getOrcamentos(q);
       this.state.orcamentos = result?.orcamentos || (Array.isArray(result) ? result : []);
       this.renderLista();
-      this.setFeedback('', '');
     } catch (err) {
       console.error('[orcamentos] load:', err);
-      this.setFeedback('Erro ao carregar orçamentos.', 'error');
+      this.setFeedback(buildFriendlyError(err), 'error');
     } finally {
       this.state.carregando = false;
     }
@@ -80,7 +108,10 @@ const OrcamentosModule = {
     const c = document.getElementById('orcamentosContainer');
     if (!c) return;
 
-    document.getElementById('orcAtualizarBtn')?.addEventListener('click', () => this.load());
+    document.getElementById('orcAtualizarBtn')?.addEventListener('click', () => {
+      if (this.state.carregando) return;
+      this.load();
+    });
 
     c.addEventListener('click', async (e) => {
       const filtroBtn = e.target.closest('[data-orc-filtro]');
@@ -106,11 +137,17 @@ const OrcamentosModule = {
     const lista = this.state.orcamentos;
 
     if (!lista.length) {
-      c.innerHTML = `<div class="module-feedback module-feedback--info">Nenhum orçamento encontrado${this.state.filtroStatus ? ` com status "${STATUS_LABEL[this.state.filtroStatus]}"` : ''}.</div>`;
+      const filtro = this.state.filtroStatus;
+      c.innerHTML = `<div class="orc-empty">
+        <i class="fa-solid fa-file-contract"></i>
+        <strong>${filtro ? `Nenhum orçamento com status "${STATUS_LABEL[filtro] || filtro}"` : 'Nenhum orçamento encontrado'}</strong>
+        <p>${filtro ? 'Tente selecionar outro filtro de status.' : 'Crie o primeiro orçamento para começar.'}</p>
+      </div>`;
       return;
     }
 
     c.innerHTML = `
+      <div class="module-count" style="margin-bottom:10px;font-size:.82rem;color:var(--text-muted)">${lista.length} orçamento(s) encontrado(s)</div>
       <div class="table-wrapper">
         <table class="data-table">
           <thead>
@@ -142,8 +179,8 @@ const OrcamentosModule = {
     return `
       <tr>
         <td><strong>#${o.numero}</strong></td>
-        <td>${this.esc(o.cliente_nome || 'Sem cliente')}</td>
-        <td><span class="badge ${badge}">${STATUS_LABEL[o.status] || this.esc(o.status)}</span></td>
+        <td>${esc(o.cliente_nome || 'Sem cliente')}</td>
+        <td><span class="badge ${badge}">${STATUS_LABEL[o.status] || esc(o.status)}</span></td>
         <td>${valid}</td>
         <td>${Number(o.total_itens || 0)}</td>
         <td class="text-right"><strong>${this.fmtCur(o.total)}</strong></td>
@@ -188,7 +225,7 @@ const OrcamentosModule = {
       localStorage.setItem('lf_erp_orcamento_pdf', JSON.stringify(orc));
       window.open('./orcamento-pdf.html', '_blank');
     } catch (err) {
-      showToast(err.message || 'Erro ao gerar PDF.', 'error');
+      showToast(buildFriendlyError(err), 'error');
     }
   },
 
@@ -215,7 +252,7 @@ const OrcamentosModule = {
       }
       await this.load();
     } catch (err) {
-      showToast(err.message || 'Erro ao executar ação.', 'error');
+      showToast(buildFriendlyError(err), 'error');
       if (btnEl) btnEl.disabled = false;
     }
   },
@@ -229,7 +266,7 @@ const OrcamentosModule = {
       showToast(`Pedido #${num} criado com sucesso.`, 'success');
       await this.load();
     } catch (err) {
-      showToast(err.message || 'Erro ao converter orçamento.', 'error');
+      showToast(buildFriendlyError(err), 'error');
     }
   },
 
@@ -256,6 +293,10 @@ const OrcamentosModule = {
         </div>
       `;
       document.body.appendChild(overlay);
+      setTimeout(() => overlay.querySelector('#_orcFormaSelect')?.focus(), 50);
+      overlay.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') { document.body.removeChild(overlay); resolve(undefined); }
+      });
       overlay.querySelector('#_orcCancelarConv').onclick = () => { document.body.removeChild(overlay); resolve(undefined); };
       overlay.querySelector('#_orcConfirmarConv').onclick = () => {
         const val = overlay.querySelector('#_orcFormaSelect').value;
@@ -284,16 +325,11 @@ const OrcamentosModule = {
       return `${dia}/${mes}/${ano}`;
     }
     return new Date(v).toLocaleDateString('pt-BR', { timeZone: 'America/Fortaleza' });
-  },
-
-  esc(v) {
-    return String(v ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#039;');
   }
 };
 
 export async function initOrcamentosModule() {
   OrcamentosModule.init();
-  await OrcamentosModule.load();
 }
 
 export default OrcamentosModule;
