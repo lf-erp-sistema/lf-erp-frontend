@@ -1,5 +1,60 @@
 import api from './api.js';
 import { showToast, confirmarAcao } from './feedback.js';
+import { escapeHtml, buildFriendlyError } from './utils.js';
+
+const STATUS_LABEL = {
+  autorizado:  'Autorizado',
+  processando: 'Processando',
+  erro:        'Erro',
+  cancelado:   'Cancelado',
+  rejeitado:   'Rejeitado'
+};
+
+const esc = escapeHtml;
+
+function injectNfeStyles() {
+  if (document.getElementById('nfeStyles')) return;
+  const s = document.createElement('style');
+  s.id = 'nfeStyles';
+  s.textContent = `
+    .nfe-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 48px 20px;
+      text-align: center;
+    }
+    .nfe-empty i { font-size: 2.2rem; opacity: .25; margin-bottom: 4px; color: var(--text-muted); }
+    .nfe-empty strong { font-size: 15px; color: var(--text); }
+    .nfe-empty p { font-size: 13px; margin: 0; color: var(--text-muted); }
+    .nfce-info-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      background: rgba(59,130,246,.08);
+      border: 1px solid rgba(59,130,246,.2);
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 18px;
+      font-size: .875rem;
+    }
+    .nfce-info-card i { color: var(--primary, #3b82f6); margin-top: 2px; flex-shrink: 0; }
+    .nfce-info-card strong { font-size: .9rem; color: var(--text); }
+    .nfce-info-card p { margin: 4px 0 0; color: var(--text-muted); font-size: .82rem; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) .nfce-info-card {
+        background: rgba(59,130,246,.12);
+        border-color: rgba(59,130,246,.25);
+      }
+    }
+    :root[data-theme="dark"] .nfce-info-card {
+      background: rgba(59,130,246,.12);
+      border-color: rgba(59,130,246,.25);
+    }
+  `;
+  document.head.appendChild(s);
+}
 
 const NfeModule = {
   state: {
@@ -14,21 +69,26 @@ const NfeModule = {
   },
 
   init() {
+    injectNfeStyles();
     this.render();
     this.bindShellEvents();
     this.load();
   },
 
   async load() {
+    if (this.state.carregando) return;
     this.state.carregando = true;
-    this.setFeedback('Carregando...', 'info');
+    this.setFeedback('', '');
+    const nc = document.getElementById('nfeConteudo');
+    if (nc) nc.innerHTML = `<div class="module-skeleton" style="padding:16px">${
+      Array.from({length: 5}).map(() => '<div class="skeleton-line" style="height:38px;margin-bottom:10px;border-radius:6px"></div>').join('')
+    }</div>`;
     try {
       await Promise.all([this.fetchLista(), this.fetchConfig()]);
       this.renderConteudo();
-      this.setFeedback('', '');
     } catch (err) {
       console.error('[nfe] load:', err);
-      this.setFeedback('Erro ao carregar o módulo NF-e.', 'error');
+      this.setFeedback(buildFriendlyError(err), 'error');
     } finally {
       this.state.carregando = false;
     }
@@ -83,6 +143,7 @@ const NfeModule = {
 
   bindShellEvents() {
     document.getElementById('nfeAtualizarBtn')?.addEventListener('click', async () => {
+      if (this.state.carregando) return;
       await this.load();
     });
 
@@ -126,7 +187,13 @@ const NfeModule = {
     `;
 
     if (!this.state.nfes.length) {
-      return filterBar + `<div class="module-feedback module-feedback--info">Nenhuma NF-e encontrada${this.state.filtroStatus ? ` com status "${this.state.filtroStatus}"` : ''}.</div>`;
+      const filtro = this.state.filtroStatus;
+      const filtroLabel = STATUS_LABEL[filtro] || filtro;
+      return filterBar + `<div class="nfe-empty">
+        <i class="fa-solid fa-file-invoice"></i>
+        <strong>${filtro ? `Nenhuma NF-e com status "${filtroLabel}"` : 'Nenhuma NF-e emitida ainda'}</strong>
+        <p>${filtro ? 'Tente selecionar outro filtro de status.' : 'As NF-es emitidas aparecerão aqui.'}</p>
+      </div>`;
     }
 
     const rows = this.state.nfes.map((n) => {
@@ -143,28 +210,28 @@ const NfeModule = {
 
       const acoes = [];
       if (n.status === 'autorizado') {
-        acoes.push(`<button class="btn-inline" data-nfe-danfe="${this.esc(n.ref)}">DANFE</button>`);
-        acoes.push(`<button class="btn-inline" data-nfe-xml="${this.esc(n.ref)}">XML</button>`);
+        acoes.push(`<button class="btn-inline" data-nfe-danfe="${esc(n.ref)}">DANFE</button>`);
+        acoes.push(`<button class="btn-inline" data-nfe-xml="${esc(n.ref)}">XML</button>`);
         acoes.push(`<button class="btn-inline btn-inline--danger" data-nfe-cancelar-id="${n.id}">Cancelar</button>`);
       }
       if (n.status === 'processando' || n.status === 'erro') {
-        acoes.push(`<button class="btn-inline" data-nfe-consultar="${this.esc(n.ref)}">Consultar</button>`);
+        acoes.push(`<button class="btn-inline" data-nfe-consultar="${esc(n.ref)}">Consultar</button>`);
       }
 
       return `
         <tr>
           <td>${n.id}</td>
-          <td><span class="badge ${badgeClass}">${n.status}</span></td>
-          <td>${this.esc(n.cliente_nome || 'Consumidor Final')}</td>
+          <td><span class="badge ${badgeClass}">${STATUS_LABEL[n.status] || n.status}</span></td>
+          <td>${esc(n.cliente_nome || 'Consumidor Final')}</td>
           <td>${n.venda_id ? `#${n.venda_id}` : '-'}</td>
-          <td>${n.numero ? `${this.esc(n.serie || '')}/${n.numero}` : '-'}</td>
-          <td><small style="color:var(--text-muted);word-break:break-all;font-size:11px">${this.esc(n.chave_nfe || '-')}</small></td>
+          <td>${n.numero ? `${esc(n.serie || '')}/${n.numero}` : '-'}</td>
+          <td><small style="color:var(--text-muted);word-break:break-all;font-size:11px">${esc(n.chave_nfe || '-')}</small></td>
           <td><span class="badge ${Number(n.ambiente)===1?'badge--danger':'badge--warning'}">${ambLabel}</span></td>
           <td>${data}</td>
           <td class="text-right">
             <div style="display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap">
               ${acoes.join('')}
-              ${n.mensagem ? `<small style="color:var(--text-muted);display:block;margin-top:4px;max-width:140px">${this.esc(n.mensagem)}</small>` : ''}
+              ${n.mensagem ? `<small style="color:var(--text-muted);display:block;margin-top:4px;max-width:140px">${esc(n.mensagem)}</small>` : ''}
             </div>
           </td>
         </tr>
@@ -281,11 +348,11 @@ const NfeModule = {
         if (feedback) {
           feedback.className = `module-feedback module-feedback--${result.status === 'autorizado' ? 'success' : result.status === 'erro' ? 'error' : 'info'}`;
           feedback.innerHTML = `
-            <strong>Status:</strong> <span class="badge ${statusBadge}">${this.esc(result.status)}</span><br>
-            ${result.chave_nfe ? `<strong>Chave:</strong> <small>${this.esc(result.chave_nfe)}</small><br>` : ''}
-            ${result.numero ? `<strong>Número:</strong> ${this.esc(String(result.serie || ''))}/${this.esc(String(result.numero))}<br>` : ''}
-            ${result.mensagem ? `<strong>SEFAZ:</strong> ${this.esc(result.mensagem)}<br>` : ''}
-            <strong>Ambiente:</strong> ${this.esc(String(result.ambiente ?? ''))}
+            <strong>Status:</strong> <span class="badge ${statusBadge}">${esc(result.status)}</span><br>
+            ${result.chave_nfe ? `<strong>Chave:</strong> <small>${esc(result.chave_nfe)}</small><br>` : ''}
+            ${result.numero ? `<strong>Número:</strong> ${esc(String(result.serie || ''))}/${esc(String(result.numero))}<br>` : ''}
+            ${result.mensagem ? `<strong>SEFAZ:</strong> ${esc(result.mensagem)}<br>` : ''}
+            <strong>Ambiente:</strong> ${esc(String(result.ambiente ?? ''))}
           `;
         }
         if (result.status === 'autorizado') {
@@ -309,7 +376,7 @@ const NfeModule = {
     const emp = this.state.empresa || {};
     const temToken = Boolean(cfg.token_focusnfe);
 
-    const v = (val) => this.esc(val || '');
+    const v = (val) => esc(val || '');
 
     return `
       <div style="max-width:620px;margin-top:16px;display:grid;gap:20px">
@@ -553,6 +620,10 @@ const NfeModule = {
         </div>
       `;
       document.body.appendChild(overlay);
+      setTimeout(() => overlay.querySelector('#_nfeJustInput')?.focus(), 50);
+      overlay.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') { document.body.removeChild(overlay); resolve(null); }
+      });
       overlay.querySelector('#_nfeCancelarAbort').addEventListener('click', () => { document.body.removeChild(overlay); resolve(null); });
       overlay.querySelector('#_nfeCancelarConfirm').addEventListener('click', () => {
         const val = overlay.querySelector('#_nfeJustInput').value.trim();
@@ -576,8 +647,6 @@ const NfeModule = {
       const result = await api.getNfceLista({ limite: 50 });
       const nfces  = result?.nfces || [];
       const total  = result?.total || 0;
-
-      const esc = this.esc.bind(this);
 
       const statusBadge = (s) => {
         const map = {
@@ -668,7 +737,7 @@ const NfeModule = {
       });
     } catch (err) {
       console.error('[nfe] renderNfce:', err);
-      container.innerHTML = `<div class="module-feedback module-feedback--error">Erro ao carregar NFC-es: ${this.esc(err.message)}</div>`;
+      container.innerHTML = `<div class="module-feedback module-feedback--error">${esc(buildFriendlyError(err))}</div>`;
     }
   },
 
@@ -682,21 +751,11 @@ const NfeModule = {
     el.textContent = msg;
   },
 
-  esc(value) {
-    return String(value ?? '')
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&#039;');
-  },
-
   // ── NFS-e ──────────────────────────────────────────────────────────────────
 
   async renderNfse(container) {
     const cur = (v) => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     const dt  = (v) => v ? new Date(v).toLocaleDateString('pt-BR') : '-';
-    const esc = (v) => this.esc(v);
 
     container.innerHTML = `
       <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
@@ -729,7 +788,11 @@ const NfeModule = {
       const emissoes = data.emissoes || [];
 
       if (!emissoes.length) {
-        corpo.innerHTML = `<div class="module-feedback module-feedback--info">Nenhuma NFS-e emitida ainda.</div>`;
+        corpo.innerHTML = `<div class="nfe-empty">
+          <i class="fa-solid fa-receipt"></i>
+          <strong>Nenhuma NFS-e emitida ainda</strong>
+          <p>Clique em "Emitir NFS-e" para criar a primeira nota.</p>
+        </div>`;
         return;
       }
 
@@ -749,22 +812,22 @@ const NfeModule = {
             ${emissoes.map((e) => `
               <tr>
                 <td>${dt(e.criado_em)}</td>
-                <td>${this.esc(e.tomador_nome || '-')}</td>
-                <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${this.esc(e.discriminacao || '-')}</td>
+                <td>${esc(e.tomador_nome || '-')}</td>
+                <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(e.discriminacao || '-')}</td>
                 <td class="text-right">${cur(e.valor_servico)}</td>
-                <td>${this.esc(e.numero_nfse || e.rps_numero || '-')}</td>
-                <td><span class="badge ${statusColor[e.status] || ''}">${this.esc(e.status || 'pendente')}</span></td>
+                <td>${esc(e.numero_nfse || e.rps_numero || '-')}</td>
+                <td><span class="badge ${statusColor[e.status] || ''}">${esc(e.status || 'pendente')}</span></td>
                 <td class="text-right">
                   <div class="table-actions">
-                    <button class="btn-inline" data-nfse-consultar="${this.esc(e.ref)}">
+                    <button class="btn-inline" data-nfse-consultar="${esc(e.ref)}">
                       <i class="fa-solid fa-sync"></i>
                     </button>
                     ${e.link_pdf && /^https?:\/\//i.test(e.link_pdf) ? `
-                      <a href="${this.esc(e.link_pdf)}" target="_blank" rel="noopener noreferrer" class="btn-inline">
+                      <a href="${esc(e.link_pdf)}" target="_blank" rel="noopener noreferrer" class="btn-inline">
                         <i class="fa-solid fa-file-pdf"></i> PDF
                       </a>` : ''}
                     ${e.status === 'autorizada' ? `
-                      <button class="btn-inline btn-inline--danger" data-nfse-cancelar="${this.esc(e.ref)}">
+                      <button class="btn-inline btn-inline--danger" data-nfse-cancelar="${esc(e.ref)}">
                         Cancelar
                       </button>` : ''}
                   </div>
@@ -795,7 +858,7 @@ const NfeModule = {
         });
       });
     } catch (err) {
-      corpo.innerHTML = `<div class="module-feedback module-feedback--error">${this.esc(err.message)}</div>`;
+      corpo.innerHTML = `<div class="module-feedback module-feedback--error">${esc(buildFriendlyError(err))}</div>`;
     }
   },
 
