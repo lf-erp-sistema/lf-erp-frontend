@@ -1,6 +1,7 @@
 import api from './api.js';
 import { showToast } from './feedback.js';
 import { exportCSV, numCSV } from './exportUtils.js';
+import { debounce } from './utils.js';
 
 const DevolucoesModule = {
   state: {
@@ -8,10 +9,14 @@ const DevolucoesModule = {
     devolucoes: [],
     vendaCarregada: null,
     itensVenda: [],
-    carregando: false
+    carregando: false,
+    ordemHist: 'numero',
+    ordemHistDir: 'desc',
+    termoBusca: ''
   },
 
   init() {
+    this._injectStyles();
     this.render();
     this.bindShellEvents();
     this.loadHistorico();
@@ -74,12 +79,40 @@ const DevolucoesModule = {
       })), 'devolucoes');
     });
 
+    const debouncedBusca = debounce(() => {
+      const curval = this.state.termoBusca;
+      this.renderConteudo();
+      const inp = document.getElementById('devHistBusca');
+      if (inp) { inp.focus(); try { inp.setSelectionRange(curval.length, curval.length); } catch (_) {} }
+    }, 250);
+
+    c.addEventListener('input', (e) => {
+      if (e.target.id === 'devHistBusca') {
+        this.state.termoBusca = e.target.value;
+        debouncedBusca();
+      }
+    });
+
     c.addEventListener('click', (e) => {
       const abaBtn = e.target.closest('[data-dev-aba]');
       if (abaBtn) {
         this.state.aba = abaBtn.dataset.devAba;
+        this.state.termoBusca = '';
         document.querySelectorAll('[data-dev-aba]').forEach((b) => b.classList.remove('btn-inline--active'));
         abaBtn.classList.add('btn-inline--active');
+        this.renderConteudo();
+        return;
+      }
+
+      const sortTh = e.target.closest('th[data-hist-sort]');
+      if (sortTh) {
+        const col = sortTh.dataset.histSort;
+        if (this.state.ordemHist === col) {
+          this.state.ordemHistDir = this.state.ordemHistDir === 'asc' ? 'desc' : 'asc';
+        } else {
+          this.state.ordemHist = col;
+          this.state.ordemHistDir = 'desc';
+        }
         this.renderConteudo();
       }
     });
@@ -177,7 +210,12 @@ const DevolucoesModule = {
 
           <div class="form-field" style="margin-bottom:12px">
             <label>Motivo da devolução</label>
-            <input type="text" id="devMotivo" placeholder="Ex: Produto com defeito, tamanho errado..." />
+            <input type="text" id="devMotivo" placeholder="Ex: Produto com defeito, tamanho errado..." maxlength="200" />
+          </div>
+
+          <div id="devTotalDinamico" class="dev-total-box" style="display:none">
+            <span>Total a devolver</span>
+            <strong id="devTotalDinamicoVal">R$ 0,00</strong>
           </div>
 
           <div class="module-feedback module-feedback--info" style="margin-bottom:12px">
@@ -195,6 +233,14 @@ const DevolucoesModule = {
   },
 
   bindNovaDevEvents() {
+    document.getElementById('devVendaId')?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('devBuscarVendaBtn')?.click();
+    });
+
+    document.getElementById('devConteudo')?.addEventListener('input', (e) => {
+      if (e.target.classList.contains('dev-qtd-input')) this._calcTotalDevolucao();
+    });
+
     document.getElementById('devBuscarVendaBtn')?.addEventListener('click', async () => {
       const vendaId = Number(document.getElementById('devVendaId')?.value || 0);
       const fb = document.getElementById('devBuscaFeedback');
@@ -279,55 +325,89 @@ const DevolucoesModule = {
   // ── HISTÓRICO ─────────────────────────────────────────────────────────────
 
   renderHistorico() {
-    const devs = this.state.devolucoes;
+    const si = (col) => {
+      if (this.state.ordemHist !== col) return '<span class="sort-icon sort-icon--idle">⇅</span>';
+      return this.state.ordemHistDir === 'asc'
+        ? '<span class="sort-icon sort-icon--asc">↑</span>'
+        : '<span class="sort-icon sort-icon--desc">↓</span>';
+    };
 
-    const totDev = devs.reduce((s, d) => s + Number(d.total_devolvido || 0), 0);
+    const termo = String(this.state.termoBusca || '').toLowerCase();
+    let devs = this.state.devolucoes.filter((d) => {
+      if (!termo) return true;
+      return (
+        String(d.numero || '').toLowerCase().includes(termo) ||
+        String(d.cliente_nome || '').toLowerCase().includes(termo) ||
+        String(d.motivo || '').toLowerCase().includes(termo)
+      );
+    });
+
+    const dir = this.state.ordemHistDir === 'asc' ? 1 : -1;
+    devs = [...devs].sort((a, b) => {
+      const col = this.state.ordemHist;
+      if (col === 'numero') return dir * (Number(a.numero || 0) - Number(b.numero || 0));
+      if (col === 'total')  return dir * (Number(a.total_devolvido || 0) - Number(b.total_devolvido || 0));
+      if (col === 'data')   return dir * String(a.criado_em || '').localeCompare(String(b.criado_em || ''));
+      return 0;
+    });
+
+    const totDev   = this.state.devolucoes.reduce((s, d) => s + Number(d.total_devolvido || 0), 0);
+    const totItens = this.state.devolucoes.reduce((s, d) => s + Number(d.total_itens || 0), 0);
+
+    const toolbar = `
+      <div class="module-toolbar" style="margin-top:8px;margin-bottom:12px">
+        <div class="module-toolbar__search">
+          <i class="fa-solid fa-search"></i>
+          <input id="devHistBusca" placeholder="Buscar cliente, motivo ou Nº..." value="${this.esc(this.state.termoBusca)}" />
+        </div>
+        <div class="module-toolbar__stats">
+          <div class="mini-stat"><span>Devoluções</span><strong>${this.state.devolucoes.length}</strong></div>
+          <div class="mini-stat"><span>Total devolvido</span><strong>${this.fmtCur(totDev)}</strong></div>
+          <div class="mini-stat"><span>Itens devolvidos</span><strong>${totItens}</strong></div>
+        </div>
+      </div>`;
 
     if (!devs.length) {
-      return `<div class="module-feedback module-feedback--info" style="margin-top:16px">Nenhuma devolução registrada ainda.</div>`;
+      const msg = termo ? 'Nenhuma devolução encontrada para essa busca.' : 'Nenhuma devolução registrada ainda.';
+      return toolbar + `
+        <div class="empty-table-state">
+          <i class="fa-solid fa-rotate-left" style="font-size:2rem;opacity:.22;margin-bottom:4px"></i>
+          <strong>Nenhuma devolução encontrada</strong>
+          <span>${msg}</span>
+        </div>`;
     }
 
-    const linhas = devs.map((d) => {
-      const data = d.criado_em ? new Date(d.criado_em).toLocaleDateString('pt-BR') : '-';
-      return `
-        <tr>
-          <td><strong>#${d.numero}</strong></td>
-          <td>${d.venda_id ? `Venda #${d.venda_id}` : '-'}</td>
-          <td>${this.esc(d.cliente_nome || 'Consumidor Final')}</td>
-          <td>${Number(d.total_itens || 0)}</td>
-          <td class="text-right"><strong>${this.fmtCur(d.total_devolvido)}</strong></td>
-          <td>${this.esc(d.motivo || '—')}</td>
-          <td><span class="badge badge--info">${d.status || 'processada'}</span></td>
-          <td>${data}</td>
-        </tr>
-      `;
-    }).join('');
+    const linhas = devs.map((d) => `
+      <tr>
+        <td><strong>#${d.numero}</strong></td>
+        <td>${d.venda_id ? `Venda #${d.venda_id}` : '-'}</td>
+        <td>${this.esc(d.cliente_nome || 'Consumidor Final')}</td>
+        <td>${Number(d.total_itens || 0)}</td>
+        <td class="text-right"><strong>${this.fmtCur(d.total_devolvido)}</strong></td>
+        <td>${this.esc(d.motivo || '—')}</td>
+        <td>${this.fmtStatusBadge(d.status || 'processada')}</td>
+        <td>${this.fmtData(d.criado_em)}</td>
+      </tr>
+    `).join('');
 
-    return `
-      <div class="module-toolbar" style="margin-top:8px;margin-bottom:12px">
-        <div class="module-toolbar__stats">
-          <div class="mini-stat"><span>Devoluções</span><strong>${devs.length}</strong></div>
-          <div class="mini-stat"><span>Total devolvido</span><strong>${this.fmtCur(totDev)}</strong></div>
-        </div>
-      </div>
+    return toolbar + `
       <div class="table-wrapper">
         <table class="data-table">
           <thead>
             <tr>
-              <th>Nº</th>
+              <th data-hist-sort="numero" style="cursor:pointer">Nº ${si('numero')}</th>
               <th>Venda</th>
               <th>Cliente</th>
               <th>Itens</th>
-              <th class="text-right">Total</th>
+              <th class="text-right" data-hist-sort="total" style="cursor:pointer">Total ${si('total')}</th>
               <th>Motivo</th>
               <th>Status</th>
-              <th>Data</th>
+              <th data-hist-sort="data" style="cursor:pointer">Data ${si('data')}</th>
             </tr>
           </thead>
           <tbody>${linhas}</tbody>
         </table>
-      </div>
-    `;
+      </div>`;
   },
 
   // ── HELPERS ───────────────────────────────────────────────────────────────
@@ -342,6 +422,65 @@ const DevolucoesModule = {
 
   fmtCur(v) {
     return Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  },
+
+  fmtData(val) {
+    if (!val) return '-';
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return this.esc(String(val));
+    return new Intl.DateTimeFormat('pt-BR', {
+      timeZone: 'America/Fortaleza',
+      day: '2-digit', month: '2-digit', year: 'numeric'
+    }).format(d);
+  },
+
+  fmtStatusBadge(status) {
+    const s = String(status || '').toLowerCase();
+    const mapa = {
+      processada: { cls: 'badge--success', label: 'Processada' },
+      aprovada:   { cls: 'badge--success', label: 'Aprovada'   },
+      pendente:   { cls: 'badge--warning', label: 'Pendente'   },
+      cancelada:  { cls: 'badge--danger',  label: 'Cancelada'  },
+    };
+    const entry = mapa[s];
+    if (entry) return `<span class="badge ${entry.cls}">${entry.label}</span>`;
+    return `<span class="badge badge--info">${this.esc(status)}</span>`;
+  },
+
+  _calcTotalDevolucao() {
+    const itens = this.state.itensVenda;
+    let total = 0;
+    document.querySelectorAll('.dev-qtd-input').forEach((input) => {
+      const idx = Number(input.dataset.idx);
+      const qtd = Math.min(Number(input.value || 0), Number(input.max || 0));
+      if (qtd > 0 && itens[idx]) {
+        total += qtd * Number(itens[idx].preco_unitario || 0);
+      }
+    });
+    const box = document.getElementById('devTotalDinamico');
+    const val = document.getElementById('devTotalDinamicoVal');
+    if (box) box.style.display = total > 0 ? '' : 'none';
+    if (val) val.textContent = this.fmtCur(total);
+  },
+
+  _injectStyles() {
+    if (document.getElementById('_devStyles')) return;
+    const style = document.createElement('style');
+    style.id = '_devStyles';
+    style.textContent = `
+      .sort-icon { font-size:.75rem; margin-left:3px; }
+      .sort-icon--idle { opacity:.35; }
+      .sort-icon--asc, .sort-icon--desc { color:var(--primary,#2563eb); opacity:.9; }
+      .dev-total-box { display:flex; align-items:center; justify-content:space-between;
+        padding:12px 16px; border-radius:10px; background:rgba(37,99,235,.08);
+        border:1px solid rgba(37,99,235,.18); margin-bottom:12px; font-size:.9rem; }
+      .dev-total-box strong { font-size:1.1rem; color:var(--primary,#2563eb); }
+      @media (prefers-color-scheme:dark) {
+        .dev-total-box { background:rgba(96,165,250,.1); border-color:rgba(96,165,250,.2); }
+        .dev-total-box strong { color:#60a5fa; }
+      }
+    `;
+    document.head.appendChild(style);
   },
 
   esc(v) {
