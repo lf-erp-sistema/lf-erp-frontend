@@ -1,5 +1,6 @@
 import api from './api.js';
 import { showToast, confirmarAcao } from './feedback.js';
+import { escapeHtml, buildFriendlyError } from './utils.js';
 
 const STATUS_BADGE = {
   pendente:      'badge--warning',
@@ -21,6 +22,28 @@ const STATUS_LABEL = {
   convertido:    'Convertido'
 };
 
+const esc = escapeHtml;
+
+function injectPedidosStyles() {
+  if (document.getElementById('pedStyles')) return;
+  const s = document.createElement('style');
+  s.id = 'pedStyles';
+  s.textContent = `
+    .ped-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 48px 20px;
+      text-align: center;
+    }
+    .ped-empty i { font-size: 2.2rem; opacity: .25; margin-bottom: 4px; color: var(--text-muted); }
+    .ped-empty strong { font-size: 15px; color: var(--text); }
+    .ped-empty p { font-size: 13px; margin: 0; color: var(--text-muted); }
+  `;
+  document.head.appendChild(s);
+}
+
 const PedidosModule = {
   state: {
     pedidos: [],
@@ -29,24 +52,29 @@ const PedidosModule = {
   },
 
   init() {
+    injectPedidosStyles();
     this.render();
     this.bindShellEvents();
     this.load();
   },
 
   async load() {
+    if (this.state.carregando) return;
     this.state.carregando = true;
-    this.setFeedback('Carregando pedidos...', 'info');
+    this.setFeedback('', '');
+    const listEl = document.getElementById('pedLista');
+    if (listEl) listEl.innerHTML = `<div class="module-skeleton" style="padding:16px">${
+      Array.from({length: 4}).map(() => '<div class="skeleton-line" style="height:40px;margin-bottom:10px;border-radius:6px"></div>').join('')
+    }</div>`;
     try {
       const q = {};
       if (this.state.filtroStatus) q.status = this.state.filtroStatus;
       const result = await api.getPedidos(q);
       this.state.pedidos = result?.pedidos || (Array.isArray(result) ? result : []);
       this.renderLista();
-      this.setFeedback('', '');
     } catch (err) {
       console.error('[pedidos] load:', err);
-      this.setFeedback('Erro ao carregar pedidos.', 'error');
+      this.setFeedback(buildFriendlyError(err), 'error');
     } finally {
       this.state.carregando = false;
     }
@@ -82,7 +110,10 @@ const PedidosModule = {
     const c = document.getElementById('pedidosContainer');
     if (!c) return;
 
-    document.getElementById('pedAtualizarBtn')?.addEventListener('click', () => this.load());
+    document.getElementById('pedAtualizarBtn')?.addEventListener('click', () => {
+      if (this.state.carregando) return;
+      this.load();
+    });
 
     c.addEventListener('click', async (e) => {
       const filtroBtn = e.target.closest('[data-ped-filtro]');
@@ -108,11 +139,17 @@ const PedidosModule = {
     const lista = this.state.pedidos;
 
     if (!lista.length) {
-      c.innerHTML = `<div class="module-feedback module-feedback--info">Nenhum pedido encontrado${this.state.filtroStatus ? ` com status "${STATUS_LABEL[this.state.filtroStatus]}"` : ''}.</div>`;
+      const filtro = this.state.filtroStatus;
+      c.innerHTML = `<div class="ped-empty">
+        <i class="fa-solid fa-box-open"></i>
+        <strong>${filtro ? `Nenhum pedido com status "${STATUS_LABEL[filtro] || filtro}"` : 'Nenhum pedido encontrado'}</strong>
+        <p>${filtro ? 'Tente selecionar outro filtro de status.' : 'Os pedidos criados aparecerão aqui.'}</p>
+      </div>`;
       return;
     }
 
     c.innerHTML = `
+      <div class="module-count" style="margin-bottom:10px;font-size:.82rem;color:var(--text-muted)">${lista.length} pedido(s) encontrado(s)</div>
       <div class="table-wrapper">
         <table class="data-table">
           <thead>
@@ -145,9 +182,9 @@ const PedidosModule = {
     return `
       <tr>
         <td><strong>#${p.numero}</strong>${p.orcamento_id ? `<div class="table-muted">Orc. #${p.orcamento_id}</div>` : ''}</td>
-        <td>${this.esc(p.cliente_nome || 'Sem cliente')}</td>
-        <td><span class="badge ${badge}">${STATUS_LABEL[p.status] || this.esc(p.status)}</span></td>
-        <td>${this.esc(p.forma_pagamento || '-')}</td>
+        <td>${esc(p.cliente_nome || 'Sem cliente')}</td>
+        <td><span class="badge ${badge}">${STATUS_LABEL[p.status] || esc(p.status)}</span></td>
+        <td>${esc(p.forma_pagamento || '-')}</td>
         <td>${prev}</td>
         <td>${Number(p.total_itens || 0)}</td>
         <td class="text-right"><strong>${this.fmtCur(p.total)}</strong></td>
@@ -201,7 +238,7 @@ const PedidosModule = {
       }
       await this.load();
     } catch (err) {
-      showToast(err.message || 'Erro ao executar ação.', 'error');
+      showToast(buildFriendlyError(err), 'error');
       if (btnEl) btnEl.disabled = false;
     }
   },
@@ -216,7 +253,7 @@ const PedidosModule = {
       showToast(`Venda #${vendaId} criada com sucesso! Estoque baixado e financeiro gerado.`, 'success');
       await this.load();
     } catch (err) {
-      showToast(err.message || 'Erro ao converter pedido em venda.', 'error');
+      showToast(buildFriendlyError(err), 'error');
     }
   },
 
@@ -258,6 +295,10 @@ const PedidosModule = {
         </div>
       `;
       document.body.appendChild(overlay);
+      setTimeout(() => overlay.querySelector('#_pedFormaSelect')?.focus(), 50);
+      overlay.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') { document.body.removeChild(overlay); resolve(null); }
+      });
       overlay.querySelector('#_pedCancelarConv').onclick = () => { document.body.removeChild(overlay); resolve(null); };
       overlay.querySelector('#_pedConfirmarConv').onclick = () => {
         const forma      = overlay.querySelector('#_pedFormaSelect').value;
@@ -287,17 +328,12 @@ const PedidosModule = {
       const [ano, mes, dia] = String(v).slice(0, 10).split('-');
       return `${dia}/${mes}/${ano}`;
     }
-    return new Date(v).toLocaleDateString('pt-BR');
-  },
-
-  esc(v) {
-    return String(v ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#039;');
+    return new Date(v).toLocaleDateString('pt-BR', { timeZone: 'America/Fortaleza' });
   }
 };
 
 export async function initPedidosModule() {
   PedidosModule.init();
-  await PedidosModule.load();
 }
 
 export default PedidosModule;
