@@ -1,6 +1,6 @@
 import api from './api.js';
 import { showToast } from './feedback.js';
-import { escapeHtml, buildFriendlyError, calcPeriodoLocal } from './utils.js';
+import { escapeHtml, buildFriendlyError, calcPeriodoLocal, debounce } from './utils.js';
 
 const state = {
   resumo: {
@@ -158,6 +158,13 @@ function getMovimentosFiltrados() {
 
     return matchBusca && matchTipo && matchOrigem;
   });
+}
+
+function _highlight(text, term) {
+  if (!term) return escapeHtml(text || '');
+  const escaped = escapeHtml(text || '');
+  const safe = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return escaped.replace(new RegExp(`(${safe})`, 'gi'), '<mark class="fluxo-hl">$1</mark>');
 }
 
 function renderSkeleton() {
@@ -402,19 +409,27 @@ function getFormaIcone(forma) {
 
 function renderMovimentos(movimentos) {
   if (!movimentos.length) {
+    const hasFilter = state.filtros.tipo || state.filtros.origem || state.filtros.busca;
+    const emptyMsg = hasFilter
+      ? 'Nenhum resultado para o filtro aplicado.'
+      : 'O fluxo mostra apenas valores recebidos ou pagos no período filtrado.';
     return `
       <div class="empty-table-state">
         <i class="fa-solid fa-chart-line" style="font-size:2rem;opacity:.22;margin-bottom:4px"></i>
         <strong>Nenhum movimento encontrado</strong>
-        <span>O fluxo mostra apenas valores recebidos ou pagos no período filtrado.</span>
+        <span>${emptyMsg}</span>
       </div>
     `;
   }
 
+  const termo = state.filtros.busca || '';
   return movimentos
     .map((movimento) => {
       const tipo = String(movimento.tipo || '').toLowerCase();
       const isEntrada = tipo === 'entrada';
+      const refLabel = movimento.referencia_id
+        ? `<span>Ref #${escapeHtml(String(movimento.referencia_id))}</span>`
+        : '';
 
       return `
       <article class="fluxo-movimento-item ${isEntrada ? 'fluxo-movimento-item--entrada' : 'fluxo-movimento-item--saida'}">
@@ -423,12 +438,13 @@ function renderMovimentos(movimentos) {
         </div>
 
         <div class="fluxo-movimento-item__main">
-          <strong>${escapeHtml(movimento.descricao || 'Movimento financeiro')}</strong>
+          <strong>${_highlight(movimento.descricao || 'Movimento financeiro', termo)}</strong>
           <span>
             ${formatOrigem(movimento.origem)}
             ${movimento.forma_pagamento ? ` • ${formatFormaPagamento(movimento.forma_pagamento)}` : ''}
           </span>
-          ${movimento.observacao ? `<small>${escapeHtml(movimento.observacao)}</small>` : ''}
+          ${refLabel}
+          ${movimento.observacao ? `<small>${_highlight(movimento.observacao, termo)}</small>` : ''}
         </div>
 
         <div class="fluxo-movimento-item__side">
@@ -449,10 +465,15 @@ function formatFormaPagamento(value) {
     pix: 'Pix',
     cartao: 'Cartão',
     cartão: 'Cartão',
-    credito: 'Cartão',
-    debito: 'Cartão',
+    cartao_credito: 'Cartão de Crédito',
+    cartao_debito: 'Cartão de Débito',
+    credito: 'Cartão de Crédito',
+    debito: 'Cartão de Débito',
     boleto: 'Boleto',
-    promissoria: 'Promissória'
+    promissoria: 'Promissória',
+    transferencia: 'Transferência',
+    cheque: 'Cheque',
+    crediario: 'Crediário'
   };
 
   return map[v] || escapeHtml(String(value || ''));
@@ -561,8 +582,6 @@ function renderCashflowFuturo() {
     </tr>`;
   }).join('');
 
-  const saldoFinalColor = (cf.saldo_projetado ?? 0) >= 0 ? 'var(--success,#38a169)' : 'var(--danger,#e53e3e)';
-
   section.innerHTML = `
     <div class="module-card__header">
       <div>
@@ -578,18 +597,18 @@ function renderCashflowFuturo() {
       </div>
     </div>
 
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:20px">
-      <div style="border:1px solid var(--border);border-radius:14px;padding:14px">
-        <div style="font-size:.8rem;color:var(--text-muted)">A receber</div>
-        <div style="font-weight:800;color:var(--success,#38a169)">${cur(cf.total_entradas)}</div>
+    <div class="fluxo-cf-mini-grid">
+      <div class="fluxo-cf-mini-card">
+        <div class="fluxo-cf-mini-card__label">A receber</div>
+        <div class="fluxo-cf-mini-card__value fluxo-cf-mini-card__value--entrada">${cur(cf.total_entradas)}</div>
       </div>
-      <div style="border:1px solid var(--border);border-radius:14px;padding:14px">
-        <div style="font-size:.8rem;color:var(--text-muted)">A pagar</div>
-        <div style="font-weight:800;color:var(--danger,#e53e3e)">${cur(cf.total_saidas)}</div>
+      <div class="fluxo-cf-mini-card">
+        <div class="fluxo-cf-mini-card__label">A pagar</div>
+        <div class="fluxo-cf-mini-card__value fluxo-cf-mini-card__value--saida">${cur(cf.total_saidas)}</div>
       </div>
-      <div style="border:1px solid var(--border);border-radius:14px;padding:14px">
-        <div style="font-size:.8rem;color:var(--text-muted)">Saldo projetado</div>
-        <div style="font-weight:800;color:${saldoFinalColor}">${cur(cf.saldo_projetado)}</div>
+      <div class="fluxo-cf-mini-card">
+        <div class="fluxo-cf-mini-card__label">Saldo projetado</div>
+        <div class="fluxo-cf-mini-card__value ${(cf.saldo_projetado ?? 0) >= 0 ? 'fluxo-cf-mini-card__value--entrada' : 'fluxo-cf-mini-card__value--saida'}">${cur(cf.saldo_projetado)}</div>
       </div>
     </div>
 
@@ -670,6 +689,20 @@ function bindEventos() {
       renderCashflowFuturo();
     }
   });
+
+  const debouncedBusca = debounce(() => {
+    const inp = document.getElementById('fluxoBusca');
+    const curval = inp?.value || '';
+    state.filtros.busca = curval.trim();
+    state.filtros.tipo = document.getElementById('fluxoTipo')?.value || '';
+    state.filtros.origem = document.getElementById('fluxoOrigem')?.value || '';
+    state.pagina = 1;
+    render();
+    renderCashflowFuturo();
+    const restored = document.getElementById('fluxoBusca');
+    if (restored) { restored.focus(); restored.setSelectionRange(curval.length, curval.length); }
+  }, 250);
+  busca?.addEventListener('input', debouncedBusca);
 
   document.querySelectorAll('[data-fc-period]').forEach((btn) => {
     btn.addEventListener('click', async () => {
@@ -1103,12 +1136,123 @@ function injectFluxoCaixaStyles() {
       font-weight: 600;
     }
 
+    mark.fluxo-hl {
+      background: rgba(234, 179, 8, 0.28);
+      color: inherit;
+      border-radius: 3px;
+      padding: 0 1px;
+    }
+
+    .fluxo-formas-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .fluxo-forma-card {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: 16px;
+      padding: 12px 14px;
+      display: grid;
+      gap: 6px;
+    }
+
+    .fluxo-forma-card > div {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .fluxo-forma-card strong {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.03em;
+    }
+
+    .fluxo-forma-card small {
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .forma-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 800;
+      border: 1px solid transparent;
+    }
+
+    .forma-dinheiro { background: rgba(22,163,74,.1); color: #15803d; border-color: rgba(22,163,74,.18); }
+    .forma-pix { background: rgba(8,145,178,.1); color: #0e7490; border-color: rgba(8,145,178,.18); }
+    .forma-cartao { background: rgba(37,99,235,.1); color: #1d4ed8; border-color: rgba(37,99,235,.18); }
+    .forma-boleto { background: rgba(217,119,6,.1); color: #b45309; border-color: rgba(217,119,6,.18); }
+    .forma-promissoria { background: rgba(124,58,237,.1); color: #7c3aed; border-color: rgba(124,58,237,.18); }
+    .forma-outros { background: var(--surface-2); color: var(--text-muted); border-color: var(--border); }
+
+    .fluxo-cf-mini-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .fluxo-cf-mini-card {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      background: var(--surface);
+    }
+
+    .fluxo-cf-mini-card__label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .fluxo-cf-mini-card__value {
+      font-weight: 800;
+      font-size: 1.05rem;
+      letter-spacing: -0.03em;
+    }
+
+    .fluxo-cf-mini-card__value--entrada { color: var(--success, #16a34a); }
+    .fluxo-cf-mini-card__value--saida { color: var(--danger, #dc2626); }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) .fluxo-explain-card {
+        border-color: rgba(96, 165, 250, 0.18);
+        background: linear-gradient(135deg, rgba(37, 99, 235, 0.13), rgba(8, 145, 178, 0.1));
+      }
+      :root:not([data-theme="light"]) mark.fluxo-hl {
+        background: rgba(234, 179, 8, 0.38);
+      }
+    }
+
+    :root[data-theme="dark"] .fluxo-explain-card {
+      border-color: rgba(96, 165, 250, 0.18);
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.13), rgba(8, 145, 178, 0.1));
+    }
+    :root[data-theme="dark"] mark.fluxo-hl {
+      background: rgba(234, 179, 8, 0.38);
+    }
+
     @media (max-width: 1180px) {
       .fluxo-toolbar-grid,
       .fluxo-content-grid {
         grid-template-columns: 1fr;
       }
+    }
 
+    @media (max-width: 600px) {
       .fluxo-kpi-grid {
         grid-template-columns: 1fr;
       }
