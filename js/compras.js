@@ -16,6 +16,8 @@ const ComprasModule = {
     loading: false,
     filtroStatus: '',
     filtroFornecedor: '',
+    ordem: 'data',
+    ordemDir: 'desc',
     periodo: { preset: '30dias', dataInicial: '', dataFinal: '' }
   },
 
@@ -69,6 +71,7 @@ const ComprasModule = {
   bind() {
     if (this.state.eventsBound) return;
     this.state.eventsBound = true;
+    this._injectStyles();
 
     const debouncedSearch = debounce((v) => this.search(v), 350);
 
@@ -100,6 +103,23 @@ const ComprasModule = {
     });
 
     document.addEventListener('click', async (e) => {
+      if (e.target.id === 'compraModal') { this.closeModal(); return; }
+
+      const th = e.target.closest('th[data-sort-col]');
+      if (th) {
+        const col = th.dataset.sortCol;
+        if (this.state.ordem === col) {
+          this.state.ordemDir = this.state.ordemDir === 'asc' ? 'desc' : 'asc';
+        } else {
+          this.state.ordem = col;
+          this.state.ordemDir = col === 'data' || col === 'id' ? 'desc' : 'asc';
+        }
+        this.render();
+        this.cache();
+        this.search(this.el.search?.value || '');
+        return;
+      }
+
       const btn = e.target.closest('button');
       if (!btn) return;
 
@@ -216,6 +236,13 @@ const ComprasModule = {
     const c = document.getElementById('comprasContainer');
     if (!c) return;
 
+    const si = (col) => {
+      if (this.state.ordem !== col) return '<span class="sort-icon sort-icon--idle">⇅</span>';
+      return this.state.ordemDir === 'asc'
+        ? '<span class="sort-icon sort-icon--asc">↑</span>'
+        : '<span class="sort-icon sort-icon--desc">↓</span>';
+    };
+
     c.innerHTML = `
       <section class="module-card">
         <div id="comprasFeedback" class="module-feedback"></div>
@@ -275,6 +302,11 @@ const ComprasModule = {
               <span>Fornecedores</span>
               <strong>${this.getTotalFornecedores()}</strong>
             </div>
+
+            <div class="mini-stat">
+              <span>Ticket Médio</span>
+              <strong>${this.getTicketMedio()}</strong>
+            </div>
           </div>
           <div class="module-card__actions">
             <button class="btn btn-light" id="importarXmlBtn" type="button" title="Importar NF do fornecedor (XML)">
@@ -290,11 +322,11 @@ const ComprasModule = {
           <table class="data-table">
             <thead>
               <tr>
-                <th>Compra</th>
-                <th>Fornecedor</th>
-                <th>Data</th>
+                <th data-sort-col="id" style="cursor:pointer">Compra ${si('id')}</th>
+                <th data-sort-col="fornecedor" style="cursor:pointer">Fornecedor ${si('fornecedor')}</th>
+                <th data-sort-col="data" style="cursor:pointer">Data ${si('data')}</th>
                 <th>Status</th>
-                <th class="text-right">Total</th>
+                <th class="text-right" data-sort-col="total" style="cursor:pointer">Total ${si('total')}</th>
                 <th class="text-right">Ações</th>
               </tr>
             </thead>
@@ -472,30 +504,27 @@ const ComprasModule = {
         const data = formatDate(item.data);
         const total = formatCurrency(item.total || 0);
         const status = item.status || 'finalizada';
+        const termo = String(this.el.search?.value || '').trim().toLowerCase();
 
         return `
         <tr>
           <td>
             <div class="table-primary">
               <strong>#${id}</strong>
-              <small>Compra registrada</small>
+              <small>${badgePagamentoCompra(item.pagamento)}</small>
             </div>
           </td>
 
           <td>
             <div class="table-primary">
-              <strong>${escapeHtml(fornecedor)}</strong>
+              <strong>${this._highlight(escapeHtml(fornecedor), termo)}</strong>
               <small>Fornecedor</small>
             </div>
           </td>
 
           <td>${data}</td>
 
-          <td>
-            <span class="badge badge--success">
-              ${escapeHtml(capitalize(status))}
-            </span>
-          </td>
+          <td>${formatStatusBadge(status)}</td>
 
           <td class="text-right">
             <strong>${total}</strong>
@@ -553,6 +582,7 @@ const ComprasModule = {
       return texto.includes(termo);
     });
 
+    this._sortItems();
     this.renderTable();
   },
 
@@ -932,7 +962,7 @@ const ComprasModule = {
 
             <article>
               <span>Status</span>
-              <strong>${escapeHtml(capitalize(compra?.status || 'finalizada'))}</strong>
+              ${formatStatusBadge(compra?.status || 'finalizada')}
             </article>
           </section>
 
@@ -1003,7 +1033,7 @@ const ComprasModule = {
 
                       <div>
                         <span>Status</span>
-                        <strong>${escapeHtml(capitalize(conta.status || 'pendente'))}</strong>
+                        ${formatStatusBadge(conta.status || 'pendente')}
                       </div>
 
                       <div>
@@ -1097,6 +1127,80 @@ const ComprasModule = {
     );
 
     return fornecedores.size;
+  },
+
+  getTicketMedio() {
+    const lista = this.state.filteredItems || this.state.items;
+    if (!lista.length) return '—';
+    const total = lista.reduce((acc, item) => acc + Number(item.total || 0), 0);
+    return formatCurrency(total / lista.length);
+  },
+
+  _sortItems() {
+    const { ordem, ordemDir } = this.state;
+    const dir = ordemDir === 'asc' ? 1 : -1;
+    this.state.filteredItems.sort((a, b) => {
+      if (ordem === 'id') return dir * (Number(a.id || 0) - Number(b.id || 0));
+      if (ordem === 'total') return dir * (Number(a.total || 0) - Number(b.total || 0));
+      if (ordem === 'data') {
+        const da = String(a.data || '').slice(0, 10);
+        const db = String(b.data || '').slice(0, 10);
+        return dir * da.localeCompare(db);
+      }
+      if (ordem === 'fornecedor') {
+        const fa = String(a.fornecedor_nome || a.fornecedor || '').toLowerCase();
+        const fb = String(b.fornecedor_nome || b.fornecedor || '').toLowerCase();
+        return dir * fa.localeCompare(fb, 'pt-BR');
+      }
+      return 0;
+    });
+  },
+
+  _highlight(text, term) {
+    if (!term) return text;
+    const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return text.replace(new RegExp(`(${escaped})`, 'gi'), '<mark class="cmp-hl">$1</mark>');
+  },
+
+  _injectStyles() {
+    if (document.getElementById('_comprasStyles')) return;
+    const style = document.createElement('style');
+    style.id = '_comprasStyles';
+    style.textContent = `
+      .sort-icon { font-size:.75rem; margin-left:3px; }
+      .sort-icon--idle { opacity:.35; }
+      .sort-icon--asc, .sort-icon--desc { color:var(--primary,#2563eb); opacity:.9; }
+      mark.cmp-hl { background:rgba(234,179,8,.35); color:inherit; border-radius:2px; padding:0 1px; }
+      .badge-cmp { display:inline-flex; align-items:center; padding:2px 8px; border-radius:12px; font-size:.74rem; font-weight:600; }
+      .badge-cmp--finalizada { background:rgba(34,197,94,.15); color:#15803d; }
+      .badge-cmp--pendente   { background:rgba(234,179,8,.18); color:#92400e; }
+      .badge-cmp--cancelada  { background:rgba(239,68,68,.13); color:#b91c1c; }
+      .badge-cmp--default    { background:rgba(100,116,139,.15); color:#475569; }
+      @media (prefers-color-scheme:dark) {
+        .badge-cmp--finalizada { background:rgba(34,197,94,.18); color:#4ade80; }
+        .badge-cmp--pendente   { background:rgba(234,179,8,.2); color:#fbbf24; }
+        .badge-cmp--cancelada  { background:rgba(239,68,68,.18); color:#f87171; }
+        .badge-cmp--default    { background:rgba(148,163,184,.15); color:#94a3b8; }
+      }
+      .cmp-pay { display:inline-flex; align-items:center; padding:2px 7px; border-radius:10px; font-size:.72rem; font-weight:600; }
+      .cmp-pay--dinheiro  { background:rgba(34,197,94,.13); color:#15803d; }
+      .cmp-pay--pix       { background:rgba(6,182,212,.14); color:#0e7490; }
+      .cmp-pay--boleto    { background:rgba(99,102,241,.14); color:#4338ca; }
+      .cmp-pay--credito   { background:rgba(168,85,247,.14); color:#7e22ce; }
+      .cmp-pay--debito    { background:rgba(59,130,246,.14); color:#1d4ed8; }
+      .cmp-pay--promissoria { background:rgba(245,158,11,.15); color:#92400e; }
+      .cmp-pay--outros    { background:rgba(100,116,139,.14); color:#475569; }
+      @media (prefers-color-scheme:dark) {
+        .cmp-pay--dinheiro { background:rgba(34,197,94,.18); color:#4ade80; }
+        .cmp-pay--pix      { background:rgba(6,182,212,.18); color:#22d3ee; }
+        .cmp-pay--boleto   { background:rgba(99,102,241,.18); color:#818cf8; }
+        .cmp-pay--credito  { background:rgba(168,85,247,.18); color:#c084fc; }
+        .cmp-pay--debito   { background:rgba(59,130,246,.18); color:#60a5fa; }
+        .cmp-pay--promissoria { background:rgba(245,158,11,.2); color:#fbbf24; }
+        .cmp-pay--outros   { background:rgba(148,163,184,.15); color:#94a3b8; }
+      }
+    `;
+    document.head.appendChild(style);
   },
 
   // ── Import XML NF de Fornecedor ────────────────────────────────────────────
@@ -1310,6 +1414,31 @@ function capitalize(value) {
   if (!text) return '';
 
   return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function formatStatusBadge(status) {
+  const s = String(status || '').toLowerCase();
+  const mapa = {
+    finalizada: { label: 'Finalizada', cls: 'badge-cmp--finalizada' },
+    pendente:   { label: 'Pendente',   cls: 'badge-cmp--pendente'   },
+    cancelada:  { label: 'Cancelada',  cls: 'badge-cmp--cancelada'  },
+  };
+  const entry = mapa[s];
+  if (entry) return `<span class="badge-cmp ${entry.cls}">${entry.label}</span>`;
+  return `<span class="badge-cmp badge-cmp--default">${escapeHtml(capitalize(status))}</span>`;
+}
+
+function badgePagamentoCompra(pagamento) {
+  if (!pagamento) return '';
+  const p = String(pagamento).toLowerCase();
+  let cls = 'cmp-pay--outros';
+  if (p.includes('dinheiro'))   cls = 'cmp-pay--dinheiro';
+  else if (p.includes('pix'))   cls = 'cmp-pay--pix';
+  else if (p.includes('boleto')) cls = 'cmp-pay--boleto';
+  else if (p.includes('crédito') || p.includes('credito')) cls = 'cmp-pay--credito';
+  else if (p.includes('débito') || p.includes('debito'))   cls = 'cmp-pay--debito';
+  else if (p.includes('promiss'))  cls = 'cmp-pay--promissoria';
+  return `<span class="cmp-pay ${cls}">${escapeHtml(capitalize(pagamento))}</span>`;
 }
 
 export function initComprasModule() {
