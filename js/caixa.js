@@ -13,6 +13,7 @@ const CaixaModule = {
   },
 
   init() {
+    this._injectStyles();
     this.render();
     this.bindShellEvents();
     return this.load();
@@ -141,10 +142,11 @@ const CaixaModule = {
     const suprimentos = mov.filter((m) => m.tipo === 'suprimento').reduce((a, m) => a + m.valor, 0);
 
     const movLinhas = mov.filter((m) => m.tipo !== 'abertura' && m.tipo !== 'fechamento').map((m) => `
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
-        <div>
-          <span class="badge ${m.tipo === 'sangria' ? 'badge--danger' : 'badge--success'}" style="margin-right:8px">${m.tipo}</span>
-          <span style="font-size:13px">${this.esc(m.descricao || '')}</span>
+      <div class="caixa-mov-row">
+        <div class="caixa-mov-info">
+          <span class="badge ${m.tipo === 'sangria' ? 'badge--danger' : 'badge--success'}">${this._tipoLabel(m.tipo)}</span>
+          <span class="caixa-mov-desc">${this.esc(m.descricao || '')}</span>
+          ${m.criado_em ? `<span class="caixa-mov-time">${this.fmtHora(m.criado_em)}</span>` : ''}
         </div>
         <strong style="color:${m.valor < 0 ? 'var(--danger)' : 'var(--success)'}">${this.fmtCur(m.valor)}</strong>
       </div>
@@ -176,6 +178,13 @@ const CaixaModule = {
         <div class="kpi-card">
           <div class="kpi-card__icon" style="color:var(--primary)"><i class="fa-solid fa-arrow-up"></i></div>
           <div class="kpi-card__content">
+            <span>Suprimentos</span>
+            <strong style="color:var(--primary)">${this.fmtCur(suprimentos)}</strong>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-card__icon" style="color:var(--success)"><i class="fa-solid fa-cart-shopping"></i></div>
+          <div class="kpi-card__content">
             <span>Vendas dinheiro/Pix</span>
             <strong>${this.fmtCur(vendas.total)}</strong>
             <small>${vendas.quantidade} venda(s)</small>
@@ -204,6 +213,8 @@ const CaixaModule = {
                   <i class="fa-solid fa-arrow-down" style="color:var(--danger)"></i> Registrar
                 </button>
               </div>
+              <input type="text" id="caixaSangriaDesc" placeholder="Descrição (opcional)" maxlength="100"
+                style="width:100%;margin-top:6px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;box-sizing:border-box" />
             </div>
             <div>
               <label style="font-size:11px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:4px;text-transform:uppercase">Suprimento</label>
@@ -213,6 +224,8 @@ const CaixaModule = {
                   <i class="fa-solid fa-arrow-up" style="color:var(--success)"></i> Registrar
                 </button>
               </div>
+              <input type="text" id="caixaSuprimentoDesc" placeholder="Descrição (opcional)" maxlength="100"
+                style="width:100%;margin-top:6px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;box-sizing:border-box" />
             </div>
             <hr style="border:none;border-top:1px solid var(--border)" />
             <div>
@@ -230,6 +243,10 @@ const CaixaModule = {
   },
 
   bindCaixaEvents() {
+    document.getElementById('caixaSaldoInicial')?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('caixaAbrirBtn')?.click();
+    });
+
     // Abrir caixa
     document.getElementById('caixaAbrirBtn')?.addEventListener('click', async () => {
       const saldo = Number(document.getElementById('caixaSaldoInicial')?.value || 0);
@@ -253,12 +270,15 @@ const CaixaModule = {
     document.getElementById('caixaSangriaBtn')?.addEventListener('click', async () => {
       const valor = Number(document.getElementById('caixaSangriaValor')?.value || 0);
       if (!valor || valor <= 0) { showToast('Informe um valor para a sangria.', 'error'); return; }
+      const descricao = document.getElementById('caixaSangriaDesc')?.value?.trim() || 'Sangria de caixa';
       const btn = document.getElementById('caixaSangriaBtn');
       if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>'; }
       try {
-        await api.sangriaCaixa({ valor, descricao: 'Sangria de caixa' });
+        await api.sangriaCaixa({ valor, descricao });
         showToast('Sangria registrada.', 'success');
         document.getElementById('caixaSangriaValor').value = '';
+        const descEl = document.getElementById('caixaSangriaDesc');
+        if (descEl) descEl.value = '';
         await this.load();
       } catch (err) {
         showToast(err.message || 'Erro ao registrar sangria.', 'error');
@@ -271,12 +291,15 @@ const CaixaModule = {
     document.getElementById('caixaSuprimentoBtn')?.addEventListener('click', async () => {
       const valor = Number(document.getElementById('caixaSuprimentoValor')?.value || 0);
       if (!valor || valor <= 0) { showToast('Informe um valor para o suprimento.', 'error'); return; }
+      const descricao = document.getElementById('caixaSuprimentoDesc')?.value?.trim() || 'Suprimento de caixa';
       const btn = document.getElementById('caixaSuprimentoBtn');
       if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>'; }
       try {
-        await api.suprimentoCaixa({ valor, descricao: 'Suprimento de caixa' });
+        await api.suprimentoCaixa({ valor, descricao });
         showToast('Suprimento registrado.', 'success');
         document.getElementById('caixaSuprimentoValor').value = '';
+        const descEl = document.getElementById('caixaSuprimentoDesc');
+        if (descEl) descEl.value = '';
         await this.load();
       } catch (err) {
         showToast(err.message || 'Erro ao registrar suprimento.', 'error');
@@ -287,7 +310,9 @@ const CaixaModule = {
 
     // Fechar caixa
     document.getElementById('caixaFecharBtn')?.addEventListener('click', async () => {
-      const saldoContado = Number(document.getElementById('caixaSaldoFechamento')?.value);
+      const saldoFechInput = document.getElementById('caixaSaldoFechamento');
+      if (!saldoFechInput?.value?.trim()) { showToast('Informe o saldo contado para fechar.', 'error'); return; }
+      const saldoContado = Number(saldoFechInput.value);
       if (isNaN(saldoContado)) { showToast('Informe o saldo contado para fechar.', 'error'); return; }
       if (!await confirmarAcao(`Fechar o caixa com saldo contado de ${this.fmtCur(saldoContado)}?`, 'Fechar caixa', 'warning')) return;
 
@@ -314,13 +339,32 @@ const CaixaModule = {
   renderHistorico() {
     const sessoes = this.state.historico.filter((s) => s.status === 'fechado');
 
+    const totalDif     = sessoes.reduce((a, s) => a + Number(s.diferenca || 0), 0);
+    const totalAbert   = sessoes.reduce((a, s) => a + Number(s.saldo_abertura || 0), 0);
+    const mediaAbert   = sessoes.length ? this.fmtCur(totalAbert / sessoes.length) : '—';
+    const difColor     = totalDif < 0 ? 'var(--danger)' : totalDif > 0 ? 'var(--success)' : '';
+
+    const statsHtml = `
+      <div class="module-toolbar" style="margin-top:8px;margin-bottom:12px">
+        <div class="module-toolbar__stats">
+          <div class="mini-stat"><span>Sessões</span><strong>${sessoes.length}</strong></div>
+          <div class="mini-stat"><span>Diferença acumulada</span><strong style="color:${difColor}">${this.fmtCur(totalDif)}</strong></div>
+          <div class="mini-stat"><span>Média de abertura</span><strong>${mediaAbert}</strong></div>
+        </div>
+      </div>`;
+
     if (!sessoes.length) {
-      return `<div class="module-feedback module-feedback--info" style="margin-top:16px">Nenhum caixa fechado encontrado.</div>`;
+      return statsHtml + `
+        <div class="empty-table-state">
+          <i class="fa-solid fa-cash-register" style="font-size:2rem;opacity:.22;margin-bottom:4px"></i>
+          <strong>Nenhum caixa fechado encontrado</strong>
+          <span>O histórico aparecerá aqui após o primeiro fechamento.</span>
+        </div>`;
     }
 
     const linhas = sessoes.map((s) => {
-      const dif    = Number(s.diferenca || 0);
-      const difCls = dif > 0 ? 'text-success' : dif < 0 ? 'text-danger' : '';
+      const dif     = Number(s.diferenca || 0);
+      const difStyle = dif > 0 ? 'color:var(--success)' : dif < 0 ? 'color:var(--danger)' : '';
       return `
         <tr>
           <td>${new Date(s.aberto_em).toLocaleDateString('pt-BR', { timeZone: 'America/Fortaleza' })}</td>
@@ -328,14 +372,14 @@ const CaixaModule = {
           <td>${this.fmtCur(s.saldo_abertura)}</td>
           <td>${this.fmtCur(s.saldo_calculado)}</td>
           <td>${this.fmtCur(s.saldo_fechamento)}</td>
-          <td class="${difCls}"><strong>${this.fmtCur(dif)}</strong></td>
+          <td><strong style="${difStyle}">${this.fmtCur(dif)}</strong></td>
           <td>${s.fechado_em ? new Date(s.fechado_em).toLocaleString('pt-BR', { timeZone: 'America/Fortaleza' }) : '—'}</td>
         </tr>
       `;
     }).join('');
 
-    return `
-      <div class="table-wrapper" style="margin-top:16px">
+    return statsHtml + `
+      <div class="table-wrapper">
         <table class="data-table">
           <thead>
             <tr>
@@ -366,6 +410,36 @@ const CaixaModule = {
 
   fmtCur(v) {
     return Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  },
+
+  fmtHora(val) {
+    if (!val) return '';
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return '';
+    return new Intl.DateTimeFormat('pt-BR', {
+      timeZone: 'America/Fortaleza',
+      hour: '2-digit', minute: '2-digit'
+    }).format(d);
+  },
+
+  _tipoLabel(tipo) {
+    const mapa = { sangria: 'Sangria', suprimento: 'Suprimento', venda: 'Venda', pagamento: 'Pagamento' };
+    const t = String(tipo || '').toLowerCase();
+    return mapa[t] || (t.charAt(0).toUpperCase() + t.slice(1));
+  },
+
+  _injectStyles() {
+    if (document.getElementById('_caixaStyles')) return;
+    const style = document.createElement('style');
+    style.id = '_caixaStyles';
+    style.textContent = `
+      .caixa-mov-row { display:flex; justify-content:space-between; align-items:center;
+        padding:8px 0; border-bottom:1px solid var(--border); gap:8px; }
+      .caixa-mov-info { display:flex; align-items:center; gap:8px; flex-wrap:wrap; min-width:0; }
+      .caixa-mov-desc { font-size:13px; color:var(--text-primary); }
+      .caixa-mov-time { font-size:11px; color:var(--text-muted); white-space:nowrap; }
+    `;
+    document.head.appendChild(style);
   },
 
   esc(v) {
