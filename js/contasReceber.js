@@ -1,7 +1,7 @@
 ﻿import api from './api.js';
 import { showToast, confirmarAcao } from './feedback.js';
 import { gerarPIX } from './pix.js';
-import { escapeHtml, buildFriendlyError, todayFortaleza, calcPeriodoLocal } from './utils.js';
+import { escapeHtml, buildFriendlyError, todayFortaleza, calcPeriodoLocal, debounce } from './utils.js';
 
 const state = {
   contas: [],
@@ -24,7 +24,9 @@ const state = {
   pagina: 1,
   totalPaginas: 1,
   totalRegistros: 0,
-  loading: false
+  loading: false,
+  ordem: 'data_vencimento',
+  ordemDir: 'desc'
 };
 
 function salvarFiltrosCR() {
@@ -89,6 +91,7 @@ export async function initContasReceberModule() {
 
     await Promise.all([carregarClientes(), carregarContas()]);
 
+    _sortItems();
     render();
   } catch (error) {
     console.error('Erro ao iniciar contas a receber:', error);
@@ -202,9 +205,39 @@ function renderAlertasVencCR() {
     </div>`;
 }
 
+function _sortItems() {
+  const { ordem, ordemDir } = state;
+  state.contas.sort((a, b) => {
+    let va = a[ordem] ?? '';
+    let vb = b[ordem] ?? '';
+    if (ordem === 'valor') {
+      va = parseFloat(va) || 0;
+      vb = parseFloat(vb) || 0;
+      return ordemDir === 'asc' ? va - vb : vb - va;
+    }
+    if (ordem === 'data_vencimento' || ordem === 'data_pagamento') {
+      va = String(va).slice(0, 10);
+      vb = String(vb).slice(0, 10);
+    }
+    const cmp = String(va).localeCompare(String(vb), 'pt-BR', { sensitivity: 'base' });
+    return ordemDir === 'asc' ? cmp : -cmp;
+  });
+}
+
+function _highlight(text, term) {
+  if (!term) return escapeHtml(text || '');
+  const escaped = escapeHtml(text || '');
+  const safe = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return escaped.replace(new RegExp(`(${safe})`, 'gi'), '<mark class="cr-hl">$1</mark>');
+}
+
 function render() {
   const container = document.getElementById('contasReceberContainer');
   if (!container) return;
+
+  const si = col => state.ordem === col
+    ? (state.ordemDir === 'asc' ? ' <span class="sort-icon sort-icon--asc">↑</span>' : ' <span class="sort-icon sort-icon--desc">↓</span>')
+    : ' <span class="sort-icon sort-icon--idle">⇅</span>';
 
   container.innerHTML = `
     <section class="module-card cr-module-card">
@@ -324,7 +357,7 @@ function render() {
 <article class="mini-stat cr-stat-card cr-stat-card--parcial">
   <span>Recebido parcial</span>
   <strong>${formatCurrency(state.resumo.total_recebido_parcial || 0)}</strong>
-  <small>Baixas parciais realizadas</small>
+  <small>${(() => { const n = state.contas.filter(c => ['parcial', 'parcial_atrasado'].includes(normalizarStatus(c.status))).length; return n ? `${n} título(s) parcial` : 'Baixas parciais realizadas'; })()}</small>
 </article>
       </div>
 
@@ -332,12 +365,12 @@ function render() {
         <table class="data-table cr-table">
           <thead>
             <tr>
-              <th>Título</th>
-              <th>Cliente</th>
+              <th data-sort-col="id" style="cursor:pointer;user-select:none">Título${si('id')}</th>
+              <th data-sort-col="cliente_nome" style="cursor:pointer;user-select:none">Cliente${si('cliente_nome')}</th>
               <th>Origem</th>
-              <th>Vencimento</th>
-              <th>Status</th>
-              <th class="text-right">Valor</th>
+              <th data-sort-col="data_vencimento" style="cursor:pointer;user-select:none">Vencimento${si('data_vencimento')}</th>
+              <th data-sort-col="status" style="cursor:pointer;user-select:none">Status${si('status')}</th>
+              <th class="text-right" data-sort-col="valor" style="cursor:pointer;user-select:none">Valor${si('valor')}</th>
               <th class="text-right">Ações</th>
             </tr>
           </thead>
@@ -367,19 +400,24 @@ function render() {
 
 function renderLinhas() {
   if (!state.contas.length) {
+    const hasFilter = state.filtros.status || state.filtros.cliente_id || state.filtros.busca;
+    const emptyMsg = hasFilter
+      ? 'Nenhuma conta encontrada para o filtro aplicado.'
+      : 'Use os filtros acima ou gere contas a receber por vendas promissórias.';
     return `
       <tr>
         <td colspan="7">
           <div class="empty-table-state">
             <i class="fa-solid fa-file-invoice-dollar" style="font-size:2rem;opacity:.22;margin-bottom:4px"></i>
             <strong>Nenhuma conta encontrada</strong>
-            <span>Use os filtros acima ou gere contas a receber por vendas promissórias.</span>
+            <span>${emptyMsg}</span>
           </div>
         </td>
       </tr>
     `;
   }
 
+  const termo = state.filtros.busca || '';
   return state.contas
     .map((conta) => {
       const status = normalizarStatus(conta.status);
@@ -397,7 +435,7 @@ function renderLinhas() {
 
         <td>
           <div class="table-primary">
-            <strong>${escapeHtml(conta.cliente_nome || 'Cliente não informado')}</strong>
+            <strong>${_highlight(conta.cliente_nome || 'Cliente não informado', termo)}</strong>
             <small>Cliente</small>
           </div>
         </td>
@@ -556,6 +594,34 @@ function bindEventos() {
     }
   });
 
+  const debouncedBusca = debounce(async () => {
+    const inp = document.getElementById('crBusca');
+    const curval = inp?.value || '';
+    state.filtros.busca = curval.trim();
+    state.filtros.status = document.getElementById('crStatus')?.value || '';
+    state.filtros.cliente_id = document.getElementById('crCliente')?.value || '';
+    state.pagina = 1;
+    salvarFiltrosCR();
+    await recarregar();
+    const restored = document.getElementById('crBusca');
+    if (restored) { restored.focus(); restored.setSelectionRange(curval.length, curval.length); }
+  }, 250);
+  busca?.addEventListener('input', debouncedBusca);
+
+  document.querySelectorAll('th[data-sort-col]').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.sortCol;
+      if (state.ordem === col) {
+        state.ordemDir = state.ordemDir === 'asc' ? 'desc' : 'asc';
+      } else {
+        state.ordem = col;
+        state.ordemDir = 'asc';
+      }
+      _sortItems();
+      render();
+    });
+  });
+
   document.querySelectorAll('[data-cr-period]').forEach((btn) => {
     btn.addEventListener('click', async () => {
       const preset = btn.dataset.crPeriod;
@@ -668,6 +734,7 @@ async function recarregar() {
 
     await Promise.all([carregarClientes(), carregarContas()]);
 
+    _sortItems();
     render();
   } catch (error) {
     console.error('Erro ao recarregar contas a receber:', error);
@@ -956,6 +1023,11 @@ function abrirModalBaixaConta(conta) {
               <option value="crediario">Crediário</option>
             </select>
           </div>
+
+          <div class="form-group form-group--full">
+            <label>Observação</label>
+            <textarea id="crBaixaObs" class="input" rows="2" placeholder="Observação do recebimento (opcional)" maxlength="200"></textarea>
+          </div>
         </div>
 
         <section class="cr-detail-note">
@@ -992,6 +1064,7 @@ function abrirModalBaixaConta(conta) {
     const valorPago = document.getElementById('crBaixaValor')?.value || '';
     const dataPagamento = document.getElementById('crBaixaData')?.value || '';
     const formaPagamento = document.getElementById('crBaixaForma')?.value || '';
+    const observacaoBaixa = document.getElementById('crBaixaObs')?.value?.trim() || '';
 
     const _numVP = Number(valorPago);
     if (!valorPago || !Number.isFinite(_numVP) || _numVP <= 0) {
@@ -1015,7 +1088,8 @@ function abrirModalBaixaConta(conta) {
       await api.baixarContaReceber(conta.id, {
         valor_pago: Number(valorPago),
         data_pagamento: dataPagamento,
-        ...(formaPagamento ? { forma_pagamento: formaPagamento } : {})
+        ...(formaPagamento ? { forma_pagamento: formaPagamento } : {}),
+        ...(observacaoBaixa ? { observacao: observacaoBaixa } : {})
       });
 
       showMessage('Recebimento registrado com sucesso.', 'success');
@@ -1567,7 +1641,7 @@ function getDiasAtrasoHtml(status, dataVencimento) {
   if (isNaN(venc.getTime())) return '';
   const dias = Math.round((hoje.getTime() - venc.getTime()) / 86400000);
   if (dias <= 0) return '';
-  return `<small style="display:block;color:#dc2626;font-weight:800;font-size:11px;margin-top:3px">${dias} dia(s)</small>`;
+  return `<small class="cr-dias-atraso">${dias} dia(s)</small>`;
 }
 
 function getVencimentoInfo(dataVencimento) {
@@ -1624,6 +1698,113 @@ function injectContasReceberStyles() {
   const style = document.createElement('style');
   style.id = 'contasReceberProfessionalStyles';
   style.textContent = `
+    .cr-toolbar-grid {
+      display: grid;
+      grid-template-columns: 1fr auto auto auto;
+      gap: 10px;
+      align-items: start;
+      margin-bottom: 18px;
+    }
+
+    .cr-search-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 0 14px;
+      background: var(--surface);
+      min-height: 44px;
+    }
+
+    .cr-search-box input {
+      border: none;
+      outline: none;
+      background: transparent;
+      color: var(--text);
+      font-size: 0.94rem;
+      width: 100%;
+    }
+
+    .cr-search-box i {
+      color: var(--text-muted);
+      font-size: 0.82rem;
+    }
+
+    .cr-filter-box select {
+      min-height: 44px;
+      min-width: 160px;
+    }
+
+    .cr-action-box {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .sort-icon {
+      font-size: 0.72rem;
+      margin-left: 2px;
+      opacity: 0.55;
+      font-style: normal;
+    }
+
+    .sort-icon--asc,
+    .sort-icon--desc {
+      opacity: 1;
+      color: var(--primary);
+    }
+
+    mark.cr-hl {
+      background: rgba(234, 179, 8, 0.28);
+      color: inherit;
+      border-radius: 3px;
+      padding: 0 1px;
+    }
+
+    .cr-dias-atraso {
+      display: block;
+      color: #dc2626;
+      font-weight: 800;
+      font-size: 11px;
+      margin-top: 3px;
+    }
+
+    #crHistoricoClienteModal .cr-detail-row {
+      grid-template-columns: 1.2fr 0.8fr 0.8fr 0.8fr;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) .cr-explain-card {
+        border-color: rgba(96, 165, 250, 0.18);
+        background: linear-gradient(135deg, rgba(37, 99, 235, 0.13), rgba(8, 145, 178, 0.1));
+      }
+      :root:not([data-theme="light"]) .cr-dias-atraso {
+        color: #f87171;
+      }
+      :root:not([data-theme="light"]) mark.cr-hl {
+        background: rgba(234, 179, 8, 0.38);
+      }
+    }
+
+    :root[data-theme="dark"] .cr-explain-card {
+      border-color: rgba(96, 165, 250, 0.18);
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.13), rgba(8, 145, 178, 0.1));
+    }
+    :root[data-theme="dark"] .cr-dias-atraso {
+      color: #f87171;
+    }
+    :root[data-theme="dark"] mark.cr-hl {
+      background: rgba(234, 179, 8, 0.38);
+    }
+
+    .cr-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
     .cr-module-card {
       position: relative;
     }
