@@ -5,12 +5,11 @@
 
 import api from './api.js';
 import { showToast } from './feedback.js';
+import { escapeHtml, buildFriendlyError } from './utils.js';
 
 const CHARTS = {};
 
-function esc(s) {
-  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
+const esc = escapeHtml;
 
 function fmt(v) {
   return Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -30,72 +29,23 @@ function destroyChart(id) {
   if (CHARTS[id]) { CHARTS[id].destroy(); delete CHARTS[id]; }
 }
 
-function injectStyles() {
-  // estilos migrados para style.css
-  if (true) return;
+function injectBiStyles() {
+  if (document.getElementById('biStyles')) return;
   const s = document.createElement('style');
-  s.id = 'bi-styles';
+  s.id = 'biStyles';
   s.textContent = `
-    .bi-wrap { padding: 0 0 32px; }
-    .bi-toolbar { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:20px; }
-    .bi-toolbar select, .bi-toolbar input[type=date] {
-      padding:6px 10px; border:1px solid var(--border,#e2e8f0);
-      border-radius:6px; font-size:13px; background:#fff; color:inherit;
+    .bi-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 32px 20px;
+      text-align: center;
+      color: var(--text-muted, #94a3b8);
+      font-size: 13px;
     }
-    .bi-toolbar button {
-      padding:7px 16px; background:var(--primary,#6366f1); color:#fff;
-      border:none; border-radius:6px; font-size:13px; cursor:pointer; font-weight:500;
-    }
-    .bi-toolbar button:hover { opacity:.88; }
-    .bi-kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin-bottom:24px; }
-    .bi-kpi { background:#fff; border:1px solid var(--border,#e2e8f0); border-radius:10px; padding:16px 18px; }
-    .bi-kpi__label { font-size:11px; font-weight:600; letter-spacing:.6px; text-transform:uppercase; color:#94a3b8; margin-bottom:6px; }
-    .bi-kpi__value { font-size:22px; font-weight:700; color:var(--text,#1e293b); line-height:1.2; }
-    .bi-kpi__delta { font-size:12px; margin-top:4px; }
-    .bi-grid { display:grid; gap:20px; grid-template-columns:1fr 1fr; }
-    .bi-grid--3 { grid-template-columns:1fr 1fr 1fr; }
-    .bi-card { background:#fff; border:1px solid var(--border,#e2e8f0); border-radius:10px; padding:18px; }
-    .bi-card--full { grid-column:1/-1; }
-    .bi-card__title { font-size:13px; font-weight:600; color:#64748b; margin-bottom:14px; text-transform:uppercase; letter-spacing:.5px; }
-    .bi-chart-box { position:relative; height:220px; }
-    .bi-chart-box--tall { height:300px; }
-    .bi-table { width:100%; border-collapse:collapse; font-size:13px; }
-    .bi-table th { text-align:left; padding:7px 10px; font-size:11px; font-weight:600; letter-spacing:.4px; text-transform:uppercase; color:#94a3b8; border-bottom:1px solid #e2e8f0; }
-    .bi-table td { padding:8px 10px; border-bottom:1px solid #f1f5f9; }
-    .bi-table tr:last-child td { border-bottom:none; }
-    .bi-table tr:hover td { background:#f8fafc; }
-    .bi-funnel { display:flex; flex-direction:column; gap:10px; padding:8px 0; }
-    .bi-funnel__step { display:flex; align-items:center; gap:12px; }
-    .bi-funnel__label { width:90px; font-size:13px; font-weight:500; text-align:right; color:#64748b; }
-    .bi-funnel__bar-wrap { flex:1; background:#f1f5f9; border-radius:6px; overflow:hidden; height:28px; }
-    .bi-funnel__bar { height:100%; background:var(--primary,#6366f1); border-radius:6px; display:flex; align-items:center; justify-content:flex-end; padding-right:10px; transition:width .4s ease; min-width:40px; }
-    .bi-funnel__bar span { font-size:12px; font-weight:600; color:#fff; }
-    .bi-funnel__conv { font-size:12px; color:#94a3b8; width:70px; text-align:right; }
-    .bi-badge { display:inline-block; padding:2px 8px; border-radius:99px; font-size:11px; font-weight:600; }
-    .bi-badge--green { background:#dcfce7; color:#16a34a; }
-    .bi-badge--red   { background:#fee2e2; color:#dc2626; }
-    .bi-badge--gray  { background:#f1f5f9; color:#64748b; }
-    .bi-ai-card { margin-bottom:24px; }
-    .bi-ai-header { display:flex; align-items:center; gap:10px; margin-bottom:0; }
-    .bi-ai-icon { font-size:18px; }
-    .bi-ai-title { font-size:13px; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:.5px; flex:1; margin:0; }
-    .bi-btn-ia { padding:6px 14px; background:linear-gradient(135deg,#7c3aed,#6366f1); color:#fff; border:none; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:opacity .15s; }
-    .bi-btn-ia:hover { opacity:.88; }
-    .bi-btn-ia:disabled { opacity:.6; cursor:not-allowed; }
-    .bi-ai-body { margin-top:14px; }
-    .bi-ai-section-title { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:#7c3aed; margin:12px 0 4px; }
-    .bi-ai-section-title:first-child { margin-top:0; }
-    .bi-ai-section-text { font-size:13px; color:#334155; line-height:1.65; }
-    .bi-ai-bullet { font-size:13px; color:#334155; line-height:1.65; padding-left:2px; }
-    .bi-ai-footer { font-size:11px; color:#94a3b8; margin-top:12px; padding-top:10px; border-top:1px solid #f1f5f9; display:flex; align-items:center; gap:8px; }
-    .bi-ai-badge { padding:2px 7px; border-radius:99px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; }
-    .bi-ai-badge--new   { background:#ede9fe; color:#7c3aed; }
-    .bi-ai-badge--cache { background:#f0fdf4; color:#16a34a; }
-    .bi-ai-empty { color:#94a3b8; font-size:13px; text-align:center; padding:14px 0; }
-    @media(max-width:768px) {
-      .bi-grid, .bi-grid--3 { grid-template-columns:1fr; }
-      .bi-kpis { grid-template-columns:1fr 1fr; }
-    }
+    .bi-empty i { font-size: 1.8rem; opacity: .2; margin-bottom: 4px; }
   `;
   document.head.appendChild(s);
 }
@@ -104,15 +54,18 @@ function injectStyles() {
 
 const CORES = ['#6366f1','#22c55e','#f59e0b','#ef4444','#14b8a6','#8b5cf6','#f97316','#ec4899','#06b6d4','#84cc16'];
 
+let _carregando = false;
+
 // ── Render principal ─────────────────────────────────────────────────────────
 
 export async function initBiModule() {
-  injectStyles();
+  injectBiStyles();
   const container = document.getElementById('biContainer');
   if (!container) return;
 
   container.innerHTML = `
     <div class="bi-wrap">
+      <div id="biFeedback" class="module-feedback" style="margin-bottom:12px"></div>
       <div class="bi-toolbar">
         <label class="bi-toolbar__label">Período:</label>
         <select id="biPeriodo" class="filter-input">
@@ -230,10 +183,17 @@ function getFiltros() {
 }
 
 async function carregarBI() {
+  if (_carregando) return;
+  _carregando = true;
   const { inicio, fim, meses } = getFiltros();
   const q = (inicio && fim) ? `?inicio=${inicio}&fim=${fim}` : '';
   const btn = document.getElementById('biAtualizar');
+  const fb  = document.getElementById('biFeedback');
+  if (fb) { fb.className = 'module-feedback'; fb.textContent = ''; }
   if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Carregando...'; }
+  document.querySelectorAll('#biKpis .bi-kpi').forEach(el => {
+    el.innerHTML = '<div class="skeleton-line" style="height:14px;width:55%;border-radius:4px;margin-bottom:8px"></div><div class="skeleton-line" style="height:26px;width:75%;border-radius:4px"></div>';
+  });
 
   try {
     const [comp, tendencia, topProd, topCli, mixPag, margemCat, funil] = await Promise.allSettled([
@@ -254,8 +214,11 @@ async function carregarBI() {
     if (topProd.status === 'fulfilled' && topProd.value?.sucesso) renderTopProdutos(topProd.value.produtos);
     if (topCli.status === 'fulfilled' && topCli.value?.sucesso) renderTopClientes(topCli.value.clientes);
   } catch (err) {
-    showToast('Erro ao carregar BI: ' + err.message, 'error');
+    const msg = buildFriendlyError(err);
+    if (fb) { fb.className = 'module-feedback module-feedback--error'; fb.textContent = msg; }
+    showToast(msg, 'error');
   } finally {
+    _carregando = false;
     if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> Atualizar'; }
   }
 }
@@ -290,7 +253,12 @@ function renderKpis(data) {
 function renderTendencia(dados) {
   destroyChart('tendencia');
   const ctx = document.getElementById('biChartTendencia');
-  if (!ctx || !dados?.length) return;
+  if (!ctx) return;
+  if (!dados?.length) {
+    const box = ctx.parentElement;
+    if (box) box.innerHTML = `<div class="bi-empty"><i class="fa-solid fa-chart-line"></i>Sem dados de tendência no período</div>`;
+    return;
+  }
 
   const labels = dados.map(d => {
     const [y, m] = d.mes.split('-');
@@ -334,7 +302,12 @@ function renderTendencia(dados) {
 function renderMixPagamentos(metodos) {
   destroyChart('pagamentos');
   const ctx = document.getElementById('biChartPagamentos');
-  if (!ctx || !metodos?.length) return;
+  if (!ctx) return;
+  if (!metodos?.length) {
+    const box = ctx.parentElement;
+    if (box) box.innerHTML = `<div class="bi-empty"><i class="fa-solid fa-credit-card"></i>Sem dados de pagamentos</div>`;
+    return;
+  }
 
   CHARTS.pagamentos = new Chart(ctx, {
     type: 'doughnut',
@@ -356,7 +329,12 @@ function renderMixPagamentos(metodos) {
 function renderMargemCategorias(cats) {
   destroyChart('categorias');
   const ctx = document.getElementById('biChartCategorias');
-  if (!ctx || !cats?.length) return;
+  if (!ctx) return;
+  if (!cats?.length) {
+    const box = ctx.parentElement;
+    if (box) box.innerHTML = `<div class="bi-empty"><i class="fa-solid fa-tags"></i>Sem dados por categoria</div>`;
+    return;
+  }
 
   const top = cats.slice(0, 8);
 
@@ -380,7 +358,11 @@ function renderMargemCategorias(cats) {
 
 function renderFunil(etapas) {
   const el = document.getElementById('biFunil');
-  if (!el || !etapas?.length) return;
+  if (!el) return;
+  if (!etapas?.length) {
+    el.innerHTML = `<div class="bi-empty"><i class="fa-solid fa-filter"></i>Sem dados de funil no período</div>`;
+    return;
+  }
 
   const maxQtd = Math.max(...etapas.map(e => e.qtd), 1);
 
@@ -403,7 +385,11 @@ function renderFunil(etapas) {
 
 function renderTopProdutos(produtos) {
   const tbody = document.querySelector('#biTabelaProdutos tbody');
-  if (!tbody || !produtos?.length) return;
+  if (!tbody) return;
+  if (!produtos?.length) {
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text-muted,#94a3b8)"><i class="fa-solid fa-box-open" style="margin-right:6px;opacity:.4"></i>Nenhum produto no período</td></tr>`;
+    return;
+  }
 
   tbody.innerHTML = produtos.map((p, i) => {
     const mPct = p.receita > 0 ? ((p.margem / p.receita) * 100).toFixed(1) : 0;
@@ -419,7 +405,11 @@ function renderTopProdutos(produtos) {
 
 function renderTopClientes(clientes) {
   const tbody = document.querySelector('#biTabelaClientes tbody');
-  if (!tbody || !clientes?.length) return;
+  if (!tbody) return;
+  if (!clientes?.length) {
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text-muted,#94a3b8)"><i class="fa-solid fa-users" style="margin-right:6px;opacity:.4"></i>Nenhum cliente no período</td></tr>`;
+    return;
+  }
 
   tbody.innerHTML = clientes.map((c, i) => `<tr>
     <td style="color:#94a3b8;font-size:12px">${i+1}</td>
@@ -444,8 +434,9 @@ async function carregarInsightsIA() {
     if (!data?.sucesso) throw new Error(data?.erro || 'Erro desconhecido');
     renderInsights(data);
   } catch (err) {
-    body.innerHTML = `<div class="bi-ai-empty" style="color:#ef4444"><i class="fa-solid fa-triangle-exclamation"></i> ${esc(err.message)}</div>`;
-    showToast('Erro ao gerar análise IA: ' + err.message, 'error');
+    const msg = buildFriendlyError(err);
+    body.innerHTML = `<div class="bi-ai-empty" style="color:#ef4444"><i class="fa-solid fa-triangle-exclamation"></i> ${esc(msg)}</div>`;
+    showToast(msg, 'error');
   } finally {
     if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Gerar análise'; }
   }
