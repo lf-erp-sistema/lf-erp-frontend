@@ -1,5 +1,28 @@
 import api from './api.js';
 import { showToast } from './feedback.js';
+import { escapeHtml, buildFriendlyError } from './utils.js';
+
+const esc = escapeHtml;
+
+function injectAlertasStyles() {
+  if (document.getElementById('alStyles')) return;
+  const s = document.createElement('style');
+  s.id = 'alStyles';
+  s.textContent = `
+    .al-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 48px 20px;
+      text-align: center;
+    }
+    .al-empty i { font-size: 2.2rem; opacity: .25; margin-bottom: 4px; color: var(--text-muted); }
+    .al-empty strong { font-size: 15px; color: var(--text); }
+    .al-empty p { font-size: 13px; margin: 0; color: var(--text-muted); }
+  `;
+  document.head.appendChild(s);
+}
 
 const AlertasModule = {
   state: {
@@ -14,6 +37,7 @@ const AlertasModule = {
   },
 
   init() {
+    injectAlertasStyles();
     this.render();
     this.bindShellEvents();
     this.load();
@@ -22,7 +46,11 @@ const AlertasModule = {
   async load() {
     if (this.state.carregando) return;
     this.state.carregando = true;
-    this.setFeedback('Carregando...', 'info');
+    this.setFeedback('', '');
+    const conteudo = document.getElementById('alertasConteudo');
+    if (conteudo) conteudo.innerHTML = `<div class="module-skeleton" style="padding:16px">${
+      Array.from({length: 3}).map(() => '<div class="skeleton-line" style="height:40px;margin-bottom:10px;border-radius:6px"></div>').join('')
+    }</div>`;
     try {
       const [cfgRes, histRes] = await Promise.allSettled([
         api.getAlertasConfig(),
@@ -31,10 +59,9 @@ const AlertasModule = {
       this.state.config    = cfgRes.status  === 'fulfilled' ? (cfgRes.value?.config   || null) : null;
       this.state.historico = histRes.status === 'fulfilled' ? (histRes.value?.historico || []) : [];
       this.renderConteudo();
-      this.setFeedback('', '');
     } catch (err) {
       console.error('[alertas] load:', err);
-      this.setFeedback('Erro ao carregar alertas.', 'error');
+      this.setFeedback(buildFriendlyError(err), 'error');
     } finally {
       this.state.carregando = false;
     }
@@ -49,7 +76,7 @@ const AlertasModule = {
       this.renderConteudo();
     } catch (err) {
       console.error('[alertas] loadPromissorias:', err);
-      showToast('Erro ao carregar promissórias.', 'error');
+      showToast(buildFriendlyError(err), 'error');
     } finally {
       this.state.promissoriasCarregando = false;
     }
@@ -103,7 +130,7 @@ const AlertasModule = {
     if (!c) return;
 
     const atuBtn = document.getElementById('alertasAtualizarBtn');
-    if (atuBtn) atuBtn.onclick = () => this.load();
+    if (atuBtn) atuBtn.onclick = () => { if (this.state.carregando) return; this.load(); };
 
     c.onclick = (e) => {
       const abaBtn = e.target.closest('[data-al-aba]');
@@ -195,7 +222,7 @@ const AlertasModule = {
     return `
       <div class="panel-card">
         <div class="panel-card__header">
-          <div><h3>Resultado do disparo</h3><p>${this.esc(r.mensagem || '')}</p></div>
+          <div><h3>Resultado do disparo</h3><p>${esc(r.mensagem || '')}</p></div>
         </div>
         <div class="panel-card__body">
           <div style="display:flex;gap:16px;margin-bottom:16px;flex-wrap:wrap">
@@ -223,10 +250,10 @@ const AlertasModule = {
               ${linksWpp.map((l) => `
                 <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;border-radius:10px;background:var(--surface-2);border:1px solid var(--border)">
                   <div>
-                    <strong style="font-size:13px">${this.esc(l.cliente_nome || '-')}</strong>
-                    <div style="font-size:11px;color:var(--text-muted)">${this.esc(l.telefone || '')} · ${this.fmtCur(l.valor_total)}</div>
+                    <strong style="font-size:13px">${esc(l.cliente_nome || '-')}</strong>
+                    <div style="font-size:11px;color:var(--text-muted)">${esc(l.telefone || '')} · ${this.fmtCur(l.valor_total)}</div>
                   </div>
-                  <a href="${this.esc(this.safeUrl(l.link))}" target="_blank" rel="noopener"
+                  <a href="${esc(this.safeUrl(l.link))}" target="_blank" rel="noopener"
                      style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:#25d366;color:#fff;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;white-space:nowrap">
                     <i class="fa-brands fa-whatsapp"></i> Enviar
                   </a>
@@ -255,7 +282,7 @@ const AlertasModule = {
         this.renderConteudo();
         await this.load();
       } catch (err) {
-        const msg = err.message || 'Erro ao disparar alertas.';
+        const msg = buildFriendlyError(err);
         if (fb) { fb.className = 'module-feedback module-feedback--error'; fb.textContent = msg; }
         showToast(msg, 'error');
       } finally {
@@ -268,7 +295,7 @@ const AlertasModule = {
 
   renderConfig() {
     const cfg = this.state.config || {};
-    const v   = (val) => this.esc(val || '');
+    const v   = (val) => esc(val || '');
     const temSmtpPass = Boolean(cfg.smtp_pass);
 
     return `
@@ -398,8 +425,8 @@ const AlertasModule = {
         const fbAfter = document.getElementById('alConfigFeedback');
         if (fbAfter) { fbAfter.className = 'module-feedback module-feedback--success'; fbAfter.textContent = 'Configuração salva com sucesso.'; }
       } catch (err) {
-        if (fb) { fb.className = 'module-feedback module-feedback--error'; fb.textContent = err.message || 'Erro ao salvar.'; }
-        showToast('Erro ao salvar configuração.', 'error');
+        if (fb) { fb.className = 'module-feedback module-feedback--error'; fb.textContent = buildFriendlyError(err); }
+        showToast(buildFriendlyError(err), 'error');
       } finally {
         if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Salvar configuração'; }
       }
@@ -416,7 +443,11 @@ const AlertasModule = {
     const totErros = hist.filter((h) => h.status === 'erro').length;
 
     if (!hist.length) {
-      return `<div class="module-feedback module-feedback--info" style="margin-top:16px">Nenhum alerta disparado ainda.</div>`;
+      return `<div class="al-empty">
+        <i class="fa-solid fa-bell-slash"></i>
+        <strong>Nenhum alerta disparado ainda</strong>
+        <p>Use a aba "Disparar Alertas" para enviar lembretes de pagamento aos clientes.</p>
+      </div>`;
     }
 
     const linhas = hist.map((h) => {
@@ -428,8 +459,8 @@ const AlertasModule = {
               ? '<i class="fa-solid fa-envelope" style="color:var(--primary)"></i> Email'
               : '<i class="fa-brands fa-whatsapp" style="color:#25d366"></i> WhatsApp'}
           </td>
-          <td>${this.esc(h.cliente_nome || '-')}</td>
-          <td>${this.esc(h.contato || '-')}</td>
+          <td>${esc(h.cliente_nome || '-')}</td>
+          <td>${esc(h.contato || '-')}</td>
           <td class="text-right">${this.fmtCur(h.valor_total)}</td>
           <td>
             <span class="badge ${h.status === 'enviado' ? 'badge--success' : 'badge--danger'}">
@@ -437,7 +468,7 @@ const AlertasModule = {
             </span>
           </td>
           <td>${data}</td>
-          ${h.erro_msg ? `<td><small style="color:var(--danger)">${this.esc(h.erro_msg)}</small></td>` : '<td>—</td>'}
+          ${h.erro_msg ? `<td><small style="color:var(--danger)">${esc(h.erro_msg)}</small></td>` : '<td>—</td>'}
         </tr>
       `;
     }).join('');
@@ -477,7 +508,9 @@ const AlertasModule = {
     const preventiva = cfg.cobranca_preventiva_ativa;
 
     if (this.state.promissoriasCarregando) {
-      return `<div style="margin-top:24px;text-align:center;color:var(--text-muted)"><i class="fa-solid fa-spinner fa-spin"></i> Carregando...</div>`;
+      return `<div class="module-skeleton" style="padding:16px;margin-top:16px">${
+        Array.from({length: 3}).map(() => '<div class="skeleton-line" style="height:40px;margin-bottom:10px;border-radius:6px"></div>').join('')
+      }</div>`;
     }
 
     const cartoes = lista.length === 0
@@ -505,7 +538,7 @@ const AlertasModule = {
             return `
               <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
                 <div style="flex:1;min-width:0">
-                  <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${this.esc(item.descricao)}</div>
+                  <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(item.descricao)}</div>
                   <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${badgeStatus}</div>
                 </div>
                 <div style="text-align:right;white-space:nowrap">
@@ -519,15 +552,15 @@ const AlertasModule = {
           }).join('');
 
           const temTel = Boolean(cli.telefone);
-          const cliAttr = `data-cli-id="${this.esc(String(cli.cliente_id || ''))}" data-cli-nome="${this.esc(cli.cliente_nome)}"`;
+          const cliAttr = `data-cli-id="${esc(String(cli.cliente_id || ''))}" data-cli-nome="${esc(cli.cliente_nome)}"`;
 
           return `
             <div class="panel-card" style="margin-bottom:14px">
               <div class="panel-card__header">
                 <div style="flex:1">
-                  <h3 style="margin:0">${this.esc(cli.cliente_nome)}</h3>
+                  <h3 style="margin:0">${esc(cli.cliente_nome)}</h3>
                   <p style="margin:0;font-size:12px;color:var(--text-muted)">
-                    ${temTel ? `<i class="fa-solid fa-phone" style="font-size:11px"></i> ${this.esc(cli.telefone)}` : 'Sem telefone cadastrado'}
+                    ${temTel ? `<i class="fa-solid fa-phone" style="font-size:11px"></i> ${esc(cli.telefone)}` : 'Sem telefone cadastrado'}
                     · ${cli.itens.length} produto(s)
                   </p>
                 </div>
@@ -632,7 +665,7 @@ const AlertasModule = {
         const res = await api.previewPromissoria({ cliente_id, cliente_nome });
         this.abrirModalPreview(res.mensagem, res.link);
       } catch (err) {
-        if (fb) { fb.className = 'module-feedback module-feedback--error'; fb.textContent = err.message || 'Erro ao gerar mensagem.'; }
+        if (fb) { fb.className = 'module-feedback module-feedback--error'; fb.textContent = buildFriendlyError(err); }
       }
     };
 
@@ -659,7 +692,7 @@ const AlertasModule = {
           if (fb) { fb.className = 'module-feedback module-feedback--error'; fb.textContent = 'Cliente sem telefone cadastrado.'; }
         }
       } catch (err) {
-        if (fb) { fb.className = 'module-feedback module-feedback--error'; fb.textContent = err.message || 'Erro.'; }
+        if (fb) { fb.className = 'module-feedback module-feedback--error'; fb.textContent = buildFriendlyError(err); }
       }
     };
 
@@ -686,6 +719,11 @@ const AlertasModule = {
     if (linkEl) { linkEl.href = link || '#'; linkEl.style.opacity = link ? '1' : '0.5'; linkEl.style.pointerEvents = link ? '' : 'none'; }
     if (fb)     { fb.className = 'module-feedback'; fb.textContent = ''; }
     modal.style.display = 'flex';
+    setTimeout(() => copiarBtn?.focus(), 50);
+
+    if (this._escPreview) document.removeEventListener('keydown', this._escPreview);
+    this._escPreview = (e) => { if (e.key === 'Escape') { modal.style.display = 'none'; document.removeEventListener('keydown', this._escPreview); this._escPreview = null; } };
+    document.addEventListener('keydown', this._escPreview);
 
     copiarBtn?.addEventListener('click', async () => {
       try {
@@ -697,8 +735,12 @@ const AlertasModule = {
       }
     }, { once: true });
 
-    fecharBtn?.addEventListener('click', () => { modal.style.display = 'none'; }, { once: true });
-    modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; }, { once: true });
+    const fecharPreview = () => {
+      modal.style.display = 'none';
+      if (this._escPreview) { document.removeEventListener('keydown', this._escPreview); this._escPreview = null; }
+    };
+    fecharBtn?.addEventListener('click', fecharPreview, { once: true });
+    modal.addEventListener('click', (e) => { if (e.target === modal) fecharPreview(); }, { once: true });
   },
 
   // ── HELPERS ───────────────────────────────────────────────────────────────
@@ -719,9 +761,6 @@ const AlertasModule = {
     return /^https?:\/\//i.test(url) ? url : '#';
   },
 
-  esc(v) {
-    return String(v ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#039;');
-  }
 };
 
 export async function initAlertasModule() {

@@ -1,7 +1,28 @@
 import api from './api.js';
 import { showToast, confirmarAcao } from './feedback.js';
+import { escapeHtml, buildFriendlyError } from './utils.js';
 
-function esc(v) { return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+const esc = escapeHtml;
+
+function injectWppStyles() {
+  if (document.getElementById('wppStyles')) return;
+  const s = document.createElement('style');
+  s.id = 'wppStyles';
+  s.textContent = `
+    .wpp-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 48px 20px;
+      text-align: center;
+    }
+    .wpp-empty i { font-size: 2.2rem; opacity: .25; margin-bottom: 4px; color: var(--text-muted); }
+    .wpp-empty strong { font-size: 15px; color: var(--text); }
+    .wpp-empty p { font-size: 13px; margin: 0; color: var(--text-muted); }
+  `;
+  document.head.appendChild(s);
+}
 
 const STATUS_COR = {
   enviado: { label: 'Enviado',  bg: 'var(--success-soft)', cor: 'var(--success)' },
@@ -15,12 +36,13 @@ const WhatsappModule = {
     cfg: null,
     templates: [],
     historico: [],
-    initialized: false
+    initialized: false,
+    loading: false
   },
 
   async init() {
     if (!this.state.initialized) {
-      this.injectStyles();
+      injectWppStyles();
       this.render();
       this.bindTabEvents();
       this.state.initialized = true;
@@ -29,28 +51,39 @@ const WhatsappModule = {
   },
 
   async loadTab(tab) {
+    if (this.state.loading) return;
+    this.state.loading = true;
     this.state.tab = tab;
     document.querySelectorAll('.wpp-tab-btn').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
-    if (tab === 'config')    await this.loadConfig();
-    if (tab === 'templates') await this.loadTemplates();
-    if (tab === 'enviar')    this.renderEnviar();
-    if (tab === 'historico') await this.loadHistorico();
-    if (tab === 'automacao') this.renderAutomacao();
+    try {
+      if (tab === 'config')    await this.loadConfig();
+      if (tab === 'templates') await this.loadTemplates();
+      if (tab === 'enviar')    this.renderEnviar();
+      if (tab === 'historico') await this.loadHistorico();
+      if (tab === 'automacao') this.renderAutomacao();
+    } finally {
+      this.state.loading = false;
+    }
   },
 
   // ── Config ────────────────────────────────────────────────────────────────
 
   async loadConfig() {
+    const el = document.getElementById('wppContent');
+    if (el) el.innerHTML = `<div class="module-skeleton" style="padding:16px">${
+      Array.from({length: 3}).map(() => '<div class="skeleton-line" style="height:40px;margin-bottom:10px;border-radius:6px"></div>').join('')
+    }</div>`;
     try {
       const data = await api.fetchAPI('/whatsapp/config');
       this.state.cfg = data.config;
       this.renderConfig(data.config);
-    } catch (err) { showToast(err.message || 'Erro', 'error'); }
+    } catch (err) { showToast(buildFriendlyError(err), 'error'); }
   },
 
   renderConfig(cfg) {
     const el = document.getElementById('wppContent');
     if (!el) return;
+    const isLink = (cfg?.wpp_provider || 'link') === 'link';
 
     el.innerHTML = `
       <div style="max-width:560px;">
@@ -62,8 +95,8 @@ const WhatsappModule = {
           <div class="wpp-form-row">
             <div class="wpp-form-group">
               <label>Provedor</label>
-              <select id="wppProvider" class="filter-input" onchange="document.getElementById('wppApiUrlGroup').style.display = this.value !== 'link' ? '' : 'none'">
-                <option value="link"      ${(cfg?.wpp_provider||'link') === 'link'      ? 'selected':''}>Link wa.me (sem API)</option>
+              <select id="wppProvider" class="filter-input">
+                <option value="link"      ${isLink ? 'selected':''}>Link wa.me (sem API)</option>
                 <option value="evolution" ${(cfg?.wpp_provider||'link') === 'evolution' ? 'selected':''}>Evolution API</option>
                 <option value="zapi"      ${(cfg?.wpp_provider||'link') === 'zapi'      ? 'selected':''}>Z-API</option>
               </select>
@@ -76,7 +109,7 @@ const WhatsappModule = {
               </label>
             </div>
           </div>
-          <div id="wppApiUrlGroup" style="${(cfg?.wpp_provider||'link') === 'link' ? 'display:none' : ''}">
+          <div id="wppApiUrlGroup" style="${isLink ? 'display:none' : ''}">
             <div class="wpp-form-row">
               <div class="wpp-form-group">
                 <label>URL da API</label>
@@ -89,8 +122,8 @@ const WhatsappModule = {
             </div>
             <div class="wpp-form-row">
               <div class="wpp-form-group">
-                <label>Token / API Key</label>
-                <input id="wppToken" class="filter-input" type="password" value="${cfg?.wpp_token ? '***configurado***' : ''}" placeholder="Cole o token aqui">
+                <label>Token / API Key ${cfg?.wpp_token ? '<span style="font-size:10px;color:var(--success);font-weight:600;">✓ Configurado</span>' : ''}</label>
+                <input id="wppToken" class="filter-input" type="password" placeholder="${cfg?.wpp_token ? 'Deixe em branco para manter o atual' : 'Cole o token aqui'}">
               </div>
               <div class="wpp-form-group">
                 <label>Número WhatsApp Business</label>
@@ -112,6 +145,10 @@ const WhatsappModule = {
       </div>
     `;
 
+    document.getElementById('wppProvider')?.addEventListener('change', (e) => {
+      const group = document.getElementById('wppApiUrlGroup');
+      if (group) group.style.display = e.target.value !== 'link' ? '' : 'none';
+    });
     document.getElementById('wppCfgForm')?.addEventListener('submit', async (e) => {
       e.preventDefault();
       await this.salvarConfig();
@@ -135,7 +172,7 @@ const WhatsappModule = {
       await api.fetchAPI('/whatsapp/config', 'PUT', payload);
       showToast('Configuração salva!', 'success');
       await this.loadConfig();
-    } catch (err) { showToast(err.message || 'Erro', 'error'); }
+    } catch (err) { showToast(buildFriendlyError(err), 'error'); }
     finally { if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa fa-save"></i> Salvar configuração'; } }
   },
 
@@ -150,18 +187,22 @@ const WhatsappModule = {
       } else {
         showToast(data.mensagem || 'Teste enviado!', 'success');
       }
-    } catch (err) { showToast(err.message || 'Erro no teste', 'error'); }
+    } catch (err) { showToast(buildFriendlyError(err), 'error'); }
     finally { btn.disabled = false; btn.innerHTML = '<i class="fa fa-flask"></i> Testar conexão'; }
   },
 
   // ── Templates ─────────────────────────────────────────────────────────────
 
   async loadTemplates() {
+    const el = document.getElementById('wppContent');
+    if (el) el.innerHTML = `<div class="module-skeleton" style="padding:16px">${
+      Array.from({length: 3}).map(() => '<div class="skeleton-line" style="height:80px;margin-bottom:10px;border-radius:6px"></div>').join('')
+    }</div>`;
     try {
       const data = await api.fetchAPI('/whatsapp/templates');
       this.state.templates = data.templates || [];
       this.renderTemplates();
-    } catch (err) { showToast(err.message || 'Erro', 'error'); }
+    } catch (err) { showToast(buildFriendlyError(err), 'error'); }
   },
 
   renderTemplates() {
@@ -215,7 +256,7 @@ const WhatsappModule = {
       await api.fetchAPI(`/whatsapp/templates/${evento}`, 'PUT', { mensagem: msg, ativo });
       showToast('Template salvo!', 'success');
       await this.loadTemplates();
-    } catch (err) { showToast(err.message || 'Erro', 'error'); }
+    } catch (err) { showToast(buildFriendlyError(err), 'error'); }
   },
 
   // ── Envio manual ──────────────────────────────────────────────────────────
@@ -243,6 +284,8 @@ const WhatsappModule = {
       </div>
     `;
 
+    setTimeout(() => document.getElementById('wppEnvTel')?.focus(), 50);
+
     document.getElementById('wppEnviarForm')?.addEventListener('submit', async (e) => {
       e.preventDefault();
       const tel  = document.getElementById('wppEnvTel').value.trim();
@@ -263,7 +306,7 @@ const WhatsappModule = {
         } else {
           showToast(data.erro || 'Falha no envio', 'error');
         }
-      } catch (err) { showToast(err.message || 'Erro', 'error'); }
+      } catch (err) { showToast(buildFriendlyError(err), 'error'); }
       finally { btn.disabled = false; btn.innerHTML = '<i class="fa fa-paper-plane"></i> Enviar mensagem'; }
     });
   },
@@ -329,8 +372,8 @@ const WhatsappModule = {
           </div>`;
         showToast(data.mensagem, r.erros > 0 ? 'error' : 'success');
       } catch (err) {
-        result.innerHTML = `<div style="color:var(--danger);font-size:13px;">${esc(err.message || 'Erro')}</div>`;
-        showToast(err.message || 'Erro ao processar', 'error');
+        result.innerHTML = `<div style="color:var(--danger);font-size:13px;">${esc(buildFriendlyError(err))}</div>`;
+        showToast(buildFriendlyError(err), 'error');
       } finally {
         btn.disabled = false; btn.innerHTML = '<i class="fa fa-play"></i> Processar agora';
       }
@@ -340,11 +383,15 @@ const WhatsappModule = {
   // ── Histórico ─────────────────────────────────────────────────────────────
 
   async loadHistorico() {
+    const el = document.getElementById('wppContent');
+    if (el) el.innerHTML = `<div class="module-skeleton" style="padding:16px">${
+      Array.from({length: 4}).map(() => '<div class="skeleton-line" style="height:36px;margin-bottom:10px;border-radius:6px"></div>').join('')
+    }</div>`;
     try {
       const data = await api.fetchAPI('/whatsapp/historico');
       this.state.historico = data.historico || [];
       this.renderHistorico();
-    } catch (err) { showToast(err.message || 'Erro', 'error'); }
+    } catch (err) { showToast(buildFriendlyError(err), 'error'); }
   },
 
   renderHistorico() {
@@ -352,7 +399,11 @@ const WhatsappModule = {
     if (!el) return;
 
     if (!this.state.historico.length) {
-      el.innerHTML = `<div style="padding:60px;text-align:center;color:var(--text-muted);"><i class="fa fa-clock-rotate-left" style="font-size:32px;display:block;margin-bottom:10px;"></i>Nenhuma mensagem enviada ainda.</div>`;
+      el.innerHTML = `<div class="wpp-empty">
+        <i class="fa-solid fa-clock-rotate-left"></i>
+        <strong>Nenhuma mensagem enviada ainda</strong>
+        <p>O histórico de mensagens WhatsApp aparecerá aqui após os envios.</p>
+      </div>`;
       return;
     }
 
@@ -402,52 +453,6 @@ const WhatsappModule = {
     });
   },
 
-  injectStyles() {
-    // estilos migrados para style.css
-    if (true) return;
-    const s = document.createElement('style');
-    s.id = 'wpp-styles';
-    s.textContent = `
-      .wpp-tabs { display:flex; gap:4px; border-bottom:1px solid var(--border); }
-      .wpp-tab-btn { padding:10px 16px; border:none; background:none; font-size:13px; font-weight:500; color:var(--text-muted); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; display:flex; align-items:center; gap:6px; transition:.15s; }
-      .wpp-tab-btn.active { color:#25d366; border-color:#25d366; }
-      .wpp-tab-btn:hover:not(.active) { color:var(--text); }
-
-      .wpp-form-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-      .wpp-form-group { display:flex; flex-direction:column; gap:5px; }
-      .wpp-form-group label { font-size:12px; font-weight:600; color:var(--text-muted); }
-      @media(max-width:480px){ .wpp-form-row { grid-template-columns:1fr; } }
-
-      .wpp-toggle { position:relative; display:inline-block; width:42px; height:24px; }
-      .wpp-toggle input { opacity:0; width:0; height:0; }
-      .wpp-toggle-slider { position:absolute; inset:0; background:#ccc; border-radius:24px; cursor:pointer; transition:.2s; }
-      .wpp-toggle input:checked + .wpp-toggle-slider { background:#25d366; }
-      .wpp-toggle-slider:before { content:''; position:absolute; height:18px; width:18px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:.2s; }
-      .wpp-toggle input:checked + .wpp-toggle-slider:before { transform:translateX(18px); }
-      .wpp-toggle--sm { width:36px; height:20px; }
-      .wpp-toggle--sm .wpp-toggle-slider:before { height:14px; width:14px; }
-      .wpp-toggle--sm input:checked + .wpp-toggle-slider:before { transform:translateX(16px); }
-
-      .wpp-info-box { padding:12px 16px; background:var(--surface-2); border-radius:8px; font-size:12px; color:var(--text-muted); display:flex; gap:8px; align-items:flex-start; line-height:1.6; }
-      .wpp-info-box i { margin-top:2px; flex-shrink:0; }
-
-      .wpp-template-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:10px; }
-      .wpp-template-head { display:flex; align-items:center; justify-content:space-between; }
-      .wpp-template-label { font-size:13px; font-weight:600; }
-      .wpp-badge { display:inline-flex; padding:2px 8px; border-radius:20px; font-size:10px; font-weight:600; background:var(--surface-3); color:var(--text-muted); margin-left:6px; }
-      .wpp-badge--custom { background:#dbeafe; color:#1d4ed8; }
-
-      .wpp-auto-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px; }
-      .wpp-resumo { display:flex; gap:12px; flex-wrap:wrap; margin-top:4px; }
-      .wpp-resumo-item { display:flex; flex-direction:column; align-items:center; gap:2px; padding:10px 16px; border-radius:10px; min-width:80px; font-size:13px; }
-      .wpp-resumo-item strong { font-size:1.4rem; font-weight:700; }
-      .wpp-resumo-item span { font-size:11px; color:var(--text-muted); }
-      .wpp-resumo-item--ok   { background:var(--success-soft); color:var(--success); }
-      .wpp-resumo-item--link { background:var(--accent-purple-soft); color:var(--accent-purple); }
-      .wpp-resumo-item--err  { background:var(--danger-soft); color:var(--danger); }
-    `;
-    document.head.appendChild(s);
-  }
 };
 
 export async function initWhatsappModule() {

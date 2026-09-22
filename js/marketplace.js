@@ -1,8 +1,35 @@
 import api from './api.js';
 import { showToast, confirmarAcao } from './feedback.js';
+import { escapeHtml, buildFriendlyError } from './utils.js';
+const esc = escapeHtml;
 
-function esc(v) {
-  return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function injectMarketplaceStyles() {
+  if (document.getElementById('mktStyles')) return;
+  const s = document.createElement('style');
+  s.id = 'mktStyles';
+  s.textContent = `
+    .mkt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; margin-bottom: 28px; }
+    .mkt-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+    .mkt-card__head { display: flex; align-items: center; gap: 12px; }
+    .mkt-card__logo { width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+    .mkt-card__logo.ml { background: #ffe600; }
+    .mkt-card__logo.shopee { background: #ee4d2d; color: #fff; }
+    .mkt-card__name { font-weight: 600; font-size: 15px; }
+    .mkt-card__actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .mkt-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+    .mkt-badge.conectado { background: var(--success-soft); color: var(--success); }
+    .mkt-badge.desconectado { background: var(--surface-3); color: var(--text-muted); }
+    .mkt-badge.em-breve { background: var(--warning-soft); color: var(--warning); }
+    .mkt-section-title { font-size: 14px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 12px; }
+    .mkt-table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .mkt-toolbar { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--border); }
+    .mkt-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 48px 20px; text-align: center; color: var(--text-muted); font-size: 13px; }
+    .mkt-empty i { font-size: 2rem; opacity: .25; }
+    .btn-icon { background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 4px 6px; border-radius: 6px; transition: .15s; }
+    .btn-icon:hover { background: var(--surface-2); color: var(--text); }
+    .btn-icon.danger:hover { color: var(--danger); }
+  `;
+  document.head.appendChild(s);
 }
 
 const MarketplaceModule = {
@@ -13,7 +40,11 @@ const MarketplaceModule = {
     initialized: false
   },
 
+  _escConfig: null,
+  _escVincular: null,
+
   async init() {
+    injectMarketplaceStyles();
     if (!this.state.initialized) {
       this.render();
       this.bindEvents();
@@ -25,6 +56,13 @@ const MarketplaceModule = {
   async load() {
     if (this.state.loading) return;
     this.state.loading = true;
+    const skl = Array.from({length: 2}).map(() => '<div class="skeleton-line" style="height:100px;margin-bottom:10px;border-radius:12px"></div>').join('');
+    const grid = document.getElementById('mktPlataformasGrid');
+    const wrap = document.getElementById('mktProdutosWrap');
+    if (grid) grid.innerHTML = `<div class="module-skeleton" style="padding:0">${skl}</div>`;
+    if (wrap) wrap.innerHTML = `<div class="module-skeleton" style="padding:16px">${
+      Array.from({length: 3}).map(() => '<div class="skeleton-line" style="height:36px;margin-bottom:10px;border-radius:6px"></div>').join('')
+    }</div>`;
     try {
       const [cfgData, prodData] = await Promise.all([
         api.fetchAPI('/marketplace/config'),
@@ -35,7 +73,7 @@ const MarketplaceModule = {
       this.renderPlataformas();
       this.renderProdutos();
     } catch (err) {
-      showToast(err.message || 'Erro ao carregar marketplace', 'error');
+      showToast(buildFriendlyError(err), 'error');
     } finally {
       this.state.loading = false;
     }
@@ -45,28 +83,6 @@ const MarketplaceModule = {
     const c = document.getElementById('marketplaceContainer');
     if (!c) return;
     c.innerHTML = `
-      <style>
-        .mkt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; margin-bottom: 28px; }
-        .mkt-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
-        .mkt-card__head { display: flex; align-items: center; gap: 12px; }
-        .mkt-card__logo { width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
-        .mkt-card__logo.ml { background: #ffe600; }
-        .mkt-card__logo.shopee { background: #ee4d2d; color: #fff; }
-        .mkt-card__name { font-weight: 600; font-size: 15px; }
-        .mkt-card__actions { display: flex; gap: 8px; flex-wrap: wrap; }
-        .mkt-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
-        .mkt-badge.conectado { background: var(--success-soft); color: var(--success); }
-        .mkt-badge.desconectado { background: var(--surface-3); color: var(--text-muted); }
-        .mkt-badge.em-breve { background: var(--warning-soft); color: var(--warning); }
-        .mkt-section-title { font-size: 14px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 12px; }
-        .mkt-table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
-        .mkt-toolbar { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--border); }
-        .mkt-empty { padding: 40px; text-align: center; color: var(--text-muted); font-size: 13px; }
-        .btn-icon { background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 4px 6px; border-radius: 6px; transition: .15s; }
-        .btn-icon:hover { background: var(--surface-2); color: var(--text); }
-        .btn-icon.danger:hover { color: var(--danger); }
-      </style>
-
       <div class="mkt-grid" id="mktPlataformasGrid"></div>
 
       <div class="mkt-section-title">Produtos Vinculados</div>
@@ -198,7 +214,11 @@ const MarketplaceModule = {
     if (count) count.textContent = `${lista.length} produto${lista.length !== 1 ? 's' : ''} vinculado${lista.length !== 1 ? 's' : ''}`;
 
     if (!lista.length) {
-      wrap.innerHTML = `<div class="mkt-empty"><i class="fa fa-box-open" style="font-size:32px;margin-bottom:10px;display:block;"></i>Nenhum produto vinculado ainda.<br>Clique em "Vincular produto" para começar.</div>`;
+      wrap.innerHTML = `<div class="mkt-empty">
+        <i class="fa-solid fa-box-open"></i>
+        <strong>Nenhum produto vinculado ainda</strong>
+        <p>Clique em "Vincular produto" para conectar seu estoque a uma plataforma.</p>
+      </div>`;
       return;
     }
 
@@ -264,6 +284,8 @@ const MarketplaceModule = {
   fecharModais() {
     document.getElementById('mktConfigModal').style.display  = 'none';
     document.getElementById('mktVincularModal').style.display = 'none';
+    if (this._escConfig)   { document.removeEventListener('keydown', this._escConfig);   this._escConfig = null; }
+    if (this._escVincular) { document.removeEventListener('keydown', this._escVincular); this._escVincular = null; }
   },
 
   abrirModalConfig(plataforma) {
@@ -277,7 +299,11 @@ const MarketplaceModule = {
 
     const modal = document.getElementById('mktConfigModal');
     modal.style.display = 'flex';
-    document.getElementById('mktCfgAppId').focus();
+    setTimeout(() => document.getElementById('mktCfgAppId')?.focus(), 50);
+
+    document.removeEventListener('keydown', this._escConfig);
+    this._escConfig = (e) => { if (e.key === 'Escape') this.fecharModais(); };
+    document.addEventListener('keydown', this._escConfig);
   },
 
   async salvarConfig() {
@@ -295,7 +321,7 @@ const MarketplaceModule = {
       this.fecharModais();
       await this.load();
     } catch (err) {
-      showToast(err.message || 'Erro ao salvar configuração', 'error');
+      showToast(buildFriendlyError(err), 'error');
     } finally {
       btn.disabled = false; btn.textContent = 'Salvar';
     }
@@ -320,7 +346,7 @@ const MarketplaceModule = {
       }, 1000);
       this._oauthCheck = check;
     } catch (err) {
-      showToast(err.message || 'Erro ao iniciar OAuth', 'error');
+      showToast(buildFriendlyError(err), 'error');
     }
   },
 
@@ -333,11 +359,17 @@ const MarketplaceModule = {
       const lista = data.produtos || data.items || [];
       select.innerHTML = `<option value="">Selecione o produto...</option>` +
         lista.map((p) => `<option value="${p.id}">${esc(p.nome)}</option>`).join('');
-    } catch {
+    } catch (err) {
       select.innerHTML = `<option value="">Erro ao carregar produtos</option>`;
+      showToast(buildFriendlyError(err), 'error');
     }
 
     document.getElementById('mktVincularModal').style.display = 'flex';
+    setTimeout(() => select?.focus(), 50);
+
+    document.removeEventListener('keydown', this._escVincular);
+    this._escVincular = (e) => { if (e.key === 'Escape') this.fecharModais(); };
+    document.addEventListener('keydown', this._escVincular);
   },
 
   async salvarVinculo() {
@@ -359,7 +391,7 @@ const MarketplaceModule = {
       this.fecharModais();
       await this.load();
     } catch (err) {
-      showToast(err.message || 'Erro ao vincular produto', 'error');
+      showToast(buildFriendlyError(err), 'error');
     } finally {
       if (btn) { btn.disabled = false; btn.textContent = 'Salvar vínculo'; }
     }
@@ -377,7 +409,7 @@ const MarketplaceModule = {
       showToast(data.mensagem || 'Estoque sincronizado!', 'success');
       await this.load();
     } catch (err) {
-      showToast(err.message || 'Erro ao sincronizar', 'error');
+      showToast(buildFriendlyError(err), 'error');
     } finally {
       btn.disabled = false;
       icon?.classList.remove('fa-spin');
@@ -392,7 +424,7 @@ const MarketplaceModule = {
       showToast('Vínculo removido', 'success');
       await this.load();
     } catch (err) {
-      showToast(err.message || 'Erro ao remover vínculo', 'error');
+      showToast(buildFriendlyError(err), 'error');
     }
   }
 };

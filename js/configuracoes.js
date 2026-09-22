@@ -13,14 +13,20 @@ const ConfigModule = {
     eventsBound: false
   },
 
-  init() {
+  async init() {
     const auth = getAuth();
     this.state.empresa = auth?.empresa?.nome || auth?.user?.empresa || 'LF ERP';
     this.state.user = auth?.user || {};
+    this.state.isAdmin = ['admin', 'administrador'].includes((auth?.user?.perfil || '').toLowerCase());
 
     this.state.eventsBound = false;
     this.render();
     this.load();
+
+    if (this.state.isAdmin) {
+      const { initUsuariosModule } = await import('./usuarios.js');
+      await initUsuariosModule(true);
+    }
   },
 
   async salvarPerfil() {
@@ -617,7 +623,19 @@ const ConfigModule = {
         </div>
       </section>
 
-      <!-- CARD 7: LGPD -->
+      <!-- CARD 7: Usuários do sistema (admin only) -->
+      ${this.state.isAdmin ? `
+      <section class="module-card" style="margin-bottom:16px">
+        <div class="module-card__header" style="margin-bottom:16px">
+          <div>
+            <h3><i class="fa-solid fa-user-shield" style="color:var(--primary);margin-right:6px"></i>Usuários do sistema</h3>
+            <p>Gestão de acessos, perfis e permissões</p>
+          </div>
+        </div>
+        <div id="usuariosContainer"></div>
+      </section>` : ''}
+
+      <!-- CARD 8: LGPD -->
       <section class="module-card">
         <div class="module-card__header" style="margin-bottom:12px">
           <div>
@@ -709,8 +727,8 @@ const ConfigModule = {
   }
 };
 
-export function initConfigModule() {
-  ConfigModule.init();
+export async function initConfigModule() {
+  await ConfigModule.init();
 }
 
 export default ConfigModule;

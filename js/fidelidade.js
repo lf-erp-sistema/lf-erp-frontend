@@ -1,7 +1,28 @@
 import api from './api.js';
 import { showToast, confirmarAcao } from './feedback.js';
+import { escapeHtml, buildFriendlyError } from './utils.js';
 
-function esc(v) { return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+const esc = escapeHtml;
+
+function injectFidelidadeStyles() {
+  if (document.getElementById('fidStyles')) return;
+  const s = document.createElement('style');
+  s.id = 'fidStyles';
+  s.textContent = `
+    .fid-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 48px 20px;
+      text-align: center;
+    }
+    .fid-empty i { font-size: 2.2rem; opacity: .25; margin-bottom: 4px; color: var(--text-muted); }
+    .fid-empty strong { font-size: 15px; color: var(--text); }
+    .fid-empty p { font-size: 13px; margin: 0; color: var(--text-muted); }
+  `;
+  document.head.appendChild(s);
+}
 function moeda(v) { return Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
 function dataBR(d) { if (!d) return '—'; const [y,m,dia]=String(d).substring(0,10).split('-'); return `${dia}/${m}/${y}`; }
 
@@ -23,7 +44,7 @@ const FidelidadeModule = {
 
   async init() {
     if (!this.state.initialized) {
-      this.injectStyles();
+      injectFidelidadeStyles();
       this.render();
       this.bindTabEvents();
       this.state.initialized = true;
@@ -49,6 +70,10 @@ const FidelidadeModule = {
   // ── Dashboard ─────────────────────────────────────────────────────────────
 
   async loadDashboard() {
+    const el = document.getElementById('fidContent');
+    if (el) el.innerHTML = `<div class="module-skeleton" style="padding:16px">${
+      Array.from({length: 4}).map(() => '<div class="skeleton-line" style="height:40px;margin-bottom:10px;border-radius:6px"></div>').join('')
+    }</div>`;
     try {
       const _fidQ = { empresa_id: api.getEmpresaId() };
       const [dash, cfg] = await Promise.all([
@@ -57,7 +82,7 @@ const FidelidadeModule = {
       ]);
       this.state.cfg = cfg.config;
       this.renderDashboard(dash, cfg.config);
-    } catch (err) { showToast(err.message || 'Erro', 'error'); }
+    } catch (err) { showToast(buildFriendlyError(err), 'error'); }
   },
 
   renderDashboard(d, cfg) {
@@ -114,11 +139,15 @@ const FidelidadeModule = {
   // ── Config ────────────────────────────────────────────────────────────────
 
   async loadConfig() {
+    const el = document.getElementById('fidContent');
+    if (el) el.innerHTML = `<div class="module-skeleton" style="padding:16px">${
+      Array.from({length: 3}).map(() => '<div class="skeleton-line" style="height:36px;margin-bottom:10px;border-radius:6px"></div>').join('')
+    }</div>`;
     try {
       const data = await api.fetchAPI('/fidelidade/config', 'GET', null, { empresa_id: api.getEmpresaId() });
       this.state.cfg = data.config;
       this.renderConfig(data.config);
-    } catch (err) { showToast(err.message || 'Erro', 'error'); }
+    } catch (err) { showToast(buildFriendlyError(err), 'error'); }
   },
 
   renderConfig(cfg) {
@@ -202,7 +231,7 @@ const FidelidadeModule = {
       try {
         const data = await api.fetchAPI('/fidelidade/expirar', 'POST', { empresa_id: api.getEmpresaId() });
         showToast(data.mensagem, 'success');
-      } catch (err) { showToast(err.message || 'Erro', 'error'); }
+      } catch (err) { showToast(buildFriendlyError(err), 'error'); }
       finally { btn.disabled = false; }
     });
   },
@@ -222,7 +251,7 @@ const FidelidadeModule = {
       await api.fetchAPI('/fidelidade/config', 'PUT', { ...payload, empresa_id: api.getEmpresaId() });
       showToast('Configuração salva!', 'success');
       this.state.cfg = { ...this.state.cfg, ...payload };
-    } catch (err) { showToast(err.message || 'Erro', 'error'); }
+    } catch (err) { showToast(buildFriendlyError(err), 'error'); }
     finally {
       if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = '<i class="fa fa-save"></i> Salvar configuração'; }
     }
@@ -231,6 +260,10 @@ const FidelidadeModule = {
   // ── Clientes ──────────────────────────────────────────────────────────────
 
   async loadClientes() {
+    const el = document.getElementById('fidContent');
+    if (el) el.innerHTML = `<div class="module-skeleton" style="padding:16px">${
+      Array.from({length: 4}).map(() => '<div class="skeleton-line" style="height:40px;margin-bottom:10px;border-radius:6px"></div>').join('')
+    }</div>`;
     try {
       const _fidQ2 = { empresa_id: api.getEmpresaId() };
       const [data, cfgData] = await Promise.all([
@@ -240,7 +273,7 @@ const FidelidadeModule = {
       this.state.clientes = data.clientes || [];
       this.state.cfg = cfgData.config;
       this.renderClientes();
-    } catch (err) { showToast(err.message || 'Erro', 'error'); }
+    } catch (err) { showToast(buildFriendlyError(err), 'error'); }
   },
 
   renderClientes() {
@@ -253,7 +286,11 @@ const FidelidadeModule = {
         <button class="btn btn-secondary btn-sm" id="fidAjusteBtn"><i class="fa fa-sliders"></i> Ajuste manual</button>
       </div>
       ${this.state.clientes.length === 0
-        ? `<div class="fid-empty"><i class="fa fa-star" style="font-size:32px;display:block;margin-bottom:10px;"></i>Nenhum cliente com pontos acumulados ainda.<br>Os pontos são acumulados automaticamente em cada venda com cliente vinculado.</div>`
+        ? `<div class="fid-empty">
+            <i class="fa-solid fa-star"></i>
+            <strong>Nenhum cliente com pontos ainda</strong>
+            <p>Os pontos são acumulados automaticamente em cada venda com cliente vinculado.</p>
+          </div>`
         : `<div class="fid-table-wrap"><table>
             <thead><tr><th>#</th><th>Cliente</th><th class="text-right">Pontos</th><th class="text-right">Valor resgate</th><th></th></tr></thead>
             <tbody>
@@ -329,9 +366,14 @@ const FidelidadeModule = {
 
     document.getElementById('fidAjusteBtn')?.addEventListener('click', () => {
       document.getElementById('fidAjusteModal').style.display = 'flex';
+      setTimeout(() => document.getElementById('fidAjustePontos')?.focus(), 50);
+      if (this._escAjuste) document.removeEventListener('keydown', this._escAjuste);
+      this._escAjuste = (e) => { if (e.key === 'Escape') { document.getElementById('fidAjusteModal').style.display = 'none'; document.removeEventListener('keydown', this._escAjuste); this._escAjuste = null; } };
+      document.addEventListener('keydown', this._escAjuste);
     });
     document.getElementById('fidAjusteCancelBtn')?.addEventListener('click', () => {
       document.getElementById('fidAjusteModal').style.display = 'none';
+      if (this._escAjuste) { document.removeEventListener('keydown', this._escAjuste); this._escAjuste = null; }
     });
     document.getElementById('fidAjusteSalvarBtn')?.addEventListener('click', async (e) => {
       const btn = e.currentTarget;
@@ -347,7 +389,13 @@ const FidelidadeModule = {
 
   async abrirExtrato(clienteId) {
     document.getElementById('fidExtratoModal').style.display = 'flex';
-    document.getElementById('fidExtratoBody').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);">Carregando...</div>';
+    document.getElementById('fidExtratoBody').innerHTML = `<div class="module-skeleton" style="padding:16px">${
+      Array.from({length: 3}).map(() => '<div class="skeleton-line" style="height:36px;margin-bottom:8px;border-radius:6px"></div>').join('')
+    }</div>`;
+
+    if (this._escExtrato) document.removeEventListener('keydown', this._escExtrato);
+    this._escExtrato = (e) => { if (e.key === 'Escape') { document.getElementById('fidExtratoModal').style.display = 'none'; document.removeEventListener('keydown', this._escExtrato); this._escExtrato = null; } };
+    document.addEventListener('keydown', this._escExtrato);
     try {
       const data = await api.fetchAPI(`/fidelidade/clientes/${clienteId}/extrato`, 'GET', null, { empresa_id: api.getEmpresaId() });
       const c = data.cliente || {};
@@ -360,7 +408,7 @@ const FidelidadeModule = {
           <div class="fid-mini-kpi"><div class="fid-mini-label">Valor de resgate</div><div class="fid-mini-val" style="color:var(--success);">${moeda(data.valor_resgate)}</div></div>
         </div>
         ${movs.length === 0
-          ? `<div style="text-align:center;color:var(--text-muted);padding:20px;font-size:13px;">Nenhum movimento</div>`
+          ? `<div class="fid-empty"><i class="fa-solid fa-clock-rotate-left"></i><strong>Nenhum movimento</strong><p>Este cliente ainda não possui transações de pontos.</p></div>`
           : `<table>
               <thead><tr><th>Tipo</th><th>Pontos</th><th>Saldo</th><th>Descrição</th><th>Data</th></tr></thead>
               <tbody>
@@ -379,7 +427,7 @@ const FidelidadeModule = {
         }
       `;
     } catch (err) {
-      document.getElementById('fidExtratoBody').innerHTML = `<div style="color:var(--danger);padding:16px;">${esc(err.message)}</div>`;
+      document.getElementById('fidExtratoBody').innerHTML = `<div style="color:var(--danger);padding:16px;">${esc(buildFriendlyError(err))}</div>`;
     }
   },
 
@@ -393,7 +441,7 @@ const FidelidadeModule = {
       showToast(`Ajuste aplicado. Novo saldo: ${data.novo_saldo} pontos`, 'success');
       document.getElementById('fidAjusteModal').style.display = 'none';
       await this.loadClientes();
-    } catch (err) { showToast(err.message || 'Erro', 'error'); }
+    } catch (err) { showToast(buildFriendlyError(err), 'error'); }
   },
 
   // ── Resgate ───────────────────────────────────────────────────────────────
@@ -464,7 +512,7 @@ const FidelidadeModule = {
             </div>
           </div>`;
         showToast(data.mensagem, 'success');
-      } catch (err) { showToast(err.message || 'Erro', 'error'); }
+      } catch (err) { showToast(buildFriendlyError(err), 'error'); }
       finally {
         if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = '<i class="fa fa-check"></i> Confirmar resgate'; }
       }
@@ -494,65 +542,6 @@ const FidelidadeModule = {
     });
   },
 
-  injectStyles() {
-    // estilos migrados para style.css
-    if (true) return;
-    const s = document.createElement('style');
-    s.id = 'fid-styles';
-    s.textContent = `
-      .fid-tabs { display:flex; gap:4px; border-bottom:1px solid var(--border); }
-      .fid-tab-btn { padding:10px 16px; border:none; background:none; font-size:13px; font-weight:500; color:var(--text-muted); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; display:flex; align-items:center; gap:6px; transition:.15s; }
-      .fid-tab-btn.active { color:#f59e0b; border-color:#f59e0b; }
-      .fid-tab-btn:hover:not(.active) { color:var(--text); }
-
-      .fid-kpis { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px; }
-      .fid-kpi { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px 20px; flex:1; min-width:130px; }
-      .fid-kpi--gold { border-color:#fcd34d; }
-      .fid-kpi-label { font-size:11px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:.4px; margin-bottom:4px; }
-      .fid-kpi-val { font-size:1.5rem; font-weight:700; }
-      .fid-kpi-sub { font-size:11px; color:var(--text-muted); margin-top:2px; }
-      .fid-kpi--gold .fid-kpi-val { color:#b45309; }
-
-      .fid-section-label { font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:10px; }
-      .fid-top-list { display:flex; flex-direction:column; gap:8px; max-width:500px; }
-      .fid-top-item { display:flex; align-items:center; gap:12px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:10px 14px; }
-      .fid-top-rank { font-size:16px; font-weight:700; color:var(--text-muted); width:28px; }
-      .fid-top-nome { flex:1; font-size:13px; font-weight:500; }
-      .fid-top-pts { font-size:13px; font-weight:700; color:#b45309; display:flex; align-items:center; gap:5px; }
-
-      .fid-regras { display:flex; flex-direction:column; gap:8px; font-size:13px; color:var(--text-muted); max-width:420px; }
-      .fid-regras i { color:#f59e0b; margin-right:6px; }
-
-      .fid-alert { background:var(--warning-soft); border:1px solid var(--warning); border-radius:10px; padding:12px 16px; font-size:13px; color:var(--warning); margin-bottom:20px; display:flex; align-items:center; gap:8px; }
-      .fid-info-box { padding:12px 16px; background:var(--surface-2); border-radius:8px; font-size:12px; color:var(--text-muted); display:flex; gap:8px; }
-      .fid-success-box { background:var(--success-soft); border:1px solid #86efac; border-radius:10px; padding:14px 16px; font-size:13px; display:flex; align-items:flex-start; gap:10px; color:var(--success); }
-
-      .fid-form-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-      .fid-form-group { display:flex; flex-direction:column; gap:5px; }
-      .fid-form-group--full { grid-column:1/-1; }
-      .fid-form-group label { font-size:12px; font-weight:600; color:var(--text-muted); }
-      .fid-preview { padding:10px 14px; background:var(--surface-2); border-radius:8px; font-size:13px; color:var(--text-muted); display:flex; align-items:center; gap:8px; }
-
-      .fid-toolbar { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
-      .fid-table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
-      .fid-empty { padding:60px; text-align:center; font-size:13px; color:var(--text-muted); }
-      .fid-pts-badge { display:inline-flex; align-items:center; gap:5px; background:var(--warning-soft); color:#b45309; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:700; }
-
-      .fid-toggle { position:relative; display:inline-block; width:42px; height:24px; }
-      .fid-toggle input { opacity:0; width:0; height:0; }
-      .fid-toggle-slider { position:absolute; inset:0; background:#ccc; border-radius:24px; cursor:pointer; transition:.2s; }
-      .fid-toggle input:checked + .fid-toggle-slider { background:#f59e0b; }
-      .fid-toggle-slider:before { content:''; position:absolute; height:18px; width:18px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:.2s; }
-      .fid-toggle input:checked + .fid-toggle-slider:before { transform:translateX(18px); }
-
-      .fid-mini-kpi { background:var(--surface-2); border-radius:8px; padding:10px 14px; }
-      .fid-mini-label { font-size:11px; color:var(--text-muted); font-weight:600; text-transform:uppercase; }
-      .fid-mini-val { font-size:1.2rem; font-weight:700; }
-      .fid-mini-val--gold { color:#b45309; }
-      .text-right { text-align:right; }
-    `;
-    document.head.appendChild(s);
-  }
 };
 
 export async function initFidelidadeModule() {

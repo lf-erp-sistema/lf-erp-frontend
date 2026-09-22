@@ -1,6 +1,29 @@
 import api from './api.js';
 import { showToast, confirmarAcao } from './feedback.js';
 import { exportCSV, numCSV } from './exportUtils.js';
+import { escapeHtml, buildFriendlyError } from './utils.js';
+
+const esc = escapeHtml;
+
+function injectComissoesStyles() {
+  if (document.getElementById('comStyles')) return;
+  const s = document.createElement('style');
+  s.id = 'comStyles';
+  s.textContent = `
+    .com-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 48px 20px;
+      text-align: center;
+    }
+    .com-empty i { font-size: 2.2rem; opacity: .25; margin-bottom: 4px; color: var(--text-muted); }
+    .com-empty strong { font-size: 15px; color: var(--text); }
+    .com-empty p { font-size: 13px; margin: 0; color: var(--text-muted); }
+  `;
+  document.head.appendChild(s);
+}
 
 const ComissoesModule = {
   state: {
@@ -16,13 +39,19 @@ const ComissoesModule = {
   },
 
   init() {
+    injectComissoesStyles();
     this.render();
     this.bindShellEvents();
   },
 
   async load() {
+    if (this.state.carregando) return;
     this.state.carregando = true;
-    this.setFeedback('Carregando...', 'info');
+    this.setFeedback('', '');
+    const conteudo = document.getElementById('comConteudo');
+    if (conteudo) conteudo.innerHTML = `<div class="module-skeleton" style="padding:16px">${
+      Array.from({length: 3}).map(() => '<div class="skeleton-line" style="height:40px;margin-bottom:10px;border-radius:6px"></div>').join('')
+    }</div>`;
     const periodo = this._calcPeriodo();
     try {
       const [resumoRes, configsRes, comissoesRes, usuariosRes] = await Promise.allSettled([
@@ -40,10 +69,9 @@ const ComissoesModule = {
         : [];
 
       this.renderConteudo();
-      this.setFeedback('', '');
     } catch (err) {
       console.error('[comissoes] load:', err);
-      this.setFeedback('Erro ao carregar comissões.', 'error');
+      this.setFeedback(buildFriendlyError(err), 'error');
     } finally {
       this.state.carregando = false;
     }
@@ -117,7 +145,7 @@ const ComissoesModule = {
     const c = document.getElementById('comissoesContainer');
     if (!c) return;
 
-    document.getElementById('comAtualizarBtn')?.addEventListener('click', () => this.load());
+    document.getElementById('comAtualizarBtn')?.addEventListener('click', () => { if (this.state.carregando) return; this.load(); });
     document.getElementById('comExportarBtn')?.addEventListener('click', () => this.exportar());
     document.getElementById('comFiltroPeriodo')?.addEventListener('change', (e) => {
       this.state.filtroPeriodo = e.target.value;
@@ -161,12 +189,16 @@ const ComissoesModule = {
     const totVendasVal = resumo.reduce((s, r) => s + Number(r.total_vendas_valor || 0), 0);
 
     if (!resumo.length) {
-      return `<div class="module-feedback module-feedback--info">Nenhuma comissão registrada ainda. Configure os vendedores na aba <strong>Configuração</strong>.</div>`;
+      return `<div class="com-empty">
+        <i class="fa-solid fa-percent"></i>
+        <strong>Nenhuma comissão registrada</strong>
+        <p>Configure os vendedores na aba <strong>Configuração</strong> para começar a registrar comissões.</p>
+      </div>`;
     }
 
     const linhas = resumo.map((r) => `
       <tr>
-        <td><strong>${this.esc(r.vendedor_nome || r.vendedor_usuario || '-')}</strong></td>
+        <td><strong>${esc(r.vendedor_nome || r.vendedor_usuario || '-')}</strong></td>
         <td>${Number(r.total_vendas || 0)}</td>
         <td>${this.fmtCur(r.total_vendas_valor)}</td>
         <td>${Number(r.percentual_medio || 0).toFixed(1)}%</td>
@@ -261,27 +293,32 @@ const ComissoesModule = {
         </div>
         <select id="comFiltroVendedor" class="filter-input">
           <option value="">Todos os vendedores</option>
-          ${vendedores.map(([id, nome]) => `<option value="${id}" ${String(this.state.filtroUsuario) === String(id) ? 'selected' : ''}>${this.esc(nome || String(id))}</option>`).join('')}
+          ${vendedores.map(([id, nome]) => `<option value="${id}" ${String(this.state.filtroUsuario) === String(id) ? 'selected' : ''}>${esc(nome || String(id))}</option>`).join('')}
         </select>
       </div>
     `;
 
     if (!filtered.length) {
-      return filterBar + `<div class="module-feedback module-feedback--info">Nenhuma comissão encontrada com os filtros aplicados.</div>`;
+      const temFiltro = this.state.filtroStatus || this.state.filtroUsuario;
+      return filterBar + `<div class="com-empty">
+        <i class="fa-solid fa-list-check"></i>
+        <strong>${temFiltro ? 'Nenhuma comissão com esses filtros' : 'Nenhuma comissão encontrada'}</strong>
+        <p>${temFiltro ? 'Tente remover os filtros aplicados.' : 'As comissões geradas pelas vendas aparecerão aqui.'}</p>
+      </div>`;
     }
 
     const linhas = filtered.map((c) => {
       const badgeClass = { pendente: 'badge--warning', pago: 'badge--success', cancelado: 'badge--danger' }[c.status] || '';
       return `
         <tr>
-          <td>${this.esc(c.vendedor_nome || c.vendedor_usuario || '-')}</td>
+          <td>${esc(c.vendedor_nome || c.vendedor_usuario || '-')}</td>
           <td>${c.venda_id ? `#${c.venda_id}` : '-'}</td>
-          <td>${this.esc(c.cliente_nome || 'Consumidor')}</td>
+          <td>${esc(c.cliente_nome || 'Consumidor')}</td>
           <td>${this.fmtDate(c.data_venda)}</td>
           <td>${this.fmtCur(c.valor_venda)}</td>
           <td>${Number(c.percentual || 0).toFixed(1)}%</td>
           <td class="text-right"><strong>${this.fmtCur(c.valor_comissao)}</strong></td>
-          <td><span class="badge ${badgeClass}">${this.esc(c.status)}</span></td>
+          <td><span class="badge ${badgeClass}">${esc(c.status)}</span></td>
           <td class="text-right">
             <div style="display:flex;gap:6px;justify-content:flex-end">
               ${c.status === 'pendente' ? `
@@ -342,7 +379,7 @@ const ComissoesModule = {
 
     const linhas = configs.map((cfg) => `
       <tr>
-        <td><strong>${this.esc(cfg.vendedor_nome || cfg.vendedor_usuario || '-')}</strong></td>
+        <td><strong>${esc(cfg.vendedor_nome || cfg.vendedor_usuario || '-')}</strong></td>
         <td>${Number(cfg.percentual || 0).toFixed(2)}%</td>
         <td>
           <span class="badge ${cfg.ativa ? 'badge--success' : 'badge--danger'}">
@@ -375,7 +412,7 @@ const ComissoesModule = {
               <select id="comVendedorSelect" class="filter-input">
                 <option value="">Selecione um usuário</option>
                 ${vendedoresDisponiveis.map((u) => `
-                  <option value="${u.id}">${this.esc(u.nome_completo || u.usuario || String(u.id))}</option>
+                  <option value="${u.id}">${esc(u.nome_completo || u.usuario || String(u.id))}</option>
                 `).join('')}
               </select>
             </div>
@@ -407,7 +444,11 @@ const ComissoesModule = {
             <tbody>${linhas}</tbody>
           </table>
         </div>
-      ` : `<div class="module-feedback module-feedback--info">Nenhum vendedor configurado ainda.</div>`}
+      ` : `<div class="com-empty">
+        <i class="fa-solid fa-gear"></i>
+        <strong>Nenhum vendedor configurado</strong>
+        <p>Adicione um vendedor acima para definir a comissão padrão por venda.</p>
+      </div>`}
     `;
   },
 
@@ -428,7 +469,7 @@ const ComissoesModule = {
         showToast('Configuração de comissão salva.', 'success');
         await this.load();
       } catch (err) {
-        if (feedback) { feedback.className = 'module-feedback module-feedback--error'; feedback.textContent = err.message || 'Erro ao salvar.'; }
+        if (feedback) { feedback.className = 'module-feedback module-feedback--error'; feedback.textContent = buildFriendlyError(err); }
       } finally {
         if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-plus"></i> Adicionar'; }
       }
@@ -456,7 +497,7 @@ const ComissoesModule = {
       }
       await this.load();
     } catch (err) {
-      showToast(err.message || 'Erro ao executar ação.', 'error');
+      showToast(buildFriendlyError(err), 'error');
       if (btnEl) btnEl.disabled = false;
     }
   },
@@ -491,6 +532,8 @@ const ComissoesModule = {
         </div>
       `;
       document.body.appendChild(overlay);
+      setTimeout(() => overlay.querySelector('#_comDataPgto')?.focus(), 50);
+      overlay.addEventListener('keydown', (e) => { if (e.key === 'Escape') { document.body.removeChild(overlay); resolve(null); } });
       overlay.querySelector('#_comCancelarPgto').onclick = () => { document.body.removeChild(overlay); resolve(null); };
       overlay.querySelector('#_comConfirmarPgto').onclick = () => {
         const data  = overlay.querySelector('#_comDataPgto').value || hoje;
@@ -548,9 +591,6 @@ const ComissoesModule = {
     return new Date(v).toLocaleDateString('pt-BR', { timeZone: 'America/Fortaleza' });
   },
 
-  esc(v) {
-    return String(v ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#039;');
-  }
 };
 
 export async function initComissoesModule() {

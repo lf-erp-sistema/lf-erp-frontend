@@ -1,9 +1,64 @@
 import api from './api.js';
 import { showToast, confirmarAcao } from './feedback.js';
+import { escapeHtml, buildFriendlyError } from './utils.js';
+const esc = escapeHtml;
 
-function esc(v) { return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function moeda(v) { return Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
 function pct(v, total) { return total > 0 ? ((v / total) * 100).toFixed(1) + '%' : '—'; }
+
+function injectFiliaisStyles() {
+  if (document.getElementById('filStyles')) return;
+  const s = document.createElement('style');
+  s.id = 'filStyles';
+  s.textContent = `
+    .fil-tabs { display:flex; gap:4px; border-bottom:1px solid var(--border); }
+    .fil-tab-btn { padding:10px 16px; border:none; background:none; font-size:13px; font-weight:500; color:var(--text-muted); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; display:flex; align-items:center; gap:6px; transition:.15s; }
+    .fil-tab-btn.active { color:var(--primary); border-color:var(--primary); }
+    .fil-tab-btn:hover:not(.active) { color:var(--text); }
+
+    .fil-periodo-bar { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px 18px; margin-bottom:20px; }
+    .fil-kpis { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px; }
+    .fil-kpi { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px 20px; flex:1; min-width:130px; }
+    .fil-kpi--green { border-color:#86efac; }
+    .fil-kpi--red   { border-color:#fca5a5; }
+    .fil-kpi-label { font-size:11px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:.4px; margin-bottom:4px; }
+    .fil-kpi-val { font-size:1.4rem; font-weight:700; }
+    .fil-kpi-sub { font-size:11px; color:var(--text-muted); margin-top:2px; }
+
+    .fil-section-label { font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:10px; }
+    .fil-table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+    .fil-table-wrap tfoot td { padding:11px 14px; font-size:13px; }
+
+    .fil-bars { display:flex; align-items:flex-end; gap:16px; padding:16px; background:var(--surface); border:1px solid var(--border); border-radius:12px; min-height:200px; }
+    .fil-bar-col { display:flex; flex-direction:column; align-items:center; gap:6px; flex:1; }
+    .fil-bar-val { font-size:10px; color:var(--text-muted); text-align:center; font-weight:600; }
+    .fil-bar { width:100%; border-radius:6px 6px 0 0; min-width:30px; transition:.3s; }
+    .fil-bar-label { font-size:11px; color:var(--text-muted); text-align:center; }
+
+    .fil-toolbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+    .fil-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px; }
+    .fil-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:18px; }
+    .fil-card--inativo { opacity:.6; }
+    .fil-card-head { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; }
+    .fil-card-row { font-size:12px; color:var(--text-muted); display:flex; align-items:center; gap:6px; margin-bottom:5px; }
+    .fil-card-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; padding-top:12px; border-top:1px solid var(--border); }
+    .fil-badge { display:inline-flex; align-items:center; padding:2px 8px; border-radius:20px; font-size:10px; font-weight:600; margin-left:4px; }
+    .fil-badge--ok   { background:var(--success-soft); color:var(--success); }
+    .fil-badge--off  { background:var(--surface-3); color:var(--text-muted); }
+    .fil-badge--sede { background:#dbeafe; color:#1d4ed8; }
+    .fil-empty { display:flex; flex-direction:column; align-items:center; gap:8px; padding:48px 20px; text-align:center; color:var(--text-muted); font-size:13px; }
+    .fil-empty i { font-size:2rem; opacity:.25; }
+
+    .fil-form-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .fil-form-group { display:flex; flex-direction:column; gap:5px; }
+    .fil-form-group--full { grid-column:1/-1; }
+    .fil-form-group label { font-size:12px; font-weight:600; color:var(--text-muted); }
+    .btn-icon.danger:hover { color:var(--danger); }
+    .text-right { text-align:right; }
+    @media(max-width:480px) { .fil-form-row { grid-template-columns:1fr; } }
+  `;
+  document.head.appendChild(s);
+}
 
 // Paleta para barras comparativas
 const CORES = ['#2563eb','#10b981','#f59e0b','#8b5cf6','#ef4444','#06b6d4'];
@@ -13,12 +68,13 @@ const FiliaisModule = {
     tab: 'comparativo',
     filiais: [],
     comparativo: null,
+    loading: false,
     initialized: false
   },
 
   async init() {
+    injectFiliaisStyles();
     if (!this.state.initialized) {
-      this.injectStyles();
       this.render();
       this.bindTabEvents();
       this.state.initialized = true;
@@ -31,15 +87,24 @@ const FiliaisModule = {
     try {
       const data = await api.fetchAPI('/filiais');
       this.state.filiais = data.filiais || [];
-    } catch { this.state.filiais = []; }
+    } catch (err) {
+      this.state.filiais = [];
+      showToast(buildFriendlyError(err), 'error');
+    }
   },
 
   async loadTab(tab) {
+    if (this.state.loading) return;
     this.state.tab = tab;
     document.querySelectorAll('.fil-tab-btn').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
-    if (tab === 'comparativo') await this.loadComparativo();
-    if (tab === 'filiais')     this.renderFiliais();
-    if (tab === 'nova')        this.renderForm(null);
+    this.state.loading = true;
+    try {
+      if (tab === 'comparativo') await this.loadComparativo();
+      if (tab === 'filiais')     this.renderFiliais();
+      if (tab === 'nova')        this.renderForm(null);
+    } finally {
+      this.state.loading = false;
+    }
   },
 
   // ── Comparativo ───────────────────────────────────────────────────────────
@@ -62,7 +127,7 @@ const FiliaisModule = {
         </div>
         <button class="btn btn-primary btn-sm" id="filAplicarBtn"><i class="fa fa-chart-bar"></i> Atualizar</button>
       </div>
-      <div id="filComparativoBody"><div style="padding:40px;text-align:center;color:var(--text-muted);">Carregando...</div></div>
+      <div id="filComparativoBody"></div>
     `;
 
     document.getElementById('filAplicarBtn')?.addEventListener('click', () => this.carregarComparativo());
@@ -75,12 +140,17 @@ const FiliaisModule = {
     const body = document.getElementById('filComparativoBody');
     if (!body) return;
 
+    body.innerHTML = `<div class="module-skeleton" style="padding:0">${
+      Array.from({length: 3}).map(() => '<div class="skeleton-line" style="height:80px;margin-bottom:10px;border-radius:12px"></div>').join('')
+    }</div>`;
+
     try {
       const data = await api.fetchAPI('/filiais/comparativo', 'GET', null, { inicio: ini, fim });
       this.state.comparativo = data;
       this.renderComparativo(data);
     } catch (err) {
-      body.innerHTML = `<div style="color:var(--danger);padding:16px;">${esc(err.message)}</div>`;
+      body.innerHTML = '';
+      showToast(buildFriendlyError(err), 'error');
     }
   },
 
@@ -92,7 +162,11 @@ const FiliaisModule = {
     const comMov = comparativo.filter((f) => f.qtd_vendas > 0 || f.qtd_compras > 0);
 
     if (comparativo.length === 0) {
-      body.innerHTML = `<div class="fil-empty"><i class="fa fa-store-slash" style="font-size:32px;display:block;margin-bottom:10px;"></i>Nenhuma filial cadastrada.<br>Crie filiais em "Gerenciar".</div>`;
+      body.innerHTML = `<div class="fil-empty">
+        <i class="fa-solid fa-store-slash"></i>
+        <strong>Nenhuma filial cadastrada</strong>
+        <p>Crie filiais na aba "Gerenciar" para ver o comparativo.</p>
+      </div>`;
       return;
     }
 
@@ -203,7 +277,11 @@ const FiliaisModule = {
         <button class="btn btn-primary btn-sm" id="filNovaBtn"><i class="fa fa-plus"></i> Nova filial</button>
       </div>
       ${this.state.filiais.length === 0
-        ? `<div class="fil-empty"><i class="fa fa-store-slash" style="font-size:32px;display:block;margin-bottom:10px;"></i>Nenhuma filial criada.<br>O sistema opera com a sede como único ponto de venda.</div>`
+        ? `<div class="fil-empty">
+             <i class="fa-solid fa-store-slash"></i>
+             <strong>Nenhuma filial criada</strong>
+             <p>O sistema opera com a sede como único ponto de venda.</p>
+           </div>`
         : `<div class="fil-grid">
             ${this.state.filiais.map((f) => `
               <div class="fil-card ${!f.ativo ? 'fil-card--inativo' : ''}">
@@ -256,7 +334,7 @@ const FiliaisModule = {
     el.innerHTML = `
       <div style="max-width:560px;">
         <h4 style="font-size:15px;font-weight:700;margin-bottom:20px;">${filial ? 'Editar filial' : 'Nova filial'}</h4>
-        <form id="filForm" style="display:flex;flex-direction:column;gap:14px;">
+        <form id="filForm" autocomplete="off" style="display:flex;flex-direction:column;gap:14px;">
           <div class="fil-form-row">
             <div class="fil-form-group fil-form-group--full">
               <label>Nome da filial *</label>
@@ -305,6 +383,8 @@ const FiliaisModule = {
       </div>
     `;
 
+    setTimeout(() => document.getElementById('filNome')?.focus(), 50);
+
     document.getElementById('filCancelarBtn')?.addEventListener('click', () => this.loadTab('filiais'));
     document.getElementById('filForm')?.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -337,7 +417,7 @@ const FiliaisModule = {
       showToast(id ? 'Filial atualizada!' : 'Filial criada!', 'success');
       await this.loadFiliais();
       this.loadTab('filiais');
-    } catch (err) { showToast(err.message || 'Erro', 'error'); }
+    } catch (err) { showToast(buildFriendlyError(err), 'error'); }
   },
 
   async toggleAtivo(id, ativo) {
@@ -345,7 +425,7 @@ const FiliaisModule = {
       await api.fetchAPI(`/filiais/${id}/ativo`, 'PATCH', { ativo: !ativo });
       await this.loadFiliais();
       this.renderFiliais();
-    } catch (err) { showToast(err.message || 'Erro', 'error'); }
+    } catch (err) { showToast(buildFriendlyError(err), 'error'); }
   },
 
   async deletar(id) {
@@ -356,7 +436,7 @@ const FiliaisModule = {
       showToast('Filial excluída', 'success');
       await this.loadFiliais();
       this.renderFiliais();
-    } catch (err) { showToast(err.message || 'Erro', 'error'); }
+    } catch (err) { showToast(buildFriendlyError(err), 'error'); }
   },
 
   // ── Estrutura ─────────────────────────────────────────────────────────────
@@ -380,58 +460,6 @@ const FiliaisModule = {
     });
   },
 
-  injectStyles() {
-    // estilos migrados para style.css
-    if (true) return;
-    const s = document.createElement('style');
-    s.id = 'fil-styles';
-    s.textContent = `
-      .fil-tabs { display:flex; gap:4px; border-bottom:1px solid var(--border); }
-      .fil-tab-btn { padding:10px 16px; border:none; background:none; font-size:13px; font-weight:500; color:var(--text-muted); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; display:flex; align-items:center; gap:6px; transition:.15s; }
-      .fil-tab-btn.active { color:var(--primary); border-color:var(--primary); }
-      .fil-tab-btn:hover:not(.active) { color:var(--text); }
-
-      .fil-periodo-bar { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px 18px; margin-bottom:20px; }
-      .fil-kpis { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px; }
-      .fil-kpi { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px 20px; flex:1; min-width:130px; }
-      .fil-kpi--green { border-color:#86efac; }
-      .fil-kpi--red   { border-color:#fca5a5; }
-      .fil-kpi-label { font-size:11px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:.4px; margin-bottom:4px; }
-      .fil-kpi-val { font-size:1.4rem; font-weight:700; }
-      .fil-kpi-sub { font-size:11px; color:var(--text-muted); margin-top:2px; }
-
-      .fil-section-label { font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:10px; }
-      .fil-table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
-      .fil-table-wrap tfoot td { padding:11px 14px; font-size:13px; }
-
-      .fil-bars { display:flex; align-items:flex-end; gap:16px; padding:16px; background:var(--surface); border:1px solid var(--border); border-radius:12px; min-height:200px; }
-      .fil-bar-col { display:flex; flex-direction:column; align-items:center; gap:6px; flex:1; }
-      .fil-bar-val { font-size:10px; color:var(--text-muted); text-align:center; font-weight:600; }
-      .fil-bar { width:100%; border-radius:6px 6px 0 0; min-width:30px; transition:.3s; }
-      .fil-bar-label { font-size:11px; color:var(--text-muted); text-align:center; }
-
-      .fil-toolbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
-      .fil-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px; }
-      .fil-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:18px; }
-      .fil-card--inativo { opacity:.6; }
-      .fil-card-head { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; }
-      .fil-card-row { font-size:12px; color:var(--text-muted); display:flex; align-items:center; gap:6px; margin-bottom:5px; }
-      .fil-card-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; padding-top:12px; border-top:1px solid var(--border); }
-      .fil-badge { display:inline-flex; align-items:center; padding:2px 8px; border-radius:20px; font-size:10px; font-weight:600; margin-left:4px; }
-      .fil-badge--ok   { background:var(--success-soft); color:var(--success); }
-      .fil-badge--off  { background:var(--surface-3); color:var(--text-muted); }
-      .fil-badge--sede { background:#dbeafe; color:#1d4ed8; }
-      .fil-empty { padding:60px; text-align:center; font-size:13px; color:var(--text-muted); }
-
-      .fil-form-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-      .fil-form-group { display:flex; flex-direction:column; gap:5px; }
-      .fil-form-group--full { grid-column:1/-1; }
-      .fil-form-group label { font-size:12px; font-weight:600; color:var(--text-muted); }
-      .btn-icon.danger:hover { color:var(--danger); }
-      .text-right { text-align:right; }
-    `;
-    document.head.appendChild(s);
-  }
 };
 
 export async function initFiliaisModule() {

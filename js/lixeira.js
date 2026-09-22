@@ -1,11 +1,25 @@
 import api from './api.js';
 import { showToast, confirmarAcao } from './feedback.js';
+import { escapeHtml, buildFriendlyError } from './utils.js';
+const esc = escapeHtml;
 
 const state = { dados: null, loading: false, bound: false };
 
-function esc(v) {
-  return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function injectLixeiraStyles() {
+  if (document.getElementById('lixStyles')) return;
+  const s = document.createElement('style');
+  s.id = 'lixStyles';
+  s.textContent = `
+    .lix-empty { display:flex; flex-direction:column; align-items:center; gap:8px; padding:48px 20px; text-align:center; color:var(--text-muted); font-size:13px; }
+    .lix-empty i { font-size:2.5rem; opacity:.3; margin-bottom:4px; }
+    .lix-banner { margin-bottom:16px; font-size:.82rem; }
+    .lix-secao { margin-bottom:24px; }
+    .lix-secao-titulo { font-size:.9rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+    .lix-secao-titulo span { font-weight:400; }
+  `;
+  document.head.appendChild(s);
 }
+
 function formatDateTime(d) {
   if (!d) return '-';
   return new Date(d).toLocaleString('pt-BR', {
@@ -18,6 +32,8 @@ function formatDateTime(d) {
 export async function initLixeiraModule() {
   const container = document.getElementById('lixeiraContainer');
   if (!container) return;
+  injectLixeiraStyles();
+  state.bound = false;
   container.innerHTML = renderSkeleton();
   await carregar();
 }
@@ -38,7 +54,7 @@ async function carregar() {
     bind();
   } catch (err) {
     container.innerHTML = `<div class="module-feedback module-feedback--error" style="margin:16px">
-      <i class="fa-solid fa-triangle-exclamation"></i> ${String(err.message || 'Erro ao carregar lixeira').replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#039;'}[c]))}
+      <i class="fa-solid fa-triangle-exclamation"></i> ${esc(buildFriendlyError(err))}
     </div>`;
   } finally {
     state.loading = false;
@@ -48,15 +64,15 @@ async function carregar() {
 function renderUI(data) {
   const total = data.total || 0;
   if (total === 0) {
-    return `<div style="text-align:center;padding:48px;color:var(--text-muted)">
-      <i class="fa-solid fa-trash-can" style="font-size:2.5rem;margin-bottom:16px;display:block;opacity:.3"></i>
-      <div style="font-size:.95rem;font-weight:600">Lixeira vazia</div>
-      <div style="font-size:.82rem;margin-top:4px">Nenhum registro excluído encontrado.</div>
+    return `<div class="lix-empty">
+      <i class="fa-solid fa-trash-can"></i>
+      <strong>Lixeira vazia</strong>
+      <p>Nenhum registro excluído encontrado.</p>
     </div>`;
   }
 
   return `
-    <div class="module-feedback module-feedback--warning" style="margin-bottom:16px;font-size:.82rem">
+    <div class="module-feedback module-feedback--warning lix-banner">
       <i class="fa-solid fa-info-circle"></i>
       Registros na lixeira não aparecem no sistema. Recupere para restaurar ou exclua permanentemente (admin).
     </div>
@@ -87,10 +103,10 @@ function renderSecao(titulo, _tipo, itens, campos) {
   }).join('');
 
   return `
-    <div style="margin-bottom:24px">
-      <h3 style="font-size:.9rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">
-        <i class="fa-solid fa-${tabela === 'produtos' ? 'box' : tabela === 'clientes' ? 'user' : 'truck'}" style="margin-right:6px"></i>
-        ${titulo} <span style="font-weight:400">(${itens.length})</span>
+    <div class="lix-secao">
+      <h3 class="lix-secao-titulo">
+        <i class="fa-solid fa-${tabela === 'produtos' ? 'box' : tabela === 'clientes' ? 'user' : 'truck'}"></i>
+        ${titulo} <span>(${itens.length})</span>
       </h3>
       <div style="overflow-x:auto">
         <table class="data-table">
@@ -127,7 +143,7 @@ function bind() {
         showToast(`"${nome}" recuperado com sucesso!`, 'success');
         await carregar();
       } catch (err) {
-        showToast(err.message || 'Erro ao recuperar', 'error');
+        showToast(buildFriendlyError(err), 'error');
       }
     }
 
@@ -142,7 +158,7 @@ function bind() {
         showToast(`"${nome}" excluído permanentemente.`, 'success');
         await carregar();
       } catch (err) {
-        showToast(err.message || 'Erro ao excluir', 'error');
+        showToast(buildFriendlyError(err), 'error');
       }
     }
   });

@@ -1,8 +1,45 @@
 import api from './api.js';
 import { showToast, confirmarAcao, pedirInput } from './feedback.js';
+import { escapeHtml, buildFriendlyError } from './utils.js';
+const esc = escapeHtml;
 
-function esc(v) {
-  return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function injectApiPublicaStyles() {
+  if (document.getElementById('apipubStyles')) return;
+  const s = document.createElement('style');
+  s.id = 'apipubStyles';
+  s.textContent = `
+    .apipub-tabs { display:flex; gap:4px; border-bottom:1px solid var(--border); padding-bottom:0; }
+    .apipub-tab-btn { padding:10px 18px; border:none; background:none; font-size:13px; font-weight:500; color:var(--text-muted); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; display:flex; align-items:center; gap:6px; transition:.15s; }
+    .apipub-tab-btn.active { color:var(--primary); border-color:var(--primary); }
+    .apipub-tab-btn:hover:not(.active) { color:var(--text); }
+
+    .apipub-table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+    .apipub-empty { display:flex; flex-direction:column; align-items:center; gap:8px; padding:48px 20px; text-align:center; color:var(--text-muted); font-size:13px; }
+    .apipub-empty i { font-size:2rem; opacity:.25; }
+    .apipub-badge { display:inline-flex; align-items:center; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:600; }
+    .apipub-badge--ok  { background:var(--success-soft); color:var(--success); }
+    .apipub-badge--off { background:var(--surface-3); color:var(--text-muted); }
+    .apipub-badge--err { background:var(--danger-soft); color:var(--danger); }
+    .apipub-info-box { padding:12px 16px; background:var(--surface-2); border-radius:8px; font-size:12px; color:var(--text-muted); display:flex; gap:8px; align-items:flex-start; }
+
+    .apipub-ep-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:10px; }
+    .apipub-ep-head { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; gap:12px; }
+    .apipub-ep-eventos { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+    .apipub-ev-badge { display:inline-flex; align-items:center; gap:5px; padding:3px 8px; background:var(--surface-2); border:1px solid var(--border); border-radius:6px; font-size:11px; color:var(--text-muted); }
+    .apipub-ep-actions { display:flex; gap:8px; flex-wrap:wrap; }
+
+    .apipub-docs { max-width:720px; }
+    .apipub-doc-section { margin-bottom:24px; }
+    .apipub-doc-section h3 { font-size:14px; font-weight:700; margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:6px; }
+    .apipub-doc-section p { font-size:13px; color:var(--text-muted); margin-bottom:8px; }
+    .apipub-doc-section pre { background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:12px; font-size:12px; overflow-x:auto; margin:0; white-space:pre-wrap; }
+    .apipub-doc-endpoint { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); flex-wrap:wrap; font-size:13px; }
+    .apipub-method { display:inline-flex; align-items:center; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:700; font-family:monospace; min-width:42px; justify-content:center; }
+    .apipub-method--get  { background:#dcfce7; color:#15803d; }
+    .apipub-method--post { background:#dbeafe; color:#1d4ed8; }
+    .btn-icon.danger:hover { color:var(--danger); }
+  `;
+  document.head.appendChild(s);
 }
 
 function dataBR(d) {
@@ -29,12 +66,13 @@ const ApiPublicaModule = {
     chaves: [],
     endpoints: [],
     logs: [],
+    loading: false,
     initialized: false
   },
 
   async init() {
+    injectApiPublicaStyles();
     if (!this.state.initialized) {
-      this.injectStyles();
       this.render();
       this.bindEvents();
       this.state.initialized = true;
@@ -43,24 +81,33 @@ const ApiPublicaModule = {
   },
 
   async loadTab(tab) {
+    if (this.state.loading) return;
     this.state.tab = tab;
     document.querySelectorAll('.apipub-tab-btn').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
-
-    if (tab === 'api-keys')  await this.loadChaves();
-    if (tab === 'webhooks')  await this.loadEndpoints();
-    if (tab === 'logs')      await this.loadLogs();
-    if (tab === 'docs')      this.renderDocs();
+    this.state.loading = true;
+    try {
+      if (tab === 'api-keys')  await this.loadChaves();
+      if (tab === 'webhooks')  await this.loadEndpoints();
+      if (tab === 'logs')      await this.loadLogs();
+      if (tab === 'docs')      this.renderDocs();
+    } finally {
+      this.state.loading = false;
+    }
   },
 
   // ── API Keys ──────────────────────────────────────────────────────────────
 
   async loadChaves() {
+    const el = document.getElementById('apipubContent');
+    if (el) el.innerHTML = `<div class="module-skeleton" style="padding:16px">${
+      Array.from({length: 4}).map(() => '<div class="skeleton-line" style="height:36px;margin-bottom:10px;border-radius:6px"></div>').join('')
+    }</div>`;
     try {
       const data = await api.fetchAPI('/webhooks/api-keys');
       this.state.chaves = data.chaves || [];
       this.renderChaves();
     } catch (err) {
-      showToast(err.message || 'Erro ao carregar chaves', 'error');
+      showToast(buildFriendlyError(err), 'error');
     }
   },
 
@@ -74,7 +121,11 @@ const ApiPublicaModule = {
         <button class="btn btn-primary btn-sm" id="novaChaveBtn"><i class="fa fa-plus"></i> Nova chave</button>
       </div>
       ${this.state.chaves.length === 0
-        ? `<div class="apipub-empty"><i class="fa fa-key" style="font-size:32px;display:block;margin-bottom:10px;"></i>Nenhuma chave criada.<br>Gere uma para integrar sistemas externos via API.</div>`
+        ? `<div class="apipub-empty">
+             <i class="fa-solid fa-key"></i>
+             <strong>Nenhuma chave criada</strong>
+             <p>Gere uma chave para integrar sistemas externos via API.</p>
+           </div>`
         : `<div class="apipub-table-wrap">
            <table>
              <thead><tr><th>Nome</th><th>Prefixo</th><th>Último uso</th><th>Status</th><th></th></tr></thead>
@@ -112,7 +163,7 @@ const ApiPublicaModule = {
       this.mostrarTokenUnico(data.token);
       await this.loadChaves();
     } catch (err) {
-      showToast(err.message || 'Erro ao criar chave', 'error');
+      showToast(buildFriendlyError(err), 'error');
     }
   },
 
@@ -134,10 +185,14 @@ const ApiPublicaModule = {
         </div>
       </div>`;
     document.body.appendChild(div);
+    const fechar = () => { div.remove(); document.removeEventListener('keydown', escHandler); };
+    const escHandler = (e) => { if (e.key === 'Escape') fechar(); };
+    document.addEventListener('keydown', escHandler);
     div.querySelector('#copiarTokenBtn').addEventListener('click', () => {
       navigator.clipboard.writeText(token).then(() => showToast('Token copiado!', 'success'));
     });
-    div.querySelector('#fecharTokenBtn').addEventListener('click', () => div.remove());
+    div.querySelector('#fecharTokenBtn').addEventListener('click', fechar);
+    div.addEventListener('click', (e) => { if (e.target === div) fechar(); });
   },
 
   async revogarChave(id) {
@@ -148,19 +203,23 @@ const ApiPublicaModule = {
       showToast('Chave revogada', 'success');
       await this.loadChaves();
     } catch (err) {
-      showToast(err.message || 'Erro ao revogar', 'error');
+      showToast(buildFriendlyError(err), 'error');
     }
   },
 
   // ── Webhooks ──────────────────────────────────────────────────────────────
 
   async loadEndpoints() {
+    const el = document.getElementById('apipubContent');
+    if (el) el.innerHTML = `<div class="module-skeleton" style="padding:16px">${
+      Array.from({length: 3}).map(() => '<div class="skeleton-line" style="height:80px;margin-bottom:10px;border-radius:12px"></div>').join('')
+    }</div>`;
     try {
       const data = await api.fetchAPI('/webhooks/endpoints');
       this.state.endpoints = data.endpoints || [];
       this.renderEndpoints();
     } catch (err) {
-      showToast(err.message || 'Erro ao carregar endpoints', 'error');
+      showToast(buildFriendlyError(err), 'error');
     }
   },
 
@@ -174,7 +233,11 @@ const ApiPublicaModule = {
         <button class="btn btn-primary btn-sm" id="novoEpBtn"><i class="fa fa-plus"></i> Novo endpoint</button>
       </div>
       ${this.state.endpoints.length === 0
-        ? `<div class="apipub-empty"><i class="fa fa-webhook" style="font-size:32px;display:block;margin-bottom:10px;"></i>Nenhum webhook configurado.<br>Registre uma URL para receber notificações em tempo real.</div>`
+        ? `<div class="apipub-empty">
+             <i class="fa-solid fa-bolt"></i>
+             <strong>Nenhum webhook configurado</strong>
+             <p>Registre uma URL para receber notificações em tempo real.</p>
+           </div>`
         : this.state.endpoints.map((ep) => `
             <div class="apipub-ep-card">
               <div class="apipub-ep-head">
@@ -261,7 +324,7 @@ const ApiPublicaModule = {
       showToast('Endpoint criado!', 'success');
       await this.loadEndpoints();
     } catch (err) {
-      showToast(err.message || 'Erro ao criar endpoint', 'error');
+      showToast(buildFriendlyError(err), 'error');
       if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa fa-save"></i> Salvar endpoint'; }
     }
   },
@@ -271,7 +334,7 @@ const ApiPublicaModule = {
       const data = await api.fetchAPI(`/webhooks/endpoints/${id}/teste`, 'POST');
       showToast(data.mensagem || 'Teste enviado!', 'success');
     } catch (err) {
-      showToast(err.message || 'Erro ao testar', 'error');
+      showToast(buildFriendlyError(err), 'error');
     }
   },
 
@@ -280,7 +343,7 @@ const ApiPublicaModule = {
       await api.fetchAPI(`/webhooks/endpoints/${id}`, 'PUT', { ativo: !ativo });
       await this.loadEndpoints();
     } catch (err) {
-      showToast(err.message || 'Erro', 'error');
+      showToast(buildFriendlyError(err), 'error');
     }
   },
 
@@ -292,19 +355,23 @@ const ApiPublicaModule = {
       showToast('Endpoint removido', 'success');
       await this.loadEndpoints();
     } catch (err) {
-      showToast(err.message || 'Erro', 'error');
+      showToast(buildFriendlyError(err), 'error');
     }
   },
 
   // ── Logs ──────────────────────────────────────────────────────────────────
 
   async loadLogs() {
+    const el = document.getElementById('apipubContent');
+    if (el) el.innerHTML = `<div class="module-skeleton" style="padding:16px">${
+      Array.from({length: 5}).map(() => '<div class="skeleton-line" style="height:36px;margin-bottom:10px;border-radius:6px"></div>').join('')
+    }</div>`;
     try {
       const data = await api.fetchAPI('/webhooks/logs');
       this.state.logs = data.logs || [];
       this.renderLogs();
     } catch (err) {
-      showToast(err.message || 'Erro ao carregar logs', 'error');
+      showToast(buildFriendlyError(err), 'error');
     }
   },
 
@@ -313,7 +380,11 @@ const ApiPublicaModule = {
     if (!el) return;
 
     if (!this.state.logs.length) {
-      el.innerHTML = `<div class="apipub-empty"><i class="fa fa-clock-rotate-left" style="font-size:32px;display:block;margin-bottom:10px;"></i>Nenhuma entrega registrada ainda.</div>`;
+      el.innerHTML = `<div class="apipub-empty">
+        <i class="fa-solid fa-clock-rotate-left"></i>
+        <strong>Nenhuma entrega registrada ainda</strong>
+        <p>As entregas de webhooks aparecerão aqui após os primeiros eventos.</p>
+      </div>`;
       return;
     }
 
@@ -413,44 +484,6 @@ if (sig !== req.headers['x-lf-signature'].replace('sha256=','')) {
     });
   },
 
-  injectStyles() {
-    // estilos migrados para style.css
-    if (true) return;
-    const s = document.createElement('style');
-    s.id = 'apipub-styles';
-    s.textContent = `
-      .apipub-tabs { display:flex; gap:4px; border-bottom:1px solid var(--border); padding-bottom:0; }
-      .apipub-tab-btn { padding:10px 18px; border:none; background:none; font-size:13px; font-weight:500; color:var(--text-muted); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; display:flex; align-items:center; gap:6px; transition:.15s; }
-      .apipub-tab-btn.active { color:var(--primary); border-color:var(--primary); }
-      .apipub-tab-btn:hover:not(.active) { color:var(--text); }
-
-      .apipub-table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
-      .apipub-empty { padding:60px; text-align:center; font-size:13px; color:var(--text-muted); }
-      .apipub-badge { display:inline-flex; align-items:center; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:600; }
-      .apipub-badge--ok  { background:var(--success-soft); color:var(--success); }
-      .apipub-badge--off { background:var(--surface-3); color:var(--text-muted); }
-      .apipub-badge--err { background:var(--danger-soft); color:var(--danger); }
-      .apipub-info-box { padding:12px 16px; background:var(--surface-2); border-radius:8px; font-size:12px; color:var(--text-muted); display:flex; gap:8px; align-items:flex-start; }
-
-      .apipub-ep-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:10px; }
-      .apipub-ep-head { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; gap:12px; }
-      .apipub-ep-eventos { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
-      .apipub-ev-badge { display:inline-flex; align-items:center; gap:5px; padding:3px 8px; background:var(--surface-2); border:1px solid var(--border); border-radius:6px; font-size:11px; color:var(--text-muted); }
-      .apipub-ep-actions { display:flex; gap:8px; flex-wrap:wrap; }
-
-      .apipub-docs { max-width:720px; }
-      .apipub-doc-section { margin-bottom:24px; }
-      .apipub-doc-section h3 { font-size:14px; font-weight:700; margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:6px; }
-      .apipub-doc-section p { font-size:13px; color:var(--text-muted); margin-bottom:8px; }
-      .apipub-doc-section pre { background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:12px; font-size:12px; overflow-x:auto; margin:0; white-space:pre-wrap; }
-      .apipub-doc-endpoint { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); flex-wrap:wrap; font-size:13px; }
-      .apipub-method { display:inline-flex; align-items:center; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:700; font-family:monospace; min-width:42px; justify-content:center; }
-      .apipub-method--get  { background:#dcfce7; color:#15803d; }
-      .apipub-method--post { background:#dbeafe; color:#1d4ed8; }
-      .btn-icon.danger:hover { color:var(--danger); }
-    `;
-    document.head.appendChild(s);
-  }
 };
 
 export async function initApiPublicaModule() {

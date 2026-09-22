@@ -1,8 +1,56 @@
 import api from './api.js';
 import { showToast, confirmarAcao, pedirInput } from './feedback.js';
+import { escapeHtml, buildFriendlyError } from './utils.js';
+const esc = escapeHtml;
 
-function esc(v) { return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function dataBR(d) { if (!d) return '—'; const [y,m,dia] = String(d).substring(0,10).split('-'); return `${dia}/${m}/${y}`; }
+
+function injectRastreabilidadeStyles() {
+  if (document.getElementById('rastStyles')) return;
+  const s = document.createElement('style');
+  s.id = 'rastStyles';
+  s.textContent = `
+    .rast-kpis { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px; }
+    .rast-kpi { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px 18px; min-width:120px; flex:1; }
+    .rast-kpi--danger { border-color:var(--danger);  background:var(--danger-soft); }
+    .rast-kpi--warn   { border-color:var(--warning); background:var(--warning-soft); }
+    .rast-kpi-label { font-size:11px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:.4px; margin-bottom:4px; }
+    .rast-kpi-val { font-size:1.6rem; font-weight:700; }
+    .rast-kpi--danger .rast-kpi-val { color:var(--danger); }
+    .rast-kpi--warn .rast-kpi-val   { color:#b45309; }
+
+    .rast-tabs { display:flex; gap:4px; border-bottom:1px solid var(--border); }
+    .rast-tab-btn { padding:10px 18px; border:none; background:none; font-size:13px; font-weight:500; color:var(--text-muted); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; display:flex; align-items:center; gap:6px; transition:.15s; }
+    .rast-tab-btn.active { color:var(--primary); border-color:var(--primary); }
+    .rast-tab-btn:hover:not(.active) { color:var(--text); }
+
+    .rast-toolbar { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px; }
+    .rast-table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+    .rast-empty { display:flex; flex-direction:column; align-items:center; gap:8px; padding:48px 20px; text-align:center; color:var(--text-muted); font-size:13px; }
+    .rast-empty i { font-size:2rem; opacity:.25; }
+    .rast-badge { display:inline-flex; align-items:center; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:600; }
+    .rast-badge--ok     { background:var(--success-soft); color:var(--success); }
+    .rast-badge--warn   { background:var(--warning-soft); color:var(--warning); }
+    .rast-badge--danger { background:var(--danger-soft);  color:var(--danger); }
+    .rast-text-danger { color:var(--danger); font-weight:600; }
+    .rast-text-warn   { color:#b45309; font-weight:600; }
+
+    .rast-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:1000; display:flex; align-items:center; justify-content:center; }
+    .rast-modal-card { background:var(--surface); border-radius:16px; width:100%; max-width:580px; max-height:90vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,.3); margin:16px; }
+    .rast-modal-header { display:flex; align-items:center; justify-content:space-between; padding:18px 24px 14px; border-bottom:1px solid var(--border); flex-shrink:0; }
+    .rast-modal-header h3 { margin:0; font-size:15px; font-weight:700; }
+    .rast-form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .rast-form-group { display:flex; flex-direction:column; gap:4px; }
+    .rast-form-group label { font-size:12px; font-weight:600; color:var(--text-muted); }
+    .rast-detalhe-info { display:flex; flex-direction:column; gap:6px; font-size:13px; padding-bottom:12px; border-bottom:1px solid var(--border); margin-bottom:12px; }
+    .rast-section-label { font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; margin-top:4px; }
+    .rast-result-card { background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:12px; margin-bottom:8px; }
+    .rast-info-box { padding:12px 16px; background:var(--surface-2); border-radius:8px; font-size:12px; color:var(--text-muted); display:flex; gap:8px; }
+    .text-right { text-align:right; }
+    @media(max-width:480px) { .rast-form-row { grid-template-columns:1fr; } }
+  `;
+  document.head.appendChild(s);
+}
 
 const STATUS_SERIE = {
   disponivel: { label: 'Disponível',  cor: 'var(--success)', bg: 'var(--success-soft)' },
@@ -16,12 +64,14 @@ const RastreabilidadeModule = {
     tab: 'lotes',
     lotes: [], series: [], produtos: [],
     filtroLoteProd: '', filtroSerieStatus: '', filtroSerieProd: '',
-    initialized: false
+    initialized: false,
+    loading: false
   },
+  _escModal: null,
 
   async init() {
     if (!this.state.initialized) {
-      this.injectStyles();
+      injectRastreabilidadeStyles();
       this.render();
       this.bindEvents();
       this.state.initialized = true;
@@ -45,12 +95,16 @@ const RastreabilidadeModule = {
   },
 
   async loadTab(tab) {
+    if (this.state.loading) return;
     this.state.tab = tab;
     document.querySelectorAll('.rast-tab-btn').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
-    if (tab === 'lotes')   await this.loadLotes();
-    if (tab === 'series')  await this.loadSeries();
-    if (tab === 'rastrear') this.renderRastrear();
-    if (tab === 'config')  this.renderConfig();
+    this.state.loading = true;
+    try {
+      if (tab === 'lotes')    await this.loadLotes();
+      if (tab === 'series')   await this.loadSeries();
+      if (tab === 'rastrear') this.renderRastrear();
+      if (tab === 'config')   this.renderConfig();
+    } finally { this.state.loading = false; }
   },
 
   // ── KPIs ──────────────────────────────────────────────────────────────────
@@ -77,11 +131,13 @@ const RastreabilidadeModule = {
   async loadLotes() {
     const params = {};
     if (this.state.filtroLoteProd) params.produto_id = this.state.filtroLoteProd;
+    const el = document.getElementById('rastContent');
+    if (el) el.innerHTML = `<div class="module-skeleton" style="padding:16px">${Array.from({length:4}).map(() => '<div class="skeleton-line" style="height:36px;margin-bottom:10px;border-radius:8px"></div>').join('')}</div>`;
     try {
       const data = await api.fetchAPI('/rastreabilidade/lotes', 'GET', null, { ...params, empresa: api.getEmpresaNome(), empresa_id: api.getEmpresaId() });
       this.state.lotes = data.lotes || [];
       this.renderLotes();
-    } catch (err) { showToast(err.message || 'Erro', 'error'); }
+    } catch (err) { showToast(buildFriendlyError(err), 'error'); }
   },
 
   renderLotes() {
@@ -99,7 +155,7 @@ const RastreabilidadeModule = {
         <button class="btn btn-primary btn-sm" id="novoLoteBtn"><i class="fa fa-plus"></i> Novo lote</button>
       </div>
       ${this.state.lotes.length === 0
-        ? `<div class="rast-empty"><i class="fa fa-boxes-stacked" style="font-size:32px;display:block;margin-bottom:10px;"></i>Nenhum lote encontrado.<br>Registre produtos com controle de lote em "Configurar".</div>`
+        ? `<div class="rast-empty"><i class="fa-solid fa-boxes-stacked"></i><strong>Nenhum lote encontrado</strong><p>Registre produtos com controle de lote em "Configurar".</p></div>`
         : `<div class="rast-table-wrap"><table>
             <thead><tr>
               <th>Produto</th><th>Nº Lote</th><th>Fabricação</th><th>Validade</th>
@@ -191,12 +247,13 @@ const RastreabilidadeModule = {
           <button type="submit" class="btn btn-primary btn-sm">Salvar lote</button>
         </div>
       </form>`;
-    modal.style.display = 'flex';
     document.getElementById('rastLoteForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       await this.salvarLote();
     });
-    document.getElementById('rastModalCancelBtn').addEventListener('click', () => { modal.style.display = 'none'; });
+    document.getElementById('rastModalCancelBtn').addEventListener('click', () => this._fecharModal());
+    this._abrirModal();
+    setTimeout(() => document.getElementById('rlNumero')?.focus(), 50);
   },
 
   async salvarLote() {
@@ -215,10 +272,10 @@ const RastreabilidadeModule = {
       if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
       await api.fetchAPI('/rastreabilidade/lotes', 'POST', { ...payload, empresa: api.getEmpresaNome(), empresa_id: api.getEmpresaId() });
       showToast('Lote registrado!', 'success');
-      document.getElementById('rastModal').style.display = 'none';
+      this._fecharModal();
       await this.loadLotes();
       await this.loadDashboard();
-    } catch (err) { showToast(err.message || 'Erro', 'error'); }
+    } catch (err) { showToast(buildFriendlyError(err), 'error'); }
     finally { if (btn) { btn.disabled = false; btn.textContent = 'Salvar lote'; } }
   },
 
@@ -252,9 +309,9 @@ const RastreabilidadeModule = {
         <div style="display:flex;justify-content:flex-end;margin-top:12px;">
           <button class="btn btn-secondary btn-sm" id="rastModalCancelBtn">Fechar</button>
         </div>`;
-      modal.style.display = 'flex';
-      document.getElementById('rastModalCancelBtn').addEventListener('click', () => { modal.style.display = 'none'; });
-    } catch (err) { showToast(err.message || 'Erro', 'error'); }
+      document.getElementById('rastModalCancelBtn').addEventListener('click', () => this._fecharModal());
+      this._abrirModal();
+    } catch (err) { showToast(buildFriendlyError(err), 'error'); }
   },
 
   async registrarSaida(loteId) {
@@ -265,7 +322,7 @@ const RastreabilidadeModule = {
       showToast(data.mensagem || 'Saída registrada', 'success');
       await this.loadLotes();
       await this.loadDashboard();
-    } catch (err) { showToast(err.message || 'Erro', 'error'); }
+    } catch (err) { showToast(buildFriendlyError(err), 'error'); }
   },
 
   // ── Séries ────────────────────────────────────────────────────────────────
@@ -274,11 +331,13 @@ const RastreabilidadeModule = {
     const params = {};
     if (this.state.filtroSerieProd)   params.produto_id = this.state.filtroSerieProd;
     if (this.state.filtroSerieStatus) params.status     = this.state.filtroSerieStatus;
+    const el = document.getElementById('rastContent');
+    if (el) el.innerHTML = `<div class="module-skeleton" style="padding:16px">${Array.from({length:4}).map(() => '<div class="skeleton-line" style="height:36px;margin-bottom:10px;border-radius:8px"></div>').join('')}</div>`;
     try {
       const data = await api.fetchAPI('/rastreabilidade/series', 'GET', null, { ...params, empresa: api.getEmpresaNome(), empresa_id: api.getEmpresaId() });
       this.state.series = data.series || [];
       this.renderSeries();
-    } catch (err) { showToast(err.message || 'Erro', 'error'); }
+    } catch (err) { showToast(buildFriendlyError(err), 'error'); }
   },
 
   renderSeries() {
@@ -302,7 +361,7 @@ const RastreabilidadeModule = {
         <button class="btn btn-primary btn-sm" id="importarSeriesBtn"><i class="fa fa-file-import"></i> Importar séries</button>
       </div>
       ${this.state.series.length === 0
-        ? `<div class="rast-empty"><i class="fa fa-barcode" style="font-size:32px;display:block;margin-bottom:10px;"></i>Nenhum número de série encontrado.</div>`
+        ? `<div class="rast-empty"><i class="fa-solid fa-barcode"></i><strong>Nenhum número de série encontrado</strong><p>Importe números de série usando o botão acima.</p></div>`
         : `<div class="rast-table-wrap"><table>
             <thead><tr><th>Nº de Série</th><th>Produto</th><th>Status</th><th>Venda</th><th>Cadastrado</th><th></th></tr></thead>
             <tbody>
@@ -340,7 +399,7 @@ const RastreabilidadeModule = {
       showToast('Status atualizado', 'success');
       await this.loadSeries();
       await this.loadDashboard();
-    } catch (err) { showToast(err.message || 'Erro', 'error'); }
+    } catch (err) { showToast(buildFriendlyError(err), 'error'); }
   },
 
   abrirImportarSeries() {
@@ -382,13 +441,15 @@ const RastreabilidadeModule = {
         if (btn) { btn.disabled = true; btn.textContent = 'Importando...'; }
         const data = await api.fetchAPI('/rastreabilidade/series', 'POST', { produto_id: produtoId, numeros, compra_id: compraId, empresa: api.getEmpresaNome(), empresa_id: api.getEmpresaId() });
         showToast(`${data.inseridos} série(s) importada(s). ${data.duplicados} duplicada(s) ignorada(s).`, 'success');
-        modal.style.display = 'none';
+        this._fecharModal();
         await this.loadSeries();
         await this.loadDashboard();
-      } catch (err) { showToast(err.message || 'Erro', 'error'); }
+      } catch (err) { showToast(buildFriendlyError(err), 'error'); }
       finally { if (btn) { btn.disabled = false; btn.textContent = 'Importar'; } }
     });
-    document.getElementById('rastModalCancelBtn').addEventListener('click', () => { modal.style.display = 'none'; });
+    document.getElementById('rastModalCancelBtn').addEventListener('click', () => this._fecharModal());
+    this._abrirModal();
+    setTimeout(() => document.getElementById('rseProduto')?.focus(), 50);
   },
 
   // ── Rastrear ──────────────────────────────────────────────────────────────
@@ -413,7 +474,7 @@ const RastreabilidadeModule = {
     const q = document.getElementById('rastBuscaQ')?.value.trim();
     if (!q) return;
     const result = document.getElementById('rastResultado');
-    result.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text-muted);">Buscando...</div>';
+    result.innerHTML = `<div class="module-skeleton" style="padding:16px">${Array.from({length:3}).map(() => '<div class="skeleton-line" style="height:60px;margin-bottom:10px;border-radius:8px"></div>').join('')}</div>`;
     try {
       const data = await api.fetchAPI('/rastreabilidade/rastrear', 'GET', null, { q, empresa: api.getEmpresaNome(), empresa_id: api.getEmpresaId() });
       const total = data.lotes.length + data.series.length;
@@ -454,7 +515,7 @@ const RastreabilidadeModule = {
           </table></div>
         ` : ''}
       `;
-    } catch (err) { result.innerHTML = `<div class="rast-empty" style="color:var(--danger);">${esc(err.message)}</div>`; }
+    } catch (err) { result.innerHTML = `<div class="rast-empty" style="color:var(--danger);">${esc(buildFriendlyError(err))}</div>`; }
   },
 
   // ── Config ────────────────────────────────────────────────────────────────
@@ -503,7 +564,7 @@ const RastreabilidadeModule = {
         sel.addEventListener('change', () => this.configurarProduto(sel.dataset.prodId, sel.value));
       });
     } catch (err) {
-      showToast(err.message || 'Erro ao carregar produtos', 'error');
+      showToast(buildFriendlyError(err), 'error');
     }
   },
 
@@ -512,7 +573,7 @@ const RastreabilidadeModule = {
       await api.fetchAPI(`/rastreabilidade/produtos/${id}/config`, 'PUT', { controla_rastreabilidade: modo, empresa: api.getEmpresaNome(), empresa_id: api.getEmpresaId() });
       showToast(`Rastreabilidade atualizada`, 'success');
       await this.loadProdutos();
-    } catch (err) { showToast(err.message || 'Erro', 'error'); }
+    } catch (err) { showToast(buildFriendlyError(err), 'error'); }
   },
 
   // ── Estrutura e estilos ───────────────────────────────────────────────────
@@ -547,58 +608,22 @@ const RastreabilidadeModule = {
       const btn = e.target.closest('.rast-tab-btn');
       if (btn) this.loadTab(btn.dataset.tab);
     });
-    document.getElementById('rastModalGlobalClose')?.addEventListener('click', () => {
-      document.getElementById('rastModal').style.display = 'none';
-    });
+    document.getElementById('rastModalGlobalClose')?.addEventListener('click', () => this._fecharModal());
     document.getElementById('rastModal')?.addEventListener('click', (e) => {
-      if (e.target === e.currentTarget) e.currentTarget.style.display = 'none';
+      if (e.target === e.currentTarget) this._fecharModal();
     });
   },
 
-  injectStyles() {
-    // estilos migrados para style.css
-    if (true) return;
-    const s = document.createElement('style');
-    s.id = 'rast-styles';
-    s.textContent = `
-      .rast-kpis { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px; }
-      .rast-kpi { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px 18px; min-width:120px; flex:1; }
-      .rast-kpi--danger { border-color:var(--danger);  background:var(--danger-soft); }
-      .rast-kpi--warn   { border-color:var(--warning); background:var(--warning-soft); }
-      .rast-kpi-label { font-size:11px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:.4px; margin-bottom:4px; }
-      .rast-kpi-val { font-size:1.6rem; font-weight:700; }
-      .rast-kpi--danger .rast-kpi-val { color:var(--danger); }
-      .rast-kpi--warn .rast-kpi-val   { color:#b45309; }
+  _abrirModal() {
+    document.getElementById('rastModal').style.display = 'flex';
+    if (this._escModal) document.removeEventListener('keydown', this._escModal);
+    this._escModal = (e) => { if (e.key === 'Escape') this._fecharModal(); };
+    document.addEventListener('keydown', this._escModal);
+  },
 
-      .rast-tabs { display:flex; gap:4px; border-bottom:1px solid var(--border); }
-      .rast-tab-btn { padding:10px 18px; border:none; background:none; font-size:13px; font-weight:500; color:var(--text-muted); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; display:flex; align-items:center; gap:6px; transition:.15s; }
-      .rast-tab-btn.active { color:var(--primary); border-color:var(--primary); }
-      .rast-tab-btn:hover:not(.active) { color:var(--text); }
-
-      .rast-toolbar { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px; }
-      .rast-table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
-      .rast-empty { padding:60px; text-align:center; font-size:13px; color:var(--text-muted); }
-      .rast-badge { display:inline-flex; align-items:center; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:600; }
-      .rast-badge--ok     { background:var(--success-soft); color:var(--success); }
-      .rast-badge--warn   { background:var(--warning-soft); color:var(--warning); }
-      .rast-badge--danger { background:var(--danger-soft);  color:var(--danger); }
-      .rast-text-danger { color:var(--danger); font-weight:600; }
-      .rast-text-warn   { color:#b45309; font-weight:600; }
-
-      .rast-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:1000; display:flex; align-items:center; justify-content:center; }
-      .rast-modal-card { background:var(--surface); border-radius:16px; width:100%; max-width:580px; max-height:90vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,.3); margin:16px; }
-      .rast-modal-header { display:flex; align-items:center; justify-content:space-between; padding:18px 24px 14px; border-bottom:1px solid var(--border); flex-shrink:0; }
-      .rast-modal-header h3 { margin:0; font-size:15px; font-weight:700; }
-      .rast-form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-      .rast-form-group { display:flex; flex-direction:column; gap:4px; }
-      .rast-form-group label { font-size:12px; font-weight:600; color:var(--text-muted); }
-      .rast-detalhe-info { display:flex; flex-direction:column; gap:6px; font-size:13px; padding-bottom:12px; border-bottom:1px solid var(--border); margin-bottom:12px; }
-      .rast-section-label { font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; margin-top:4px; }
-      .rast-result-card { background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:12px; margin-bottom:8px; }
-      .rast-info-box { padding:12px 16px; background:var(--surface-2); border-radius:8px; font-size:12px; color:var(--text-muted); display:flex; gap:8px; }
-      .text-right { text-align:right; }
-    `;
-    document.head.appendChild(s);
+  _fecharModal() {
+    document.getElementById('rastModal').style.display = 'none';
+    if (this._escModal) { document.removeEventListener('keydown', this._escModal); this._escModal = null; }
   }
 };
 

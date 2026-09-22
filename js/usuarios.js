@@ -764,7 +764,8 @@ function formatTipoBadge(tipo) {
 
 
 
-export async function initUsuariosModule() {
+export async function initUsuariosModule(forceRender = false) {
+  if (forceRender) UsuariosModule.state.initialized = false;
   UsuariosModule.init();
   await UsuariosModule.load();
 }

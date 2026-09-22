@@ -929,6 +929,7 @@ function closeMobileSidebar() {
 }
 
 async function setActiveView(view) {
+  if (view === 'usuarios') view = 'configuracoes';
   if (view !== AppState.currentView) {
     const openModal = Array.from(document.querySelectorAll('.modal-overlay:not(.hidden), [role="dialog"]:not([aria-hidden="true"]):not(.hidden)')).find(el => !el.closest('.hidden'));
     if (openModal) {
@@ -1059,7 +1060,7 @@ function updateNavigationState(view) {
 
 function getParentViewFromChild(view) {
   const groups = {
-    cadastros:     ['produtos', 'clientes', 'fornecedores', 'usuarios'],
+    cadastros:     ['produtos', 'clientes', 'fornecedores'],
     movimentacoes: ['vendas', 'compras', 'estoque', 'devolucoes', 'caixa'],
     financeiro:    ['contas-receber', 'contas-pagar', 'fluxo-caixa', 'lancamentos', 'conciliacao', 'auditoria-financeira'],
     fiscal:        ['nfe', 'orcamentos', 'pedidos'],
@@ -2450,7 +2451,7 @@ const _CP_NAV = [
   { label: 'Produtos',            view: 'produtos',            icon: 'fa-box-open',              group: 'Cadastros' },
   { label: 'Clientes',            view: 'clientes',            icon: 'fa-users',                 group: 'Cadastros' },
   { label: 'Fornecedores',        view: 'fornecedores',        icon: 'fa-truck-field',           group: 'Cadastros' },
-  { label: 'Usuários',            view: 'usuarios',            icon: 'fa-user-shield',           group: 'Cadastros' },
+  { label: 'Usuários',            view: 'configuracoes',       icon: 'fa-user-shield',           group: 'Configurações' },
   { label: 'Vendas',              view: 'vendas',              icon: 'fa-cart-shopping',         group: 'Movimentações' },
   { label: 'Compras',             view: 'compras',             icon: 'fa-basket-shopping',       group: 'Movimentações' },
   { label: 'Estoque',             view: 'estoque',             icon: 'fa-warehouse',             group: 'Movimentações' },
