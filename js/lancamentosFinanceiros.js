@@ -1,6 +1,6 @@
 import api from './api.js';
 import { showToast, confirmarAcao } from './feedback.js';
-import { escapeHtml, buildFriendlyError, calcPeriodoLocal, todayFortaleza } from './utils.js';
+import { escapeHtml, buildFriendlyError, calcPeriodoLocal, todayFortaleza, debounce } from './utils.js';
 
 const state = {
   itens:   [],
@@ -14,7 +14,9 @@ const state = {
   pagina: 1,
   totalPaginas: 1,
   totalRegistros: 0,
-  resumoGlobal: null
+  resumoGlobal: null,
+  ordem: 'vencimento',
+  ordemDir: 'desc'
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -104,10 +106,135 @@ function badgeStatus(status) {
   return `<span class="badge ${cls}">${label}</span>`;
 }
 
+// ─── Sort / Highlight / Styles ───────────────────────────────────────────────
+
+function _highlight(text, term) {
+  if (!term || !text) return esc(text || '');
+  const safeRe = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp(`(${safeRe})`, 'gi');
+  return String(text).split(re).map((part, i) =>
+    i % 2 === 1 ? `<mark class="lf-hl">${esc(part)}</mark>` : esc(part)
+  ).join('');
+}
+
+function _sortItems() {
+  const col = state.ordem;
+  const dir = state.ordemDir === 'asc' ? 1 : -1;
+  state.itens.sort((a, b) => {
+    let va = a[col], vb = b[col];
+    if (col === 'valor') {
+      return (Number(va || 0) - Number(vb || 0)) * dir;
+    }
+    if (col === 'vencimento') {
+      va = va ? String(va).slice(0, 10) : '';
+      vb = vb ? String(vb).slice(0, 10) : '';
+      return va.localeCompare(vb) * dir;
+    }
+    return String(va || '').localeCompare(String(vb || ''), 'pt-BR') * dir;
+  });
+}
+
+function injectLancamentosStyles() {
+  if (document.getElementById('lfStyles')) return;
+  const s = document.createElement('style');
+  s.id = 'lfStyles';
+  s.textContent = `
+    .lf-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .lf-stat--receita { border-top: 3px solid var(--success, #22c55e); }
+    .lf-stat--despesa { border-top: 3px solid var(--danger, #ef4444); }
+    .lf-stat--saldo.lf-stat--positivo { border-top: 3px solid var(--success, #22c55e); }
+    .lf-stat--saldo.lf-stat--negativo { border-top: 3px solid var(--danger, #ef4444); }
+    .lf-toolbar-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .lf-search-box {
+      flex: 1;
+      min-width: 200px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg, #f8f9fa);
+      border: 1px solid var(--border, #e5e7eb);
+      border-radius: 8px;
+      padding: 0 12px;
+      height: 40px;
+    }
+    .lf-search-box input {
+      border: none;
+      background: transparent;
+      flex: 1;
+      font-size: 14px;
+      outline: none;
+      color: var(--text);
+    }
+    .lf-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .lf-pagination {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 12px 0 4px;
+    }
+    .lf-pagination__btn {
+      border: 1px solid var(--border, #e5e7eb);
+      background: var(--surface, #fff);
+      border-radius: 8px;
+      padding: 6px 14px;
+      cursor: pointer;
+      color: var(--text);
+      transition: background .15s;
+    }
+    .lf-pagination__btn:disabled { opacity: .4; cursor: not-allowed; }
+    .lf-pagination__btn:not(:disabled):hover { background: var(--bg, #f8f9fa); }
+    .lf-pagination__info { font-size: .85rem; color: var(--text-muted); }
+    mark.lf-hl {
+      background: #fef08a;
+      color: #713f12;
+      border-radius: 2px;
+      padding: 0 2px;
+    }
+    .sort-icon { font-size: .75rem; opacity: .45; margin-left: 3px; }
+    .sort-icon--asc, .sort-icon--desc { opacity: 1; color: var(--primary, #3b82f6); }
+    @media (min-width: 700px) {
+      .lf-toolbar-grid {
+        display: grid;
+        grid-template-columns: 1fr auto auto auto;
+      }
+    }
+    @media (max-width: 699px) {
+      .lf-stats-grid { grid-template-columns: 1fr; }
+      .lf-search-box { min-width: 100%; }
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) mark.lf-hl { background: #854d0e; color: #fef9c3; }
+      :root:not([data-theme="light"]) .lf-search-box {
+        background: var(--bg, #1e293b);
+        border-color: var(--border, #334155);
+      }
+    }
+    :root[data-theme="dark"] mark.lf-hl { background: #854d0e; color: #fef9c3; }
+    :root[data-theme="dark"] .lf-search-box {
+      background: var(--bg, #1e293b);
+      border-color: var(--border, #334155);
+    }
+  `;
+  document.head.appendChild(s);
+}
+
 // ─── Render ───────────────────────────────────────────────────────────────────
 
 export async function initLancamentosModule() {
   try {
+    injectLancamentosStyles();
     if (!state.periodo.dataInicial) {
       const datas = calcPeriodoLocal(state.periodo.preset);
       state.periodo.dataInicial = datas.dataInicial;
@@ -139,6 +266,7 @@ async function carregarLancamentos() {
   } else {
     state.itens = Array.isArray(data) ? data : [];
   }
+  _sortItems();
 }
 
 function renderSkeleton() {
@@ -172,7 +300,16 @@ function renderSkeleton() {
 
 function renderErro(msg) {
   const c = document.getElementById('lancamentosContainer');
-  if (c) c.innerHTML = `<div class="module-card"><div class="module-feedback module-feedback--error">${esc(msg)}</div></div>`;
+  if (c) {
+    c.innerHTML = `
+      <div class="module-card" style="text-align:center;padding:40px 20px">
+        <div class="module-feedback module-feedback--error" style="margin-bottom:16px">${esc(msg)}</div>
+        <button class="btn btn-light" id="lfBtnRetry" type="button">
+          <i class="fa-solid fa-rotate"></i> Tentar novamente
+        </button>
+      </div>`;
+    document.getElementById('lfBtnRetry')?.addEventListener('click', initLancamentosModule);
+  }
 }
 
 function render() {
@@ -231,8 +368,8 @@ function render() {
       </div>
 
       <!-- Toolbar -->
-      <div class="module-toolbar lf-toolbar">
-        <div class="module-toolbar__search">
+      <div class="lf-toolbar-grid">
+        <div class="lf-search-box">
           <i class="fa-solid fa-magnifying-glass"></i>
           <input type="text" id="lfBusca" placeholder="Buscar descrição, categoria..." value="${esc(state.filtros.busca)}"/>
         </div>
@@ -249,7 +386,7 @@ function render() {
           <option value="parcial"          ${state.filtros.status === 'parcial'          ? 'selected' : ''}>Parciais</option>
           <option value="parcial_atrasado" ${state.filtros.status === 'parcial_atrasado' ? 'selected' : ''}>Parcial em atraso</option>
         </select>
-        <div style="display:flex;gap:8px">
+        <div class="lf-actions">
           <button class="btn btn-primary" id="lfBtnFiltrar" type="button">
             <i class="fa-solid fa-filter"></i> Filtrar
           </button>
@@ -305,25 +442,33 @@ function filtrarItens() {
 }
 
 function renderTabela(itens) {
+  const hasFilter = !!(state.filtros.tipo || state.filtros.status || state.filtros.busca);
   if (!itens.length) {
     return `<div class="empty-state" style="padding:40px">
       <i class="fa-solid fa-file-invoice-dollar"></i>
-      <strong>Nenhum lançamento encontrado</strong>
-      <p>Tente ajustar os filtros de período ou tipo.</p>
+      <strong>${hasFilter ? 'Nenhum resultado para os filtros aplicados' : 'Nenhum lançamento encontrado'}</strong>
+      <p>${hasFilter ? 'Tente remover ou ajustar os filtros.' : 'Tente ajustar os filtros de período ou tipo.'}</p>
     </div>`;
   }
+
+  const si = col => {
+    if (state.ordem !== col) return '<span class="sort-icon">⇅</span>';
+    return state.ordemDir === 'asc'
+      ? '<span class="sort-icon sort-icon--asc">↑</span>'
+      : '<span class="sort-icon sort-icon--desc">↓</span>';
+  };
 
   return `
     <div class="table-wrapper">
       <table class="data-table">
         <thead>
           <tr>
-            <th>Tipo</th>
-            <th>Descrição</th>
+            <th data-sort-col="tipo" style="cursor:pointer;user-select:none">Tipo ${si('tipo')}</th>
+            <th data-sort-col="descricao" style="cursor:pointer;user-select:none">Descrição ${si('descricao')}</th>
             <th>Categoria</th>
-            <th>Vencimento</th>
+            <th data-sort-col="vencimento" style="cursor:pointer;user-select:none">Vencimento ${si('vencimento')}</th>
             <th>Status</th>
-            <th class="text-right">Valor</th>
+            <th class="text-right" data-sort-col="valor" style="cursor:pointer;user-select:none">Valor ${si('valor')}</th>
             <th>Ações</th>
           </tr>
         </thead>
@@ -336,11 +481,12 @@ function renderTabela(itens) {
 
 function renderLinha(item) {
   const pendente = !['pago', 'estornado'].includes(String(item.status || '').toLowerCase());
+  const termo = state.filtros.busca;
   return `
     <tr>
       <td>${badgeTipo(item.tipo)}</td>
-      <td>${esc(item.descricao)}</td>
-      <td><span style="color:var(--text-muted);font-size:.85rem">${esc(item.categoria || '-')}</span></td>
+      <td>${_highlight(item.descricao, termo)}</td>
+      <td><span style="color:var(--text-muted);font-size:.85rem">${_highlight(item.categoria || '-', termo)}</span></td>
       <td>${formatDate(item.vencimento)}</td>
       <td>${badgeStatus(item.status)}</td>
       <td class="text-right"><strong>${toCurrency(item.valor)}</strong></td>
@@ -475,6 +621,18 @@ function bindEventos() {
     try { await carregarLancamentos(); render(); } finally { setLoading(false); }
   };
 
+  // Busca com debounce
+  const debouncedBusca = debounce(async () => {
+    const curval = document.getElementById('lfBusca')?.value ?? '';
+    state.filtros.busca = curval.trim();
+    state.pagina = 1;
+    setLoading(true);
+    try { await carregarLancamentos(); render(); } finally { setLoading(false); }
+    const restored = document.getElementById('lfBusca');
+    if (restored) { restored.focus(); restored.setSelectionRange(curval.length, curval.length); }
+  }, 250);
+  document.getElementById('lfBusca')?.addEventListener('input', debouncedBusca);
+
   // Submit do form (criar / editar)
   document.getElementById('lfForm').onsubmit = async (e) => {
     e.preventDefault();
@@ -524,6 +682,21 @@ function bindEventos() {
         carregarLancamentos().then(() => render()).catch(err => showMsg(buildFriendlyError(err), 'error')).finally(() => setLoading(false));
       }
     };
+  });
+
+  // Ordenação por coluna
+  document.querySelectorAll('th[data-sort-col]').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.sortCol;
+      if (state.ordem === col) {
+        state.ordemDir = state.ordemDir === 'asc' ? 'desc' : 'asc';
+      } else {
+        state.ordem = col;
+        state.ordemDir = col === 'valor' ? 'desc' : 'asc';
+      }
+      _sortItems();
+      render();
+    });
   });
 }
 
@@ -615,11 +788,28 @@ async function pagar(id) {
       overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px';
       const hoje = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Fortaleza' });
       overlay.innerHTML = `
-        <div style="background:var(--surface);border-radius:16px;padding:24px;max-width:340px;width:100%;box-shadow:0 24px 50px rgba(0,0,0,.2)">
+        <div style="background:var(--surface);border-radius:16px;padding:24px;max-width:380px;width:100%;box-shadow:0 24px 50px rgba(0,0,0,.2)">
           <h3 style="margin:0 0 16px;font-size:16px;font-weight:700">Confirmar pagamento</h3>
-          <div style="margin-bottom:20px">
+          <div style="margin-bottom:12px">
             <label style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;display:block;margin-bottom:5px">Data do pagamento</label>
             <input id="_lfPagarDataInput" type="date" value="${hoje}" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;box-sizing:border-box" />
+          </div>
+          <div style="margin-bottom:12px">
+            <label style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;display:block;margin-bottom:5px">Forma de pagamento</label>
+            <select id="_lfPagarFormaInput" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;box-sizing:border-box;background:var(--surface);color:var(--text)">
+              <option value="">Selecionar...</option>
+              <option value="dinheiro">Dinheiro</option>
+              <option value="pix">PIX</option>
+              <option value="cartao_debito">Cartão Débito</option>
+              <option value="cartao_credito">Cartão Crédito</option>
+              <option value="transferencia">Transferência</option>
+              <option value="boleto">Boleto</option>
+              <option value="cheque">Cheque</option>
+            </select>
+          </div>
+          <div style="margin-bottom:20px">
+            <label style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;display:block;margin-bottom:5px">Observação</label>
+            <textarea id="_lfPagarObsInput" rows="2" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;box-sizing:border-box;resize:vertical;background:var(--surface);color:var(--text)" placeholder="Opcional..."></textarea>
           </div>
           <div style="display:flex;gap:10px;justify-content:flex-end">
             <button id="_lfPagarCancelarBtn" class="btn-cancel">Cancelar</button>
@@ -630,14 +820,19 @@ async function pagar(id) {
       overlay.querySelector('#_lfPagarCancelarBtn').onclick = () => { document.body.removeChild(overlay); resolve(null); };
       overlay.querySelector('#_lfPagarConfirmarBtn').onclick = (e) => {
         e.currentTarget.disabled = true;
-        const data = overlay.querySelector('#_lfPagarDataInput').value;
+        const data  = overlay.querySelector('#_lfPagarDataInput').value;
+        const forma = overlay.querySelector('#_lfPagarFormaInput').value;
+        const obs   = overlay.querySelector('#_lfPagarObsInput').value.trim();
         document.body.removeChild(overlay);
-        resolve(data || null);
+        resolve({ data: data || null, forma, obs });
       };
     });
     if (!dataPagamento) return;
     setLoading(true);
-    await api.pagarLancamentoFinanceiro(id, { pagamento_data: dataPagamento });
+    const pagarPayload = { pagamento_data: dataPagamento.data };
+    if (dataPagamento.forma) pagarPayload.forma_pagamento = dataPagamento.forma;
+    if (dataPagamento.obs)   pagarPayload.observacao = dataPagamento.obs;
+    await api.pagarLancamentoFinanceiro(id, pagarPayload);
     showMsg('Lançamento marcado como pago.', 'success');
     await carregarLancamentos();
     render();
