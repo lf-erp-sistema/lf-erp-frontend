@@ -20,6 +20,8 @@ function injectWppStyles() {
     .wpp-empty i { font-size: 2.2rem; opacity: .25; margin-bottom: 4px; color: var(--text-muted); }
     .wpp-empty strong { font-size: 15px; color: var(--text); }
     .wpp-empty p { font-size: 13px; margin: 0; color: var(--text-muted); }
+    .wpp-cob-preview { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+    .wpp-cob-preview-head { display: flex; justify-content: space-between; align-items: center; }
   `;
   document.head.appendChild(s);
 }
@@ -36,6 +38,7 @@ const WhatsappModule = {
     cfg: null,
     templates: [],
     historico: [],
+    clientes: [],
     initialized: false,
     loading: false
   },
@@ -58,6 +61,7 @@ const WhatsappModule = {
     try {
       if (tab === 'config')    await this.loadConfig();
       if (tab === 'templates') await this.loadTemplates();
+      if (tab === 'cobranca')  await this.loadCobranca();
       if (tab === 'enviar')    this.renderEnviar();
       if (tab === 'historico') await this.loadHistorico();
       if (tab === 'automacao') this.renderAutomacao();
@@ -429,6 +433,130 @@ const WhatsappModule = {
     `;
   },
 
+  // ── Cobranças ─────────────────────────────────────────────────────────────
+
+  async loadCobranca() {
+    const el = document.getElementById('wppContent');
+    if (el) el.innerHTML = `<div class="module-skeleton" style="padding:16px">${
+      Array.from({length: 3}).map(() => '<div class="skeleton-line" style="height:40px;margin-bottom:10px;border-radius:6px"></div>').join('')
+    }</div>`;
+    try {
+      const data = await api.fetchAPI('/contas-receber/promissorias');
+      this.state.clientes = data.clientes || [];
+      this.renderCobranca();
+    } catch (err) { showToast(buildFriendlyError(err), 'error'); }
+  },
+
+  renderCobranca() {
+    const el = document.getElementById('wppContent');
+    if (!el) return;
+    const { clientes } = this.state;
+
+    if (!clientes.length) {
+      el.innerHTML = `<div class="wpp-empty">
+        <i class="fa-solid fa-comment-dollar"></i>
+        <strong>Nenhuma promissória em aberto</strong>
+        <p>Não há clientes com parcelas pendentes para gerar cobrança.</p>
+      </div>`;
+      return;
+    }
+
+    el.innerHTML = `
+      <div style="max-width:560px;">
+        <div class="wpp-info-box" style="margin-bottom:16px;">
+          <i class="fa fa-comment-dollar"></i>
+          Selecione o cliente para gerar a mensagem de cobrança mensal com todas as parcelas em aberto.
+        </div>
+        <div class="wpp-form-group" style="margin-bottom:16px;">
+          <label>Cliente</label>
+          <select id="wppCobCliente" class="filter-input">
+            <option value="">Selecione um cliente...</option>
+            ${clientes.map((c) => {
+              const key = c.cliente_id != null ? c.cliente_id : `n_${c.cliente_nome}`;
+              const np  = c.itens.length;
+              return `<option value="${esc(String(key))}">${esc(c.cliente_nome)} (${np} parcela${np !== 1 ? 's' : ''})</option>`;
+            }).join('')}
+          </select>
+        </div>
+        <div id="wppCobPreview"></div>
+      </div>
+    `;
+
+    document.getElementById('wppCobCliente')?.addEventListener('change', (e) => {
+      const val = e.target.value;
+      const prev = document.getElementById('wppCobPreview');
+      if (!val || !prev) { if (prev) prev.innerHTML = ''; return; }
+      const cli = clientes.find((c) => String(c.cliente_id != null ? c.cliente_id : `n_${c.cliente_nome}`) === val);
+      if (cli) this.renderMsgPreview(cli);
+    });
+  },
+
+  renderMsgPreview(cliente) {
+    const prev = document.getElementById('wppCobPreview');
+    if (!prev) return;
+    const msg = this._gerarMensagem(cliente);
+    let tel = (cliente.telefone || '').replace(/\D/g, '');
+    if (tel.length === 11 || tel.length === 10) tel = '55' + tel;
+    const telLink = tel.length >= 12
+      ? `https://wa.me/${tel}?text=${encodeURIComponent(msg)}`
+      : null;
+
+    prev.innerHTML = `
+      <div class="wpp-cob-preview">
+        <div class="wpp-cob-preview-head">
+          <span style="font-size:13px;font-weight:600;color:var(--text-muted);">
+            <i class="fa-solid fa-eye"></i> Prévia
+          </span>
+          <span style="font-size:12px;color:var(--text-muted);">
+            ${cliente.itens.length} item${cliente.itens.length !== 1 ? 's' : ''} ·
+            ${Number(cliente.total).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+          </span>
+        </div>
+        <textarea id="wppCobMsg" class="filter-input" rows="14" readonly
+          style="font-size:13px;font-family:monospace;resize:vertical;margin:10px 0;">${esc(msg)}</textarea>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-secondary btn-sm" id="wppCobCopiar">
+            <i class="fa fa-copy"></i> Copiar mensagem
+          </button>
+          ${telLink
+            ? `<a href="${telLink}" target="_blank" rel="noopener noreferrer" class="btn btn-success btn-sm">
+                <i class="fa-brands fa-whatsapp"></i> Abrir no WhatsApp
+               </a>`
+            : `<span style="font-size:12px;color:var(--text-muted);padding:4px 0;align-self:center;">
+                <i class="fa fa-triangle-exclamation"></i> Telefone não cadastrado
+               </span>`
+          }
+        </div>
+      </div>
+    `;
+
+    document.getElementById('wppCobCopiar')?.addEventListener('click', async () => {
+      const text = document.getElementById('wppCobMsg')?.value;
+      if (!text) return;
+      const btn = document.getElementById('wppCobCopiar');
+      try {
+        await navigator.clipboard.writeText(text);
+        btn.innerHTML = '<i class="fa fa-check"></i> Copiado!';
+        setTimeout(() => { btn.innerHTML = '<i class="fa fa-copy"></i> Copiar mensagem'; }, 2000);
+      } catch {
+        showToast('Não foi possível copiar. Selecione e copie manualmente.', 'error');
+      }
+    });
+  },
+
+  _gerarMensagem(cliente) {
+    const linhas = cliente.itens.map((item, i) => {
+      const num  = String(i + 1).padStart(2, '0');
+      const desc = (item.descricao || 'Produto').trim();
+      const parc = item.parcela != null && item.total_parcelas != null
+        ? ` - ${item.parcela}/${item.total_parcelas}` : '';
+      const val  = Number(item.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      return `${num} - ${desc}${parc} - R$ ${val}`;
+    });
+    const total = Number(cliente.total).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return linhas.join('\n') + `\n\n*Total - R$ ${total}*`;
+  },
+
   // ── Estrutura ─────────────────────────────────────────────────────────────
 
   render() {
@@ -439,6 +567,7 @@ const WhatsappModule = {
         <button class="wpp-tab-btn active" data-tab="config"><i class="fa fa-gear"></i> Configuração</button>
         <button class="wpp-tab-btn" data-tab="templates"><i class="fa fa-message"></i> Templates</button>
         <button class="wpp-tab-btn" data-tab="automacao"><i class="fa fa-robot"></i> Automação</button>
+        <button class="wpp-tab-btn" data-tab="cobranca"><i class="fa-solid fa-comment-dollar"></i> Cobranças</button>
         <button class="wpp-tab-btn" data-tab="enviar"><i class="fa fa-paper-plane"></i> Enviar</button>
         <button class="wpp-tab-btn" data-tab="historico"><i class="fa fa-clock-rotate-left"></i> Histórico</button>
       </div>
