@@ -1,6 +1,6 @@
 ﻿import api from './api.js';
 import { showToast } from './feedback.js';
-import { todayFortaleza, escapeHtml, buildFriendlyError, calcPeriodoLocal } from './utils.js';
+import { todayFortaleza, escapeHtml, buildFriendlyError, calcPeriodoLocal, debounce } from './utils.js';
 
 const state = {
   contas: [],
@@ -23,7 +23,9 @@ const state = {
   pagina: 1,
   totalPaginas: 1,
   totalRegistros: 0,
-  loading: false
+  loading: false,
+  ordem: 'data_vencimento',
+  ordemDir: 'desc'
 };
 
 function salvarFiltrosCP() {
@@ -88,6 +90,7 @@ export async function initContasPagarModule() {
 
     await Promise.all([carregarFornecedores(), carregarContas()]);
 
+    _sortItems();
     render();
   } catch (error) {
     console.error('Erro ao iniciar contas a pagar:', error);
@@ -208,9 +211,50 @@ function renderAlertasVencCP() {
     </div>`;
 }
 
+function _sortItems() {
+  const { ordem, ordemDir } = state;
+  state.contas.sort((a, b) => {
+    let va = a[ordem] ?? '';
+    let vb = b[ordem] ?? '';
+    if (ordem === 'valor') {
+      va = parseFloat(va) || 0;
+      vb = parseFloat(vb) || 0;
+      return ordemDir === 'asc' ? va - vb : vb - va;
+    }
+    if (ordem === 'data_vencimento' || ordem === 'data_pagamento') {
+      va = String(va).slice(0, 10);
+      vb = String(vb).slice(0, 10);
+    }
+    const cmp = String(va).localeCompare(String(vb), 'pt-BR', { sensitivity: 'base' });
+    return ordemDir === 'asc' ? cmp : -cmp;
+  });
+}
+
+function _highlight(text, term) {
+  if (!term) return escapeHtml(text || '');
+  const escaped = escapeHtml(text || '');
+  const safe = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return escaped.replace(new RegExp(`(${safe})`, 'gi'), '<mark class="cp-hl">$1</mark>');
+}
+
+function getDiasAtrasoCP(status, dataVencimento) {
+  if (status !== 'atrasado' && status !== 'parcial_atrasado') return '';
+  if (!dataVencimento) return '';
+  const hoje = new Date(`${todayFortaleza()}T12:00:00`);
+  const venc = new Date(`${String(dataVencimento).slice(0, 10)}T12:00:00`);
+  if (isNaN(venc.getTime())) return '';
+  const dias = Math.round((hoje.getTime() - venc.getTime()) / 86400000);
+  if (dias <= 0) return '';
+  return `<small class="cp-dias-atraso">${dias} dia(s)</small>`;
+}
+
 function render() {
   const container = document.getElementById('contasPagarContainer');
   if (!container) return;
+
+  const si = col => state.ordem === col
+    ? (state.ordemDir === 'asc' ? ' <span class="sort-icon sort-icon--asc">↑</span>' : ' <span class="sort-icon sort-icon--desc">↓</span>')
+    : ' <span class="sort-icon sort-icon--idle">⇅</span>';
 
   container.innerHTML = `
     <section class="module-card cp-module-card">
@@ -321,18 +365,24 @@ function render() {
           <strong>${formatCurrency(state.resumo.total_pago)}</strong>
           <small>${Number(state.resumo.qtd_pago || 0)} título(s)</small>
         </article>
+
+        <article class="mini-stat cp-stat-card cp-stat-card--parcial">
+          <span>Parcial</span>
+          <strong>${formatCurrency(state.contas.filter(c => ['parcial','parcial_atrasado'].includes(normalizarStatus(c.status))).reduce((s, c) => s + parseFloat(c.valor || 0), 0))}</strong>
+          <small>${state.contas.filter(c => ['parcial','parcial_atrasado'].includes(normalizarStatus(c.status))).length || 0} título(s)</small>
+        </article>
       </div>
 
       <div class="table-wrapper">
         <table class="data-table cp-table">
           <thead>
             <tr>
-              <th>Título</th>
-              <th>Fornecedor</th>
+              <th data-sort-col="id" style="cursor:pointer;user-select:none">Título${si('id')}</th>
+              <th data-sort-col="fornecedor_nome" style="cursor:pointer;user-select:none">Fornecedor${si('fornecedor_nome')}</th>
               <th>Origem</th>
-              <th>Vencimento</th>
-              <th>Status</th>
-              <th class="text-right">Valor</th>
+              <th data-sort-col="data_vencimento" style="cursor:pointer;user-select:none">Vencimento${si('data_vencimento')}</th>
+              <th data-sort-col="status" style="cursor:pointer;user-select:none">Status${si('status')}</th>
+              <th class="text-right" data-sort-col="valor" style="cursor:pointer;user-select:none">Valor${si('valor')}</th>
               <th class="text-right">Ações</th>
             </tr>
           </thead>
@@ -362,23 +412,29 @@ function render() {
 
 function renderLinhas() {
   if (!state.contas.length) {
+    const hasFilter = state.filtros.status || state.filtros.fornecedor_id || state.filtros.busca;
+    const emptyMsg = hasFilter
+      ? 'Nenhuma conta encontrada para o filtro aplicado.'
+      : 'Use os filtros acima ou gere contas a pagar por compras parceladas.';
     return `
       <tr>
         <td colspan="7">
           <div class="empty-table-state">
             <i class="fa-solid fa-file-invoice" style="font-size:2rem;opacity:.22;margin-bottom:4px"></i>
             <strong>Nenhuma conta encontrada</strong>
-            <span>Use os filtros acima ou gere contas a pagar por compras parceladas.</span>
+            <span>${emptyMsg}</span>
           </div>
         </td>
       </tr>
     `;
   }
 
+  const termo = state.filtros.busca || '';
   return state.contas
     .map((conta) => {
       const status = normalizarStatus(conta.status);
       const statusLabel = getStatusLabel(status);
+      const diasAtrasoHtml = getDiasAtrasoCP(status, conta.data_vencimento);
 
       return `
       <tr>
@@ -391,7 +447,7 @@ function renderLinhas() {
 
         <td>
           <div class="table-primary">
-            <strong>${escapeHtml(conta.fornecedor_nome || 'Fornecedor não informado')}</strong>
+            <strong>${_highlight(conta.fornecedor_nome || 'Fornecedor não informado', termo)}</strong>
             <small>Fornecedor</small>
           </div>
         </td>
@@ -414,6 +470,7 @@ function renderLinhas() {
           <span class="${getStatusBadgeClass(status)}">
             ${statusLabel}
           </span>
+          ${diasAtrasoHtml}
         </td>
 
         <td class="text-right">
@@ -495,6 +552,34 @@ function bindEventos() {
     }
   });
 
+  const debouncedBusca = debounce(async () => {
+    const inp = document.getElementById('cpBusca');
+    const curval = inp?.value || '';
+    state.filtros.busca = curval.trim();
+    state.filtros.status = document.getElementById('cpStatus')?.value || '';
+    state.filtros.fornecedor_id = document.getElementById('cpFornecedor')?.value || '';
+    state.pagina = 1;
+    salvarFiltrosCP();
+    await recarregar();
+    const restored = document.getElementById('cpBusca');
+    if (restored) { restored.focus(); restored.setSelectionRange(curval.length, curval.length); }
+  }, 250);
+  busca?.addEventListener('input', debouncedBusca);
+
+  document.querySelectorAll('th[data-sort-col]').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.sortCol;
+      if (state.ordem === col) {
+        state.ordemDir = state.ordemDir === 'asc' ? 'desc' : 'asc';
+      } else {
+        state.ordem = col;
+        state.ordemDir = 'asc';
+      }
+      _sortItems();
+      render();
+    });
+  });
+
   document.querySelectorAll('[data-cp-period]').forEach((btn) => {
     btn.addEventListener('click', async () => {
       const preset = btn.dataset.cpPeriod;
@@ -558,6 +643,7 @@ async function recarregar() {
 
     await Promise.all([carregarFornecedores(), carregarContas()]);
 
+    _sortItems();
     render();
   } catch (error) {
     console.error('Erro ao recarregar contas a pagar:', error);
@@ -588,6 +674,19 @@ async function pagarConta(id) {
           <label style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;display:block;margin-bottom:5px">Data do pagamento</label>
           <input id="_pagarDataInput" type="date" value="${hoje}" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;box-sizing:border-box" />
         </div>
+        <div style="margin-bottom:16px">
+          <label style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;display:block;margin-bottom:5px">Forma de pagamento</label>
+          <select id="_pagarFormaInput" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;box-sizing:border-box;background:var(--surface);color:var(--text)">
+            <option value="">Não informado</option>
+            <option value="dinheiro">Dinheiro</option>
+            <option value="pix">PIX</option>
+            <option value="cartao_credito">Cartão de Crédito</option>
+            <option value="cartao_debito">Cartão de Débito</option>
+            <option value="boleto">Boleto</option>
+            <option value="transferencia">Transferência</option>
+            <option value="cheque">Cheque</option>
+          </select>
+        </div>
         <div style="display:flex;gap:10px;justify-content:flex-end">
           <button id="_pagarCancelarBtn" class="btn-cancel">Cancelar</button>
           <button id="_pagarConfirmarBtn" class="btn-confirm btn-confirm--success">Confirmar pagamento</button>
@@ -610,6 +709,7 @@ async function pagarConta(id) {
       }
       const valorStr = overlay.querySelector('#_pagarValorInput').value;
       const valor_pago = valorStr ? Number(valorStr) : undefined;
+      const forma_pagamento = overlay.querySelector('#_pagarFormaInput')?.value || undefined;
       if (valor_pago !== undefined && (!Number.isFinite(valor_pago) || valor_pago <= 0)) {
         btn.disabled = false;
         btn.innerHTML = 'Confirmar pagamento';
@@ -623,7 +723,7 @@ async function pagarConta(id) {
         return;
       }
       try {
-        await api.pagarContaPagar(id, { data_pagamento: data, valor_pago });
+        await api.pagarContaPagar(id, { data_pagamento: data, valor_pago, ...(forma_pagamento ? { forma_pagamento } : {}) });
         document.body.removeChild(overlay);
         showMessage('Pagamento registrado com sucesso.', 'success');
         await recarregar();
@@ -1005,7 +1105,7 @@ function formatDate(value) {
   const dateStr = String(value).slice(0, 10);
   const date = new Date(`${dateStr}T12:00:00`);
   if (Number.isNaN(date.getTime())) return String(value);
-  return date.toLocaleDateString('pt-BR');
+  return date.toLocaleDateString('pt-BR', { timeZone: 'America/Fortaleza' });
 }
 
 
@@ -1022,6 +1122,109 @@ function injectContasPagarStyles() {
   const style = document.createElement('style');
   style.id = 'contasPagarProfessionalStyles';
   style.textContent = `
+    .cp-toolbar-grid {
+      display: grid;
+      grid-template-columns: 1fr auto auto auto;
+      gap: 10px;
+      align-items: start;
+      margin-bottom: 18px;
+    }
+
+    .cp-search-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 0 14px;
+      background: var(--surface);
+      min-height: 44px;
+    }
+
+    .cp-search-box input {
+      border: none;
+      outline: none;
+      background: transparent;
+      color: var(--text);
+      font-size: 0.94rem;
+      width: 100%;
+    }
+
+    .cp-search-box i {
+      color: var(--text-muted);
+      font-size: 0.82rem;
+    }
+
+    .cp-filter-box select {
+      min-height: 44px;
+      min-width: 160px;
+    }
+
+    .cp-action-box {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .cp-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .sort-icon {
+      font-size: 0.72rem;
+      margin-left: 2px;
+      opacity: 0.55;
+      font-style: normal;
+    }
+
+    .sort-icon--asc,
+    .sort-icon--desc {
+      opacity: 1;
+      color: var(--primary);
+    }
+
+    mark.cp-hl {
+      background: rgba(234, 179, 8, 0.28);
+      color: inherit;
+      border-radius: 3px;
+      padding: 0 1px;
+    }
+
+    .cp-dias-atraso {
+      display: block;
+      color: #dc2626;
+      font-weight: 800;
+      font-size: 11px;
+      margin-top: 3px;
+    }
+
+    .cp-stat-card--parcial {
+      border-color: rgba(8, 145, 178, 0.24);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) .cp-explain-card {
+        border-color: rgba(96, 165, 250, 0.18);
+        background: linear-gradient(135deg, rgba(37, 99, 235, 0.13), rgba(8, 145, 178, 0.1));
+      }
+      :root:not([data-theme="light"]) .cp-dias-atraso {
+        color: #f87171;
+      }
+      :root:not([data-theme="light"]) mark.cp-hl {
+        background: rgba(234, 179, 8, 0.38);
+      }
+    }
+
+    :root[data-theme="dark"] .cp-explain-card {
+      border-color: rgba(96, 165, 250, 0.18);
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.13), rgba(8, 145, 178, 0.1));
+    }
+    :root[data-theme="dark"] .cp-dias-atraso { color: #f87171; }
+    :root[data-theme="dark"] mark.cp-hl { background: rgba(234, 179, 8, 0.38); }
+
     .cp-module-card {
       position: relative;
     }
