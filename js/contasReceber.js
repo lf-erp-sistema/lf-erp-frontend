@@ -3,6 +3,8 @@ import { showToast, confirmarAcao } from './feedback.js';
 import { gerarPIX } from './pix.js';
 import { escapeHtml, buildFriendlyError, todayFortaleza, calcPeriodoLocal, debounce } from './utils.js';
 
+let _dropClickHandler = null;
+
 const state = {
   contas: [],
   resumo: {
@@ -110,6 +112,7 @@ async function carregarClientes() {
 }
 
 async function carregarContas() {
+  state.selecionadas.clear();
   const filtrosGlobais = getFiltrosGlobais();
 
   const response = await api.getContasReceber({
@@ -569,7 +572,7 @@ async function abrirVisaoCliente(clienteId, clienteNome) {
                <i class="fa-brands fa-whatsapp"></i> Enviar cobrança
              </a>`
           : abertas.length
-            ? `<button class="btn btn-secondary" type="button" disabled title="Telefone não cadastrado neste cliente">
+            ? `<button class="btn btn-light" type="button" disabled title="Telefone não cadastrado neste cliente" style="opacity:.55;cursor:not-allowed">
                  <i class="fa-brands fa-whatsapp"></i> Sem telefone
                </button>`
             : ''}
@@ -1264,9 +1267,14 @@ function bindEventos() {
       crDrop.style.display = 'none';
       crDrop.querySelectorAll('.cr-combobox__opt').forEach(o => (o.style.display = ''));
     });
-    document.addEventListener('click', (e) => {
-      if (!crInput.contains(e.target) && !crDrop.contains(e.target)) crDrop.style.display = 'none';
-    }, { once: false });
+    if (_dropClickHandler) document.removeEventListener('click', _dropClickHandler);
+    _dropClickHandler = (e) => {
+      const inp  = document.getElementById('crClienteInput');
+      const drop = document.getElementById('crClienteDrop');
+      if (!inp || !drop) return;
+      if (!inp.contains(e.target) && !drop.contains(e.target)) drop.style.display = 'none';
+    };
+    document.addEventListener('click', _dropClickHandler);
   }
 
   document.querySelectorAll("[data-action='detalhe-cr']").forEach((button) => {
@@ -3100,11 +3108,12 @@ function injectContasReceberStyles() {
 
     /* ── Barra de ação em lote ── */
     .cr-lote-bar {
-      position: fixed; bottom: 72px; left: 50%; transform: translateX(-50%);
+      position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
       background: var(--primary); color: #fff; border-radius: 40px;
       padding: 10px 20px; display: flex; align-items: center; gap: 12px;
-      box-shadow: 0 4px 24px rgba(0,0,0,.25); z-index: 500;
+      box-shadow: 0 4px 24px rgba(0,0,0,.3); z-index: 9000;
       font-weight: 700; font-size: .88rem; white-space: nowrap;
+      max-width: calc(100vw - 32px);
     }
     .cr-lote-bar .btn-success { background: #16a34a; color: #fff; border: none; }
     .cr-lote-bar .btn-light   { background: rgba(255,255,255,.2); color: #fff; border: none; }
