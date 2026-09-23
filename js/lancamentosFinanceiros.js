@@ -152,9 +152,13 @@ function injectLancamentosStyles() {
     .lf-toolbar-grid {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
+      gap: 10px;
       align-items: center;
       margin-bottom: 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
     }
     .lf-search-box {
       flex: 1;
@@ -162,12 +166,15 @@ function injectLancamentosStyles() {
       display: flex;
       align-items: center;
       gap: 8px;
-      background: var(--bg, #f8f9fa);
+      background: var(--bg-card, var(--surface));
       border: 1px solid var(--border, #e5e7eb);
-      border-radius: 8px;
-      padding: 0 12px;
-      height: 40px;
+      border-radius: 14px;
+      padding: 0 14px;
+      min-height: 44px;
+      transition: border-color .15s;
     }
+    .lf-search-box:focus-within { border-color: var(--primary); }
+    .lf-search-box i { color: var(--text-muted); font-size: .85rem; flex-shrink: 0; }
     .lf-search-box input {
       border: none;
       background: transparent;
@@ -176,6 +183,24 @@ function injectLancamentosStyles() {
       outline: none;
       color: var(--text);
     }
+    .lf-filter-box {
+      display: flex;
+      align-items: center;
+    }
+    .lf-filter-box select {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--bg-card, var(--surface));
+      color: var(--text);
+      font-size: 13px;
+      padding: 0 12px;
+      min-height: 44px;
+      min-width: 160px;
+      outline: none;
+      cursor: pointer;
+      transition: border-color .15s;
+    }
+    .lf-filter-box select:focus { border-color: var(--primary); }
     .lf-actions { display: flex; gap: 8px; flex-wrap: wrap; }
     .lf-pagination {
       display: flex;
@@ -206,8 +231,7 @@ function injectLancamentosStyles() {
     .sort-icon--asc, .sort-icon--desc { opacity: 1; color: var(--primary, #3b82f6); }
     @media (min-width: 700px) {
       .lf-toolbar-grid {
-        display: grid;
-        grid-template-columns: 1fr auto auto auto;
+        flex-wrap: nowrap;
       }
     }
     @media (max-width: 699px) {
@@ -373,19 +397,23 @@ function render() {
           <i class="fa-solid fa-magnifying-glass"></i>
           <input type="text" id="lfBusca" placeholder="Buscar descrição, categoria..." value="${esc(state.filtros.busca)}"/>
         </div>
-        <select id="lfTipo" class="input">
-          <option value="">Todos os tipos</option>
-          <option value="receita"  ${state.filtros.tipo === 'receita'  ? 'selected' : ''}>Receitas</option>
-          <option value="despesa"  ${state.filtros.tipo === 'despesa'  ? 'selected' : ''}>Despesas</option>
-        </select>
-        <select id="lfStatus" class="input">
-          <option value="">Todos os status</option>
-          <option value="pendente"         ${state.filtros.status === 'pendente'         ? 'selected' : ''}>Pendentes</option>
-          <option value="pago"             ${state.filtros.status === 'pago'             ? 'selected' : ''}>Pagos</option>
-          <option value="atrasado"         ${state.filtros.status === 'atrasado'         ? 'selected' : ''}>Atrasados</option>
-          <option value="parcial"          ${state.filtros.status === 'parcial'          ? 'selected' : ''}>Parciais</option>
-          <option value="parcial_atrasado" ${state.filtros.status === 'parcial_atrasado' ? 'selected' : ''}>Parcial em atraso</option>
-        </select>
+        <div class="lf-filter-box">
+          <select id="lfTipo">
+            <option value="">Todos os tipos</option>
+            <option value="receita"  ${state.filtros.tipo === 'receita'  ? 'selected' : ''}>Receitas</option>
+            <option value="despesa"  ${state.filtros.tipo === 'despesa'  ? 'selected' : ''}>Despesas</option>
+          </select>
+        </div>
+        <div class="lf-filter-box">
+          <select id="lfStatus">
+            <option value="">Todos os status</option>
+            <option value="pendente"         ${state.filtros.status === 'pendente'         ? 'selected' : ''}>Pendentes</option>
+            <option value="pago"             ${state.filtros.status === 'pago'             ? 'selected' : ''}>Pagos</option>
+            <option value="atrasado"         ${state.filtros.status === 'atrasado'         ? 'selected' : ''}>Atrasados</option>
+            <option value="parcial"          ${state.filtros.status === 'parcial'          ? 'selected' : ''}>Parciais</option>
+            <option value="parcial_atrasado" ${state.filtros.status === 'parcial_atrasado' ? 'selected' : ''}>Parcial em atraso</option>
+          </select>
+        </div>
         <div class="lf-actions">
           <button class="btn btn-primary" id="lfBtnFiltrar" type="button">
             <i class="fa-solid fa-filter"></i> Filtrar

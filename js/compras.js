@@ -276,15 +276,19 @@ const ComprasModule = {
           </div>
 
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <select id="comprasFiltroStatus" class="input" style="height:38px;min-width:140px;width:auto;font-size:13px">
-              <option value="">Todos os status</option>
-              <option value="finalizada" ${this.state.filtroStatus === 'finalizada' ? 'selected' : ''}>Finalizada</option>
-              <option value="pendente" ${this.state.filtroStatus === 'pendente' ? 'selected' : ''}>Pendente</option>
-            </select>
-            <select id="comprasFiltroFornecedor" class="input" style="height:38px;min-width:160px;width:auto;font-size:13px">
-              <option value="">Todos os fornecedores</option>
-              ${this.state.fornecedores.map(f => `<option value="${f.id}" ${String(this.state.filtroFornecedor) === String(f.id) ? 'selected' : ''}>${escapeHtml(f.nome)}</option>`).join('')}
-            </select>
+            <div class="cmp-filter-box">
+              <select id="comprasFiltroStatus">
+                <option value="">Todos os status</option>
+                <option value="finalizada" ${this.state.filtroStatus === 'finalizada' ? 'selected' : ''}>Finalizada</option>
+                <option value="pendente" ${this.state.filtroStatus === 'pendente' ? 'selected' : ''}>Pendente</option>
+              </select>
+            </div>
+            <div class="cmp-filter-box">
+              <select id="comprasFiltroFornecedor" style="min-width:170px">
+                <option value="">Todos os fornecedores</option>
+                ${this.state.fornecedores.map(f => `<option value="${f.id}" ${String(this.state.filtroFornecedor) === String(f.id) ? 'selected' : ''}>${escapeHtml(f.nome)}</option>`).join('')}
+              </select>
+            </div>
           </div>
 
           <div class="module-toolbar__stats">
@@ -1199,6 +1203,24 @@ const ComprasModule = {
         .cmp-pay--promissoria { background:rgba(245,158,11,.2); color:#fbbf24; }
         .cmp-pay--outros   { background:rgba(148,163,184,.15); color:#94a3b8; }
       }
+      .cmp-filter-box {
+        display: flex;
+        align-items: center;
+      }
+      .cmp-filter-box select {
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: var(--bg-card, var(--surface));
+        color: var(--text);
+        font-size: 13px;
+        padding: 0 12px;
+        min-height: 44px;
+        min-width: 150px;
+        outline: none;
+        cursor: pointer;
+        transition: border-color .15s;
+      }
+      .cmp-filter-box select:focus { border-color: var(--primary); }
     `;
     document.head.appendChild(style);
   },

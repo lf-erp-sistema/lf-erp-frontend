@@ -546,6 +546,54 @@ const EstoqueModule = {
         .est-margem--low { background:rgba(234,179,8,.2); color:#fbbf24; }
         .est-margem--neg { background:rgba(239,68,68,.18); color:#f87171; }
       }
+      .estoque-toolbar-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 14px 16px;
+        margin-bottom: 16px;
+      }
+      .estoque-search-box {
+        flex: 1;
+        min-width: 200px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--bg-card, var(--surface));
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 0 14px;
+        min-height: 44px;
+        transition: border-color .15s;
+      }
+      .estoque-search-box:focus-within { border-color: var(--primary); }
+      .estoque-search-box i { color: var(--text-muted); font-size: .85rem; flex-shrink: 0; }
+      .estoque-search-box input {
+        border: none; background: transparent; flex: 1;
+        font-size: 14px; outline: none; color: var(--text);
+      }
+      .estoque-filter-box {
+        display: flex;
+        align-items: center;
+      }
+      .estoque-filter-box select {
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: var(--bg-card, var(--surface));
+        color: var(--text);
+        font-size: 13px;
+        padding: 0 12px;
+        min-height: 44px;
+        min-width: 160px;
+        outline: none;
+        cursor: pointer;
+        transition: border-color .15s;
+      }
+      .estoque-filter-box select:focus { border-color: var(--primary); }
     `;
     document.head.appendChild(style);
   },

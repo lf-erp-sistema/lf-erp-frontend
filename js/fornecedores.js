@@ -61,9 +61,37 @@ const FornecedoresModule = {
     };
   },
 
+  _injectStyles() {
+    if (document.getElementById('_fornecedoresStyles')) return;
+    const style = document.createElement('style');
+    style.id = '_fornecedoresStyles';
+    style.textContent = `
+      .forn-filter-box {
+        display: flex;
+        align-items: center;
+      }
+      .forn-filter-box select {
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: var(--bg-card, var(--surface));
+        color: var(--text);
+        font-size: 13px;
+        padding: 0 12px;
+        min-height: 44px;
+        min-width: 140px;
+        outline: none;
+        cursor: pointer;
+        transition: border-color .15s;
+      }
+      .forn-filter-box select:focus { border-color: var(--primary); }
+    `;
+    document.head.appendChild(style);
+  },
+
   bind() {
     if (this.state.eventsBound) return;
     this.state.eventsBound = true;
+    this._injectStyles();
 
     const debouncedSearch = debounce((v) => this.search(v), 350);
 
@@ -202,12 +230,14 @@ const FornecedoresModule = {
               value="${escapeHtml(this.getCurrentSearchValue())}" />
           </div>
 
-          <select id="fornecedoresFiltroTipo" class="input" style="height:38px;min-width:130px;width:auto;font-size:13px">
-            <option value="">PF + PJ</option>
-            <option value="pj">CNPJ (PJ)</option>
-            <option value="pf">CPF (PF)</option>
-            <option value="sem">Sem documento</option>
-          </select>
+          <div class="forn-filter-box">
+            <select id="fornecedoresFiltroTipo">
+              <option value="">PF + PJ</option>
+              <option value="pj">CNPJ (PJ)</option>
+              <option value="pf">CPF (PF)</option>
+              <option value="sem">Sem documento</option>
+            </select>
+          </div>
 
           <div class="module-toolbar__stats">
             <div class="mini-stat">
