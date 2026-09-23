@@ -26,7 +26,8 @@ const state = {
   totalRegistros: 0,
   loading: false,
   ordem: 'data_vencimento',
-  ordemDir: 'desc'
+  ordemDir: 'desc',
+  selecionadas: new Set()
 };
 
 function salvarFiltrosCR() {
@@ -252,6 +253,135 @@ function getStatusIconHtml(conta) {
   };
   const { fa, title } = cfg[cor];
   return `<button class="cr-status-icon cr-status-icon--${cor}" data-action="toggle-status-cr" data-id="${conta.id}" title="${title}" type="button"><i class="${fa}"></i></button>`;
+}
+
+function exportarCSV() {
+  const contas = state.contas;
+  if (!contas.length) { showMessage('Nenhuma conta para exportar.', 'error'); return; }
+  const sep = ';';
+  const q = s => `"${String(s || '').replace(/"/g, '""')}"`;
+  const headers = ['ID','Cliente','Descrição','Parcela','Vencimento','Valor (R$)','Status','Data Pagamento'];
+  const rows = contas.map(c => [
+    c.id,
+    q(c.cliente_nome || c.cliente_nome_manual || ''),
+    q(c.observacao || c.descricao || ''),
+    Number(c.total_parcelas || 1) > 1 ? `${c.parcela}/${c.total_parcelas}` : '',
+    (c.data_vencimento || '').slice(0, 10),
+    Number(c.valor || 0).toFixed(2).replace('.', ','),
+    c.status || '',
+    (c.data_pagamento || '').slice(0, 10)
+  ].join(sep));
+  const csv = '﻿' + [headers.join(sep), ...rows].join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url;
+  a.download = `contas-receber-${todayFortaleza()}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+  showMessage(`${contas.length} conta(s) exportada(s).`, 'success');
+}
+
+async function baixarEmLote(ids, dataPagamento, formaPagamento) {
+  let ok = 0, erros = 0;
+  for (const id of ids) {
+    try {
+      const conta = state.contas.find(c => String(c.id) === String(id));
+      await api.baixarContaReceber(id, {
+        valor_pago: Number(conta?.valor || 0),
+        data_pagamento: dataPagamento,
+        forma_pagamento: formaPagamento
+      });
+      ok++;
+      // patch local
+      const idx = state.contas.findIndex(c => String(c.id) === String(id));
+      if (idx !== -1) state.contas[idx].status = 'pago';
+    } catch { erros++; }
+  }
+  return { ok, erros };
+}
+
+function abrirModalBaixaLote(ids) {
+  document.getElementById('crLoteModal')?.remove();
+  const hoje = todayFortaleza();
+  const modal = document.createElement('div');
+  modal.id = 'crLoteModal';
+  modal.className = 'modal-overlay cr-detail-overlay';
+  modal.innerHTML = `
+    <div class="modal-card cr-detail-card" style="max-width:420px">
+      <div class="cr-detail-header">
+        <div>
+          <span class="cr-detail-eyebrow">Baixa em lote</span>
+          <h3>${ids.length} conta${ids.length !== 1 ? 's' : ''} selecionada${ids.length !== 1 ? 's' : ''}</h3>
+        </div>
+        <button class="icon-button" type="button" id="fecharCrLote"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="cr-detail-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Data do recebimento</label>
+            <input type="date" id="crLoteData" class="input" value="${hoje}">
+          </div>
+          <div class="form-group">
+            <label>Forma de pagamento</label>
+            <select id="crLoteForma" class="input">
+              <option value="dinheiro">Dinheiro</option>
+              <option value="pix">PIX</option>
+              <option value="cartao_debito">Cartão Débito</option>
+              <option value="cartao_credito">Cartão Crédito</option>
+              <option value="transferencia">Transferência</option>
+              <option value="boleto">Boleto</option>
+              <option value="promissoria">Promissória</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="cr-detail-footer">
+        <button class="btn btn-success" type="button" id="confirmarCrLote">
+          <i class="fa-solid fa-check-double"></i> Confirmar recebimento
+        </button>
+        <button class="btn btn-light" type="button" id="cancelarCrLote">Cancelar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  const fechar = () => modal.remove();
+  document.getElementById('fecharCrLote')?.addEventListener('click', fechar);
+  document.getElementById('cancelarCrLote')?.addEventListener('click', fechar);
+  modal.addEventListener('click', e => { if (e.target === modal) fechar(); });
+  document.getElementById('confirmarCrLote')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    if (btn.disabled) return;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processando...';
+    const data  = document.getElementById('crLoteData')?.value || hoje;
+    const forma = document.getElementById('crLoteForma')?.value || 'dinheiro';
+    const { ok, erros } = await baixarEmLote(ids, data, forma);
+    fechar();
+    state.selecionadas.clear();
+    _atualizarBarraLote();
+    await recarregar();
+    showMessage(`${ok} recebida(s)${erros ? `, ${erros} erro(s)` : ''}.`, ok > 0 ? 'success' : 'error');
+  });
+}
+
+function _atualizarBarraLote() {
+  const bar = document.getElementById('crLoteBar');
+  if (!bar) return;
+  const n = state.selecionadas.size;
+  if (n === 0) {
+    bar.style.display = 'none';
+    document.getElementById('crCheckAll') && (document.getElementById('crCheckAll').checked = false);
+  } else {
+    bar.style.display = 'flex';
+    const span = document.getElementById('crLoteCount');
+    if (span) span.textContent = `${n} conta${n !== 1 ? 's' : ''} selecionada${n !== 1 ? 's' : ''}`;
+  }
+  // sync individual checkboxes
+  document.querySelectorAll('.cr-check-item').forEach(chk => {
+    chk.checked = state.selecionadas.has(chk.dataset.id);
+  });
+  // sync checkAll
+  const all = document.getElementById('crCheckAll');
+  if (all && state.contas.length) all.checked = state.selecionadas.size === state.contas.length;
 }
 
 function getDiasAtrasoText(dataVencimento) {
@@ -640,6 +770,11 @@ function render() {
             Vencimento
           </button>
 
+          <button class="btn btn-light" id="btnExportarCSV" type="button" title="Exportar CSV dos resultados atuais">
+            <i class="fa-solid fa-file-csv"></i>
+            Exportar
+          </button>
+
           <button class="btn btn-light" id="btnAtualizarContasReceber" type="button">
             <i class="fa-solid fa-rotate"></i>
             Atualizar
@@ -683,6 +818,7 @@ function render() {
         <table class="data-table cr-table">
           <thead>
             <tr>
+              <th class="cr-th-check"><input type="checkbox" id="crCheckAll" title="Selecionar todos"></th>
               <th class="cr-th-situacao">Situação</th>
               <th data-sort-col="id" style="cursor:pointer;user-select:none">Título${si('id')}</th>
               <th data-sort-col="cliente_nome" style="cursor:pointer;user-select:none">Cliente${si('cliente_nome')}</th>
@@ -699,7 +835,7 @@ function render() {
           ${state.contas.length ? `
           <tfoot>
             <tr class="cr-tfoot-row">
-              <td colspan="5" style="text-align:right;padding:10px 12px;font-size:.82rem;font-weight:700;color:var(--text-muted);">
+              <td colspan="6" style="text-align:right;padding:10px 12px;font-size:.82rem;font-weight:700;color:var(--text-muted);">
                 Total da página (${state.contas.length} registro${state.contas.length !== 1 ? 's' : ''}):
               </td>
               <td class="text-right" style="padding:10px 12px;font-weight:800;color:var(--text);">
@@ -734,6 +870,17 @@ function render() {
       <span class="cr-sticky-bar--verde"><i class="fa-solid fa-circle-check" style="font-size:.85rem"></i> Recebidos <strong>${formatCurrency(state.resumo.total_pago)}</strong></span>
       <span class="cr-sticky-bar__sep">|</span>
       <span>Total <strong>${formatCurrency(state.resumo.total)}</strong></span>
+    </div>
+
+    <div class="cr-lote-bar" id="crLoteBar" style="display:${state.selecionadas.size > 0 ? 'flex' : 'none'}">
+      <i class="fa-solid fa-check-double"></i>
+      <span id="crLoteCount">${state.selecionadas.size} conta${state.selecionadas.size !== 1 ? 's' : ''} selecionada${state.selecionadas.size !== 1 ? 's' : ''}</span>
+      <button class="btn btn-success btn-sm" type="button" id="btnBaixarLote">
+        <i class="fa-solid fa-check"></i> Baixar selecionadas
+      </button>
+      <button class="btn btn-light btn-sm" type="button" id="btnLimparLote">
+        <i class="fa-solid fa-xmark"></i> Limpar seleção
+      </button>
     </div>
   `;
 
@@ -771,6 +918,9 @@ function renderLinhas() {
 
       return `
       <tr class="cr-row--${statusColor}">
+        <td class="cr-td-check">
+          <input type="checkbox" class="cr-check-item" data-id="${conta.id}" ${state.selecionadas.has(String(conta.id)) ? 'checked' : ''}>
+        </td>
         <td style="text-align:center;width:52px;padding:8px 4px;">
           ${getStatusIconHtml(conta)}
         </td>
@@ -942,6 +1092,43 @@ function bindEventos() {
     }
     _sortItems();
     render();
+  });
+
+  // Exportar CSV
+  document.getElementById('btnExportarCSV')?.addEventListener('click', () => exportarCSV());
+
+  // Selecionar todos / individual
+  document.getElementById('crCheckAll')?.addEventListener('change', (e) => {
+    if (e.target.checked) {
+      state.contas.forEach(c => state.selecionadas.add(String(c.id)));
+    } else {
+      state.selecionadas.clear();
+    }
+    _atualizarBarraLote();
+  });
+
+  document.querySelectorAll('.cr-check-item').forEach(chk => {
+    chk.addEventListener('change', () => {
+      if (chk.checked) state.selecionadas.add(chk.dataset.id);
+      else state.selecionadas.delete(chk.dataset.id);
+      _atualizarBarraLote();
+    });
+  });
+
+  // Baixar em lote
+  document.getElementById('btnBaixarLote')?.addEventListener('click', () => {
+    if (!state.selecionadas.size) return;
+    const abertasIds = [...state.selecionadas].filter(id => {
+      const c = state.contas.find(x => String(x.id) === id);
+      return c && normalizarStatus(c.status) !== 'pago';
+    });
+    if (!abertasIds.length) { showMessage('Todas as contas selecionadas já estão pagas.', 'error'); return; }
+    abrirModalBaixaLote(abertasIds);
+  });
+
+  document.getElementById('btnLimparLote')?.addEventListener('click', () => {
+    state.selecionadas.clear();
+    _atualizarBarraLote();
   });
 
   busca?.addEventListener('keydown', async (event) => {
@@ -2903,6 +3090,28 @@ function injectContasReceberStyles() {
       overflow: hidden; text-overflow: ellipsis; max-width: 220px;
     }
 
+    /* ── Checkbox de seleção ── */
+    .cr-th-check, .cr-td-check {
+      width: 36px; text-align: center; padding: 8px 4px; vertical-align: middle;
+    }
+    .cr-check-item, #crCheckAll {
+      width: 16px; height: 16px; cursor: pointer; accent-color: var(--primary);
+    }
+
+    /* ── Barra de ação em lote ── */
+    .cr-lote-bar {
+      position: fixed; bottom: 72px; left: 50%; transform: translateX(-50%);
+      background: var(--primary); color: #fff; border-radius: 40px;
+      padding: 10px 20px; display: flex; align-items: center; gap: 12px;
+      box-shadow: 0 4px 24px rgba(0,0,0,.25); z-index: 500;
+      font-weight: 700; font-size: .88rem; white-space: nowrap;
+    }
+    .cr-lote-bar .btn-success { background: #16a34a; color: #fff; border: none; }
+    .cr-lote-bar .btn-light   { background: rgba(255,255,255,.2); color: #fff; border: none; }
+    .cr-lote-bar .btn-success:hover { background: #15803d; }
+    .cr-lote-bar .btn-light:hover   { background: rgba(255,255,255,.3); }
+    .btn-sm { padding: 5px 12px; font-size: .8rem; }
+
     /* ── Variante warning do btn ── */
     .btn-warning {
       background: linear-gradient(135deg, #d97706, #f59e0b);
@@ -3110,9 +3319,24 @@ function abrirModalContaManual() {
             <textarea
               id="crManualObservacao"
               class="input"
-              rows="4"
+              rows="3"
               placeholder="Observações da promissória..."
             ></textarea>
+          </div>
+
+          <div class="form-group form-group--full cr-manual-parc-toggle">
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:700">
+              <input type="checkbox" id="crManualParcelar" style="width:auto;cursor:pointer">
+              Parcelar em múltiplos meses
+            </label>
+          </div>
+
+          <div class="form-group form-group--full" id="crManualParcelasBox" style="display:none">
+            <label>Número de parcelas</label>
+            <input type="number" id="crManualParcelas" class="input" min="2" max="120" value="3" placeholder="Ex: 6">
+            <small style="color:var(--text-muted);font-size:.76rem;margin-top:4px;display:block">
+              O valor será dividido em parcelas iguais com vencimentos mensais a partir da data informada.
+            </small>
           </div>
 
         </div>
@@ -3143,8 +3367,12 @@ function abrirModalContaManual() {
   document.body.appendChild(modal);
 
   document.getElementById('fecharContaManual')?.addEventListener('click', () => modal.remove());
-
   document.getElementById('cancelarContaManual')?.addEventListener('click', () => modal.remove());
+
+  document.getElementById('crManualParcelar')?.addEventListener('change', (e) => {
+    const box = document.getElementById('crManualParcelasBox');
+    if (box) box.style.display = e.target.checked ? 'block' : 'none';
+  });
 
   document.getElementById('salvarContaManual')?.addEventListener('click', async (e) => {
     const btn = e.currentTarget;
@@ -3196,22 +3424,36 @@ async function salvarContaManual(modal) {
       return;
     }
 
-    await api.request('/contas-receber/manual', {
-      method: 'POST',
-      body: {
-        empresa: api.getEmpresaNome(),
-        empresa_id: api.getEmpresaId(),
-        cliente_id: clienteId || null,
-        cliente_nome: nomeManual,
-        valor: Number(valor),
-        data_vencimento: vencimento,
-        descricao,
-        observacao,
-        forma_pagamento: 'promissoria'
-      }
-    });
+    const parcelar   = document.getElementById('crManualParcelar')?.checked;
+    const nParcelas  = parcelar ? Math.min(120, Math.max(2, parseInt(document.getElementById('crManualParcelas')?.value || '2', 10) || 2)) : 1;
+    const valorParc  = Number((Number(valor) / nParcelas).toFixed(2));
+    // última parcela absorve ajuste de centavos
+    const valorUlt   = Number((Number(valor) - valorParc * (nParcelas - 1)).toFixed(2));
 
-    showMessage('Conta manual cadastrada com sucesso.', 'success');
+    for (let i = 0; i < nParcelas; i++) {
+      const baseDate = new Date(`${vencimento}T12:00:00`);
+      baseDate.setMonth(baseDate.getMonth() + i);
+      const pad = n => String(n).padStart(2, '0');
+      const vencStr = `${baseDate.getFullYear()}-${pad(baseDate.getMonth()+1)}-${pad(baseDate.getDate())}`;
+      await api.request('/contas-receber/manual', {
+        method: 'POST',
+        body: {
+          empresa: api.getEmpresaNome(),
+          empresa_id: api.getEmpresaId(),
+          cliente_id: clienteId || null,
+          cliente_nome: nomeManual,
+          valor: i === nParcelas - 1 ? valorUlt : valorParc,
+          data_vencimento: vencStr,
+          descricao,
+          observacao,
+          forma_pagamento: 'promissoria',
+          parcela: nParcelas > 1 ? i + 1 : null,
+          total_parcelas: nParcelas > 1 ? nParcelas : null
+        }
+      });
+    }
+
+    showMessage(nParcelas > 1 ? `${nParcelas} parcelas cadastradas com sucesso.` : 'Conta manual cadastrada com sucesso.', 'success');
 
     modal.remove();
 
