@@ -737,7 +737,7 @@ function render() {
             </div>
           </div>
 
-          <div class="cr-action-box">
+          <div class="cr-primary-actions">
             <button class="btn btn-primary" id="btnNovaContaManual" type="button">
               <i class="fa-solid fa-plus"></i> Conta manual
             </button>
@@ -750,32 +750,37 @@ function render() {
             <button class="btn${(state.filtros.status || state.filtros.cliente_id || state.filtros.busca) ? ' btn-warning' : ' btn-light'}" id="btnLimparFiltrosContasReceber" type="button">
               <i class="fa-solid fa-eraser"></i> Limpar
             </button>
-            <button class="btn btn-light" id="btnOrdemVenc" type="button" title="Alternar ordenação por vencimento">
-              <i class="fa-solid fa-arrow-${state.ordem === 'data_vencimento' && state.ordemDir === 'desc' ? 'down' : 'up'}-wide-short"></i> Vencimento
-            </button>
-            <button class="btn btn-light" id="btnExportarCSV" type="button" title="Exportar CSV dos resultados atuais">
-              <i class="fa-solid fa-file-csv"></i> Exportar
-            </button>
-            <button class="btn btn-light" id="btnAtualizarContasReceber" type="button">
-              <i class="fa-solid fa-rotate"></i> Atualizar
-            </button>
           </div>
         </div>
 
-        <!-- Linha 2: chips de filtro de status -->
-        <div class="cr-chips-row">
-          <input type="hidden" id="crStatus" value="${escapeHtml(state.filtros.status || '')}">
-          ${[
-            { val: '',                label: 'Todos',          icon: '' },
-            { val: 'pendente',        label: 'Pendentes',      icon: 'fa-regular fa-clock' },
-            { val: 'atrasado',        label: 'Atrasados',      icon: 'fa-solid fa-circle-xmark' },
-            { val: 'pago',            label: 'Recebidos',      icon: 'fa-solid fa-circle-check' },
-            { val: 'parcial_atrasado',label: 'Parcial atraso', icon: 'fa-solid fa-triangle-exclamation' },
-          ].map(({ val, label, icon }) => {
-            const active = state.filtros.status === val ? ' cr-chip--active' : '';
-            const icHtml = icon ? `<i class="${icon}"></i> ` : '';
-            return `<button type="button" class="cr-chip${active}" data-cr-status="${val}">${icHtml}${label}</button>`;
-          }).join('')}
+        <!-- Linha 2: chips de status + ações utilitárias -->
+        <div class="cr-toolbar-row2">
+          <div class="cr-chips-row">
+            <input type="hidden" id="crStatus" value="${escapeHtml(state.filtros.status || '')}">
+            ${[
+              { val: '',                label: 'Todos',          icon: '' },
+              { val: 'pendente',        label: 'Pendentes',      icon: 'fa-regular fa-clock' },
+              { val: 'atrasado',        label: 'Atrasados',      icon: 'fa-solid fa-circle-xmark' },
+              { val: 'pago',            label: 'Recebidos',      icon: 'fa-solid fa-circle-check' },
+              { val: 'parcial_atrasado',label: 'Parcial atraso', icon: 'fa-solid fa-triangle-exclamation' },
+            ].map(({ val, label, icon }) => {
+              const active = state.filtros.status === val ? ' cr-chip--active' : '';
+              const icHtml = icon ? `<i class="${icon}"></i> ` : '';
+              return `<button type="button" class="cr-chip${active}" data-cr-status="${val}">${icHtml}${label}</button>`;
+            }).join('')}
+          </div>
+          <div class="cr-util-actions">
+            <button class="btn btn-light cr-util-btn" id="btnOrdemVenc" type="button" title="Ordenar por vencimento">
+              <i class="fa-solid fa-arrow-${state.ordem === 'data_vencimento' && state.ordemDir === 'desc' ? 'down' : 'up'}-wide-short"></i>
+              <span class="cr-util-label">Vencimento</span>
+            </button>
+            <button class="btn btn-light cr-util-btn" id="btnExportarCSV" type="button" title="Exportar CSV">
+              <i class="fa-solid fa-file-csv"></i>
+            </button>
+            <button class="btn btn-light cr-util-btn" id="btnAtualizarContasReceber" type="button" title="Atualizar">
+              <i class="fa-solid fa-rotate"></i>
+            </button>
+          </div>
         </div>
 
       </div>
@@ -2295,6 +2300,10 @@ function injectContasReceberStyles() {
       flex-direction: column;
       gap: 10px;
       margin-bottom: 18px;
+      background: var(--bg-card, #fff);
+      border: 1px solid var(--border-color, #e5e7eb);
+      border-radius: 10px;
+      padding: 14px 16px;
     }
 
     .cr-toolbar-row1 {
@@ -2304,11 +2313,41 @@ function injectContasReceberStyles() {
       flex-wrap: wrap;
     }
 
+    .cr-toolbar-row2 {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border-color, #e5e7eb);
+    }
+
     .cr-chips-row {
       display: flex;
       flex-wrap: wrap;
       gap: 6px;
       align-items: center;
+      flex: 1;
+    }
+
+    .cr-util-actions {
+      display: flex;
+      gap: 4px;
+      flex-shrink: 0;
+      align-items: center;
+    }
+
+    .cr-util-btn {
+      height: 34px;
+      padding: 0 10px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.82rem;
+    }
+
+    .cr-util-label {
+      font-size: 0.80rem;
     }
 
     .cr-search-box {
@@ -2347,7 +2386,7 @@ function injectContasReceberStyles() {
       min-width: 200px;
     }
 
-    .cr-action-box {
+    .cr-primary-actions {
       display: flex;
       gap: 6px;
       flex-wrap: wrap;
@@ -2863,10 +2902,16 @@ function injectContasReceberStyles() {
 
       .cr-filter-box--cliente { min-width: unset; width: 100%; }
 
-      .cr-action-box {
+      .cr-primary-actions {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr 1fr 1fr;
       }
+
+      .cr-toolbar-row2 {
+        flex-wrap: wrap;
+      }
+
+      .cr-util-label { display: none; }
 
       .cr-detail-summary,
       .cr-detail-grid {
@@ -2905,7 +2950,7 @@ function injectContasReceberStyles() {
         padding: 14px;
       }
 
-      .cr-action-box {
+      .cr-primary-actions {
         grid-template-columns: 1fr;
       }
     }
