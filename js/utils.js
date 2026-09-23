@@ -60,6 +60,8 @@ export function calcPeriodoLocal(preset) {
     const pm = m === 0 ? 11 : m-1, py = m === 0 ? y-1 : y;
     ini = `${py}-${pad(pm+1)}-01`;
     fim = fmt(new Date(y, m, 0));
+  } else if (preset === 'proximos30') {
+    const f = new Date(nowBR); f.setDate(f.getDate() + 29); fim = fmt(f);
   }
   return { dataInicial: ini, dataFinal: fim };
 }

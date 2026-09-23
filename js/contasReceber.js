@@ -565,8 +565,8 @@ function render() {
       <div class="periodo-local">
         <span class="periodo-local__label">Período:</span>
         <div class="periodo-local__presets">
-          ${['hoje','7dias','30dias','mesAtual','mesAnterior'].map(p => {
-            const labels = { hoje:'Hoje', '7dias':'7 dias', '30dias':'30 dias', mesAtual:'Este mês', mesAnterior:'Mês ant.' };
+          ${['hoje','7dias','30dias','proximos30','mesAtual','mesAnterior'].map(p => {
+            const labels = { hoje:'Hoje', '7dias':'7 dias', '30dias':'Últ. 30 dias', proximos30:'Próx. 30 dias', mesAtual:'Este mês', mesAnterior:'Mês ant.' };
             return `<button type="button" class="periodo-local__btn${state.periodo.preset===p?' periodo-local__btn--active':''}" data-cr-period="${p}">${labels[p]}</button>`;
           }).join('')}
           <button type="button" class="periodo-local__btn${state.periodo.preset==='personalizado'?' periodo-local__btn--active':''}" data-cr-period="personalizado">Personalizado</button>
@@ -590,15 +590,19 @@ function render() {
           />
         </div>
 
-        <div class="cr-filter-box">
-          <select id="crStatus" class="input">
-            <option value="">Todos os status</option>
-            <option value="pendente" ${state.filtros.status === 'pendente' ? 'selected' : ''}>Pendentes</option>
-            <option value="atrasado" ${state.filtros.status === 'atrasado' ? 'selected' : ''}>Atrasados</option>
-            <option value="pago" ${state.filtros.status === 'pago' ? 'selected' : ''}>Recebidos</option>
-            <option value="parcial" ${state.filtros.status === 'parcial' ? 'selected' : ''}>Parciais</option>
-            <option value="parcial_atrasado" ${state.filtros.status === 'parcial_atrasado' ? 'selected' : ''}>Parcial em atraso</option>
-          </select>
+        <div class="cr-filter-box cr-chips-box">
+          <input type="hidden" id="crStatus" value="${escapeHtml(state.filtros.status || '')}">
+          ${[
+            { val: '',                label: 'Todos',           icon: '' },
+            { val: 'pendente',        label: 'Pendentes',       icon: 'fa-regular fa-clock' },
+            { val: 'atrasado',        label: 'Atrasados',       icon: 'fa-solid fa-circle-xmark' },
+            { val: 'pago',            label: 'Recebidos',       icon: 'fa-solid fa-circle-check' },
+            { val: 'parcial_atrasado',label: 'Parcial atraso',  icon: 'fa-solid fa-triangle-exclamation' },
+          ].map(({ val, label, icon }) => {
+            const active = state.filtros.status === val ? ' cr-chip--active' : '';
+            const icHtml = icon ? `<i class="${icon}"></i> ` : '';
+            return `<button type="button" class="cr-chip${active}" data-cr-status="${val}">${icHtml}${label}</button>`;
+          }).join('')}
         </div>
 
         <div class="cr-filter-box cr-filter-box--cliente cr-combobox">
@@ -621,11 +625,19 @@ function render() {
           <button class="btn btn-primary" id="btnFiltrarContasReceber" type="button">
             <i class="fa-solid fa-filter"></i>
             Filtrar
+            ${(state.filtros.status || state.filtros.cliente_id || state.filtros.busca)
+              ? `<span class="cr-filter-badge">${[state.filtros.status, state.filtros.cliente_id, state.filtros.busca].filter(Boolean).length}</span>`
+              : ''}
           </button>
 
-          <button class="btn btn-light" id="btnLimparFiltrosContasReceber" type="button">
+          <button class="btn${(state.filtros.status || state.filtros.cliente_id || state.filtros.busca) ? ' btn-warning' : ' btn-light'}" id="btnLimparFiltrosContasReceber" type="button">
             <i class="fa-solid fa-eraser"></i>
             Limpar
+          </button>
+
+          <button class="btn btn-light cr-sort-btn" id="btnOrdemVenc" type="button" title="Alternar ordenação por vencimento">
+            <i class="fa-solid fa-arrow-${state.ordem === 'data_vencimento' && state.ordemDir === 'desc' ? 'down' : 'up'}-wide-short"></i>
+            Vencimento
           </button>
 
           <button class="btn btn-light" id="btnAtualizarContasReceber" type="button">
@@ -704,7 +716,10 @@ function render() {
         <button class="lf-pagination__btn" type="button" data-action="cr-pagina" data-page="prev" ${state.pagina <= 1 ? 'disabled' : ''} aria-label="Página anterior">
           <i class="fa-solid fa-chevron-left"></i>
         </button>
-        <span class="lf-pagination__info">Página ${state.pagina} de ${state.totalPaginas} <small>(${state.totalRegistros} registro(s))</small></span>
+        <span class="lf-pagination__info">
+          Pág. ${state.pagina}/${state.totalPaginas}
+          <small>· Mostrando ${((state.pagina-1)*50)+1}–${Math.min(state.pagina*50, state.totalRegistros)} de ${state.totalRegistros}</small>
+        </span>
         <button class="lf-pagination__btn" type="button" data-action="cr-pagina" data-page="next" ${state.pagina >= state.totalPaginas ? 'disabled' : ''} aria-label="Próxima página">
           <i class="fa-solid fa-chevron-right"></i>
         </button>
@@ -903,6 +918,30 @@ function bindEventos() {
     state.pagina = 1;
     salvarFiltrosCR();
     await recarregar();
+  });
+
+  // Quick-filter chips de status — aplicação imediata
+  document.querySelectorAll('[data-cr-status]').forEach(chip => {
+    chip.addEventListener('click', async () => {
+      const val = chip.dataset.crStatus;
+      document.getElementById('crStatus').value = val;
+      state.filtros.status = val;
+      state.pagina = 1;
+      salvarFiltrosCR();
+      await recarregar();
+    });
+  });
+
+  // Botão de ordenação por vencimento
+  document.getElementById('btnOrdemVenc')?.addEventListener('click', async () => {
+    if (state.ordem === 'data_vencimento') {
+      state.ordemDir = state.ordemDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      state.ordem = 'data_vencimento';
+      state.ordemDir = 'asc';
+    }
+    _sortItems();
+    render();
   });
 
   busca?.addEventListener('keydown', async (event) => {
@@ -2863,6 +2902,38 @@ function injectContasReceberStyles() {
       display: block; margin-top: 2px; white-space: nowrap;
       overflow: hidden; text-overflow: ellipsis; max-width: 220px;
     }
+
+    /* ── Variante warning do btn ── */
+    .btn-warning {
+      background: linear-gradient(135deg, #d97706, #f59e0b);
+      color: #fff; border: none;
+    }
+    .btn-warning:hover { background: linear-gradient(135deg, #b45309, #d97706); }
+
+    /* ── Quick-filter chips de status ── */
+    .cr-chips-box { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+    .cr-chip {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 5px 12px; border-radius: 20px; border: 1.5px solid var(--border);
+      background: var(--surface); color: var(--text-muted); font-size: .78rem;
+      font-weight: 700; cursor: pointer; transition: all .15s; white-space: nowrap;
+      font-family: inherit;
+    }
+    .cr-chip:hover { border-color: var(--primary); color: var(--primary); background: var(--surface-2); }
+    .cr-chip--active {
+      border-color: var(--primary); color: var(--primary);
+      background: color-mix(in srgb, var(--primary) 12%, transparent);
+      font-weight: 800;
+    }
+
+    /* ── Badge de filtros ativos ── */
+    .cr-filter-badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 18px; height: 18px; border-radius: 9px; padding: 0 5px;
+      background: #fff; color: var(--primary); font-size: .7rem; font-weight: 900;
+      margin-left: 4px;
+    }
+    .btn-warning .cr-filter-badge { color: var(--warning, #d97706); }
 
     /* ── Tfoot ── */
     .cr-tfoot-row td { background: var(--surface-2); border-top: 1px solid var(--border); }
