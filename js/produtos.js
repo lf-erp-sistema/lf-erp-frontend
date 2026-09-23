@@ -125,6 +125,21 @@ const ProdutosModule = {
         mark.search-hl { background: #fff3cd; color: inherit; border-radius: 2px; }
         @media (max-width: 768px) { #produtosFiltrosToggle { display:inline-flex!important } #produtosFiltrosContent.filtros-collapsed { display:none!important } }
         @media (min-width: 769px) { #produtosFiltrosToggle { display:none!important } #produtosFiltrosContent { display:flex!important } }
+        .prod-filter-box { display:flex; align-items:center; }
+        .prod-filter-box select {
+          border: 1px solid var(--border);
+          border-radius: 14px;
+          background: var(--bg-card, var(--surface));
+          color: var(--text);
+          font-size: 13px;
+          padding: 0 12px;
+          min-height: 44px;
+          min-width: 140px;
+          outline: none;
+          cursor: pointer;
+          transition: border-color .15s;
+        }
+        .prod-filter-box select:focus { border-color: var(--primary); }
       `;
       document.head.appendChild(s);
     }
@@ -592,36 +607,46 @@ const ProdutosModule = {
               <i id="produtosFiltrosChevron" class="fa-solid fa-chevron-down" style="font-size:10px;margin-left:2px"></i>
             </button>
             <div id="produtosFiltrosContent" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-              <select id="produtosFiltroCategoria" class="input" style="height:38px;min-width:150px;width:auto;font-size:13px">
-                <option value="">Todas as categorias</option>
-              </select>
-              <select id="produtosFiltroAlerta" class="input" style="height:38px;min-width:140px;width:auto;font-size:13px">
-                <option value="">Todos os status</option>
-                <option value="alerta">Em alerta</option>
-                <option value="ok">Estoque ok</option>
-              </select>
-              <select id="produtosFiltroPromocao" class="input" style="height:38px;min-width:140px;width:auto;font-size:13px">
-                <option value="">Promoção: Todas</option>
-                <option value="sim">Em promoção</option>
-                <option value="nao">Sem promoção</option>
-              </select>
-              <select id="produtosFiltroTipo" class="input" style="height:38px;min-width:130px;width:auto;font-size:13px">
-                <option value="">Tipo: Todos</option>
-                <option value="normal">Normal</option>
-                <option value="grade">Com grade</option>
-                <option value="kit">Kit</option>
-              </select>
-              <select id="produtosFiltroOrdem" class="input" style="height:38px;min-width:155px;width:auto;font-size:13px">
-                <option value="">Ordenar: Padrão</option>
-                <option value="nome_az">Nome A→Z</option>
-                <option value="nome_za">Nome Z→A</option>
-                <option value="preco_a">Preço ↑</option>
-                <option value="preco_d">Preço ↓</option>
-                <option value="estoque_a">Estoque ↑</option>
-                <option value="estoque_d">Estoque ↓</option>
-                <option value="margem_a">Margem ↑</option>
-                <option value="margem_d">Margem ↓</option>
-              </select>
+              <div class="prod-filter-box">
+                <select id="produtosFiltroCategoria" style="min-width:150px">
+                  <option value="">Todas as categorias</option>
+                </select>
+              </div>
+              <div class="prod-filter-box">
+                <select id="produtosFiltroAlerta">
+                  <option value="">Todos os status</option>
+                  <option value="alerta">Em alerta</option>
+                  <option value="ok">Estoque ok</option>
+                </select>
+              </div>
+              <div class="prod-filter-box">
+                <select id="produtosFiltroPromocao">
+                  <option value="">Promoção: Todas</option>
+                  <option value="sim">Em promoção</option>
+                  <option value="nao">Sem promoção</option>
+                </select>
+              </div>
+              <div class="prod-filter-box">
+                <select id="produtosFiltroTipo">
+                  <option value="">Tipo: Todos</option>
+                  <option value="normal">Normal</option>
+                  <option value="grade">Com grade</option>
+                  <option value="kit">Kit</option>
+                </select>
+              </div>
+              <div class="prod-filter-box">
+                <select id="produtosFiltroOrdem" style="min-width:155px">
+                  <option value="">Ordenar: Padrão</option>
+                  <option value="nome_az">Nome A→Z</option>
+                  <option value="nome_za">Nome Z→A</option>
+                  <option value="preco_a">Preço ↑</option>
+                  <option value="preco_d">Preço ↓</option>
+                  <option value="estoque_a">Estoque ↑</option>
+                  <option value="estoque_d">Estoque ↓</option>
+                  <option value="margem_a">Margem ↑</option>
+                  <option value="margem_d">Margem ↓</option>
+                </select>
+              </div>
             </div>
           </div>
           <div class="module-toolbar__stats">
