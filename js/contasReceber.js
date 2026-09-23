@@ -713,24 +713,64 @@ function render() {
       </div>
 
       <div class="cr-toolbar-grid">
-        <div class="module-toolbar__search cr-search-box">
-          <i class="fa-solid fa-search"></i>
-          <input
-            type="text"
-            id="crBusca"
-            placeholder="Buscar cliente, produto ou nº da venda..."
-            value="${escapeHtml(state.filtros.busca || '')}"
-          />
+
+        <!-- Linha 1: busca + combobox cliente + botões de ação -->
+        <div class="cr-toolbar-row1">
+          <div class="module-toolbar__search cr-search-box">
+            <i class="fa-solid fa-search"></i>
+            <input
+              type="text"
+              id="crBusca"
+              placeholder="Buscar cliente, produto ou nº da venda..."
+              value="${escapeHtml(state.filtros.busca || '')}"
+            />
+          </div>
+
+          <div class="cr-filter-box cr-filter-box--cliente cr-combobox">
+            <input type="text" id="crClienteInput" class="input cr-combobox__input"
+              placeholder="Filtrar por cliente..." autocomplete="off"
+              value="${escapeHtml(state.clientes.find(c => String(c.id) === String(state.filtros.cliente_id))?.nome || '')}">
+            <input type="hidden" id="crCliente" value="${escapeHtml(String(state.filtros.cliente_id || ''))}">
+            <div class="cr-combobox__dropdown" id="crClienteDrop">
+              <div class="cr-combobox__opt" data-val="" data-lbl="Todos os clientes">Todos os clientes</div>
+              ${state.clientes.map(c => `<div class="cr-combobox__opt${String(state.filtros.cliente_id) === String(c.id) ? ' cr-combobox__opt--sel' : ''}" data-val="${c.id}" data-lbl="${escapeHtml(c.nome)}">${escapeHtml(c.nome)}</div>`).join('')}
+            </div>
+          </div>
+
+          <div class="cr-action-box">
+            <button class="btn btn-primary" id="btnNovaContaManual" type="button">
+              <i class="fa-solid fa-plus"></i> Conta manual
+            </button>
+            <button class="btn btn-primary" id="btnFiltrarContasReceber" type="button">
+              <i class="fa-solid fa-filter"></i> Filtrar
+              ${(state.filtros.status || state.filtros.cliente_id || state.filtros.busca)
+                ? `<span class="cr-filter-badge">${[state.filtros.status, state.filtros.cliente_id, state.filtros.busca].filter(Boolean).length}</span>`
+                : ''}
+            </button>
+            <button class="btn${(state.filtros.status || state.filtros.cliente_id || state.filtros.busca) ? ' btn-warning' : ' btn-light'}" id="btnLimparFiltrosContasReceber" type="button">
+              <i class="fa-solid fa-eraser"></i> Limpar
+            </button>
+            <button class="btn btn-light" id="btnOrdemVenc" type="button" title="Alternar ordenação por vencimento">
+              <i class="fa-solid fa-arrow-${state.ordem === 'data_vencimento' && state.ordemDir === 'desc' ? 'down' : 'up'}-wide-short"></i> Vencimento
+            </button>
+            <button class="btn btn-light" id="btnExportarCSV" type="button" title="Exportar CSV dos resultados atuais">
+              <i class="fa-solid fa-file-csv"></i> Exportar
+            </button>
+            <button class="btn btn-light" id="btnAtualizarContasReceber" type="button">
+              <i class="fa-solid fa-rotate"></i> Atualizar
+            </button>
+          </div>
         </div>
 
-        <div class="cr-filter-box cr-chips-box">
+        <!-- Linha 2: chips de filtro de status -->
+        <div class="cr-chips-row">
           <input type="hidden" id="crStatus" value="${escapeHtml(state.filtros.status || '')}">
           ${[
-            { val: '',                label: 'Todos',           icon: '' },
-            { val: 'pendente',        label: 'Pendentes',       icon: 'fa-regular fa-clock' },
-            { val: 'atrasado',        label: 'Atrasados',       icon: 'fa-solid fa-circle-xmark' },
-            { val: 'pago',            label: 'Recebidos',       icon: 'fa-solid fa-circle-check' },
-            { val: 'parcial_atrasado',label: 'Parcial atraso',  icon: 'fa-solid fa-triangle-exclamation' },
+            { val: '',                label: 'Todos',          icon: '' },
+            { val: 'pendente',        label: 'Pendentes',      icon: 'fa-regular fa-clock' },
+            { val: 'atrasado',        label: 'Atrasados',      icon: 'fa-solid fa-circle-xmark' },
+            { val: 'pago',            label: 'Recebidos',      icon: 'fa-solid fa-circle-check' },
+            { val: 'parcial_atrasado',label: 'Parcial atraso', icon: 'fa-solid fa-triangle-exclamation' },
           ].map(({ val, label, icon }) => {
             const active = state.filtros.status === val ? ' cr-chip--active' : '';
             const icHtml = icon ? `<i class="${icon}"></i> ` : '';
@@ -738,51 +778,6 @@ function render() {
           }).join('')}
         </div>
 
-        <div class="cr-filter-box cr-filter-box--cliente cr-combobox">
-          <input type="text" id="crClienteInput" class="input cr-combobox__input"
-            placeholder="Filtrar por cliente..." autocomplete="off"
-            value="${escapeHtml(state.clientes.find(c => String(c.id) === String(state.filtros.cliente_id))?.nome || '')}">
-          <input type="hidden" id="crCliente" value="${escapeHtml(String(state.filtros.cliente_id || ''))}">
-          <div class="cr-combobox__dropdown" id="crClienteDrop">
-            <div class="cr-combobox__opt" data-val="" data-lbl="Todos os clientes">Todos os clientes</div>
-            ${state.clientes.map(c => `<div class="cr-combobox__opt${String(state.filtros.cliente_id) === String(c.id) ? ' cr-combobox__opt--sel' : ''}" data-val="${c.id}" data-lbl="${escapeHtml(c.nome)}">${escapeHtml(c.nome)}</div>`).join('')}
-          </div>
-        </div>
-
-        <div class="cr-action-box">
-          <button class="btn btn-primary" id="btnNovaContaManual" type="button">
-            <i class="fa-solid fa-plus"></i>
-            Conta manual
-          </button>
-
-          <button class="btn btn-primary" id="btnFiltrarContasReceber" type="button">
-            <i class="fa-solid fa-filter"></i>
-            Filtrar
-            ${(state.filtros.status || state.filtros.cliente_id || state.filtros.busca)
-              ? `<span class="cr-filter-badge">${[state.filtros.status, state.filtros.cliente_id, state.filtros.busca].filter(Boolean).length}</span>`
-              : ''}
-          </button>
-
-          <button class="btn${(state.filtros.status || state.filtros.cliente_id || state.filtros.busca) ? ' btn-warning' : ' btn-light'}" id="btnLimparFiltrosContasReceber" type="button">
-            <i class="fa-solid fa-eraser"></i>
-            Limpar
-          </button>
-
-          <button class="btn btn-light cr-sort-btn" id="btnOrdemVenc" type="button" title="Alternar ordenação por vencimento">
-            <i class="fa-solid fa-arrow-${state.ordem === 'data_vencimento' && state.ordemDir === 'desc' ? 'down' : 'up'}-wide-short"></i>
-            Vencimento
-          </button>
-
-          <button class="btn btn-light" id="btnExportarCSV" type="button" title="Exportar CSV dos resultados atuais">
-            <i class="fa-solid fa-file-csv"></i>
-            Exportar
-          </button>
-
-          <button class="btn btn-light" id="btnAtualizarContasReceber" type="button">
-            <i class="fa-solid fa-rotate"></i>
-            Atualizar
-          </button>
-        </div>
       </div>
 
       <div class="cr-stats-grid">
@@ -2296,11 +2291,24 @@ function injectContasReceberStyles() {
   style.id = 'contasReceberProfessionalStyles';
   style.textContent = `
     .cr-toolbar-grid {
-      display: grid;
-      grid-template-columns: 1fr auto auto auto;
+      display: flex;
+      flex-direction: column;
       gap: 10px;
-      align-items: start;
       margin-bottom: 18px;
+    }
+
+    .cr-toolbar-row1 {
+      display: flex;
+      gap: 8px;
+      align-items: stretch;
+      flex-wrap: wrap;
+    }
+
+    .cr-chips-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
     }
 
     .cr-search-box {
@@ -2312,6 +2320,8 @@ function injectContasReceberStyles() {
       padding: 0 14px;
       background: var(--surface);
       min-height: 44px;
+      flex: 1;
+      min-width: 200px;
     }
 
     .cr-search-box input {
@@ -2333,10 +2343,15 @@ function injectContasReceberStyles() {
       min-width: 160px;
     }
 
+    .cr-filter-box--cliente {
+      min-width: 200px;
+    }
+
     .cr-action-box {
       display: flex;
-      gap: 8px;
+      gap: 6px;
       flex-wrap: wrap;
+      align-items: center;
     }
 
     .sort-icon {
@@ -2842,9 +2857,11 @@ function injectContasReceberStyles() {
 }
 
     @media (max-width: 980px) {
-      .cr-toolbar-grid {
-        grid-template-columns: 1fr;
+      .cr-toolbar-row1 {
+        flex-direction: column;
       }
+
+      .cr-filter-box--cliente { min-width: unset; width: 100%; }
 
       .cr-action-box {
         display: grid;
@@ -3129,7 +3146,6 @@ function injectContasReceberStyles() {
     .btn-warning:hover { background: linear-gradient(135deg, #b45309, #d97706); }
 
     /* ── Quick-filter chips de status ── */
-    .cr-chips-box { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
     .cr-chip {
       display: inline-flex; align-items: center; gap: 5px;
       padding: 5px 12px; border-radius: 20px; border: 1.5px solid var(--border);
