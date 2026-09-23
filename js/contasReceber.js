@@ -254,6 +254,205 @@ function getStatusIconHtml(conta) {
   return `<button class="cr-status-icon cr-status-icon--${cor}" data-action="toggle-status-cr" data-id="${conta.id}" title="${title}" type="button"><i class="${fa}"></i></button>`;
 }
 
+function getDiasAtrasoText(dataVencimento) {
+  if (!dataVencimento) return 'Atrasado';
+  const hoje = new Date(`${todayFortaleza()}T12:00:00`);
+  const venc = new Date(`${String(dataVencimento).slice(0, 10)}T12:00:00`);
+  const dias = Math.round((hoje - venc) / 86400000);
+  return dias > 0 ? `${dias} dia${dias !== 1 ? 's' : ''} em atraso` : 'Atrasado';
+}
+
+function _gerarMsgCobranca(abertas, total) {
+  const linhas = abertas.map((c, i) => {
+    const num  = String(i + 1).padStart(2, '0');
+    const desc = (c.observacao || 'Produto').trim();
+    const parc = c.parcela != null && c.total_parcelas != null ? ` - ${c.parcela}/${c.total_parcelas}` : '';
+    const val  = Number(c.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return `${num} - ${desc}${parc} - R$ ${val}`;
+  });
+  const tot = total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return linhas.join('\n') + `\n\n*Total - R$ ${tot}*`;
+}
+
+async function abrirVisaoCliente(clienteId, clienteNome) {
+  document.getElementById('crVisaoClienteModal')?.remove();
+  const modal = document.createElement('div');
+  modal.id = 'crVisaoClienteModal';
+  modal.className = 'modal-overlay cr-detail-overlay';
+  modal.innerHTML = `
+    <div class="modal-card cr-detail-card">
+      <div class="cr-detail-header">
+        <div>
+          <span class="cr-detail-eyebrow">Visão do cliente</span>
+          <h3>${escapeHtml(clienteNome || 'Cliente')}</h3>
+          <p id="crVCTel" style="color:var(--text-muted)">Carregando...</p>
+        </div>
+        <button class="icon-button" type="button" id="fecharCrVC"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="cr-detail-body" id="crVCBody">
+        ${Array.from({length: 4}).map(() => '<div class="skeleton-line" style="height:48px;margin-bottom:10px;border-radius:10px"></div>').join('')}
+      </div>
+      <div class="cr-detail-footer" id="crVCFooter">
+        <button class="btn btn-light" type="button" id="fecharCrVCFooter">Fechar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+
+  const fechar = () => modal.remove();
+  document.getElementById('fecharCrVC')?.addEventListener('click', fechar);
+  document.getElementById('fecharCrVCFooter')?.addEventListener('click', fechar);
+  modal.addEventListener('click', (e) => { if (e.target === modal) fechar(); });
+
+  try {
+    const [hist, contasResp] = await Promise.all([
+      api.getHistoricoFinanceiroCliente(clienteId),
+      api.getContasReceber({
+        empresa_id: api.getEmpresaId(),
+        data_inicial: '2000-01-01',
+        data_final: '2099-12-31',
+        cliente_id: clienteId,
+        busca: '', status: '', page: 1, limit: 500
+      })
+    ]);
+
+    const cliente   = hist?.cliente  || {};
+    const todas     = contasResp?.contas || [];
+    const abertas   = todas.filter(c => !['pago','cancelado','estornado'].includes(normalizarStatus(c.status)));
+    const pagas     = todas.filter(c => normalizarStatus(c.status) === 'pago');
+    const atrasadas = abertas.filter(c => ['atrasado','parcial_atrasado'].includes(normalizarStatus(c.status)));
+    const totalAberto = abertas.reduce((s, c) => s + Number(c.valor || 0), 0);
+    const totalPago   = pagas.reduce((s, c) => s + Number(c.valor || 0), 0);
+
+    const telEl = document.getElementById('crVCTel');
+    if (telEl) telEl.textContent = cliente.telefone || 'Sem telefone cadastrado';
+
+    // Grupos de parcelas por produto (para barra de progresso)
+    const grupos = new Map();
+    for (const c of todas) {
+      const chave = (c.observacao || 'Conta a receber').trim();
+      if (!grupos.has(chave)) grupos.set(chave, { pagas: 0, abertas: 0, total_parcelas: 0 });
+      const g = grupos.get(chave);
+      if (normalizarStatus(c.status) === 'pago') g.pagas++;
+      else g.abertas++;
+      if (Number(c.total_parcelas || 1) > g.total_parcelas) g.total_parcelas = Number(c.total_parcelas || 1);
+    }
+
+    const progressBars = Array.from(grupos.entries())
+      .filter(([, g]) => g.total_parcelas > 1)
+      .map(([nome, g]) => {
+        const pct = Math.round((g.pagas / g.total_parcelas) * 100);
+        return `<div class="cr-vc-progress">
+          <div class="cr-vc-progress__label"><span>${escapeHtml(nome)}</span><span>${g.pagas}/${g.total_parcelas} pagas</span></div>
+          <div class="cr-vc-progress__bar"><div class="cr-vc-progress__fill" style="width:${pct}%"></div></div>
+        </div>`;
+      }).join('');
+
+    const linhasAbertas = abertas.map(c => {
+      const st  = normalizarStatus(c.status);
+      const cor = getStatusIconClass(st, c.data_vencimento);
+      const chip = st === 'atrasado' || st === 'parcial_atrasado'
+        ? getDiasAtrasoText(c.data_vencimento) : getVencimentoInfo(c.data_vencimento);
+      return `<div class="cr-vc-row">
+        <div class="cr-vc-row__icon">${getStatusIconHtml(c)}</div>
+        <div class="cr-vc-row__info">
+          <strong>${escapeHtml(c.observacao || 'Conta a receber')}</strong>
+          <small>${Number(c.total_parcelas || 1) > 1 ? `Parcela ${c.parcela}/${c.total_parcelas} · ` : ''}${formatDate(c.data_vencimento)}</small>
+        </div>
+        <div class="cr-vc-row__valor">
+          <strong>${formatCurrency(c.valor)}</strong>
+          <span class="cr-venc-chip cr-venc-chip--${cor}">${chip}</span>
+        </div>
+        <div class="cr-vc-row__acao">
+          <button class="btn btn-sm btn-primary" type="button" data-action="baixar-vc" data-id="${c.id}">
+            <i class="fa-solid fa-check"></i> Baixar
+          </button>
+        </div>
+      </div>`;
+    }).join('');
+
+    const body = document.getElementById('crVCBody');
+    if (!body) return;
+    body.innerHTML = `
+      <section class="cr-detail-summary" style="margin-bottom:14px">
+        <article class="cr-detail-summary__main">
+          <span>Em aberto</span>
+          <strong>${formatCurrency(totalAberto)}</strong>
+          <small>${abertas.length} parcela${abertas.length !== 1 ? 's' : ''}</small>
+        </article>
+        <article>
+          <span>Atrasadas</span>
+          <strong style="color:var(--danger)">${atrasadas.length}</strong>
+          <small>${formatCurrency(atrasadas.reduce((s,c)=>s+Number(c.valor||0),0))}</small>
+        </article>
+        <article>
+          <span>Já recebido</span>
+          <strong style="color:var(--success)">${formatCurrency(totalPago)}</strong>
+          <small>${pagas.length} parcela${pagas.length !== 1 ? 's' : ''}</small>
+        </article>
+        <article>
+          <span>Total histórico</span>
+          <strong>${formatCurrency(totalAberto + totalPago)}</strong>
+        </article>
+      </section>
+
+      ${progressBars ? `
+      <section class="cr-detail-section" style="margin-bottom:14px">
+        <div class="cr-detail-section__header"><div><h4>Progresso de parcelas</h4><p>Por produto / serviço</p></div></div>
+        <div style="padding:12px 16px;display:flex;flex-direction:column;gap:10px;">${progressBars}</div>
+      </section>` : ''}
+
+      ${abertas.length ? `
+      <section class="cr-detail-section">
+        <div class="cr-detail-section__header">
+          <div><h4>Parcelas em aberto</h4><p>${abertas.length} parcela${abertas.length !== 1 ? 's' : ''} · ${formatCurrency(totalAberto)}</p></div>
+        </div>
+        <div class="cr-vc-list">${linhasAbertas}</div>
+      </section>` : `
+      <div style="padding:32px;text-align:center;color:var(--text-muted)">
+        <i class="fa-solid fa-circle-check" style="font-size:2rem;color:#16a34a;display:block;margin-bottom:8px"></i>
+        <strong style="color:var(--text)">Tudo em dia!</strong><br>
+        <span>Nenhuma parcela em aberto.</span>
+      </div>`}
+    `;
+
+    body.querySelectorAll("[data-action='baixar-vc']").forEach(btn => {
+      btn.addEventListener('click', () => {
+        const conta = todas.find(c => String(c.id) === btn.dataset.id);
+        if (!conta) return;
+        fechar();
+        abrirModalBaixaConta(conta);
+      });
+    });
+
+    // Footer com WhatsApp
+    let tel = (cliente.telefone || '').replace(/\D/g, '');
+    if (tel.length === 11 || tel.length === 10) tel = '55' + tel;
+    const waUrl = tel.length >= 12 && abertas.length
+      ? `https://wa.me/${tel}?text=${encodeURIComponent(_gerarMsgCobranca(abertas, totalAberto))}`
+      : null;
+
+    const footer = document.getElementById('crVCFooter');
+    if (footer) {
+      footer.innerHTML = `
+        ${waUrl
+          ? `<a href="${waUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-success">
+               <i class="fa-brands fa-whatsapp"></i> Enviar cobrança
+             </a>`
+          : abertas.length
+            ? `<button class="btn btn-secondary" type="button" disabled title="Telefone não cadastrado neste cliente">
+                 <i class="fa-brands fa-whatsapp"></i> Sem telefone
+               </button>`
+            : ''}
+        <button class="btn btn-light" type="button" id="fecharCrVCFooter2">Fechar</button>`;
+      document.getElementById('fecharCrVCFooter2')?.addEventListener('click', fechar);
+    }
+
+  } catch (err) {
+    const body = document.getElementById('crVCBody');
+    if (body) body.innerHTML = `<div class="module-feedback module-feedback--error">${escapeHtml(buildFriendlyError(err))}</div>`;
+  }
+}
+
 function mostrarPopoverBaixa(btn, conta) {
   document.getElementById('crStatusPopover')?.remove();
   const rect = btn.getBoundingClientRect();
@@ -402,19 +601,15 @@ function render() {
           </select>
         </div>
 
-        <div class="cr-filter-box cr-filter-box--cliente">
-          <select id="crCliente" class="input">
-            <option value="">Todos os clientes</option>
-            ${state.clientes
-              .map(
-                (cliente) => `
-              <option value="${cliente.id}" ${String(state.filtros.cliente_id) === String(cliente.id) ? 'selected' : ''}>
-                ${escapeHtml(cliente.nome)}
-              </option>
-            `
-              )
-              .join('')}
-          </select>
+        <div class="cr-filter-box cr-filter-box--cliente cr-combobox">
+          <input type="text" id="crClienteInput" class="input cr-combobox__input"
+            placeholder="Filtrar por cliente..." autocomplete="off"
+            value="${escapeHtml(state.clientes.find(c => String(c.id) === String(state.filtros.cliente_id))?.nome || '')}">
+          <input type="hidden" id="crCliente" value="${escapeHtml(String(state.filtros.cliente_id || ''))}">
+          <div class="cr-combobox__dropdown" id="crClienteDrop">
+            <div class="cr-combobox__opt" data-val="" data-lbl="Todos os clientes">Todos os clientes</div>
+            ${state.clientes.map(c => `<div class="cr-combobox__opt${String(state.filtros.cliente_id) === String(c.id) ? ' cr-combobox__opt--sel' : ''}" data-val="${c.id}" data-lbl="${escapeHtml(c.nome)}">${escapeHtml(c.nome)}</div>`).join('')}
+          </div>
         </div>
 
         <div class="cr-action-box">
@@ -573,7 +768,9 @@ function renderLinhas() {
 
         <td>
           <div class="table-primary">
-            <strong>${_highlight(conta.cliente_nome || 'Cliente não informado', termo)}</strong>
+            ${conta.cliente_id
+              ? `<button class="cr-cliente-link" type="button" data-action="visao-cliente-cr" data-id="${conta.cliente_id}" data-nome="${escapeHtml(conta.cliente_nome || '')}">${_highlight(conta.cliente_nome || 'Cliente não informado', termo)}</button>`
+              : `<strong>${_highlight(conta.cliente_nome || 'Cliente não informado', termo)}</strong>`}
             ${descParcela ? `<span class="cr-desc-parcela">${descParcela}</span>` : ''}
           </div>
         </td>
@@ -600,16 +797,9 @@ function renderLinhas() {
 
         <td class="text-right">
           <div class="table-actions">
-          ${
-            conta.cliente_id
-              ? `
-      <button class="btn-inline" type="button" data-action="historico-cliente-cr" data-id="${conta.cliente_id}">
-        <i class="fa-solid fa-user-clock"></i>
-        Cliente
-      </button>
-    `
-              : ''
-          }
+          ${conta.cliente_id
+              ? `<button class="btn-inline" type="button" data-action="visao-cliente-cr" data-id="${conta.cliente_id}" data-nome="${escapeHtml(conta.cliente_nome || '')}"><i class="fa-solid fa-user"></i> Cliente</button>`
+              : ''}
             <button class="btn-inline" type="button" data-action="detalhe-cr" data-id="${conta.id}">
               <i class="fa-solid fa-eye"></i>
               Detalhes
@@ -821,11 +1011,37 @@ function bindEventos() {
     });
   });
 
-  document.querySelectorAll("[data-action='historico-cliente-cr']").forEach((button) => {
+  document.querySelectorAll("[data-action='visao-cliente-cr']").forEach((button) => {
     button.addEventListener('click', async () => {
-      await abrirHistoricoCliente(button.dataset.id);
+      await abrirVisaoCliente(button.dataset.id, button.dataset.nome);
     });
   });
+
+  // Combobox de clientes pesquisável
+  const crInput = document.getElementById('crClienteInput');
+  const crDrop  = document.getElementById('crClienteDrop');
+  if (crInput && crDrop) {
+    crInput.addEventListener('focus', () => { crDrop.style.display = 'block'; });
+    crInput.addEventListener('input', () => {
+      const q = crInput.value.toLowerCase().trim();
+      crDrop.querySelectorAll('.cr-combobox__opt').forEach(opt => {
+        opt.style.display = !q || opt.dataset.lbl.toLowerCase().includes(q) ? '' : 'none';
+      });
+      crDrop.style.display = 'block';
+    });
+    crDrop.addEventListener('mousedown', (e) => {
+      const opt = e.target.closest('.cr-combobox__opt');
+      if (!opt) return;
+      e.preventDefault();
+      document.getElementById('crCliente').value = opt.dataset.val || '';
+      crInput.value = opt.dataset.val ? opt.dataset.lbl : '';
+      crDrop.style.display = 'none';
+      crDrop.querySelectorAll('.cr-combobox__opt').forEach(o => (o.style.display = ''));
+    });
+    document.addEventListener('click', (e) => {
+      if (!crInput.contains(e.target) && !crDrop.contains(e.target)) crDrop.style.display = 'none';
+    }, { once: false });
+  }
 
   document.querySelectorAll("[data-action='detalhe-cr']").forEach((button) => {
     button.addEventListener('click', async () => {
@@ -2543,6 +2759,103 @@ function injectContasReceberStyles() {
     .cr-venc-chip--vermelho { background: var(--danger-soft);  color: #b91c1c; }
     .cr-venc-chip--amarelo  { background: var(--warning-soft); color: #b45309; }
     .cr-venc-chip--cinza    { background: var(--surface-2);    color: var(--text-muted); }
+
+    /* ── Nome do cliente clicável ── */
+    .cr-cliente-link {
+      background: none; border: none; cursor: pointer; padding: 0;
+      color: var(--text); font-weight: 800; font-size: inherit; text-align: left;
+      font-family: inherit; transition: color .15s;
+    }
+    .cr-cliente-link:hover { color: var(--primary); text-decoration: underline; }
+
+    /* ── Combobox de clientes ── */
+    .cr-combobox { position: relative; }
+    .cr-combobox__input { width: 100%; }
+    .cr-combobox__dropdown {
+      display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 200;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,.14);
+      max-height: 220px; overflow-y: auto; margin-top: 4px;
+    }
+    .cr-combobox__opt {
+      padding: 8px 14px; cursor: pointer; font-size: .88rem; font-weight: 600;
+      color: var(--text); transition: background .1s;
+    }
+    .cr-combobox__opt:hover, .cr-combobox__opt--sel { background: var(--surface-2); }
+    .cr-combobox__opt--sel { color: var(--primary); font-weight: 800; }
+
+    /* ── Modal visão do cliente ── */
+    .cr-detail-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 9999;
+      display: flex; align-items: flex-start; justify-content: center;
+      padding: 24px 12px; overflow-y: auto;
+    }
+    .cr-detail-card {
+      background: var(--surface); border-radius: 18px; width: 100%; max-width: 680px;
+      box-shadow: 0 8px 40px rgba(0,0,0,.18); display: flex; flex-direction: column;
+    }
+    .cr-detail-header {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      padding: 20px 24px 0; gap: 12px;
+    }
+    .cr-detail-header h3 { margin: 0; font-size: 1.2rem; font-weight: 900; }
+    .cr-detail-eyebrow {
+      display: block; font-size: .7rem; font-weight: 800; letter-spacing: .06em;
+      text-transform: uppercase; color: var(--primary); margin-bottom: 2px;
+    }
+    .cr-detail-body { padding: 16px 24px; overflow-y: auto; max-height: 62vh; }
+    .cr-detail-footer {
+      display: flex; gap: 10px; justify-content: flex-end;
+      padding: 14px 24px 20px; border-top: 1px solid var(--border);
+    }
+    .cr-detail-summary {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+    }
+    .cr-detail-summary article {
+      background: var(--surface-2); border-radius: 12px; padding: 10px 14px;
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .cr-detail-summary article span { font-size: .72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
+    .cr-detail-summary article strong { font-size: 1.05rem; font-weight: 900; }
+    .cr-detail-summary article small { font-size: .72rem; color: var(--text-muted); }
+    .cr-detail-summary__main { background: var(--primary-pale, color-mix(in srgb,var(--primary) 12%,transparent)) !important; }
+    .cr-detail-section { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+    .cr-detail-section__header {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      padding: 12px 16px; border-bottom: 1px solid var(--border);
+    }
+    .cr-detail-section__header h4 { margin: 0; font-size: .95rem; font-weight: 900; }
+    .cr-detail-section__header p { margin: 2px 0 0; font-size: .76rem; color: var(--text-muted); }
+    .cr-vc-list { display: flex; flex-direction: column; }
+    .cr-vc-row {
+      display: grid; grid-template-columns: 40px 1fr auto auto;
+      gap: 10px; align-items: center; padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .cr-vc-row:last-child { border-bottom: none; }
+    .cr-vc-row__info strong { font-size: .88rem; font-weight: 800; display: block; }
+    .cr-vc-row__info small { color: var(--text-muted); font-size: .75rem; }
+    .cr-vc-row__valor { text-align: right; }
+    .cr-vc-row__valor strong { display: block; font-size: .94rem; font-weight: 800; }
+    .cr-vc-progress__label {
+      display: flex; justify-content: space-between;
+      font-size: .78rem; font-weight: 700; margin-bottom: 4px; color: var(--text-muted);
+    }
+    .cr-vc-progress__label span:first-child { color: var(--text); font-weight: 800; }
+    .cr-vc-progress__bar { background: var(--surface-2); border-radius: 20px; height: 8px; overflow: hidden; }
+    .cr-vc-progress__fill { height: 100%; background: var(--primary); border-radius: 20px; transition: width .3s ease; }
+
+    @media (max-width: 520px) {
+      .cr-detail-summary { grid-template-columns: 1fr 1fr; }
+      .cr-vc-row { grid-template-columns: 36px 1fr; grid-template-rows: auto auto; }
+      .cr-vc-row__acao { grid-column: 2; }
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) .cr-combobox__dropdown { box-shadow: 0 4px 24px rgba(0,0,0,.5); }
+      :root:not([data-theme="light"]) .cr-detail-card { box-shadow: 0 8px 40px rgba(0,0,0,.5); }
+    }
+    :root[data-theme="dark"] .cr-combobox__dropdown { box-shadow: 0 4px 24px rgba(0,0,0,.5); }
+    :root[data-theme="dark"] .cr-detail-card { box-shadow: 0 8px 40px rgba(0,0,0,.5); }
 
     /* ── Descrição + parcela abaixo do cliente ── */
     .cr-desc-parcela {
