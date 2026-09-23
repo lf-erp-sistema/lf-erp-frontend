@@ -727,7 +727,8 @@ function render() {
           </div>
 
           <div class="cr-filter-box cr-filter-box--cliente cr-combobox">
-            <input type="text" id="crClienteInput" class="input cr-combobox__input"
+            <i class="fa-solid fa-user cr-combobox__icon"></i>
+            <input type="text" id="crClienteInput" class="cr-combobox__input"
               placeholder="Filtrar por cliente..." autocomplete="off"
               value="${escapeHtml(state.clientes.find(c => String(c.id) === String(state.filtros.cliente_id))?.nome || '')}">
             <input type="hidden" id="crCliente" value="${escapeHtml(String(state.filtros.cliente_id || ''))}">
@@ -2383,7 +2384,32 @@ function injectContasReceberStyles() {
     }
 
     .cr-filter-box--cliente {
-      min-width: 200px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 0 14px;
+      background: var(--surface);
+      min-height: 44px;
+      min-width: 220px;
+    }
+
+    .cr-combobox__icon {
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      flex-shrink: 0;
+    }
+
+    .cr-filter-box--cliente .cr-combobox__input {
+      border: none;
+      outline: none;
+      background: transparent;
+      color: var(--text);
+      font-size: 0.94rem;
+      width: 100%;
+      padding: 0;
+      height: 100%;
     }
 
     .cr-primary-actions {
