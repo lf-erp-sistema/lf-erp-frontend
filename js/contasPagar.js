@@ -324,7 +324,12 @@ function render() {
         </div>
 
         <div class="cp-action-box">
-          <button class="btn btn-primary" id="btnFiltrarContasPagar" type="button">
+          <button class="btn btn-primary" id="btnNovaContaPagar" type="button">
+            <i class="fa-solid fa-plus"></i>
+            Nova Conta
+          </button>
+
+          <button class="btn btn-secondary" id="btnFiltrarContasPagar" type="button">
             <i class="fa-solid fa-filter"></i>
             Filtrar
           </button>
@@ -520,6 +525,10 @@ function bindEventos() {
   const busca = document.getElementById('cpBusca');
   const status = document.getElementById('cpStatus');
   const fornecedor = document.getElementById('cpFornecedor');
+
+  document.getElementById('btnNovaContaPagar')?.addEventListener('click', () => {
+    abrirModalNovaContaPagar();
+  });
 
   btnAtualizar?.addEventListener('click', async () => {
     await recarregar();
@@ -1028,6 +1037,321 @@ function renderOrigemCompra(data) {
     if (event.target === modal) modal.remove();
   });
 }
+
+// ─── Modal Nova Conta a Pagar ────────────────────────────────────────────────
+
+function abrirModalNovaContaPagar() {
+  const modalExistente = document.getElementById('cpNovaContaModal');
+  if (modalExistente) modalExistente.remove();
+
+  const hoje = todayFortaleza();
+
+  const fornecedoresOptions = state.fornecedores
+    .map(f => `<option value="${f.id}">${escapeHtml(f.nome)}</option>`)
+    .join('');
+
+  const modal = document.createElement('div');
+  modal.id = 'cpNovaContaModal';
+  modal.className = 'modal-overlay cp-detail-overlay';
+  modal.innerHTML = `
+    <div class="modal-card cp-detail-card cp-nova-conta-card">
+      <div class="cp-detail-header">
+        <div>
+          <span class="cp-detail-eyebrow">Conta a pagar</span>
+          <h3>Nova conta manual</h3>
+          <p>Registre uma conta sem gerar compra ou movimentar estoque.</p>
+        </div>
+        <button class="icon-button" type="button" id="cpNovaContaFechar"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="cp-detail-body">
+        <div class="form-grid">
+
+          <div class="form-group">
+            <label>Fornecedor</label>
+            <select id="cpNcFornecedor" class="input">
+              <option value="">Avulso / sem fornecedor</option>
+              ${fornecedoresOptions}
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Nome manual</label>
+            <input type="text" id="cpNcNome" class="input" placeholder="Nome do fornecedor avulso" />
+          </div>
+
+          <div class="form-group form-group--full">
+            <label>Descrição</label>
+            <input type="text" id="cpNcDescricao" class="input" placeholder="Ex: Aluguel, Material de limpeza..." />
+          </div>
+
+          <div class="form-group">
+            <label>Valor (R$)</label>
+            <input type="number" id="cpNcValor" class="input" step="0.01" min="0.01" inputmode="decimal" placeholder="0,00" />
+          </div>
+
+          <div class="form-group">
+            <label>1º vencimento</label>
+            <input type="date" id="cpNcVencimento" class="input" value="${hoje}" />
+          </div>
+
+          <div class="form-group">
+            <label>Forma de pagamento</label>
+            <select id="cpNcForma" class="input">
+              <option value="">Não informado</option>
+              <option value="dinheiro">Dinheiro</option>
+              <option value="pix">PIX</option>
+              <option value="boleto">Boleto</option>
+              <option value="cartao_credito">Cartão de Crédito</option>
+              <option value="cartao_debito">Cartão de Débito</option>
+              <option value="transferencia">Transferência</option>
+              <option value="cheque">Cheque</option>
+            </select>
+          </div>
+
+          <div class="form-group form-group--full">
+            <label>Observação</label>
+            <textarea id="cpNcObservacao" class="input" rows="2" placeholder="Observações..."></textarea>
+          </div>
+
+          <!-- Recorrência -->
+          <div class="form-group form-group--full cp-recorrencia-group">
+            <label class="cp-recorrencia-label">Recorrência</label>
+            <div class="cp-recorrencia-tabs" id="cpNcRecorrenciaTabs">
+              <button type="button" class="cp-recorrencia-tab cp-recorrencia-tab--active" data-rec="nao_recorrente">
+                <i class="fa-solid fa-circle-minus"></i>
+                Não recorrente
+              </button>
+              <button type="button" class="cp-recorrencia-tab" data-rec="parcelar">
+                <i class="fa-solid fa-layer-group"></i>
+                Parcelar ou repetir
+              </button>
+              <button type="button" class="cp-recorrencia-tab" data-rec="fixa_mensal">
+                <i class="fa-solid fa-calendar-days"></i>
+                Fixa mensal
+              </button>
+            </div>
+          </div>
+
+          <!-- Sub-painel parcelamento -->
+          <div class="form-group form-group--full cp-parcela-panel" id="cpNcParcelaPanel" style="display:none">
+            <div class="cp-parcela-inner">
+
+              <div id="cpNcParcelaIniBox">
+                <label>Parcela inicial</label>
+                <div class="cp-parcela-spinner">
+                  <button type="button" class="cp-spin-btn" id="cpNcParcelaIniDec"><i class="fa-solid fa-minus"></i></button>
+                  <span id="cpNcParcelaIniVal">1</span>
+                  <button type="button" class="cp-spin-btn" id="cpNcParcelaIniInc"><i class="fa-solid fa-plus"></i></button>
+                </div>
+                <small>Informe a partir de qual parcela está cadastrando (cliente já pode ter pago as anteriores).</small>
+              </div>
+
+              <div>
+                <label>Quantidade total</label>
+                <div class="cp-parcela-spinner">
+                  <button type="button" class="cp-spin-btn" id="cpNcQtdDec"><i class="fa-solid fa-minus"></i></button>
+                  <span id="cpNcQtdVal">2</span>
+                  <button type="button" class="cp-spin-btn" id="cpNcQtdInc"><i class="fa-solid fa-plus"></i></button>
+                </div>
+                <small id="cpNcQtdHint">Total de parcelas da dívida.</small>
+              </div>
+
+              <div>
+                <label>Periodicidade</label>
+                <select id="cpNcPeriodicidade" class="input">
+                  <option value="30">Mensal (30 dias)</option>
+                  <option value="15">Quinzenal (15 dias)</option>
+                  <option value="7">Semanal (7 dias)</option>
+                  <option value="60">Bimestral (60 dias)</option>
+                  <option value="90">Trimestral (90 dias)</option>
+                </select>
+              </div>
+
+              <!-- Tipo do valor — só para parcelar -->
+              <div id="cpNcTipoValorBox">
+                <label>O valor informado é:</label>
+                <div class="cp-tipo-valor-tabs" id="cpNcTipoValorTabs">
+                  <button type="button" class="cp-tipo-btn cp-tipo-btn--active" data-tipo="parcela">
+                    Valor por parcela
+                  </button>
+                  <button type="button" class="cp-tipo-btn" data-tipo="total">
+                    Total da dívida
+                  </button>
+                </div>
+                <small id="cpNcTipoValorHint">O sistema manterá o valor informado por parcela.</small>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="cp-detail-footer">
+        <button class="btn btn-primary" type="button" id="cpNcSalvar">
+          <i class="fa-solid fa-floppy-disk"></i> Salvar
+        </button>
+        <button class="btn btn-light" type="button" id="cpNcCancelar">Cancelar</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  // Estado local do modal
+  let recorrencia = 'nao_recorrente';
+  let tipoValor   = 'parcela';
+  let parcIni     = 1;
+  let qtd         = 2;
+
+  function atualizarHints() {
+    const valorStr  = document.getElementById('cpNcValor')?.value || '';
+    const valorNum  = parseFloat(valorStr) || 0;
+    const qtdEl     = document.getElementById('cpNcQtdVal');
+    const hintEl    = document.getElementById('cpNcQtdHint');
+    const tipoHint  = document.getElementById('cpNcTipoValorHint');
+    const fmtBRL    = v => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+    if (qtdEl) qtdEl.textContent = qtd;
+
+    if (recorrencia === 'fixa_mensal') {
+      if (hintEl) hintEl.textContent = `Serão criados ${qtd} títulos mensais independentes.`;
+    } else {
+      const restantes = qtd - parcIni + 1;
+      if (hintEl) hintEl.textContent = `Serão cadastradas ${restantes} parcela(s) (da ${parcIni} até ${qtd}).`;
+    }
+
+    if (tipoHint) {
+      if (tipoValor === 'total' && valorNum > 0 && qtd > 1) {
+        const valParcela = Number((valorNum / qtd).toFixed(2));
+        tipoHint.textContent = `O sistema dividirá ${fmtBRL(valorNum)} em ${qtd} parcelas de ~${fmtBRL(valParcela)}.`;
+      } else {
+        tipoHint.textContent = 'O sistema manterá o valor informado por parcela.';
+      }
+    }
+  }
+
+  // Tabs de recorrência
+  modal.querySelectorAll('.cp-recorrencia-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      modal.querySelectorAll('.cp-recorrencia-tab').forEach(b => b.classList.remove('cp-recorrencia-tab--active'));
+      btn.classList.add('cp-recorrencia-tab--active');
+      recorrencia = btn.dataset.rec;
+
+      const panel  = document.getElementById('cpNcParcelaPanel');
+      const iniBox = document.getElementById('cpNcParcelaIniBox');
+      const tipoBox= document.getElementById('cpNcTipoValorBox');
+
+      if (recorrencia === 'nao_recorrente') {
+        panel.style.display  = 'none';
+      } else {
+        panel.style.display  = 'block';
+        // Parcela inicial: só faz sentido em "parcelar"
+        if (iniBox) iniBox.style.display = recorrencia === 'parcelar' ? 'block' : 'none';
+        // Tipo de valor: só faz sentido em "parcelar"
+        if (tipoBox) tipoBox.style.display = recorrencia === 'parcelar' ? 'block' : 'none';
+        if (recorrencia === 'fixa_mensal') {
+          qtd = qtd < 2 ? 12 : qtd;
+          atualizarHints();
+        }
+      }
+      atualizarHints();
+    });
+  });
+
+  // Tabs de tipo de valor
+  modal.querySelectorAll('.cp-tipo-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      modal.querySelectorAll('.cp-tipo-btn').forEach(b => b.classList.remove('cp-tipo-btn--active'));
+      btn.classList.add('cp-tipo-btn--active');
+      tipoValor = btn.dataset.tipo;
+      atualizarHints();
+    });
+  });
+
+  // Spinners
+  function spinHandler(idDec, idInc, get, set, min, max) {
+    document.getElementById(idDec)?.addEventListener('click', () => { set(Math.max(min, get() - 1)); atualizarHints(); });
+    document.getElementById(idInc)?.addEventListener('click', () => { set(Math.min(max, get() + 1)); atualizarHints(); });
+  }
+  spinHandler('cpNcParcelaIniDec', 'cpNcParcelaIniInc',
+    () => parcIni, v => { parcIni = v; document.getElementById('cpNcParcelaIniVal').textContent = v; },
+    1, 360);
+  spinHandler('cpNcQtdDec', 'cpNcQtdInc',
+    () => qtd, v => { qtd = Math.max(parcIni, v); document.getElementById('cpNcQtdVal').textContent = Math.max(parcIni, v); qtd = Math.max(parcIni, v); },
+    2, 360);
+
+  document.getElementById('cpNcValor')?.addEventListener('input', atualizarHints);
+
+  // Fechar
+  document.getElementById('cpNovaContaFechar')?.addEventListener('click', () => modal.remove());
+  document.getElementById('cpNcCancelar')?.addEventListener('click', () => modal.remove());
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+
+  // Salvar
+  document.getElementById('cpNcSalvar')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    if (btn.disabled) return;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Salvando...';
+    try {
+      await salvarNovaContaPagar(modal, { recorrencia, tipoValor, parcIni, qtd });
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Salvar';
+    }
+  });
+}
+
+async function salvarNovaContaPagar(modal, { recorrencia, tipoValor, parcIni, qtd }) {
+  const fornecedorId  = document.getElementById('cpNcFornecedor')?.value || '';
+  const nomeManual    = document.getElementById('cpNcNome')?.value?.trim() || '';
+  const descricao     = document.getElementById('cpNcDescricao')?.value?.trim() || '';
+  const valorStr      = document.getElementById('cpNcValor')?.value || '';
+  const vencimento    = document.getElementById('cpNcVencimento')?.value || '';
+  const forma         = document.getElementById('cpNcForma')?.value || '';
+  const observacao    = document.getElementById('cpNcObservacao')?.value?.trim() || '';
+  const periodicidade = parseInt(document.getElementById('cpNcPeriodicidade')?.value || '30', 10);
+
+  const valorNum = parseFloat(valorStr);
+  if (!valorStr || !Number.isFinite(valorNum) || valorNum <= 0) {
+    showMessage('Informe um valor válido.', 'error'); return;
+  }
+  if (!vencimento) {
+    showMessage('Informe a data do 1º vencimento.', 'error'); return;
+  }
+  if (!descricao) {
+    showMessage('Informe uma descrição.', 'error'); return;
+  }
+
+  try {
+    const resp = await api.criarContaPagarManual({
+      fornecedor_id:  fornecedorId || null,
+      fornecedor_nome: nomeManual || undefined,
+      descricao,
+      observacao,
+      forma_pagamento: forma || undefined,
+      valor:          valorNum,
+      data_vencimento: vencimento,
+      recorrencia,
+      tipo_valor:     tipoValor,
+      parcela_inicial: parcIni,
+      quantidade:     recorrencia === 'nao_recorrente' ? 1 : qtd,
+      periodicidade
+    });
+
+    const n = resp?.ids?.length || 1;
+    showMessage(`${n} título(s) criado(s) com sucesso.`, 'success');
+    modal.remove();
+    await recarregar();
+  } catch (err) {
+    console.error('[cp-nova-conta] Erro:', err);
+    showMessage(buildFriendlyError(err), 'error');
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
 
 function renderErro(message) {
   const container = document.getElementById('contasPagarContainer');
@@ -1584,6 +1908,130 @@ function injectContasPagarStyles() {
       .cp-action-box {
         grid-template-columns: 1fr;
       }
+    }
+
+    /* ── Nova Conta a Pagar ── */
+    .cp-nova-conta-card { width: min(100%, 660px); }
+
+    .cp-recorrencia-group { margin-top: 4px; }
+    .cp-recorrencia-label {
+      display: block;
+      font-size: 0.76rem;
+      font-weight: 800;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      margin-bottom: 8px;
+    }
+    .cp-recorrencia-tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .cp-recorrencia-tab {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 9px 16px;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface);
+      color: var(--text-muted);
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: border-color .15s, background .15s, color .15s;
+    }
+    .cp-recorrencia-tab:hover { border-color: var(--primary); color: var(--primary); }
+    .cp-recorrencia-tab--active {
+      border-color: var(--primary);
+      background: var(--primary-soft);
+      color: var(--primary-hover);
+    }
+
+    .cp-parcela-panel {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+    }
+    .cp-parcela-inner {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+    .cp-parcela-inner label {
+      display: block;
+      font-size: 0.76rem;
+      font-weight: 800;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .cp-parcela-inner small {
+      display: block;
+      color: var(--text-muted);
+      font-size: 0.74rem;
+      margin-top: 6px;
+      font-weight: 600;
+      line-height: 1.4;
+    }
+
+    .cp-parcela-spinner {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface);
+      padding: 6px 12px;
+      width: fit-content;
+    }
+    .cp-parcela-spinner span {
+      font-size: 1.15rem;
+      font-weight: 900;
+      min-width: 24px;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+    .cp-spin-btn {
+      width: 28px;
+      height: 28px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface-2);
+      color: var(--text);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.72rem;
+      transition: background .12s;
+    }
+    .cp-spin-btn:hover { background: var(--primary-soft); color: var(--primary); }
+
+    .cp-tipo-valor-tabs { display: flex; gap: 8px; margin-top: 4px; }
+    .cp-tipo-btn {
+      padding: 7px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface);
+      color: var(--text-muted);
+      font-size: 0.83rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: border-color .12s, background .12s, color .12s;
+    }
+    .cp-tipo-btn:hover { border-color: var(--primary); color: var(--primary); }
+    .cp-tipo-btn--active {
+      border-color: var(--primary);
+      background: var(--primary-soft);
+      color: var(--primary-hover);
+    }
+
+    @media (max-width: 600px) {
+      .cp-parcela-inner { grid-template-columns: 1fr; }
+      .cp-recorrencia-tabs { flex-direction: column; }
     }
 
     .lf-pagination {

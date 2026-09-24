@@ -879,6 +879,13 @@ async function pagarContaPagar(id, payload = {}) {
   });
 }
 
+async function criarContaPagarManual(payload = {}) {
+  return request('/contas-pagar/manual', {
+    method: 'POST',
+    body: { empresa: getEmpresaNome(), empresa_id: getEmpresaId(), ...payload }
+  });
+}
+
 async function getOrigemCompraContaPagar(id) {
   return request(`/contas-pagar/origem-compra/${id}`, {
     method: 'GET',
@@ -1514,6 +1521,7 @@ const api = {
   getContaPagarDetalhe,
   getContasPagarFornecedores,
   pagarContaPagar,
+  criarContaPagarManual,
   getOrigemCompraContaPagar,
 
   getFluxoCaixa,
