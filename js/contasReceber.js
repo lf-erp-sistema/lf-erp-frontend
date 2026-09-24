@@ -310,7 +310,7 @@ function abrirModalBaixaLote(ids) {
   modal.id = 'crLoteModal';
   modal.className = 'modal-overlay cr-detail-overlay';
   modal.innerHTML = `
-    <div class="modal-card cr-detail-card" style="max-width:420px">
+    <div class="modal-card cr-detail-card cr-bx-card">
       <div class="cr-detail-header">
         <div>
           <span class="cr-detail-eyebrow">Baixa em lote</span>
@@ -318,23 +318,34 @@ function abrirModalBaixaLote(ids) {
         </div>
         <button class="icon-button" type="button" id="fecharCrLote"><i class="fa-solid fa-xmark"></i></button>
       </div>
-      <div class="cr-detail-body">
-        <div class="form-grid">
-          <div class="form-group">
-            <label>Data do recebimento</label>
-            <input type="date" id="crLoteData" class="input" value="${hoje}">
-          </div>
-          <div class="form-group">
-            <label>Forma de pagamento</label>
-            <select id="crLoteForma" class="input">
-              <option value="dinheiro">Dinheiro</option>
-              <option value="pix">PIX</option>
-              <option value="cartao_debito">Cartão Débito</option>
-              <option value="cartao_credito">Cartão Crédito</option>
-              <option value="transferencia">Transferência</option>
-              <option value="boleto">Boleto</option>
-              <option value="promissoria">Promissória</option>
-            </select>
+      <div class="cr-detail-body cr-bx-body">
+        <div class="cr-bx-section">
+          <p class="cr-bx-section-title">Recebimento em Lote</p>
+          <div class="cr-bx-card-group">
+            <div class="cr-bx-cells-2col">
+              <div class="cr-bx-cell">
+                <span class="cr-bx-cell-ico cr-bx-cell-ico--blue"><i class="fa-solid fa-calendar-days"></i></span>
+                <div class="cr-bx-cell-content">
+                  <label class="cr-bx-lbl" for="crLoteData">Data</label>
+                  <input type="date" id="crLoteData" class="cr-bx-cell-input" value="${hoje}">
+                </div>
+              </div>
+              <div class="cr-bx-cell">
+                <span class="cr-bx-cell-ico"><i class="fa-solid fa-credit-card"></i></span>
+                <div class="cr-bx-cell-content">
+                  <label class="cr-bx-lbl" for="crLoteForma">Forma</label>
+                  <select id="crLoteForma" class="cr-bx-cell-input">
+                    <option value="dinheiro">Dinheiro</option>
+                    <option value="pix">PIX</option>
+                    <option value="cartao_debito">Cartão Débito</option>
+                    <option value="cartao_credito">Cartão Crédito</option>
+                    <option value="transferencia">Transferência</option>
+                    <option value="boleto">Boleto</option>
+                    <option value="promissoria">Promissória</option>
+                  </select>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1543,98 +1554,62 @@ function abrirModalBaixaConta(conta) {
   modal.className = 'modal-overlay cr-detail-overlay';
 
   modal.innerHTML = `
-    <div class="modal-card cr-detail-card">
+    <div class="modal-card cr-detail-card cr-bx-card">
       <div class="cr-detail-header">
         <div>
           <span class="cr-detail-eyebrow">Recebimento</span>
           <h3>Baixar conta #${escapeHtml(conta.id)}</h3>
           <p>${escapeHtml(conta.cliente_nome || 'Cliente não informado')}</p>
         </div>
-
         <button class="icon-button" type="button" id="fecharCrBaixa">
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
 
-      <div class="cr-detail-body">
-        <section class="cr-detail-summary">
-          <article class="cr-detail-summary__main">
-            <span>Saldo atual</span>
-            <strong>${formatCurrency(valorAtual)}</strong>
-            <small>Informe o valor recebido agora</small>
-          </article>
-
-          <article>
-            <span>Vencimento</span>
-            <strong>${formatDate(conta.data_vencimento)}</strong>
-          </article>
-
-          <article>
-            <span>Status</span>
-            <strong>${getStatusLabel(normalizarStatus(conta.status))}</strong>
-          </article>
-
-          <article>
-            <span>Origem</span>
-            <strong>${conta.venda_id ? `Venda #${escapeHtml(conta.venda_id)}` : 'Manual'}</strong>
-          </article>
-        </section>
-
-        <div class="form-grid">
-          <div class="form-group">
-            <label>Valor recebido</label>
-            <input
-              type="number"
-              step="0.01"
-              min="0.01"
-              max="${valorAtual}"
-              id="crBaixaValor"
-              class="input"
-              inputmode="decimal"
-              value="${valorAtual}"
-            />
-            <small>Para baixa parcial, informe somente o valor recebido.</small>
-          </div>
-
-          <div class="form-group">
-            <label>Data do recebimento</label>
-            <input
-              type="date"
-              id="crBaixaData"
-              class="input"
-              value="${hojeISO}"
-            />
-            <small>Formato correto: dia/mês/ano no calendário.</small>
-          </div>
-
-          <div class="form-group">
-            <label>Forma de pagamento</label>
-            <select id="crBaixaForma" class="input">
-              <option value="">Não informado</option>
-              <option value="dinheiro">Dinheiro</option>
-              <option value="pix">PIX</option>
-              <option value="cartao_credito">Cartão de Crédito</option>
-              <option value="cartao_debito">Cartão de Débito</option>
-              <option value="boleto">Boleto</option>
-              <option value="transferencia">Transferência</option>
-              <option value="cheque">Cheque</option>
-              <option value="crediario">Crediário</option>
-            </select>
-          </div>
-
-          <div class="form-group form-group--full">
-            <label>Observação</label>
-            <textarea id="crBaixaObs" class="input" rows="2" placeholder="Observação do recebimento (opcional)" maxlength="200"></textarea>
+      <div class="cr-detail-body cr-bx-body">
+        <div class="cr-bx-section">
+          <p class="cr-bx-section-title">Recebimento</p>
+          <div class="cr-bx-card-group">
+            <div class="cr-bx-cells-2col">
+              <div class="cr-bx-cell">
+                <span class="cr-bx-cell-ico cr-bx-cell-ico--green"><i class="fa-solid fa-brazilian-real-sign"></i></span>
+                <div class="cr-bx-cell-content">
+                  <label class="cr-bx-lbl" for="crBaixaValor">Valor <span class="cr-bx-req">*</span></label>
+                  <input type="number" step="0.01" min="0.01" max="${valorAtual}" id="crBaixaValor" class="cr-bx-cell-input cr-bx-valor" inputmode="decimal" value="${valorAtual}" />
+                </div>
+              </div>
+              <div class="cr-bx-cell">
+                <span class="cr-bx-cell-ico cr-bx-cell-ico--blue"><i class="fa-solid fa-calendar-days"></i></span>
+                <div class="cr-bx-cell-content">
+                  <label class="cr-bx-lbl" for="crBaixaData">Data <span class="cr-bx-req">*</span></label>
+                  <input type="date" id="crBaixaData" class="cr-bx-cell-input" value="${hojeISO}" />
+                </div>
+              </div>
+            </div>
+            <div class="cr-bx-cell">
+              <span class="cr-bx-cell-ico"><i class="fa-solid fa-credit-card"></i></span>
+              <div class="cr-bx-cell-content">
+                <label class="cr-bx-lbl" for="crBaixaForma">Forma de pagamento</label>
+                <select id="crBaixaForma" class="cr-bx-cell-input">
+                  <option value="">Não informado</option>
+                  <option value="dinheiro">Dinheiro</option>
+                  <option value="pix">PIX</option>
+                  <option value="cartao_credito">Cartão de Crédito</option>
+                  <option value="cartao_debito">Cartão de Débito</option>
+                  <option value="boleto">Boleto</option>
+                  <option value="transferencia">Transferência</option>
+                  <option value="cheque">Cheque</option>
+                  <option value="crediario">Crediário</option>
+                </select>
+              </div>
+            </div>
           </div>
         </div>
 
-        <section class="cr-detail-note">
-          <span>Importante</span>
-          <p>
-            Se o valor recebido for menor que o saldo atual, a conta ficará como Parcial.
-            Se for igual ao saldo, será marcada como Recebida.
-          </p>
-        </section>
+        <div class="cr-bx-section">
+          <p class="cr-bx-section-title">Observação</p>
+          <textarea id="crBaixaObs" class="cr-bx-obs" rows="2" placeholder="Observação do recebimento (opcional)" maxlength="200"></textarea>
+        </div>
       </div>
 
       <div class="cr-detail-footer">
@@ -1642,7 +1617,6 @@ function abrirModalBaixaConta(conta) {
           <i class="fa-solid fa-check"></i>
           Confirmar recebimento
         </button>
-
         <button class="btn btn-light" type="button" id="cancelarCrBaixa">
           Cancelar
         </button>
@@ -3548,6 +3522,30 @@ function _injectCrNcStyles() {
       .cr-nc-cells-2col { grid-template-columns: 1fr; }
       .cr-nc-cells-2col .cr-nc-cell:first-child { border-right: none; border-bottom: 1px solid var(--border); }
     }
+
+    /* ── Baixa modal (cr-bx-*) ── */
+    .cr-bx-card { width: min(96vw, 480px) !important; }
+    .cr-bx-body { overflow-y: auto; }
+    .cr-bx-section { padding: 16px 20px; }
+    .cr-bx-section-title { font-size: 0.7rem; font-weight: 900; color: var(--text-muted); text-transform: uppercase; letter-spacing: .08em; margin: 0 0 8px; }
+    .cr-bx-card-group { border: 1px solid var(--border); border-radius: 18px; overflow: hidden; background: var(--surface); }
+    .cr-bx-cell { display: flex; align-items: center; gap: 14px; padding: 13px 16px; border-bottom: 1px solid var(--border); background: var(--surface); transition: background .1s; }
+    .cr-bx-cell:last-child { border-bottom: none; }
+    .cr-bx-cell:focus-within { background: var(--surface-2, rgba(0,0,0,.025)); }
+    .cr-bx-cells-2col { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--border); }
+    .cr-bx-cells-2col:last-child { border-bottom: none; }
+    .cr-bx-cells-2col .cr-bx-cell { border-bottom: none; }
+    .cr-bx-cells-2col .cr-bx-cell:first-child { border-right: 1px solid var(--border); }
+    .cr-bx-cell-ico { width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 0.88rem; background: var(--surface-2); color: var(--text-muted); }
+    .cr-bx-cell-ico--green { background: rgba(22,163,74,.1); color: #16a34a; }
+    .cr-bx-cell-ico--blue { background: rgba(37,99,235,.1); color: #2563eb; }
+    .cr-bx-cell-content { flex: 1; min-width: 0; }
+    .cr-bx-lbl { display: block; font-size: 0.67rem; font-weight: 900; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 2px; }
+    .cr-bx-req { color: #dc2626; }
+    .cr-bx-cell-input { border: none !important; outline: none !important; background: transparent !important; padding: 0 !important; font-size: 0.93rem; font-weight: 600; color: var(--text); width: 100%; font-family: inherit; -webkit-appearance: none; appearance: none; }
+    select.cr-bx-cell-input { cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat !important; background-position: right 0 center !important; padding-right: 16px !important; }
+    .cr-bx-valor { font-size: 1.2rem !important; font-weight: 800 !important; }
+    .cr-bx-obs { width: 100%; resize: none; font-size: 0.9rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; font-family: inherit; color: var(--text); box-sizing: border-box; }
   `;
   document.head.appendChild(s);
 }

@@ -254,6 +254,45 @@ function injectLancamentosStyles() {
   document.head.appendChild(s);
 }
 
+function _injectLfStyles() {
+  if (document.getElementById('lf-nc-styles')) return;
+  const s = document.createElement('style');
+  s.id = 'lf-nc-styles';
+  s.textContent = `
+    .lf-nc-card { width: min(96vw, 560px) !important; max-height: 92vh; }
+    .lf-nc-body { overflow-y: auto; }
+    .lf-nc-section { padding: 16px 20px 0; }
+    .lf-nc-section:last-child { padding-bottom: 20px; }
+    .lf-nc-section-title { font-size: 0.7rem; font-weight: 900; color: var(--text-muted); text-transform: uppercase; letter-spacing: .08em; margin: 0 0 8px; }
+    .lf-nc-card-group { border: 1px solid var(--border); border-radius: 18px; overflow: hidden; background: var(--surface); }
+    .lf-nc-cell { display: flex; align-items: center; gap: 14px; padding: 13px 16px; border-bottom: 1px solid var(--border); background: var(--surface); transition: background .1s; }
+    .lf-nc-cell:last-child { border-bottom: none; }
+    .lf-nc-cell:focus-within { background: var(--surface-2, rgba(0,0,0,.025)); }
+    .lf-nc-cells-2col { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--border); }
+    .lf-nc-cells-2col:last-child { border-bottom: none; }
+    .lf-nc-cells-2col .lf-nc-cell { border-bottom: none; }
+    .lf-nc-cells-2col .lf-nc-cell:first-child { border-right: 1px solid var(--border); }
+    .lf-nc-cell-ico { width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 0.88rem; background: var(--surface-2); color: var(--text-muted); }
+    .lf-nc-cell-ico--green { background: rgba(22,163,74,.1); color: #16a34a; }
+    .lf-nc-cell-ico--blue { background: rgba(37,99,235,.1); color: #2563eb; }
+    .lf-nc-cell-ico--red { background: rgba(220,38,38,.1); color: #dc2626; }
+    .lf-nc-cell-ico--purple { background: rgba(124,58,237,.1); color: #7c3aed; }
+    .lf-nc-cell-ico--orange { background: rgba(234,88,12,.1); color: #ea580c; }
+    .lf-nc-cell-content { flex: 1; min-width: 0; }
+    .lf-nc-lbl { display: block; font-size: 0.67rem; font-weight: 900; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 2px; }
+    .lf-nc-req { color: #dc2626; }
+    .lf-nc-cell-input { border: none !important; outline: none !important; background: transparent !important; padding: 0 !important; font-size: 0.93rem; font-weight: 600; color: var(--text); width: 100%; font-family: inherit; -webkit-appearance: none; appearance: none; }
+    select.lf-nc-cell-input { cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat !important; background-position: right 0 center !important; padding-right: 16px !important; }
+    .lf-nc-obs { width: 100%; resize: none; font-size: 0.9rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; font-family: inherit; color: var(--text); box-sizing: border-box; }
+    @media (max-width: 600px) {
+      .lf-nc-section { padding: 14px 16px 0; }
+      .lf-nc-cells-2col { grid-template-columns: 1fr; }
+      .lf-nc-cells-2col .lf-nc-cell:first-child { border-right: none; border-bottom: 1px solid var(--border); }
+    }
+  `;
+  document.head.appendChild(s);
+}
+
 // ─── Render ───────────────────────────────────────────────────────────────────
 
 export async function initLancamentosModule() {
@@ -537,7 +576,7 @@ function renderLinha(item) {
 function renderModal() {
   return `
     <div class="modal-overlay hidden" id="lfModal">
-      <div class="modal-card" style="max-width:520px;width:100%">
+      <div class="modal-card lf-nc-card" style="max-width:520px;width:100%">
         <div class="modal-card__header">
           <h3 id="lfModalTitulo">Novo Lançamento</h3>
           <button class="modal-close" id="lfBtnFecharModal" type="button">
@@ -545,55 +584,80 @@ function renderModal() {
           </button>
         </div>
 
-        <form id="lfForm" class="form-grid" autocomplete="off">
-          <div class="form-field">
-            <label>Tipo <span style="color:var(--danger)">*</span></label>
-            <select id="lfTipoInput" class="input" required>
-              <option value="receita">Receita</option>
-              <option value="despesa">Despesa</option>
-            </select>
+        <form id="lfForm" autocomplete="off">
+          <div class="lf-nc-body">
+            <div class="lf-nc-section">
+              <p class="lf-nc-section-title">Lançamento</p>
+              <div class="lf-nc-card-group">
+                <div class="lf-nc-cell">
+                  <span class="lf-nc-cell-ico"><i class="fa-solid fa-tag"></i></span>
+                  <div class="lf-nc-cell-content">
+                    <label class="lf-nc-lbl" for="lfTipoInput">Tipo <span class="lf-nc-req">*</span></label>
+                    <select id="lfTipoInput" class="lf-nc-cell-input" required>
+                      <option value="receita">Receita</option>
+                      <option value="despesa">Despesa</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="lf-nc-cell">
+                  <span class="lf-nc-cell-ico"><i class="fa-solid fa-file-lines"></i></span>
+                  <div class="lf-nc-cell-content">
+                    <label class="lf-nc-lbl" for="lfDescricao">Descrição <span class="lf-nc-req">*</span></label>
+                    <input id="lfDescricao" class="lf-nc-cell-input" placeholder="Ex: Aluguel, Venda avulsa..." required maxlength="200" />
+                  </div>
+                </div>
+                <div class="lf-nc-cell">
+                  <span class="lf-nc-cell-ico"><i class="fa-solid fa-folder"></i></span>
+                  <div class="lf-nc-cell-content">
+                    <label class="lf-nc-lbl" for="lfCategoria">Categoria <span class="lf-nc-req">*</span></label>
+                    <input id="lfCategoria" class="lf-nc-cell-input" placeholder="Ex: Despesa fixa, Receita operacional..." required maxlength="100" />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="lf-nc-section">
+              <p class="lf-nc-section-title">Valor</p>
+              <div class="lf-nc-card-group">
+                <div class="lf-nc-cells-2col">
+                  <div class="lf-nc-cell">
+                    <span class="lf-nc-cell-ico lf-nc-cell-ico--green"><i class="fa-solid fa-brazilian-real-sign"></i></span>
+                    <div class="lf-nc-cell-content">
+                      <label class="lf-nc-lbl" for="lfValor">Valor (R$) <span class="lf-nc-req">*</span></label>
+                      <input id="lfValor" class="lf-nc-cell-input lf-nc-valor" type="number" min="0.01" step="0.01" placeholder="0,00" required />
+                    </div>
+                  </div>
+                  <div class="lf-nc-cell">
+                    <span class="lf-nc-cell-ico lf-nc-cell-ico--blue"><i class="fa-solid fa-calendar-days"></i></span>
+                    <div class="lf-nc-cell-content">
+                      <label class="lf-nc-lbl" for="lfVencimento">Vencimento</label>
+                      <input id="lfVencimento" class="lf-nc-cell-input" type="date" />
+                    </div>
+                  </div>
+                </div>
+                <div class="lf-nc-cell">
+                  <span class="lf-nc-cell-ico"><i class="fa-solid fa-credit-card"></i></span>
+                  <div class="lf-nc-cell-content">
+                    <label class="lf-nc-lbl" for="lfFormaPagamento">Forma de pagamento</label>
+                    <select id="lfFormaPagamento" class="lf-nc-cell-input">
+                      <option value="">Selecionar...</option>
+                      <option value="dinheiro">Dinheiro</option>
+                      <option value="pix">PIX</option>
+                      <option value="cartao_debito">Cartão Débito</option>
+                      <option value="cartao_credito">Cartão Crédito</option>
+                      <option value="transferencia">Transferência</option>
+                      <option value="boleto">Boleto</option>
+                      <option value="cheque">Cheque</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="lf-nc-section">
+              <p class="lf-nc-section-title">Observação</p>
+              <textarea id="lfObservacao" class="lf-nc-obs" rows="2" placeholder="Observações opcionais..." maxlength="500"></textarea>
+            </div>
           </div>
-
-          <div class="form-field">
-            <label>Descrição <span style="color:var(--danger)">*</span></label>
-            <input id="lfDescricao" class="input" placeholder="Ex: Aluguel, Venda avulsa..." required maxlength="200"/>
-          </div>
-
-          <div class="form-field">
-            <label>Categoria <span style="color:var(--danger)">*</span></label>
-            <input id="lfCategoria" class="input" placeholder="Ex: Despesa fixa, Receita operacional..." required maxlength="100"/>
-          </div>
-
-          <div class="form-field">
-            <label>Valor (R$) <span style="color:var(--danger)">*</span></label>
-            <input id="lfValor" class="input" type="number" min="0.01" step="0.01" placeholder="0,00" required/>
-          </div>
-
-          <div class="form-field">
-            <label>Vencimento</label>
-            <input id="lfVencimento" class="input" type="date"/>
-          </div>
-
-          <div class="form-field">
-            <label>Forma de pagamento</label>
-            <select id="lfFormaPagamento" class="input">
-              <option value="">Selecionar...</option>
-              <option value="dinheiro">Dinheiro</option>
-              <option value="pix">PIX</option>
-              <option value="cartao_debito">Cartão Débito</option>
-              <option value="cartao_credito">Cartão Crédito</option>
-              <option value="transferencia">Transferência</option>
-              <option value="boleto">Boleto</option>
-              <option value="cheque">Cheque</option>
-            </select>
-          </div>
-
-          <div class="form-field form-field--span-2">
-            <label>Observação</label>
-            <textarea id="lfObservacao" class="input" rows="2" placeholder="Observações opcionais..." maxlength="500"></textarea>
-          </div>
-
-          <div class="form-field form-field--span-2" style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
+          <div style="display:flex;gap:10px;justify-content:flex-end;padding:16px 20px;border-top:1px solid var(--border)">
             <button type="button" class="btn btn-light" id="lfBtnCancelarForm">Cancelar</button>
             <button type="submit" class="btn btn-primary" id="lfBtnSalvar">
               <i class="fa-solid fa-floppy-disk"></i> Salvar
@@ -731,6 +795,7 @@ function bindEventos() {
 // ─── Modal ────────────────────────────────────────────────────────────────────
 
 function abrirModal(item) {
+  _injectLfStyles();
   state.editId = item ? item.id : null;
 
   document.getElementById('lfModalTitulo').textContent = item ? 'Editar Lançamento' : 'Novo Lançamento';

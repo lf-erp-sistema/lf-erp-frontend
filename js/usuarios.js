@@ -57,6 +57,7 @@ const UsuariosModule = {
     this.state.eventsBound = true;
 
     this._injectStyles();
+    this._injectUsrStyles();
 
     const debouncedSearch = debounce((v) => this.search(v), 350);
 
@@ -184,6 +185,54 @@ const UsuariosModule = {
     document.head.appendChild(s);
   },
 
+  _injectUsrStyles() {
+    if (document.getElementById('usr-nc-styles')) return;
+    const s = document.createElement('style');
+    s.id = 'usr-nc-styles';
+    s.textContent = `
+      .usr-nc-card { width: min(96vw, 560px) !important; max-height: 92vh; }
+      .usr-nc-body { overflow-y: auto; }
+      .usr-nc-section { padding: 16px 20px 0; }
+      .usr-nc-section:last-child { padding-bottom: 20px; }
+      .usr-nc-section-title { font-size: 0.7rem; font-weight: 900; color: var(--text-muted); text-transform: uppercase; letter-spacing: .08em; margin: 0 0 8px; }
+      .usr-nc-card-group { border: 1px solid var(--border); border-radius: 18px; overflow: hidden; background: var(--surface); }
+      .usr-nc-cell { display: flex; align-items: center; gap: 14px; padding: 13px 16px; border-bottom: 1px solid var(--border); background: var(--surface); transition: background .1s; }
+      .usr-nc-cell:last-child { border-bottom: none; }
+      .usr-nc-cell:focus-within { background: var(--surface-2, rgba(0,0,0,.025)); }
+      .usr-nc-cells-2col { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--border); }
+      .usr-nc-cells-2col:last-child { border-bottom: none; }
+      .usr-nc-cells-2col .usr-nc-cell { border-bottom: none; }
+      .usr-nc-cells-2col .usr-nc-cell:first-child { border-right: 1px solid var(--border); }
+      .usr-nc-cell-ico { width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 0.88rem; background: var(--surface-2); color: var(--text-muted); }
+      .usr-nc-cell-ico--green { background: rgba(22,163,74,.1); color: #16a34a; }
+      .usr-nc-cell-ico--blue { background: rgba(37,99,235,.1); color: #2563eb; }
+      .usr-nc-cell-ico--purple { background: rgba(124,58,237,.1); color: #7c3aed; }
+      .usr-nc-cell-content { flex: 1; min-width: 0; }
+      .usr-nc-lbl { display: block; font-size: 0.67rem; font-weight: 900; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 2px; }
+      .usr-nc-req { color: #dc2626; }
+      .usr-nc-cell-input { border: none !important; outline: none !important; background: transparent !important; padding: 0 !important; font-size: 0.93rem; font-weight: 600; color: var(--text); width: 100%; font-family: inherit; -webkit-appearance: none; appearance: none; }
+      select.usr-nc-cell-input { cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat !important; background-position: right 0 center !important; padding-right: 16px !important; }
+      .usr-senha-barra-wrap { margin-top: 4px; }
+      .usr-nc-cell .senha-wrapper { position: relative; flex: 1; min-width: 0; }
+      .usr-nc-cell .senha-wrapper input.usr-nc-cell-input { padding-right: 28px !important; }
+      .usr-nc-cell .senha-wrapper #usuarioSenhaToggle { position: absolute; right: 0; top: 50%; transform: translateY(-50%); }
+      .usr-nc-perms { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; background: var(--surface); }
+      .usr-nc-perms summary { padding: 12px 16px; font-size: 0.85rem; font-weight: 700; cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; }
+      .usr-nc-perms summary::-webkit-details-marker { display: none; }
+      .usr-nc-perms summary::after { content: "›"; font-size: 1.1rem; color: var(--text-muted); display: inline-block; transition: transform .15s; }
+      .usr-nc-perms[open] summary::after { transform: rotate(90deg); }
+      .usr-nc-perms-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 0; border-top: 1px solid var(--border); }
+      .usr-nc-perm-item { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); font-size: 0.83rem; }
+      .usr-nc-perm-item:last-child { border-bottom: none; }
+      @media (max-width: 600px) {
+        .usr-nc-section { padding: 14px 16px 0; }
+        .usr-nc-cells-2col { grid-template-columns: 1fr; }
+        .usr-nc-cells-2col .usr-nc-cell:first-child { border-right: none; border-bottom: 1px solid var(--border); }
+      }
+    `;
+    document.head.appendChild(s);
+  },
+
   async load() {
     this.resolveEmpresa();
     this.state.loading = true;
@@ -272,7 +321,7 @@ const UsuariosModule = {
       </section>
 
       <div class="modal-overlay hidden" id="usuarioModal">
-        <div class="modal-card">
+        <div class="modal-card usr-nc-card">
           <div class="modal-card__header">
             <div>
               <h3 id="usuarioModalTitle">${this.state.editingId ? 'Editar usuário' : 'Novo usuário'}</h3>
@@ -284,60 +333,88 @@ const UsuariosModule = {
             </button>
           </div>
 
-          <form id="usuarioForm" class="form-grid">
-            <div class="form-field form-field--span-2">
-              <label for="usuarioNome">Nome</label>
-              <input id="usuarioNome" type="text" autocomplete="name" required />
-            </div>
+          <form id="usuarioForm">
+            <div class="usr-nc-body">
 
-            <div class="form-field">
-              <label for="usuarioLogin">Login</label>
-              <input id="usuarioLogin" type="text" autocomplete="username" required />
-            </div>
-
-            <div class="form-field">
-              <label for="usuarioEmail">E-mail <span style="font-weight:400;color:var(--text-muted)">(opcional)</span></label>
-              <input id="usuarioEmail" type="email" autocomplete="email" placeholder="usuario@email.com" />
-            </div>
-
-            <div class="form-field">
-              <label for="usuarioSenha">Senha</label>
-              <div class="senha-wrapper">
-                <input
-                  id="usuarioSenha"
-                  type="password"
-                  placeholder="${this.state.editingId ? 'Deixe em branco para manter a senha atual' : 'Informe a senha inicial'}"
-                />
-                <button type="button" id="usuarioSenhaToggle" tabindex="-1" aria-label="Mostrar/ocultar senha">
-                  <i class="fa-solid fa-eye"></i>
-                </button>
-              </div>
-              <div id="senhaMedidor" class="senha-medidor hidden">
-                <div class="senha-barra"><div id="senhaBarra" class="senha-barra__fill"></div></div>
-                <span id="senhaLabel" class="senha-label"></span>
-              </div>
-            </div>
-
-            <div class="form-field">
-              <label for="usuarioTipo">Perfil</label>
-              <select id="usuarioTipo" class="filter-input" required>
-                <option value="admin">Admin</option>
-                <option value="gerente">Gerente</option>
-                <option value="funcionario">Funcionário</option>
-              </select>
-            </div>
-
-            ${this.state.editingId ? `
-            <div class="form-field form-field--span-2">
-              <details id="permissoesSection">
-                <summary style="cursor:pointer;font-weight:600;font-size:.88rem;color:var(--text-muted);padding:4px 0;user-select:none">
-                  <i class="fa-solid fa-shield-halved" style="margin-right:6px"></i>Permissões avançadas
-                </summary>
-                <div id="permissoesGrid" style="margin-top:12px">
-                  <div style="font-size:.8rem;color:var(--text-muted);padding:8px 0">Carregando…</div>
+              <div class="usr-nc-section">
+                <p class="usr-nc-section-title">Dados do Usuário</p>
+                <div class="usr-nc-card-group">
+                  <div class="usr-nc-cell">
+                    <span class="usr-nc-cell-ico usr-nc-cell-ico--blue"><i class="fa-solid fa-user"></i></span>
+                    <div class="usr-nc-cell-content">
+                      <label class="usr-nc-lbl" for="usuarioNome">Nome <span class="usr-nc-req">*</span></label>
+                      <input type="text" id="usuarioNome" class="usr-nc-cell-input" autocomplete="name" required placeholder="Nome completo" />
+                    </div>
+                  </div>
+                  <div class="usr-nc-cells-2col">
+                    <div class="usr-nc-cell">
+                      <span class="usr-nc-cell-ico"><i class="fa-solid fa-at"></i></span>
+                      <div class="usr-nc-cell-content">
+                        <label class="usr-nc-lbl" for="usuarioLogin">Login <span class="usr-nc-req">*</span></label>
+                        <input type="text" id="usuarioLogin" class="usr-nc-cell-input" autocomplete="username" required placeholder="login" />
+                      </div>
+                    </div>
+                    <div class="usr-nc-cell">
+                      <span class="usr-nc-cell-ico"><i class="fa-solid fa-envelope"></i></span>
+                      <div class="usr-nc-cell-content">
+                        <label class="usr-nc-lbl" for="usuarioEmail">E-mail <span style="font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label>
+                        <input type="email" id="usuarioEmail" class="usr-nc-cell-input" autocomplete="email" placeholder="usuario@email.com" />
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </details>
-            </div>` : ''}
+              </div>
+
+              <div class="usr-nc-section">
+                <p class="usr-nc-section-title">Acesso</p>
+                <div class="usr-nc-card-group">
+                  <div class="usr-nc-cell">
+                    <span class="usr-nc-cell-ico"><i class="fa-solid fa-lock"></i></span>
+                    <div class="usr-nc-cell-content">
+                      <label class="usr-nc-lbl" for="usuarioSenha">Senha</label>
+                      <div class="senha-wrapper">
+                        <input
+                          id="usuarioSenha"
+                          type="password"
+                          class="usr-nc-cell-input"
+                          placeholder="${this.state.editingId ? 'Deixe em branco para manter a senha atual' : 'Informe a senha inicial'}"
+                        />
+                        <button type="button" id="usuarioSenhaToggle" tabindex="-1" aria-label="Mostrar/ocultar senha">
+                          <i class="fa-solid fa-eye"></i>
+                        </button>
+                      </div>
+                      <div id="senhaMedidor" class="senha-medidor hidden usr-senha-barra-wrap">
+                        <div class="senha-barra"><div id="senhaBarra" class="senha-barra__fill"></div></div>
+                        <span id="senhaLabel" class="senha-label"></span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="usr-nc-cell">
+                    <span class="usr-nc-cell-ico usr-nc-cell-ico--purple"><i class="fa-solid fa-shield-halved"></i></span>
+                    <div class="usr-nc-cell-content">
+                      <label class="usr-nc-lbl" for="usuarioTipo">Perfil <span class="usr-nc-req">*</span></label>
+                      <select id="usuarioTipo" class="usr-nc-cell-input" required>
+                        <option value="admin">Admin</option>
+                        <option value="gerente">Gerente</option>
+                        <option value="funcionario">Funcionário</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              ${this.state.editingId ? `
+              <div class="usr-nc-section">
+                <p class="usr-nc-section-title">Permissões</p>
+                <details class="usr-nc-perms" id="permissoesSection">
+                  <summary>Permissões de acesso</summary>
+                  <div id="permissoesGrid">
+                    <div style="padding:10px 14px;font-size:.8rem;color:var(--text-muted)">Carregando…</div>
+                  </div>
+                </details>
+              </div>` : ''}
+
+            </div>
 
             <div class="modal-card__footer">
               <button type="button" class="btn btn-light" id="cancelUsuarioFooter">
@@ -530,22 +607,26 @@ const UsuariosModule = {
     if (this.el.tipo) this.el.tipo.value = usuario.tipo || 'funcionario';
 
     if (!document.getElementById('permissoesGrid') && this.el.form) {
-      const footer = this.el.form.querySelector('.modal-card__footer');
+      const body = this.el.form.querySelector('.usr-nc-body');
       const section = document.createElement('div');
-      section.className = 'form-field form-field--span-2';
+      section.className = 'usr-nc-section';
       section.innerHTML = `
-        <details id="permissoesSection">
-          <summary style="cursor:pointer;font-weight:600;font-size:.88rem;color:var(--text-muted);padding:4px 0;user-select:none">
-            <i class="fa-solid fa-shield-halved" style="margin-right:6px"></i>Permissões avançadas
-          </summary>
-          <div id="permissoesGrid" style="margin-top:12px">
-            <div style="font-size:.8rem;color:var(--text-muted);padding:8px 0">Carregando…</div>
+        <p class="usr-nc-section-title">Permissões</p>
+        <details class="usr-nc-perms" id="permissoesSection">
+          <summary>Permissões de acesso</summary>
+          <div id="permissoesGrid">
+            <div style="padding:10px 14px;font-size:.8rem;color:var(--text-muted)">Carregando…</div>
           </div>
         </details>`;
-      if (footer) {
-        this.el.form.insertBefore(section, footer);
+      if (body) {
+        body.appendChild(section);
       } else {
-        this.el.form.appendChild(section);
+        const footer = this.el.form.querySelector('.modal-card__footer');
+        if (footer) {
+          this.el.form.insertBefore(section, footer);
+        } else {
+          this.el.form.appendChild(section);
+        }
       }
     }
 

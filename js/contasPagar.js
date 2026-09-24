@@ -673,30 +673,49 @@ async function pagarConta(id) {
     const contaRef = state.contas.find(c => String(c.id) === String(id));
     const valorMax = contaRef ? Number(contaRef.valor_atualizado || contaRef.valor || 0) : 0;
     overlay.innerHTML = `
-      <div style="background:var(--surface);border-radius:16px;padding:24px;max-width:380px;width:100%;box-shadow:0 24px 50px rgba(0,0,0,.2)">
-        <h3 style="margin:0 0 16px;font-size:16px;font-weight:700">Confirmar pagamento</h3>
-        <div style="margin-bottom:16px">
-          <label style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;display:block;margin-bottom:5px">Valor pago (R$)</label>
-          <input id="_pagarValorInput" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="Deixe em branco para pagar total" ${valorMax > 0 ? `max="${valorMax}"` : ''} style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;box-sizing:border-box" />
+      <div style="background:var(--surface);border-radius:20px;max-width:400px;width:100%;box-shadow:0 24px 50px rgba(0,0,0,.2);overflow:hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px 0">
+          <h3 style="margin:0;font-size:15px;font-weight:800">Confirmar pagamento</h3>
         </div>
-        <div style="margin-bottom:16px">
-          <label style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;display:block;margin-bottom:5px">Data do pagamento</label>
-          <input id="_pagarDataInput" type="date" value="${hoje}" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;box-sizing:border-box" />
+        <div class="cp-pg-body">
+          <div class="cp-pg-section">
+            <div class="cp-pg-card-group">
+              <div class="cp-pg-cells-2col">
+                <div class="cp-pg-cell">
+                  <span class="cp-pg-cell-ico cp-pg-cell-ico--green"><i class="fa-solid fa-brazilian-real-sign"></i></span>
+                  <div class="cp-pg-cell-content">
+                    <label class="cp-pg-lbl" for="_pagarValorInput">Valor pago</label>
+                    <input id="_pagarValorInput" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="Total" ${valorMax > 0 ? `max="${valorMax}"` : ''} class="cp-pg-cell-input cp-pg-valor" />
+                  </div>
+                </div>
+                <div class="cp-pg-cell">
+                  <span class="cp-pg-cell-ico cp-pg-cell-ico--blue"><i class="fa-solid fa-calendar-days"></i></span>
+                  <div class="cp-pg-cell-content">
+                    <label class="cp-pg-lbl" for="_pagarDataInput">Data</label>
+                    <input id="_pagarDataInput" type="date" value="${hoje}" class="cp-pg-cell-input" />
+                  </div>
+                </div>
+              </div>
+              <div class="cp-pg-cell">
+                <span class="cp-pg-cell-ico"><i class="fa-solid fa-credit-card"></i></span>
+                <div class="cp-pg-cell-content">
+                  <label class="cp-pg-lbl" for="_pagarFormaInput">Forma de pagamento</label>
+                  <select id="_pagarFormaInput" class="cp-pg-cell-input">
+                    <option value="">Não informado</option>
+                    <option value="dinheiro">Dinheiro</option>
+                    <option value="pix">PIX</option>
+                    <option value="cartao_credito">Cartão de Crédito</option>
+                    <option value="cartao_debito">Cartão de Débito</option>
+                    <option value="boleto">Boleto</option>
+                    <option value="transferencia">Transferência</option>
+                    <option value="cheque">Cheque</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div style="margin-bottom:16px">
-          <label style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;display:block;margin-bottom:5px">Forma de pagamento</label>
-          <select id="_pagarFormaInput" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;box-sizing:border-box;background:var(--surface);color:var(--text)">
-            <option value="">Não informado</option>
-            <option value="dinheiro">Dinheiro</option>
-            <option value="pix">PIX</option>
-            <option value="cartao_credito">Cartão de Crédito</option>
-            <option value="cartao_debito">Cartão de Débito</option>
-            <option value="boleto">Boleto</option>
-            <option value="transferencia">Transferência</option>
-            <option value="cheque">Cheque</option>
-          </select>
-        </div>
-        <div style="display:flex;gap:10px;justify-content:flex-end">
+        <div style="display:flex;gap:10px;justify-content:flex-end;padding:12px 20px 18px">
           <button id="_pagarCancelarBtn" class="btn-cancel">Cancelar</button>
           <button id="_pagarConfirmarBtn" class="btn-confirm btn-confirm--success">Confirmar pagamento</button>
         </div>
@@ -2343,6 +2362,26 @@ function injectContasPagarStyles() {
       font-variant-numeric: tabular-nums;
       font-weight: 800;
     }
+
+    /* ── Pagar conta modal (cp-pg-*) ── */
+    .cp-pg-body { overflow-y: auto; }
+    .cp-pg-section { padding: 16px 20px; }
+    .cp-pg-card-group { border: 1px solid var(--border); border-radius: 18px; overflow: hidden; background: var(--surface); }
+    .cp-pg-cell { display: flex; align-items: center; gap: 14px; padding: 13px 16px; border-bottom: 1px solid var(--border); background: var(--surface); transition: background .1s; }
+    .cp-pg-cell:last-child { border-bottom: none; }
+    .cp-pg-cell:focus-within { background: var(--surface-2, rgba(0,0,0,.025)); }
+    .cp-pg-cells-2col { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--border); }
+    .cp-pg-cells-2col:last-child { border-bottom: none; }
+    .cp-pg-cells-2col .cp-pg-cell { border-bottom: none; }
+    .cp-pg-cells-2col .cp-pg-cell:first-child { border-right: 1px solid var(--border); }
+    .cp-pg-cell-ico { width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 0.88rem; background: var(--surface-2); color: var(--text-muted); }
+    .cp-pg-cell-ico--green { background: rgba(22,163,74,.1); color: #16a34a; }
+    .cp-pg-cell-ico--blue { background: rgba(37,99,235,.1); color: #2563eb; }
+    .cp-pg-cell-content { flex: 1; min-width: 0; }
+    .cp-pg-lbl { display: block; font-size: 0.67rem; font-weight: 900; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 2px; }
+    .cp-pg-cell-input { border: none !important; outline: none !important; background: transparent !important; padding: 0 !important; font-size: 0.93rem; font-weight: 600; color: var(--text); width: 100%; font-family: inherit; -webkit-appearance: none; appearance: none; }
+    select.cp-pg-cell-input { cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat !important; background-position: right 0 center !important; padding-right: 16px !important; }
+    .cp-pg-valor { font-size: 1.2rem !important; font-weight: 800 !important; }
   `;
 
   document.head.appendChild(style);

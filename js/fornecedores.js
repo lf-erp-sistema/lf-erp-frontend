@@ -88,6 +88,45 @@ const FornecedoresModule = {
     document.head.appendChild(style);
   },
 
+  _injectFoStyles() {
+    if (document.getElementById('fo-nc-styles')) return;
+    const s = document.createElement('style');
+    s.id = 'fo-nc-styles';
+    s.textContent = `
+      .fo-nc-card { width: min(96vw, 600px) !important; max-height: 92vh; }
+      .fo-nc-body { overflow-y: auto; }
+      .fo-nc-section { padding: 16px 20px 0; }
+      .fo-nc-section:last-child { padding-bottom: 20px; }
+      .fo-nc-section-title { font-size: 0.7rem; font-weight: 900; color: var(--text-muted); text-transform: uppercase; letter-spacing: .08em; margin: 0 0 8px; }
+      .fo-nc-card-group { border: 1px solid var(--border); border-radius: 18px; overflow: hidden; background: var(--surface); }
+      .fo-nc-cell { display: flex; align-items: center; gap: 14px; padding: 13px 16px; border-bottom: 1px solid var(--border); background: var(--surface); transition: background .1s; }
+      .fo-nc-cell:last-child { border-bottom: none; }
+      .fo-nc-cell:focus-within { background: var(--surface-2, rgba(0,0,0,.025)); }
+      .fo-nc-cells-2col { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--border); }
+      .fo-nc-cells-2col:last-child { border-bottom: none; }
+      .fo-nc-cells-2col .fo-nc-cell { border-bottom: none; }
+      .fo-nc-cells-2col .fo-nc-cell:first-child { border-right: 1px solid var(--border); }
+      .fo-nc-cell-ico { width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 0.88rem; background: var(--surface-2); color: var(--text-muted); }
+      .fo-nc-cell-ico--green { background: rgba(22,163,74,.1); color: #16a34a; }
+      .fo-nc-cell-ico--blue { background: rgba(37,99,235,.1); color: #2563eb; }
+      .fo-nc-cell-ico--red { background: rgba(220,38,38,.1); color: #dc2626; }
+      .fo-nc-cell-ico--purple { background: rgba(124,58,237,.1); color: #7c3aed; }
+      .fo-nc-cell-ico--orange { background: rgba(234,88,12,.1); color: #ea580c; }
+      .fo-nc-cell-content { flex: 1; min-width: 0; }
+      .fo-nc-lbl { display: block; font-size: 0.67rem; font-weight: 900; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 2px; }
+      .fo-nc-req { color: #dc2626; }
+      .fo-nc-cell-input { border: none !important; outline: none !important; background: transparent !important; padding: 0 !important; font-size: 0.93rem; font-weight: 600; color: var(--text); width: 100%; font-family: inherit; -webkit-appearance: none; appearance: none; }
+      select.fo-nc-cell-input { cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat !important; background-position: right 0 center !important; padding-right: 16px !important; }
+      .fo-nc-obs { width: 100%; resize: none; font-size: 0.9rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; font-family: inherit; color: var(--text); box-sizing: border-box; }
+      @media (max-width: 600px) {
+        .fo-nc-section { padding: 14px 16px 0; }
+        .fo-nc-cells-2col { grid-template-columns: 1fr; }
+        .fo-nc-cells-2col .fo-nc-cell:first-child { border-right: none; border-bottom: 1px solid var(--border); }
+      }
+    `;
+    document.head.appendChild(s);
+  },
+
   bind() {
     if (this.state.eventsBound) return;
     this.state.eventsBound = true;
@@ -281,7 +320,7 @@ const FornecedoresModule = {
 
       <!-- MODAL FORNECEDOR -->
       <div class="modal-overlay hidden" id="fornecedorModal">
-        <div class="modal-card modal-card--large">
+        <div class="modal-card modal-card--large fo-nc-card">
           <div class="modal-card__header">
             <div>
               <h3 id="fornecedorModalTitle">Novo fornecedor</h3>
@@ -292,56 +331,98 @@ const FornecedoresModule = {
             </button>
           </div>
 
-          <form id="fornecedorForm" class="form-grid">
-            <div class="form-field form-field--span-2">
-              <label for="fornecedorNome">Nome *</label>
-              <input id="fornecedorNome" required />
+          <form id="fornecedorForm">
+            <div class="fo-nc-body">
+
+              <div class="fo-nc-section">
+                <p class="fo-nc-section-title">Dados</p>
+                <div class="fo-nc-card-group">
+                  <div class="fo-nc-cell">
+                    <span class="fo-nc-cell-ico fo-nc-cell-ico--blue"><i class="fa-solid fa-building"></i></span>
+                    <div class="fo-nc-cell-content">
+                      <label class="fo-nc-lbl" for="fornecedorNome">Nome <span class="fo-nc-req">*</span></label>
+                      <input type="text" id="fornecedorNome" class="fo-nc-cell-input" placeholder="Razão social ou nome" autocomplete="off" required />
+                    </div>
+                  </div>
+                  <div class="fo-nc-cell">
+                    <span class="fo-nc-cell-ico"><i class="fa-solid fa-id-card"></i></span>
+                    <div class="fo-nc-cell-content">
+                      <label class="fo-nc-lbl" for="fornecedorCnpj">CNPJ / CPF</label>
+                      <input type="text" id="fornecedorCnpj" class="fo-nc-cell-input" placeholder="00.000.000/0000-00 ou 000.000.000-00" autocomplete="off" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="fo-nc-section">
+                <p class="fo-nc-section-title">Contato</p>
+                <div class="fo-nc-card-group">
+                  <div class="fo-nc-cells-2col">
+                    <div class="fo-nc-cell">
+                      <span class="fo-nc-cell-ico fo-nc-cell-ico--green"><i class="fa-solid fa-phone"></i></span>
+                      <div class="fo-nc-cell-content">
+                        <label class="fo-nc-lbl" for="fornecedorTelefone">Telefone</label>
+                        <input type="text" id="fornecedorTelefone" class="fo-nc-cell-input" placeholder="(88) 99999-9999" autocomplete="off" />
+                      </div>
+                    </div>
+                    <div class="fo-nc-cell">
+                      <span class="fo-nc-cell-ico fo-nc-cell-ico--blue"><i class="fa-solid fa-envelope"></i></span>
+                      <div class="fo-nc-cell-content">
+                        <label class="fo-nc-lbl" for="fornecedorEmail">E-mail</label>
+                        <input type="text" id="fornecedorEmail" class="fo-nc-cell-input" autocomplete="email" />
+                        <small id="fornecedorEmailHint" style="font-size:10px;margin-top:1px;display:block"></small>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="fo-nc-cells-2col">
+                    <div class="fo-nc-cell">
+                      <span class="fo-nc-cell-ico"><i class="fa-solid fa-user"></i></span>
+                      <div class="fo-nc-cell-content">
+                        <label class="fo-nc-lbl" for="fornecedorContato">Contato</label>
+                        <input type="text" id="fornecedorContato" class="fo-nc-cell-input" placeholder="Nome do responsável" autocomplete="off" />
+                      </div>
+                    </div>
+                    <div class="fo-nc-cell">
+                      <span class="fo-nc-cell-ico fo-nc-cell-ico--purple"><i class="fa-solid fa-globe"></i></span>
+                      <div class="fo-nc-cell-content">
+                        <label class="fo-nc-lbl" for="fornecedorSite">Site</label>
+                        <input type="text" id="fornecedorSite" class="fo-nc-cell-input" placeholder="https://..." autocomplete="off" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="fo-nc-section">
+                <p class="fo-nc-section-title">Comercial</p>
+                <div class="fo-nc-card-group">
+                  <div class="fo-nc-cells-2col">
+                    <div class="fo-nc-cell">
+                      <span class="fo-nc-cell-ico fo-nc-cell-ico--orange"><i class="fa-solid fa-clock"></i></span>
+                      <div class="fo-nc-cell-content">
+                        <label class="fo-nc-lbl" for="fornecedorPrazoPagamento">Prazo (dias)</label>
+                        <input type="number" id="fornecedorPrazoPagamento" class="fo-nc-cell-input" min="0" step="1" placeholder="Ex: 30" />
+                      </div>
+                    </div>
+                    <div class="fo-nc-cell">
+                      <span class="fo-nc-cell-ico"><i class="fa-solid fa-location-dot"></i></span>
+                      <div class="fo-nc-cell-content">
+                        <label class="fo-nc-lbl" for="fornecedorEndereco">Endereço</label>
+                        <input type="text" id="fornecedorEndereco" class="fo-nc-cell-input" placeholder="Rua, número, cidade..." autocomplete="off" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="fo-nc-section">
+                <p class="fo-nc-section-title">Observação</p>
+                <textarea id="fornecedorObservacao" class="fo-nc-obs" rows="2" placeholder="Informações adicionais..."></textarea>
+              </div>
+
             </div>
 
-            <div class="form-field">
-              <label for="fornecedorCnpj">CNPJ / CPF</label>
-              <input id="fornecedorCnpj" placeholder="00.000.000/0000-00 ou 000.000.000-00" />
-            </div>
-
-            <div class="form-field">
-              <label for="fornecedorTelefone">Telefone</label>
-              <input id="fornecedorTelefone" placeholder="(88) 99999-9999" />
-            </div>
-
-            <div class="form-field">
-              <label for="fornecedorEmail">
-                E-mail
-                <small id="fornecedorEmailHint" style="font-weight:400;font-size:11px;margin-left:6px"></small>
-              </label>
-              <input id="fornecedorEmail" type="text" autocomplete="email" />
-            </div>
-
-            <div class="form-field">
-              <label for="fornecedorContato">Pessoa de contato</label>
-              <input id="fornecedorContato" placeholder="Nome do responsável" />
-            </div>
-
-            <div class="form-field">
-              <label for="fornecedorSite">Site</label>
-              <input id="fornecedorSite" placeholder="https://..." />
-            </div>
-
-            <div class="form-field">
-              <label for="fornecedorPrazoPagamento">Prazo de pagamento (dias)</label>
-              <input id="fornecedorPrazoPagamento" type="number" min="0" step="1" placeholder="Ex: 30" />
-            </div>
-
-            <div class="form-field form-field--span-2">
-              <label for="fornecedorEndereco">Endereço</label>
-              <input id="fornecedorEndereco" />
-            </div>
-
-            <div class="form-field form-field--span-2">
-              <label for="fornecedorObservacao">Observação</label>
-              <textarea id="fornecedorObservacao" rows="3"></textarea>
-            </div>
-
-            <div class="modal-card__footer form-field--span-2">
+            <div class="modal-card__footer">
               <button type="button" class="btn btn-light" id="cancelFornecedorFooter">Cancelar</button>
               <button type="submit" class="btn btn-primary">Salvar</button>
             </div>
@@ -515,6 +596,7 @@ const FornecedoresModule = {
   },
 
   openModal(isEdit = false) {
+    this._injectFoStyles();
     this.cache();
 
     if (!this.el.modal) return;

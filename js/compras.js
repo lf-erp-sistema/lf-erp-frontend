@@ -72,6 +72,7 @@ const ComprasModule = {
     if (this.state.eventsBound) return;
     this.state.eventsBound = true;
     this._injectStyles();
+    this._injectCmpStyles();
 
     const debouncedSearch = debounce((v) => this.search(v), 350);
 
@@ -340,7 +341,7 @@ const ComprasModule = {
       </section>
 
       <div class="modal-overlay hidden" id="compraModal">
-        <div class="modal-card modal-card--large">
+        <div class="modal-card cmp-nc-card">
           <div class="modal-card__header">
             <div>
               <h3>Nova compra</h3>
@@ -352,124 +353,144 @@ const ComprasModule = {
             </button>
           </div>
 
-          <form id="compraForm" class="form-grid">
-            <div class="form-field">
-              <label for="compraFornecedor">Fornecedor</label>
-              <select id="compraFornecedor" class="filter-input" required>
-                <option value="">Selecione...</option>
-                ${this.state.fornecedores
-                  .map(
-                    (f) => `
-                  <option value="${f.id}">
-                    ${escapeHtml(f.nome)}
-                  </option>
-                `
-                  )
-                  .join('')}
-              </select>
+          <form id="compraForm">
+            <div class="cmp-nc-body">
+
+              <div class="cmp-nc-section">
+                <p class="cmp-nc-section-title">Fornecedor</p>
+                <div class="cmp-nc-card-group">
+                  <div class="cmp-nc-cell">
+                    <span class="cmp-nc-cell-ico">
+                      <i class="fa-solid fa-building"></i>
+                    </span>
+                    <div class="cmp-nc-cell-content">
+                      <label class="cmp-nc-lbl" for="compraFornecedor">Fornecedor <span class="cmp-nc-req">*</span></label>
+                      <select id="compraFornecedor" class="cmp-nc-cell-input" required>
+                        <option value="">Selecione...</option>
+                        ${this.state.fornecedores.map((f) => `<option value="${f.id}">${escapeHtml(f.nome)}</option>`).join('')}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="cmp-nc-section">
+                <p class="cmp-nc-section-title">Pagamento</p>
+                <div class="cmp-nc-card-group">
+                  <div class="cmp-nc-cells-2col">
+                    <div class="cmp-nc-cell">
+                      <span class="cmp-nc-cell-ico cmp-nc-cell-ico--blue">
+                        <i class="fa-solid fa-calendar-days"></i>
+                      </span>
+                      <div class="cmp-nc-cell-content">
+                        <label class="cmp-nc-lbl" for="compraData">Data da compra <span class="cmp-nc-req">*</span></label>
+                        <input type="date" id="compraData" class="cmp-nc-cell-input" value="${getTodayDate()}" required />
+                      </div>
+                    </div>
+                    <div class="cmp-nc-cell">
+                      <span class="cmp-nc-cell-ico">
+                        <i class="fa-solid fa-credit-card"></i>
+                      </span>
+                      <div class="cmp-nc-cell-content">
+                        <label class="cmp-nc-lbl" for="compraFormaPagamento">Forma de pagamento <span class="cmp-nc-req">*</span></label>
+                        <select id="compraFormaPagamento" class="cmp-nc-cell-input" required>
+                          <option value="Dinheiro">Dinheiro</option>
+                          <option value="Pix">Pix</option>
+                          <option value="Cartão de Débito">Cartão de Débito</option>
+                          <option value="Cartão de Crédito">Cartão de Crédito</option>
+                          <option value="Boleto">Boleto</option>
+                          <option value="Promissoria">Promissória</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="cmp-nc-cell hidden" id="comprasParcelasRow">
+                    <span class="cmp-nc-cell-ico">
+                      <i class="fa-solid fa-list-ol"></i>
+                    </span>
+                    <div class="cmp-nc-cell-content">
+                      <label class="cmp-nc-lbl" for="compraParcelas">Parcelas</label>
+                      <input type="number" id="compraParcelas" class="cmp-nc-cell-input" min="1" value="1" />
+                    </div>
+                  </div>
+                  <div class="cmp-nc-cell hidden" id="compraPrimeiroVencimentoField">
+                    <span class="cmp-nc-cell-ico cmp-nc-cell-ico--blue">
+                      <i class="fa-solid fa-calendar-check"></i>
+                    </span>
+                    <div class="cmp-nc-cell-content">
+                      <label class="cmp-nc-lbl" for="compraPrimeiroVencimento">Primeiro vencimento</label>
+                      <input type="date" id="compraPrimeiroVencimento" class="cmp-nc-cell-input" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="cmp-nc-section cmp-nc-items-section">
+                <p class="cmp-nc-section-title">Itens da Compra</p>
+                <div class="cmp-nc-items-inner">
+                  <div class="form-grid cmp-nc-items-add">
+                    <div class="form-field">
+                      <label for="compraProduto">Produto</label>
+                      <select id="compraProduto">
+                        <option value="">Selecione...</option>
+                        ${this.state.produtos.map((p) => `<option value="${p.id}" data-custo="${Number(p.custo || 0)}">${escapeHtml(p.nome)}</option>`).join('')}
+                      </select>
+                    </div>
+                    <div class="form-field">
+                      <label for="compraQuantidade">Quantidade</label>
+                      <input type="number" id="compraQuantidade" min="1" value="1" />
+                    </div>
+                    <div class="form-field">
+                      <label for="compraCustoUnitario">Custo unitário</label>
+                      <input type="number" id="compraCustoUnitario" min="0" step="0.01" inputmode="decimal" value="0" />
+                    </div>
+                    <div class="form-field">
+                      <label>&nbsp;</label>
+                      <button type="button" class="btn btn-light" id="addItemCompraBtn">
+                        <i class="fa-solid fa-plus"></i>
+                        Adicionar item
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="table-wrapper">
+                    <table class="data-table">
+                      <thead>
+                        <tr>
+                          <th>Produto</th>
+                          <th>Qtd.</th>
+                          <th>Custo unit.</th>
+                          <th class="text-right">Subtotal</th>
+                          <th class="text-right">Ações</th>
+                        </tr>
+                      </thead>
+                      <tbody id="compraItensTable"></tbody>
+                    </table>
+                  </div>
+
+                  <div class="compra-total-box">
+                    <span>Total da compra</span>
+                    <strong id="compraTotalValor">R$ 0,00</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div class="cmp-nc-section">
+                <p class="cmp-nc-section-title">Observação</p>
+                <textarea id="compraObservacao" class="cmp-nc-obs" placeholder="Observações internas da compra" rows="3"></textarea>
+              </div>
+
             </div>
 
-            <div class="form-field">
-              <label for="compraData">Data da compra</label>
-              <input type="date" id="compraData" class="filter-input" value="${getTodayDate()}" required />
-            </div>
-
-            <div class="form-field">
-              <label for="compraFormaPagamento">Forma de pagamento</label>
-              <select id="compraFormaPagamento" class="filter-input" required>
-                <option value="Dinheiro">Dinheiro</option>
-                <option value="Pix">Pix</option>
-                <option value="Cartão de Débito">Cartão de Débito</option>
-                <option value="Cartão de Crédito">Cartão de Crédito</option>
-                <option value="Boleto">Boleto</option>
-                <option value="Promissoria">Promissória</option>
-              </select>
-            </div>
-
-            <div class="form-field">
-              <label for="compraParcelas">Parcelas</label>
-              <input type="number" id="compraParcelas" min="1" value="1" />
-            </div>
-
-            <div class="form-field hidden" id="compraPrimeiroVencimentoField">
-              <label for="compraPrimeiroVencimento">Primeiro vencimento</label>
-              <input type="date" id="compraPrimeiroVencimento" class="filter-input" />
-            </div>
-
-            <div class="form-field form-field--span-2">
-              <label for="compraObservacao">Observação</label>
-              <textarea id="compraObservacao" placeholder="Observações internas da compra"></textarea>
-            </div>
-
-            <div class="form-field">
-              <label for="compraProduto">Produto</label>
-              <select id="compraProduto">
-                <option value="">Selecione...</option>
-                ${this.state.produtos
-                  .map(
-                    (p) => `
-                  <option value="${p.id}" data-custo="${Number(p.custo || 0)}">
-                    ${escapeHtml(p.nome)}
-                  </option>
-                `
-                  )
-                  .join('')}
-              </select>
-            </div>
-
-            <div class="form-field">
-              <label for="compraQuantidade">Quantidade</label>
-              <input type="number" id="compraQuantidade" min="1" value="1" />
-            </div>
-
-            <div class="form-field">
-              <label for="compraCustoUnitario">Custo unitário</label>
-              <input type="number" id="compraCustoUnitario" min="0" step="0.01" inputmode="decimal" value="0" />
-            </div>
-
-            <div class="form-field">
-              <label>&nbsp;</label>
-              <button type="button" class="btn btn-light" id="addItemCompraBtn">
-                <i class="fa-solid fa-plus"></i>
-                Adicionar item
+            <div class="modal-card__footer">
+              <button type="button" class="btn btn-light" id="cancelCompraFooter">
+                Cancelar
               </button>
-            </div>
 
-            <div class="form-field form-field--span-2">
-              <div class="table-wrapper">
-                <table class="data-table">
-                  <thead>
-                    <tr>
-                      <th>Produto</th>
-                      <th>Qtd.</th>
-                      <th>Custo unit.</th>
-                      <th class="text-right">Subtotal</th>
-                      <th class="text-right">Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody id="compraItensTable"></tbody>
-                </table>
-              </div>
-            </div>
-
-            <div class="form-field form-field--span-2">
-              <div class="compra-total-box">
-                <span>Total da compra</span>
-                <strong id="compraTotalValor">R$ 0,00</strong>
-              </div>
-            </div>
-
-            <div class="form-field form-field--span-2">
-              <div class="modal-card__footer">
-                <button type="button" class="btn btn-light" id="cancelCompraFooter">
-                  Cancelar
-                </button>
-
-                <button type="submit" class="btn btn-primary">
-                  <i class="fa-solid fa-check"></i>
-                  Salvar compra
-                </button>
-              </div>
+              <button type="submit" class="btn btn-primary">
+                <i class="fa-solid fa-check"></i>
+                Salvar compra
+              </button>
             </div>
           </form>
         </div>
@@ -681,14 +702,26 @@ const ComprasModule = {
   toggleVencimentoField() {
     const formaPagamento = document.getElementById('compraFormaPagamento')?.value || '';
     const field = document.getElementById('compraPrimeiroVencimentoField');
+    const fp = formaPagamento.toLowerCase();
 
     const exigeVencimento =
-      formaPagamento.toLowerCase() === 'boleto' ||
-      formaPagamento.toLowerCase() === 'promissoria' ||
-      formaPagamento.toLowerCase() === 'promissória';
+      fp === 'boleto' ||
+      fp === 'promissoria' ||
+      fp === 'promissória';
+
+    const exigeParcelas =
+      fp === 'cartão de crédito' ||
+      fp === 'boleto' ||
+      fp === 'promissoria' ||
+      fp === 'promissória';
 
     if (field) {
       field.classList.toggle('hidden', !exigeVencimento);
+    }
+
+    const parcelasRow = document.getElementById('comprasParcelasRow');
+    if (parcelasRow) {
+      parcelasRow.classList.toggle('hidden', !exigeParcelas);
     }
 
     const primeiroVencimento = document.getElementById('compraPrimeiroVencimento');
@@ -1223,6 +1256,46 @@ const ComprasModule = {
       .cmp-filter-box select:focus { border-color: var(--primary); }
     `;
     document.head.appendChild(style);
+  },
+
+  _injectCmpStyles() {
+    if (document.getElementById('cmp-nc-styles')) return;
+    const s = document.createElement('style');
+    s.id = 'cmp-nc-styles';
+    s.textContent = `
+      .cmp-nc-card { width: min(96vw, 600px) !important; max-height: 92vh; }
+      .cmp-nc-body { overflow-y: auto; }
+      .cmp-nc-section { padding: 16px 20px 0; }
+      .cmp-nc-section:last-child { padding-bottom: 20px; }
+      .cmp-nc-section-title { font-size: 0.7rem; font-weight: 900; color: var(--text-muted); text-transform: uppercase; letter-spacing: .08em; margin: 0 0 8px; }
+      .cmp-nc-card-group { border: 1px solid var(--border); border-radius: 18px; overflow: hidden; background: var(--surface); }
+      .cmp-nc-cell { display: flex; align-items: center; gap: 14px; padding: 13px 16px; border-bottom: 1px solid var(--border); background: var(--surface); transition: background .1s; }
+      .cmp-nc-cell:last-child { border-bottom: none; }
+      .cmp-nc-cell:focus-within { background: var(--surface-2, rgba(0,0,0,.025)); }
+      .cmp-nc-cells-2col { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--border); }
+      .cmp-nc-cells-2col:last-child { border-bottom: none; }
+      .cmp-nc-cells-2col .cmp-nc-cell { border-bottom: none; }
+      .cmp-nc-cells-2col .cmp-nc-cell:first-child { border-right: 1px solid var(--border); }
+      .cmp-nc-cell-ico { width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 0.88rem; background: var(--surface-2); color: var(--text-muted); }
+      .cmp-nc-cell-ico--green { background: rgba(22,163,74,.1); color: #16a34a; }
+      .cmp-nc-cell-ico--blue { background: rgba(37,99,235,.1); color: #2563eb; }
+      .cmp-nc-cell-ico--orange { background: rgba(234,88,12,.1); color: #ea580c; }
+      .cmp-nc-cell-content { flex: 1; min-width: 0; }
+      .cmp-nc-lbl { display: block; font-size: 0.67rem; font-weight: 900; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 2px; }
+      .cmp-nc-req { color: #dc2626; }
+      .cmp-nc-cell-input { border: none !important; outline: none !important; background: transparent !important; padding: 0 !important; font-size: 0.93rem; font-weight: 600; color: var(--text); width: 100%; font-family: inherit; -webkit-appearance: none; appearance: none; }
+      select.cmp-nc-cell-input { cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat !important; background-position: right 0 center !important; padding-right: 16px !important; }
+      .cmp-nc-obs { width: 100%; resize: none; font-size: 0.9rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; font-family: inherit; color: var(--text); box-sizing: border-box; }
+      .cmp-nc-items-section { margin: 0; }
+      .cmp-nc-items-inner { padding: 12px 0 4px; }
+      .cmp-nc-items-add { margin-bottom: 12px; }
+      @media (max-width: 600px) {
+        .cmp-nc-section { padding: 14px 16px 0; }
+        .cmp-nc-cells-2col { grid-template-columns: 1fr; }
+        .cmp-nc-cells-2col .cmp-nc-cell:first-child { border-right: none; border-bottom: 1px solid var(--border); }
+      }
+    `;
+    document.head.appendChild(s);
   },
 
   // ── Import XML NF de Fornecedor ────────────────────────────────────────────

@@ -176,6 +176,45 @@ const ClientesModule = {
     }
   },
 
+  _injectClStyles() {
+    if (document.getElementById('cl-nc-styles')) return;
+    const s = document.createElement('style');
+    s.id = 'cl-nc-styles';
+    s.textContent = `
+      .cl-nc-card { width: min(96vw, 560px) !important; max-height: 92vh; }
+      .cl-nc-body { overflow-y: auto; }
+      .cl-nc-section { padding: 16px 20px 0; }
+      .cl-nc-section:last-child { padding-bottom: 20px; }
+      .cl-nc-section-title { font-size: 0.7rem; font-weight: 900; color: var(--text-muted); text-transform: uppercase; letter-spacing: .08em; margin: 0 0 8px; }
+      .cl-nc-card-group { border: 1px solid var(--border); border-radius: 18px; overflow: hidden; background: var(--surface); }
+      .cl-nc-cell { display: flex; align-items: center; gap: 14px; padding: 13px 16px; border-bottom: 1px solid var(--border); background: var(--surface); transition: background .1s; }
+      .cl-nc-cell:last-child { border-bottom: none; }
+      .cl-nc-cell:focus-within { background: var(--surface-2, rgba(0,0,0,.025)); }
+      .cl-nc-cells-2col { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--border); }
+      .cl-nc-cells-2col:last-child { border-bottom: none; }
+      .cl-nc-cells-2col .cl-nc-cell { border-bottom: none; }
+      .cl-nc-cells-2col .cl-nc-cell:first-child { border-right: 1px solid var(--border); }
+      .cl-nc-cell-ico { width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 0.88rem; background: var(--surface-2); color: var(--text-muted); }
+      .cl-nc-cell-ico--green { background: rgba(22,163,74,.1); color: #16a34a; }
+      .cl-nc-cell-ico--blue { background: rgba(37,99,235,.1); color: #2563eb; }
+      .cl-nc-cell-ico--red { background: rgba(220,38,38,.1); color: #dc2626; }
+      .cl-nc-cell-ico--purple { background: rgba(124,58,237,.1); color: #7c3aed; }
+      .cl-nc-cell-ico--orange { background: rgba(234,88,12,.1); color: #ea580c; }
+      .cl-nc-cell-content { flex: 1; min-width: 0; }
+      .cl-nc-lbl { display: block; font-size: 0.67rem; font-weight: 900; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 2px; }
+      .cl-nc-req { color: #dc2626; }
+      .cl-nc-cell-input { border: none !important; outline: none !important; background: transparent !important; padding: 0 !important; font-size: 0.93rem; font-weight: 600; color: var(--text); width: 100%; font-family: inherit; -webkit-appearance: none; appearance: none; }
+      select.cl-nc-cell-input { cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat !important; background-position: right 0 center !important; padding-right: 16px !important; }
+      .cl-nc-obs { width: 100%; resize: none; font-size: 0.9rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; font-family: inherit; color: var(--text); box-sizing: border-box; }
+      @media (max-width: 600px) {
+        .cl-nc-section { padding: 14px 16px 0; }
+        .cl-nc-cells-2col { grid-template-columns: 1fr; }
+        .cl-nc-cells-2col .cl-nc-cell:first-child { border-right: none; border-bottom: 1px solid var(--border); }
+      }
+    `;
+    document.head.appendChild(s);
+  },
+
   render() {
     const c = document.getElementById('clientesContainer');
     if (!c) return;
@@ -230,7 +269,7 @@ const ClientesModule = {
       </section>
 
       <div class="modal-overlay hidden" id="clienteModal">
-        <div class="modal-card">
+        <div class="modal-card cl-nc-card">
           <div class="modal-card__header">
             <div>
               <h3 id="clienteModalTitle">${this.state.editingId ? 'Editar cliente' : 'Novo cliente'}</h3>
@@ -242,30 +281,52 @@ const ClientesModule = {
             </button>
           </div>
 
-          <form id="clienteForm" class="form-grid">
-            <div class="form-field form-field--span-2">
-              <label for="clienteNome">Nome</label>
-              <input id="clienteNome" required />
-            </div>
-
-            <div class="form-field">
-              <label for="clienteTelefone">Telefone</label>
-              <input id="clienteTelefone" placeholder="(88) 99999-9999" />
-            </div>
-
-            <div class="form-field">
-              <label for="clienteCpf">CPF</label>
-              <input id="clienteCpf" placeholder="000.000.000-00" />
-            </div>
-
-            <div class="form-field">
-              <label for="clienteNascimento">Nascimento</label>
-              <input id="clienteNascimento" type="date" />
-            </div>
-
-            <div class="form-field form-field--span-2">
-              <label for="clienteEndereco">Endereço</label>
-              <input id="clienteEndereco" />
+          <form id="clienteForm">
+            <div class="cl-nc-body">
+              <div class="cl-nc-section">
+                <p class="cl-nc-section-title">Dados do Cliente</p>
+                <div class="cl-nc-card-group">
+                  <div class="cl-nc-cell">
+                    <span class="cl-nc-cell-ico cl-nc-cell-ico--blue"><i class="fa-solid fa-user"></i></span>
+                    <div class="cl-nc-cell-content">
+                      <label class="cl-nc-lbl" for="clienteNome">Nome <span class="cl-nc-req">*</span></label>
+                      <input type="text" id="clienteNome" class="cl-nc-cell-input" placeholder="Nome completo" autocomplete="off" required />
+                    </div>
+                  </div>
+                  <div class="cl-nc-cells-2col">
+                    <div class="cl-nc-cell">
+                      <span class="cl-nc-cell-ico cl-nc-cell-ico--green"><i class="fa-solid fa-phone"></i></span>
+                      <div class="cl-nc-cell-content">
+                        <label class="cl-nc-lbl" for="clienteTelefone">Telefone</label>
+                        <input type="text" id="clienteTelefone" class="cl-nc-cell-input" placeholder="(88) 99999-9999" autocomplete="off" />
+                      </div>
+                    </div>
+                    <div class="cl-nc-cell">
+                      <span class="cl-nc-cell-ico"><i class="fa-solid fa-id-card"></i></span>
+                      <div class="cl-nc-cell-content">
+                        <label class="cl-nc-lbl" for="clienteCpf">CPF</label>
+                        <input type="text" id="clienteCpf" class="cl-nc-cell-input" placeholder="000.000.000-00" autocomplete="off" />
+                      </div>
+                    </div>
+                  </div>
+                  <div class="cl-nc-cells-2col">
+                    <div class="cl-nc-cell">
+                      <span class="cl-nc-cell-ico cl-nc-cell-ico--blue"><i class="fa-solid fa-calendar-days"></i></span>
+                      <div class="cl-nc-cell-content">
+                        <label class="cl-nc-lbl" for="clienteNascimento">Nascimento</label>
+                        <input type="date" id="clienteNascimento" class="cl-nc-cell-input" />
+                      </div>
+                    </div>
+                    <div class="cl-nc-cell">
+                      <span class="cl-nc-cell-ico cl-nc-cell-ico--orange"><i class="fa-solid fa-location-dot"></i></span>
+                      <div class="cl-nc-cell-content">
+                        <label class="cl-nc-lbl" for="clienteEndereco">Endereço</label>
+                        <input type="text" id="clienteEndereco" class="cl-nc-cell-input" placeholder="Rua, número, bairro..." autocomplete="off" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div class="modal-card__footer">
@@ -423,6 +484,7 @@ const ClientesModule = {
   },
 
   openModal(isEdit = false) {
+    this._injectClStyles();
     this.cache();
 
     if (!this.el.modal) return;

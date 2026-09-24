@@ -205,6 +205,14 @@ const ProdutosModule = {
       }
     });
 
+    // Toggle promoção ativa → mostrar/ocultar campo de preço promocional
+    document.addEventListener('change', (e) => {
+      if (e.target?.id === 'produtoPromocaoAtiva') {
+        const promoRow = document.getElementById('prdPromoPrecoRow');
+        if (promoRow) promoRow.style.display = e.target.checked ? 'flex' : 'none';
+      }
+    });
+
     // Checkboxes de seleção para impressão em lote
     document.addEventListener('change', (e) => {
       if (e.target.id === 'produtosSelectAll') {
@@ -591,9 +599,62 @@ const ProdutosModule = {
 
   // ── Modal ──────────────────────────────────────────────────────────────────
 
+  _injectPrdStyles() {
+    if (document.getElementById('prd-nc-styles')) return;
+    const s = document.createElement('style');
+    s.id = 'prd-nc-styles';
+    s.textContent = `
+      .prd-nc-card { width: min(96vw, 600px) !important; max-height: 92vh; }
+      .prd-nc-body { overflow-y: auto; }
+      .prd-nc-section { padding: 16px 20px 0; }
+      .prd-nc-section:last-child { padding-bottom: 20px; }
+      .prd-nc-section-title { font-size: 0.7rem; font-weight: 900; color: var(--text-muted); text-transform: uppercase; letter-spacing: .08em; margin: 0 0 8px; }
+      .prd-nc-card-group { border: 1px solid var(--border); border-radius: 18px; overflow: hidden; background: var(--surface); }
+      .prd-nc-cell { display: flex; align-items: center; gap: 14px; padding: 13px 16px; border-bottom: 1px solid var(--border); background: var(--surface); transition: background .1s; }
+      .prd-nc-cell:last-child { border-bottom: none; }
+      .prd-nc-cell:focus-within { background: var(--surface-2, rgba(0,0,0,.025)); }
+      .prd-nc-cells-2col { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--border); }
+      .prd-nc-cells-2col:last-child { border-bottom: none; }
+      .prd-nc-cells-2col .prd-nc-cell { border-bottom: none; }
+      .prd-nc-cells-2col .prd-nc-cell:first-child { border-right: 1px solid var(--border); }
+      .prd-nc-cells-3col { display: grid; grid-template-columns: 1fr 1fr 1fr; border-bottom: 1px solid var(--border); }
+      .prd-nc-cells-3col:last-child { border-bottom: none; }
+      .prd-nc-cells-3col .prd-nc-cell { border-bottom: none; }
+      .prd-nc-cells-3col .prd-nc-cell:not(:last-child) { border-right: 1px solid var(--border); }
+      .prd-nc-cell-ico { width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 0.88rem; background: var(--surface-2); color: var(--text-muted); }
+      .prd-nc-cell-ico--green { background: rgba(22,163,74,.1); color: #16a34a; }
+      .prd-nc-cell-ico--blue { background: rgba(37,99,235,.1); color: #2563eb; }
+      .prd-nc-cell-ico--red { background: rgba(220,38,38,.1); color: #dc2626; }
+      .prd-nc-cell-ico--purple { background: rgba(124,58,237,.1); color: #7c3aed; }
+      .prd-nc-cell-ico--orange { background: rgba(234,88,12,.1); color: #ea580c; }
+      .prd-nc-cell-ico--yellow { background: rgba(202,138,4,.1); color: #ca8a04; }
+      .prd-nc-cell-content { flex: 1; min-width: 0; }
+      .prd-nc-lbl { display: block; font-size: 0.67rem; font-weight: 900; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 2px; }
+      .prd-nc-req { color: #dc2626; }
+      .prd-nc-cell-input { border: none !important; outline: none !important; background: transparent !important; padding: 0 !important; font-size: 0.93rem; font-weight: 600; color: var(--text); width: 100%; font-family: inherit; -webkit-appearance: none; appearance: none; }
+      select.prd-nc-cell-input { cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat !important; background-position: right 0 center !important; padding-right: 16px !important; }
+      .prd-nc-valor { font-size: 1.1rem !important; font-weight: 800 !important; letter-spacing: -.02em; }
+      .prd-nc-promo-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 0.9rem; font-weight: 600; }
+      .prd-nc-toggle { position: relative; width: 42px; height: 24px; }
+      .prd-nc-toggle input { opacity: 0; width: 0; height: 0; }
+      .prd-nc-toggle-slider { position: absolute; inset: 0; background: var(--border); border-radius: 24px; transition: .2s; cursor: pointer; }
+      .prd-nc-toggle-slider::before { content: ''; position: absolute; left: 3px; bottom: 3px; width: 18px; height: 18px; background: #fff; border-radius: 50%; transition: .2s; }
+      .prd-nc-toggle input:checked + .prd-nc-toggle-slider { background: #16a34a; }
+      .prd-nc-toggle input:checked + .prd-nc-toggle-slider::before { transform: translateX(18px); }
+      @media (max-width: 600px) {
+        .prd-nc-section { padding: 14px 16px 0; }
+        .prd-nc-cells-2col, .prd-nc-cells-3col { grid-template-columns: 1fr; }
+        .prd-nc-cells-2col .prd-nc-cell:first-child,
+        .prd-nc-cells-3col .prd-nc-cell:not(:last-child) { border-right: none; border-bottom: 1px solid var(--border); }
+      }
+    `;
+    document.head.appendChild(s);
+  },
+
   renderInitialState() {
     const container = document.getElementById('produtosContainer');
     if (!container) return;
+    this._injectPrdStyles();
     container.innerHTML = `
       <section class="module-card" id="produtosSection">
         <div class="module-toolbar">
@@ -732,7 +793,7 @@ const ProdutosModule = {
 
       <!-- MODAL PRODUTO -->
       <div class="modal-overlay hidden" id="produtoModal">
-        <div class="modal-card modal-card--xl">
+        <div class="modal-card modal-card--xl prd-nc-card">
           <div class="modal-card__header">
             <div>
               <h3 id="produtoModalTitle">Novo produto</h3>
@@ -762,78 +823,145 @@ const ProdutosModule = {
 
           <!-- TAB: DADOS -->
           <div class="prod-tab-panel active" id="produtoTabDados">
-            <form id="produtoForm" class="form-grid">
+            <form id="produtoForm">
               <input type="hidden" id="produtoId" />
+              <div class="prd-nc-body">
 
-              <div class="form-field form-field--span-2">
-                <label for="produtoNome">Nome do produto *</label>
-                <input type="text" id="produtoNome" required />
-              </div>
-              <div class="form-field">
-                <label for="produtoCategoria">Categoria</label>
-                <input type="text" id="produtoCategoria" list="produtosCatList" autocomplete="off" />
-                <datalist id="produtosCatList"></datalist>
-              </div>
-              <div class="form-field">
-                <label for="produtoCodigoBarras">Código de barras</label>
-                <input type="text" id="produtoCodigoBarras" placeholder="Gerado automaticamente" />
-              </div>
-              <div class="form-field">
-                <label for="produtoNcm">NCM</label>
-                <input type="text" id="produtoNcm" placeholder="Ex: 8517.12.31" maxlength="15" />
-              </div>
-              <div class="form-field">
-                <label for="produtoUnidade">Unidade</label>
-                <select id="produtoUnidade" class="input">
-                  <option value="UN">UN — Unidade</option>
-                  <option value="PC">PC — Peça</option>
-                  <option value="KG">KG — Quilograma</option>
-                  <option value="G">G — Grama</option>
-                  <option value="L">L — Litro</option>
-                  <option value="ML">ML — Mililitro</option>
-                  <option value="M">M — Metro</option>
-                  <option value="M2">M² — Metro quadrado</option>
-                  <option value="CX">CX — Caixa</option>
-                  <option value="SC">SC — Saco</option>
-                  <option value="PCT">PCT — Pacote</option>
-                </select>
-              </div>
-              <div class="form-field">
-                <label for="produtoCusto">Custo *</label>
-                <input type="number" id="produtoCusto" min="0" step="0.01" required />
-              </div>
-              <div class="form-field">
-                <label for="produtoPreco">
-                  Preço de venda *
-                  <small id="produtoPrecoHint" style="font-weight:400;color:var(--text-muted);font-size:11px"></small>
-                  <span style="font-size:11px;font-weight:400;color:var(--text-muted);margin-left:6px" title="Margem padrão usada na sugestão automática de preço">
-                    Margem: <input type="number" id="produtoMargemAlvo" min="1" max="999" step="1"
-                      style="width:44px;font-size:11px;padding:1px 4px;border:1px solid var(--border);border-radius:3px;background:var(--surface)" /> %
-                  </span>
-                </label>
-                <input type="number" id="produtoPreco" min="0" step="0.01" required />
-              </div>
-              <div class="form-field">
-                <label for="produtoPrecoPromocional">Preço promocional</label>
-                <input type="number" id="produtoPrecoPromocional" min="0" step="0.01" />
-              </div>
-              <div class="form-field form-field--checkbox">
-                <label class="checkbox-wrapper">
-                  <input type="checkbox" id="produtoPromocaoAtiva" />
-                  <span>Promoção ativa</span>
-                </label>
-              </div>
-              <div class="form-field">
-                <label for="produtoEstoque">Estoque inicial</label>
-                <input type="number" id="produtoEstoque" min="0" step="1" />
-              </div>
-              <div class="form-field">
-                <label for="produtoEstoqueMinimo">Estoque mínimo</label>
-                <input type="number" id="produtoEstoqueMinimo" min="0" step="1" />
-              </div>
+                <!-- Seção: Identificação -->
+                <div class="prd-nc-section">
+                  <p class="prd-nc-section-title">Identificação</p>
+                  <div class="prd-nc-card-group">
+                    <!-- Nome -->
+                    <div class="prd-nc-cell">
+                      <span class="prd-nc-cell-ico"><i class="fa-solid fa-box"></i></span>
+                      <div class="prd-nc-cell-content">
+                        <label class="prd-nc-lbl" for="produtoNome">Nome <span class="prd-nc-req">*</span></label>
+                        <input type="text" id="produtoNome" class="prd-nc-cell-input" placeholder="Nome do produto" autocomplete="off" required />
+                      </div>
+                    </div>
+                    <!-- Categoria + Código de barras -->
+                    <div class="prd-nc-cells-2col">
+                      <div class="prd-nc-cell">
+                        <span class="prd-nc-cell-ico"><i class="fa-solid fa-tag"></i></span>
+                        <div class="prd-nc-cell-content">
+                          <label class="prd-nc-lbl" for="produtoCategoria">Categoria</label>
+                          <input type="text" id="produtoCategoria" class="prd-nc-cell-input" list="produtosCatList" autocomplete="off" placeholder="Ex: Roupas" />
+                          <datalist id="produtosCatList"></datalist>
+                        </div>
+                      </div>
+                      <div class="prd-nc-cell">
+                        <span class="prd-nc-cell-ico"><i class="fa-solid fa-barcode"></i></span>
+                        <div class="prd-nc-cell-content">
+                          <label class="prd-nc-lbl" for="produtoCodigoBarras">Código de barras</label>
+                          <input type="text" id="produtoCodigoBarras" class="prd-nc-cell-input" placeholder="Gerado automaticamente" />
+                        </div>
+                      </div>
+                    </div>
+                    <!-- NCM + Unidade -->
+                    <div class="prd-nc-cells-2col">
+                      <div class="prd-nc-cell">
+                        <span class="prd-nc-cell-ico"><i class="fa-solid fa-file-invoice"></i></span>
+                        <div class="prd-nc-cell-content">
+                          <label class="prd-nc-lbl" for="produtoNcm">NCM</label>
+                          <input type="text" id="produtoNcm" class="prd-nc-cell-input" placeholder="Ex: 8517.12.31" maxlength="15" />
+                        </div>
+                      </div>
+                      <div class="prd-nc-cell">
+                        <span class="prd-nc-cell-ico"><i class="fa-solid fa-ruler"></i></span>
+                        <div class="prd-nc-cell-content">
+                          <label class="prd-nc-lbl" for="produtoUnidade">Unidade</label>
+                          <select id="produtoUnidade" class="prd-nc-cell-input">
+                            <option value="UN">UN — Unidade</option>
+                            <option value="PC">PC — Peça</option>
+                            <option value="KG">KG — Quilograma</option>
+                            <option value="G">G — Grama</option>
+                            <option value="L">L — Litro</option>
+                            <option value="ML">ML — Mililitro</option>
+                            <option value="M">M — Metro</option>
+                            <option value="M2">M² — Metro quadrado</option>
+                            <option value="CX">CX — Caixa</option>
+                            <option value="SC">SC — Saco</option>
+                            <option value="PCT">PCT — Pacote</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
-              <div class="form-feedback form-field--span-2" id="produtoFormFeedback"></div>
-              <div class="modal-card__footer form-field--span-2">
+                <!-- Seção: Preços -->
+                <div class="prd-nc-section">
+                  <p class="prd-nc-section-title">Preços</p>
+                  <div class="prd-nc-card-group">
+                    <!-- Custo + Margem% + Preço de Venda -->
+                    <div class="prd-nc-cells-3col">
+                      <div class="prd-nc-cell">
+                        <span class="prd-nc-cell-ico prd-nc-cell-ico--green"><i class="fa-solid fa-brazilian-real-sign"></i></span>
+                        <div class="prd-nc-cell-content">
+                          <label class="prd-nc-lbl" for="produtoCusto">Custo</label>
+                          <input type="number" id="produtoCusto" class="prd-nc-cell-input prd-nc-valor" min="0" step="0.01" placeholder="0.00" />
+                        </div>
+                      </div>
+                      <div class="prd-nc-cell">
+                        <span class="prd-nc-cell-ico prd-nc-cell-ico--orange"><i class="fa-solid fa-percent"></i></span>
+                        <div class="prd-nc-cell-content">
+                          <label class="prd-nc-lbl" for="produtoMargemAlvo">Margem %</label>
+                          <input type="number" id="produtoMargemAlvo" class="prd-nc-cell-input" min="1" max="999" step="1" placeholder="30" />
+                        </div>
+                      </div>
+                      <div class="prd-nc-cell">
+                        <span class="prd-nc-cell-ico prd-nc-cell-ico--green"><i class="fa-solid fa-tag"></i></span>
+                        <div class="prd-nc-cell-content">
+                          <label class="prd-nc-lbl" for="produtoPreco">Preço de venda <span class="prd-nc-req">*</span> <small id="produtoPrecoHint" style="font-weight:400;color:var(--text-muted);font-size:10px;text-transform:none;letter-spacing:0"></small></label>
+                          <input type="number" id="produtoPreco" class="prd-nc-cell-input prd-nc-valor" min="0" step="0.01" required placeholder="0.00" />
+                        </div>
+                      </div>
+                    </div>
+                    <!-- Toggle promoção ativa -->
+                    <div class="prd-nc-promo-row">
+                      <span>Promoção ativa</span>
+                      <label class="prd-nc-toggle">
+                        <input type="checkbox" id="produtoPromocaoAtiva" />
+                        <span class="prd-nc-toggle-slider"></span>
+                      </label>
+                    </div>
+                    <!-- Preço promocional (visível quando toggle ativo) -->
+                    <div class="prd-nc-cell" id="prdPromoPrecoRow" style="display:none">
+                      <span class="prd-nc-cell-ico prd-nc-cell-ico--red"><i class="fa-solid fa-percent"></i></span>
+                      <div class="prd-nc-cell-content">
+                        <label class="prd-nc-lbl" for="produtoPrecoPromocional">Preço promocional</label>
+                        <input type="number" id="produtoPrecoPromocional" class="prd-nc-cell-input prd-nc-valor" min="0" step="0.01" placeholder="0.00" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Seção: Estoque -->
+                <div class="prd-nc-section">
+                  <p class="prd-nc-section-title">Estoque</p>
+                  <div class="prd-nc-card-group">
+                    <div class="prd-nc-cells-2col">
+                      <div class="prd-nc-cell">
+                        <span class="prd-nc-cell-ico prd-nc-cell-ico--blue"><i class="fa-solid fa-warehouse"></i></span>
+                        <div class="prd-nc-cell-content">
+                          <label class="prd-nc-lbl" for="produtoEstoque">Estoque inicial</label>
+                          <input type="number" id="produtoEstoque" class="prd-nc-cell-input" min="0" step="1" placeholder="0" />
+                        </div>
+                      </div>
+                      <div class="prd-nc-cell">
+                        <span class="prd-nc-cell-ico prd-nc-cell-ico--orange"><i class="fa-solid fa-triangle-exclamation"></i></span>
+                        <div class="prd-nc-cell-content">
+                          <label class="prd-nc-lbl" for="produtoEstoqueMinimo">Estoque mínimo</label>
+                          <input type="number" id="produtoEstoqueMinimo" class="prd-nc-cell-input" min="0" step="1" placeholder="0" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+              <div class="form-feedback" id="produtoFormFeedback" style="margin:0 20px"></div>
+              <div class="modal-card__footer" style="padding:16px 20px">
                 <button type="button" class="btn btn-light" id="produtoCancelBtn">Cancelar</button>
                 <button type="submit" class="btn btn-primary" id="produtoSaveBtn">Salvar produto</button>
               </div>
@@ -853,40 +981,67 @@ const ProdutosModule = {
 
           <!-- TAB: GRADE -->
           <div class="prod-tab-panel hidden" id="produtoTabGrade">
-            <div class="toggle-row">
-              <div>
-                <div class="toggle-row__label">Variações (Grade)</div>
-                <div class="toggle-row__desc">Ativa tamanho, cor e estoque por variação</div>
+            <div class="prd-nc-section" style="padding-top:20px">
+              <div class="prd-nc-card-group">
+                <div class="prd-nc-promo-row">
+                  <div>
+                    <div style="font-size:0.9rem;font-weight:700">Variações (Grade)</div>
+                    <div style="font-size:0.78rem;font-weight:400;color:var(--text-muted)">Ativa tamanho, cor e estoque por variação</div>
+                  </div>
+                  <label class="prd-nc-toggle">
+                    <input type="checkbox" id="gradeToggleInput" />
+                    <span class="prd-nc-toggle-slider"></span>
+                  </label>
+                </div>
               </div>
-              <label class="toggle-switch">
-                <input type="checkbox" id="gradeToggleInput" />
-                <span class="toggle-switch__track"></span>
-              </label>
             </div>
             <div id="gradeContent" class="hidden">
-              <p class="section-title">Variações cadastradas</p>
-              <div class="grade-grid" id="gradeGrid"></div>
-              <div class="section-empty hidden" id="gradeEmpty">Nenhuma variação. Adicione abaixo.</div>
-              <div class="inline-add-form" style="grid-template-columns:1fr 1fr 110px 110px auto">
-                <div>
-                  <label style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:4px;display:block">Tamanho / Atrib. 1 *</label>
-                  <input type="text" id="gradeAtrib1" placeholder="Ex: M, 38, Azul..." />
+              <div class="prd-nc-section">
+                <p class="prd-nc-section-title">Variações cadastradas</p>
+                <div class="grade-grid" id="gradeGrid"></div>
+                <div class="section-empty hidden" id="gradeEmpty">Nenhuma variação. Adicione abaixo.</div>
+              </div>
+              <div class="prd-nc-section">
+                <p class="prd-nc-section-title">Adicionar variação</p>
+                <div class="prd-nc-card-group">
+                  <div class="prd-nc-cells-2col">
+                    <div class="prd-nc-cell">
+                      <span class="prd-nc-cell-ico prd-nc-cell-ico--purple"><i class="fa-solid fa-palette"></i></span>
+                      <div class="prd-nc-cell-content">
+                        <label class="prd-nc-lbl" for="gradeAtrib1">Atrib. 1 (Tamanho/Cor) <span class="prd-nc-req">*</span></label>
+                        <input type="text" id="gradeAtrib1" class="prd-nc-cell-input" placeholder="Ex: M, 38, Azul..." />
+                      </div>
+                    </div>
+                    <div class="prd-nc-cell">
+                      <span class="prd-nc-cell-ico"><i class="fa-solid fa-layer-group"></i></span>
+                      <div class="prd-nc-cell-content">
+                        <label class="prd-nc-lbl" for="gradeAtrib2">Atrib. 2 (opcional)</label>
+                        <input type="text" id="gradeAtrib2" class="prd-nc-cell-input" placeholder="Opcional" />
+                      </div>
+                    </div>
+                  </div>
+                  <div class="prd-nc-cells-2col">
+                    <div class="prd-nc-cell">
+                      <span class="prd-nc-cell-ico prd-nc-cell-ico--blue"><i class="fa-solid fa-warehouse"></i></span>
+                      <div class="prd-nc-cell-content">
+                        <label class="prd-nc-lbl" for="gradeEstoque">Estoque</label>
+                        <input type="number" id="gradeEstoque" class="prd-nc-cell-input" min="0" value="0" placeholder="0" />
+                      </div>
+                    </div>
+                    <div class="prd-nc-cell">
+                      <span class="prd-nc-cell-ico prd-nc-cell-ico--green"><i class="fa-solid fa-brazilian-real-sign"></i></span>
+                      <div class="prd-nc-cell-content">
+                        <label class="prd-nc-lbl" for="gradePreco">Preço (R$)</label>
+                        <input type="number" id="gradePreco" class="prd-nc-cell-input" min="0" step="0.01" placeholder="Padrão" />
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:4px;display:block">Cor / Atrib. 2</label>
-                  <input type="text" id="gradeAtrib2" placeholder="Opcional" />
+                <div style="padding:12px 0 4px;display:flex;justify-content:flex-end">
+                  <button type="button" id="gradeAddBtn" class="btn btn-primary">
+                    <i class="fa-solid fa-plus"></i> Adicionar variação
+                  </button>
                 </div>
-                <div>
-                  <label style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:4px;display:block">Estoque</label>
-                  <input type="number" id="gradeEstoque" min="0" value="0" />
-                </div>
-                <div>
-                  <label style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:4px;display:block">Preço (R$)</label>
-                  <input type="number" id="gradePreco" min="0" step="0.01" placeholder="Padrão" />
-                </div>
-                <button type="button" id="gradeAddBtn" class="btn btn-primary" style="white-space:nowrap">
-                  <i class="fa-solid fa-plus"></i> Adicionar
-                </button>
               </div>
             </div>
             <div class="section-empty" id="gradeDisabledMsg" style="border-style:solid;background:var(--surface-2)">
@@ -896,38 +1051,57 @@ const ProdutosModule = {
 
           <!-- TAB: KIT -->
           <div class="prod-tab-panel hidden" id="produtoTabKit">
-            <div class="toggle-row">
-              <div>
-                <div class="toggle-row__label">Produto Composto (Kit)</div>
-                <div class="toggle-row__desc">Ao vender, debita automaticamente cada componente</div>
+            <div class="prd-nc-section" style="padding-top:20px">
+              <div class="prd-nc-card-group">
+                <div class="prd-nc-promo-row">
+                  <div>
+                    <div style="font-size:0.9rem;font-weight:700">Produto Composto (Kit)</div>
+                    <div style="font-size:0.78rem;font-weight:400;color:var(--text-muted)">Ao vender, debita automaticamente cada componente</div>
+                  </div>
+                  <label class="prd-nc-toggle">
+                    <input type="checkbox" id="kitToggleInput" />
+                    <span class="prd-nc-toggle-slider"></span>
+                  </label>
+                </div>
               </div>
-              <label class="toggle-switch">
-                <input type="checkbox" id="kitToggleInput" />
-                <span class="toggle-switch__track"></span>
-              </label>
             </div>
             <div id="kitContent" class="hidden">
-              <div class="estoque-kit-info" id="kitEstoqueInfo">
-                <i class="fa-solid fa-boxes-stacked"></i>
-                <span id="kitEstoqueVal">0</span> kits disponíveis
+              <div class="prd-nc-section">
+                <div class="estoque-kit-info" id="kitEstoqueInfo" style="margin-bottom:8px">
+                  <i class="fa-solid fa-boxes-stacked"></i>
+                  <span id="kitEstoqueVal">0</span> kits disponíveis
+                </div>
+                <p class="prd-nc-section-title">Componentes do kit</p>
+                <div id="kitList"></div>
+                <div class="section-empty hidden" id="kitEmpty">Nenhum componente. Adicione abaixo.</div>
               </div>
-              <p class="section-title">Componentes do kit</p>
-              <div id="kitList"></div>
-              <div class="section-empty hidden" id="kitEmpty">Nenhum componente. Adicione abaixo.</div>
-              <div class="inline-add-form" style="grid-template-columns:1fr 120px auto">
-                <div>
-                  <label style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:4px;display:block">Produto componente *</label>
-                  <select id="kitProdutoSelect" class="filter-input" style="width:100%">
-                    <option value="">Selecione o produto...</option>
-                  </select>
+              <div class="prd-nc-section">
+                <p class="prd-nc-section-title">Adicionar componente</p>
+                <div class="prd-nc-card-group">
+                  <div class="prd-nc-cells-2col">
+                    <div class="prd-nc-cell">
+                      <span class="prd-nc-cell-ico prd-nc-cell-ico--blue"><i class="fa-solid fa-cube"></i></span>
+                      <div class="prd-nc-cell-content">
+                        <label class="prd-nc-lbl" for="kitProdutoSelect">Produto componente <span class="prd-nc-req">*</span></label>
+                        <select id="kitProdutoSelect" class="prd-nc-cell-input">
+                          <option value="">Selecione o produto...</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="prd-nc-cell">
+                      <span class="prd-nc-cell-ico prd-nc-cell-ico--orange"><i class="fa-solid fa-hashtag"></i></span>
+                      <div class="prd-nc-cell-content">
+                        <label class="prd-nc-lbl" for="kitQtd">Quantidade <span class="prd-nc-req">*</span></label>
+                        <input type="number" id="kitQtd" class="prd-nc-cell-input" min="0.001" step="0.001" value="1" />
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:4px;display:block">Quantidade *</label>
-                  <input type="number" id="kitQtd" min="0.001" step="0.001" value="1" />
+                <div style="padding:12px 0 4px;display:flex;justify-content:flex-end">
+                  <button type="button" id="kitAddBtn" class="btn btn-primary">
+                    <i class="fa-solid fa-plus"></i> Adicionar componente
+                  </button>
                 </div>
-                <button type="button" id="kitAddBtn" class="btn btn-primary" style="white-space:nowrap">
-                  <i class="fa-solid fa-plus"></i> Adicionar
-                </button>
               </div>
             </div>
             <div class="section-empty" id="kitDisabledMsg" style="border-style:solid;background:var(--surface-2)">
@@ -955,6 +1129,8 @@ const ProdutosModule = {
     if (this.el.tabs) this.el.tabs.classList.add('hidden');
     this.switchTab('dados');
     this.setFormFeedback('', 'info');
+    const promoRowCreate = document.getElementById('prdPromoPrecoRow');
+    if (promoRowCreate) promoRowCreate.style.display = 'none';
     this.el.modal?.classList.remove('hidden');
   },
 
@@ -975,6 +1151,8 @@ const ProdutosModule = {
     if (this.el.custo) this.el.custo.value = Number(item.custo || 0);
     if (this.el.precoPromocional) this.el.precoPromocional.value = Number(item.preco_promocional || 0);
     if (this.el.promocaoAtiva) this.el.promocaoAtiva.checked = Boolean(item.promocao_ativa);
+    const promoRowEdit = document.getElementById('prdPromoPrecoRow');
+    if (promoRowEdit) promoRowEdit.style.display = item.promocao_ativa ? 'flex' : 'none';
     if (this.el.estoque) this.el.estoque.value = Number(item.estoque || 0);
     if (this.el.estoqueMinimo) this.el.estoqueMinimo.value = Number(item.estoque_minimo || 0);
     if (this.el.ncm) this.el.ncm.value = item.ncm || '';

@@ -598,11 +598,51 @@ const EstoqueModule = {
     document.head.appendChild(style);
   },
 
+  _injectEstStyles() {
+    if (document.getElementById('est-nc-styles')) return;
+    const s = document.createElement('style');
+    s.id = 'est-nc-styles';
+    s.textContent = `
+      .est-nc-card { width: min(96vw, 560px) !important; max-height: 92vh; }
+      .est-nc-body { overflow-y: auto; }
+      .est-nc-section { padding: 16px 20px 0; }
+      .est-nc-section:last-child { padding-bottom: 20px; }
+      .est-nc-section-title { font-size: 0.7rem; font-weight: 900; color: var(--text-muted); text-transform: uppercase; letter-spacing: .08em; margin: 0 0 8px; }
+      .est-nc-card-group { border: 1px solid var(--border); border-radius: 18px; overflow: hidden; background: var(--surface); }
+      .est-nc-cell { display: flex; align-items: center; gap: 14px; padding: 13px 16px; border-bottom: 1px solid var(--border); background: var(--surface); transition: background .1s; }
+      .est-nc-cell:last-child { border-bottom: none; }
+      .est-nc-cell:focus-within { background: var(--surface-2, rgba(0,0,0,.025)); }
+      .est-nc-cells-2col { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--border); }
+      .est-nc-cells-2col:last-child { border-bottom: none; }
+      .est-nc-cells-2col .est-nc-cell { border-bottom: none; }
+      .est-nc-cells-2col .est-nc-cell:first-child { border-right: 1px solid var(--border); }
+      .est-nc-cell-ico { width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 0.88rem; background: var(--surface-2); color: var(--text-muted); }
+      .est-nc-cell-ico--green { background: rgba(22,163,74,.1); color: #16a34a; }
+      .est-nc-cell-ico--blue { background: rgba(37,99,235,.1); color: #2563eb; }
+      .est-nc-cell-ico--red { background: rgba(220,38,38,.1); color: #dc2626; }
+      .est-nc-cell-ico--purple { background: rgba(124,58,237,.1); color: #7c3aed; }
+      .est-nc-cell-ico--orange { background: rgba(234,88,12,.1); color: #ea580c; }
+      .est-nc-cell-content { flex: 1; min-width: 0; }
+      .est-nc-lbl { display: block; font-size: 0.67rem; font-weight: 900; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 2px; }
+      .est-nc-req { color: #dc2626; }
+      .est-nc-cell-input { border: none !important; outline: none !important; background: transparent !important; padding: 0 !important; font-size: 0.93rem; font-weight: 600; color: var(--text); width: 100%; font-family: inherit; -webkit-appearance: none; appearance: none; }
+      select.est-nc-cell-input { cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat !important; background-position: right 0 center !important; padding-right: 16px !important; }
+      .est-nc-obs { width: 100%; resize: none; font-size: 0.9rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; font-family: inherit; color: var(--text); box-sizing: border-box; }
+      @media (max-width: 600px) {
+        .est-nc-section { padding: 14px 16px 0; }
+        .est-nc-cells-2col { grid-template-columns: 1fr; }
+        .est-nc-cells-2col .est-nc-cell:first-child { border-right: none; border-bottom: 1px solid var(--border); }
+      }
+    `;
+    document.head.appendChild(s);
+  },
+
   // ── Sugestão automática de compra ─────────────────────────────────────────
 
   // ── Multi-depósito ──────────────────────────────────────────────────────────
 
   async abrirDepositos() {
+    this._injectEstStyles();
     if (!document.getElementById('depositosModal')) {
       const el = document.createElement('div');
       el.className = 'modal-overlay hidden';
@@ -692,7 +732,7 @@ const EstoqueModule = {
       const overlay = document.createElement('div');
       overlay.className = 'modal-overlay';
       overlay.innerHTML = `
-        <div class="modal-card" style="max-width:400px">
+        <div class="modal-card est-nc-card" style="max-width:400px">
           <div class="modal-card__header">
             <div>
               <h3>Novo Depósito</h3>
@@ -700,15 +740,24 @@ const EstoqueModule = {
             </div>
             <button class="icon-button" id="_dep_cancel" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
           </div>
-          <div class="modal-card__body">
-            <div class="form-grid">
-              <div class="form-field form-field--span-2">
-                <label>Nome <span style="color:var(--danger)">*</span></label>
-                <input id="_dep_nome" type="text" autocomplete="off" placeholder="Ex: Depósito Principal" maxlength="100" />
-              </div>
-              <div class="form-field form-field--span-2">
-                <label>Descrição (opcional)</label>
-                <input id="_dep_desc" type="text" autocomplete="off" />
+          <div class="est-nc-body">
+            <div class="est-nc-section">
+              <p class="est-nc-section-title">Novo Depósito</p>
+              <div class="est-nc-card-group">
+                <div class="est-nc-cell">
+                  <span class="est-nc-cell-ico"><i class="fa-solid fa-warehouse"></i></span>
+                  <div class="est-nc-cell-content">
+                    <label class="est-nc-lbl" for="_dep_nome">Nome <span class="est-nc-req">*</span></label>
+                    <input type="text" id="_dep_nome" class="est-nc-cell-input" placeholder="Ex: Depósito Principal" maxlength="100" autocomplete="off" />
+                  </div>
+                </div>
+                <div class="est-nc-cell">
+                  <span class="est-nc-cell-ico"><i class="fa-solid fa-pen-to-square"></i></span>
+                  <div class="est-nc-cell-content">
+                    <label class="est-nc-lbl" for="_dep_desc">Descrição</label>
+                    <input type="text" id="_dep_desc" class="est-nc-cell-input" placeholder="Opcional..." autocomplete="off" />
+                  </div>
+                </div>
               </div>
             </div>
           </div>

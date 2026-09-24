@@ -699,28 +699,42 @@ const PDVModule = {
       m.className = 'modal-overlay hidden';
       m.id = 'pdvNovoClienteModal';
       m.innerHTML = `
-        <div class="modal-card" style="max-width:440px">
+        <div class="modal-card pdv-nc-card">
           <div class="modal-card__header">
             <div><h3>Novo Cliente</h3><p style="margin:0;font-size:13px;color:var(--text-muted)">Cadastro rápido durante a venda</p></div>
             <button type="button" class="icon-button" id="pdvNovoClienteFechar"><i class="fa-solid fa-xmark"></i></button>
           </div>
-          <div style="padding:20px 24px 24px;display:flex;flex-direction:column;gap:12px">
-            <div class="form-field">
-              <label class="form-label">Nome *</label>
-              <input type="text" id="pdvNCNome" class="input" placeholder="Nome completo">
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-              <div class="form-field">
-                <label class="form-label">Telefone</label>
-                <input type="text" id="pdvNCTelefone" class="input" placeholder="(00) 00000-0000">
+          <div class="pdv-nc-body">
+            <div class="pdv-nc-section">
+              <p class="pdv-nc-section-title">Novo Cliente</p>
+              <div class="pdv-nc-card-group">
+                <div class="pdv-nc-cell">
+                  <span class="pdv-nc-cell-ico pdv-nc-cell-ico--green"><i class="fa-solid fa-user"></i></span>
+                  <div class="pdv-nc-cell-content">
+                    <label class="pdv-nc-lbl" for="pdvNCNome">Nome <span class="pdv-nc-req">*</span></label>
+                    <input type="text" id="pdvNCNome" class="pdv-nc-cell-input" placeholder="Nome completo" autocomplete="off">
+                  </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr">
+                  <div class="pdv-nc-cell" style="border-bottom:none;border-right:1px solid var(--border)">
+                    <span class="pdv-nc-cell-ico"><i class="fa-solid fa-phone"></i></span>
+                    <div class="pdv-nc-cell-content">
+                      <label class="pdv-nc-lbl" for="pdvNCTelefone">Telefone</label>
+                      <input type="text" id="pdvNCTelefone" class="pdv-nc-cell-input" placeholder="(00) 00000-0000">
+                    </div>
+                  </div>
+                  <div class="pdv-nc-cell" style="border-bottom:none">
+                    <span class="pdv-nc-cell-ico"><i class="fa-solid fa-id-card"></i></span>
+                    <div class="pdv-nc-cell-content">
+                      <label class="pdv-nc-lbl" for="pdvNCCpf">CPF</label>
+                      <input type="text" id="pdvNCCpf" class="pdv-nc-cell-input" placeholder="000.000.000-00">
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div class="form-field">
-                <label class="form-label">CPF</label>
-                <input type="text" id="pdvNCCpf" class="input" placeholder="000.000.000-00">
-              </div>
             </div>
-            <div id="pdvNCFeedback"></div>
-            <div style="display:flex;gap:8px;justify-content:flex-end;padding-top:4px">
+            <div id="pdvNCFeedback" style="padding:0 20px 4px"></div>
+            <div style="display:flex;gap:8px;justify-content:flex-end;padding:8px 20px 20px">
               <button type="button" class="btn btn-light" id="pdvNCCancelarBtn">Cancelar</button>
               <button type="button" class="btn btn-primary" id="pdvNCSalvarBtn"><i class="fa-solid fa-floppy-disk"></i> Salvar e selecionar</button>
             </div>
@@ -1942,7 +1956,31 @@ const PDVModule = {
 
   // ── Novo cliente rápido ──────────────────────────────────────────────────
 
+  _injectPdvNcStyles() {
+    if (document.getElementById('pdv-nc-styles')) return;
+    const s = document.createElement('style');
+    s.id = 'pdv-nc-styles';
+    s.textContent = `
+      .pdv-nc-card { width: min(96vw, 480px) !important; }
+      .pdv-nc-body { overflow-y: auto; }
+      .pdv-nc-section { padding: 16px 20px; }
+      .pdv-nc-section-title { font-size: 0.7rem; font-weight: 900; color: var(--text-muted); text-transform: uppercase; letter-spacing: .08em; margin: 0 0 8px; }
+      .pdv-nc-card-group { border: 1px solid var(--border); border-radius: 18px; overflow: hidden; background: var(--surface); }
+      .pdv-nc-cell { display: flex; align-items: center; gap: 14px; padding: 13px 16px; border-bottom: 1px solid var(--border); background: var(--surface); transition: background .1s; }
+      .pdv-nc-cell:last-child { border-bottom: none; }
+      .pdv-nc-cell:focus-within { background: var(--surface-2, rgba(0,0,0,.025)); }
+      .pdv-nc-cell-ico { width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 0.88rem; background: var(--surface-2); color: var(--text-muted); }
+      .pdv-nc-cell-ico--green { background: rgba(22,163,74,.1); color: #16a34a; }
+      .pdv-nc-cell-content { flex: 1; min-width: 0; }
+      .pdv-nc-lbl { display: block; font-size: 0.67rem; font-weight: 900; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 2px; }
+      .pdv-nc-req { color: #dc2626; }
+      .pdv-nc-cell-input { border: none !important; outline: none !important; background: transparent !important; padding: 0 !important; font-size: 0.93rem; font-weight: 600; color: var(--text); width: 100%; font-family: inherit; -webkit-appearance: none; appearance: none; }
+    `;
+    document.head.appendChild(s);
+  },
+
   abrirNovoClienteModal() {
+    this._injectPdvNcStyles();
     const m = document.getElementById('pdvNovoClienteModal');
     if (!m) return;
     const nome = document.getElementById('pdvNCNome');
