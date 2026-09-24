@@ -2043,7 +2043,7 @@ function injectContasPagarStyles() {
 
     /* ── Nova Conta a Pagar ── */
     .cp-nc-card {
-      width: min(96vw, 560px) !important;
+      width: min(96vw, 640px) !important;
       max-height: 92vh;
     }
 

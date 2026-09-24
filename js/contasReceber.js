@@ -3297,7 +3297,7 @@ function _injectCrNcStyles() {
   const s = document.createElement('style');
   s.id = 'crNcModalStyles';
   s.textContent = `
-    .cr-nc-card { width: min(96vw, 560px) !important; max-height: 92vh; }
+    .cr-nc-card { width: min(96vw, 640px) !important; max-height: 92vh; }
 
     .cr-nc-body { gap: 0; padding: 0; overflow-y: auto; }
 
