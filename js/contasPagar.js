@@ -1040,6 +1040,18 @@ function renderOrigemCompra(data) {
 
 // ─── Modal Nova Conta a Pagar ────────────────────────────────────────────────
 
+function _ncSpinner(id, label, min, max, ini) {
+  return `
+    <div class="cp-nc-field">
+      <span class="cp-nc-field__label">${label}</span>
+      <div class="cp-nc-spinner">
+        <button type="button" class="cp-nc-spin-up" data-spin="${id}" data-dir="up"><i class="fa-solid fa-chevron-up"></i></button>
+        <span class="cp-nc-spin-val" id="${id}Val">${ini}</span>
+        <button type="button" class="cp-nc-spin-down" data-spin="${id}" data-dir="down"><i class="fa-solid fa-chevron-down"></i></button>
+      </div>
+    </div>`;
+}
+
 function abrirModalNovaContaPagar() {
   const modalExistente = document.getElementById('cpNovaContaModal');
   if (modalExistente) modalExistente.remove();
@@ -1054,138 +1066,162 @@ function abrirModalNovaContaPagar() {
   modal.id = 'cpNovaContaModal';
   modal.className = 'modal-overlay cp-detail-overlay';
   modal.innerHTML = `
-    <div class="modal-card cp-detail-card cp-nova-conta-card">
+    <div class="modal-card cp-detail-card cp-nc-card">
       <div class="cp-detail-header">
         <div>
           <span class="cp-detail-eyebrow">Conta a pagar</span>
           <h3>Nova conta manual</h3>
-          <p>Registre uma conta sem gerar compra ou movimentar estoque.</p>
+          <p>Sem gerar compra ou movimentar estoque.</p>
         </div>
         <button class="icon-button" type="button" id="cpNovaContaFechar"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
-      <div class="cp-detail-body">
-        <div class="form-grid">
+      <div class="cp-detail-body cp-nc-body">
 
-          <div class="form-group">
-            <label>Fornecedor</label>
-            <select id="cpNcFornecedor" class="input">
-              <option value="">Avulso / sem fornecedor</option>
-              ${fornecedoresOptions}
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label>Nome manual</label>
-            <input type="text" id="cpNcNome" class="input" placeholder="Nome do fornecedor avulso" />
-          </div>
-
-          <div class="form-group form-group--full">
-            <label>Descrição</label>
-            <input type="text" id="cpNcDescricao" class="input" placeholder="Ex: Aluguel, Material de limpeza..." />
-          </div>
-
-          <div class="form-group">
-            <label>Valor (R$)</label>
-            <input type="number" id="cpNcValor" class="input" step="0.01" min="0.01" inputmode="decimal" placeholder="0,00" />
-          </div>
-
-          <div class="form-group">
-            <label>1º vencimento</label>
-            <input type="date" id="cpNcVencimento" class="input" value="${hoje}" />
-          </div>
-
-          <div class="form-group">
-            <label>Forma de pagamento</label>
-            <select id="cpNcForma" class="input">
-              <option value="">Não informado</option>
-              <option value="dinheiro">Dinheiro</option>
-              <option value="pix">PIX</option>
-              <option value="boleto">Boleto</option>
-              <option value="cartao_credito">Cartão de Crédito</option>
-              <option value="cartao_debito">Cartão de Débito</option>
-              <option value="transferencia">Transferência</option>
-              <option value="cheque">Cheque</option>
-            </select>
-          </div>
-
-          <div class="form-group form-group--full">
-            <label>Observação</label>
-            <textarea id="cpNcObservacao" class="input" rows="2" placeholder="Observações..."></textarea>
-          </div>
-
-          <!-- Recorrência -->
-          <div class="form-group form-group--full cp-recorrencia-group">
-            <label class="cp-recorrencia-label">Recorrência</label>
-            <div class="cp-recorrencia-tabs" id="cpNcRecorrenciaTabs">
-              <button type="button" class="cp-recorrencia-tab cp-recorrencia-tab--active" data-rec="nao_recorrente">
-                <i class="fa-solid fa-circle-minus"></i>
-                Não recorrente
-              </button>
-              <button type="button" class="cp-recorrencia-tab" data-rec="parcelar">
-                <i class="fa-solid fa-layer-group"></i>
-                Parcelar ou repetir
-              </button>
-              <button type="button" class="cp-recorrencia-tab" data-rec="fixa_mensal">
-                <i class="fa-solid fa-calendar-days"></i>
-                Fixa mensal
-              </button>
+        <!-- Bloco: fornecedor -->
+        <div class="cp-nc-section">
+          <div class="cp-nc-row-grid">
+            <div class="cp-nc-field cp-nc-field--full">
+              <label class="cp-nc-lbl">Descrição <span class="cp-nc-req">*</span></label>
+              <input type="text" id="cpNcDescricao" class="input cp-nc-input" placeholder="Ex: Aluguel, energia, material..." autocomplete="off" />
+            </div>
+            <div class="cp-nc-field">
+              <label class="cp-nc-lbl">Fornecedor</label>
+              <select id="cpNcFornecedor" class="input cp-nc-input">
+                <option value="">Avulso / sem fornecedor</option>
+                ${fornecedoresOptions}
+              </select>
+            </div>
+            <div class="cp-nc-field">
+              <label class="cp-nc-lbl">Nome manual</label>
+              <input type="text" id="cpNcNome" class="input cp-nc-input" placeholder="Fornecedor avulso" autocomplete="off" />
             </div>
           </div>
-
-          <!-- Sub-painel parcelamento -->
-          <div class="form-group form-group--full cp-parcela-panel" id="cpNcParcelaPanel" style="display:none">
-            <div class="cp-parcela-inner">
-
-              <div id="cpNcParcelaIniBox">
-                <label>Parcela inicial</label>
-                <div class="cp-parcela-spinner">
-                  <button type="button" class="cp-spin-btn" id="cpNcParcelaIniDec"><i class="fa-solid fa-minus"></i></button>
-                  <span id="cpNcParcelaIniVal">1</span>
-                  <button type="button" class="cp-spin-btn" id="cpNcParcelaIniInc"><i class="fa-solid fa-plus"></i></button>
-                </div>
-                <small>Informe a partir de qual parcela está cadastrando (cliente já pode ter pago as anteriores).</small>
-              </div>
-
-              <div>
-                <label>Quantidade total</label>
-                <div class="cp-parcela-spinner">
-                  <button type="button" class="cp-spin-btn" id="cpNcQtdDec"><i class="fa-solid fa-minus"></i></button>
-                  <span id="cpNcQtdVal">2</span>
-                  <button type="button" class="cp-spin-btn" id="cpNcQtdInc"><i class="fa-solid fa-plus"></i></button>
-                </div>
-                <small id="cpNcQtdHint">Total de parcelas da dívida.</small>
-              </div>
-
-              <div>
-                <label>Periodicidade</label>
-                <select id="cpNcPeriodicidade" class="input">
-                  <option value="30">Mensal (30 dias)</option>
-                  <option value="15">Quinzenal (15 dias)</option>
-                  <option value="7">Semanal (7 dias)</option>
-                  <option value="60">Bimestral (60 dias)</option>
-                  <option value="90">Trimestral (90 dias)</option>
-                </select>
-              </div>
-
-              <!-- Tipo do valor — só para parcelar -->
-              <div id="cpNcTipoValorBox">
-                <label>O valor informado é:</label>
-                <div class="cp-tipo-valor-tabs" id="cpNcTipoValorTabs">
-                  <button type="button" class="cp-tipo-btn cp-tipo-btn--active" data-tipo="parcela">
-                    Valor por parcela
-                  </button>
-                  <button type="button" class="cp-tipo-btn" data-tipo="total">
-                    Total da dívida
-                  </button>
-                </div>
-                <small id="cpNcTipoValorHint">O sistema manterá o valor informado por parcela.</small>
-              </div>
-
-            </div>
-          </div>
-
         </div>
+
+        <!-- Bloco: valor + vencimento -->
+        <div class="cp-nc-section">
+          <div class="cp-nc-row-grid">
+            <div class="cp-nc-field">
+              <label class="cp-nc-lbl">Valor (R$) <span class="cp-nc-req">*</span></label>
+              <input type="number" id="cpNcValor" class="input cp-nc-input cp-nc-valor" step="0.01" min="0.01" inputmode="decimal" placeholder="0,00" />
+            </div>
+            <div class="cp-nc-field">
+              <label class="cp-nc-lbl">1º vencimento <span class="cp-nc-req">*</span></label>
+              <input type="date" id="cpNcVencimento" class="input cp-nc-input" value="${hoje}" />
+            </div>
+            <div class="cp-nc-field">
+              <label class="cp-nc-lbl">Forma de pagamento</label>
+              <select id="cpNcForma" class="input cp-nc-input">
+                <option value="">Não informado</option>
+                <option value="dinheiro">Dinheiro</option>
+                <option value="pix">PIX</option>
+                <option value="boleto">Boleto</option>
+                <option value="cartao_credito">Cartão de Crédito</option>
+                <option value="cartao_debito">Cartão de Débito</option>
+                <option value="transferencia">Transferência</option>
+                <option value="cheque">Cheque</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bloco: recorrência (rows clicáveis) -->
+        <div class="cp-nc-section cp-nc-section--rec">
+          <p class="cp-nc-section-title">Recorrência</p>
+
+          <div class="cp-nc-rec-list">
+            <button type="button" class="cp-nc-rec-row cp-nc-rec-row--active" data-rec="nao_recorrente">
+              <span class="cp-nc-rec-icon cp-nc-rec-icon--gray"><i class="fa-solid fa-ban"></i></span>
+              <span class="cp-nc-rec-info">
+                <strong>Não recorrente</strong>
+                <small>Título único, sem repetição</small>
+              </span>
+              <span class="cp-nc-rec-check"><i class="fa-solid fa-circle-check"></i></span>
+            </button>
+
+            <button type="button" class="cp-nc-rec-row" data-rec="parcelar">
+              <span class="cp-nc-rec-icon cp-nc-rec-icon--blue"><i class="fa-solid fa-layer-group"></i></span>
+              <span class="cp-nc-rec-info">
+                <strong>Parcelar ou repetir</strong>
+                <small id="cpNcRecParcelarHint">Defina quantidade e periodicidade</small>
+              </span>
+              <span class="cp-nc-rec-chevron"><i class="fa-solid fa-chevron-right"></i></span>
+            </button>
+
+            <button type="button" class="cp-nc-rec-row" data-rec="fixa_mensal">
+              <span class="cp-nc-rec-icon cp-nc-rec-icon--green"><i class="fa-solid fa-calendar-days"></i></span>
+              <span class="cp-nc-rec-info">
+                <strong>Fixa mensal</strong>
+                <small id="cpNcRecFixaHint">Despesa recorrente mensal</small>
+              </span>
+              <span class="cp-nc-rec-chevron"><i class="fa-solid fa-chevron-right"></i></span>
+            </button>
+          </div>
+
+          <!-- Painel de configuração (slide-down) -->
+          <div class="cp-nc-config-panel" id="cpNcConfigPanel" style="display:none">
+            <div class="cp-nc-config-inner">
+
+              <p class="cp-nc-config-title" id="cpNcConfigTitle">Configurar Parcelamento</p>
+
+              <div class="cp-nc-spinners-row">
+                <div class="cp-nc-spinner-block" id="cpNcParcelaIniBlock">
+                  ${_ncSpinner('cpNcParcelaIni', 'Parcela inicial', 1, 360, 1)}
+                  <small>A partir de qual parcela você está cadastrando agora.</small>
+                </div>
+
+                <div class="cp-nc-spinner-block">
+                  ${_ncSpinner('cpNcQtd', 'Quantidade', 2, 360, 2)}
+                  <small id="cpNcQtdHint">Total de parcelas da dívida.</small>
+                </div>
+
+                <div class="cp-nc-spinner-block">
+                  <span class="cp-nc-field__label">Periodicidade</span>
+                  <select id="cpNcPeriodicidade" class="input cp-nc-input" style="margin-top:6px">
+                    <option value="30">Mensal</option>
+                    <option value="15">Quinzenal</option>
+                    <option value="7">Semanal</option>
+                    <option value="60">Bimestral</option>
+                    <option value="90">Trimestral</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Tipo do valor (só parcelar) -->
+              <div id="cpNcTipoValorBlock" style="display:none">
+                <p class="cp-nc-config-sub">O valor informado é:</p>
+                <div class="cp-nc-tipo-row">
+                  <button type="button" class="cp-nc-tipo-btn cp-nc-tipo-btn--active" data-tipo="parcela">
+                    <i class="fa-solid fa-equals"></i> Valor por parcela
+                  </button>
+                  <button type="button" class="cp-nc-tipo-btn" data-tipo="total">
+                    <i class="fa-solid fa-sigma"></i> Total da dívida
+                  </button>
+                </div>
+              </div>
+
+              <!-- Preview em tempo real -->
+              <div class="cp-nc-preview" id="cpNcPreview">
+                <i class="fa-solid fa-circle-info"></i>
+                <span id="cpNcPreviewTxt">—</span>
+              </div>
+
+              <button type="button" class="btn btn-primary cp-nc-concluir" id="cpNcConcluir">
+                Concluir <i class="fa-solid fa-check"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Observação -->
+        <div class="cp-nc-section">
+          <div class="cp-nc-field cp-nc-field--full">
+            <label class="cp-nc-lbl">Observação</label>
+            <textarea id="cpNcObservacao" class="input cp-nc-input" rows="2" placeholder="Observações..."></textarea>
+          </div>
+        </div>
+
       </div>
 
       <div class="cp-detail-footer">
@@ -1199,97 +1235,153 @@ function abrirModalNovaContaPagar() {
 
   document.body.appendChild(modal);
 
-  // Estado local do modal
+  // ── Estado local ──────────────────────────────────────────────────────────
   let recorrencia = 'nao_recorrente';
   let tipoValor   = 'parcela';
   let parcIni     = 1;
   let qtd         = 2;
 
-  function atualizarHints() {
-    const valorStr  = document.getElementById('cpNcValor')?.value || '';
-    const valorNum  = parseFloat(valorStr) || 0;
-    const qtdEl     = document.getElementById('cpNcQtdVal');
-    const hintEl    = document.getElementById('cpNcQtdHint');
-    const tipoHint  = document.getElementById('cpNcTipoValorHint');
-    const fmtBRL    = v => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const fmtBRL = v => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
+  function atualizarPreview() {
+    const valorStr = document.getElementById('cpNcValor')?.value || '';
+    const valorNum = parseFloat(valorStr) || 0;
+    const txt      = document.getElementById('cpNcPreviewTxt');
+    const qtdEl    = document.getElementById('cpNcQtdVal');
+    const iniEl    = document.getElementById('cpNcParcelaIniVal');
+    const hintEl   = document.getElementById('cpNcQtdHint');
     if (qtdEl) qtdEl.textContent = qtd;
+    if (iniEl) iniEl.textContent = parcIni;
 
     if (recorrencia === 'fixa_mensal') {
-      if (hintEl) hintEl.textContent = `Serão criados ${qtd} títulos mensais independentes.`;
+      const per = document.getElementById('cpNcPeriodicidade')?.options?.[document.getElementById('cpNcPeriodicidade')?.selectedIndex]?.text || 'Mensal';
+      if (hintEl) hintEl.textContent = `${qtd} títulos independentes.`;
+      const val = valorNum > 0 ? ` de ${fmtBRL(valorNum)} cada` : '';
+      if (txt) txt.textContent = `Serão criados ${qtd} títulos ${per.toLowerCase()}${val}.`;
+
+      const fixaHint = document.getElementById('cpNcRecFixaHint');
+      if (fixaHint) fixaHint.textContent = `${qtd} meses — ${valorNum > 0 ? fmtBRL(valorNum) + '/mês' : 'valor a definir'}`;
     } else {
-      const restantes = qtd - parcIni + 1;
-      if (hintEl) hintEl.textContent = `Serão cadastradas ${restantes} parcela(s) (da ${parcIni} até ${qtd}).`;
-    }
+      const restantes = Math.max(1, qtd - parcIni + 1);
+      if (hintEl) hintEl.textContent = `${restantes} parcela(s) (da ${parcIni} até a ${qtd}).`;
 
-    if (tipoHint) {
+      let valParcela, preview;
       if (tipoValor === 'total' && valorNum > 0 && qtd > 1) {
-        const valParcela = Number((valorNum / qtd).toFixed(2));
-        tipoHint.textContent = `O sistema dividirá ${fmtBRL(valorNum)} em ${qtd} parcelas de ~${fmtBRL(valParcela)}.`;
+        valParcela = Number((valorNum / qtd).toFixed(2));
+        preview = `${restantes} parcela(s) de ~${fmtBRL(valParcela)} cada (total ${fmtBRL(valorNum)}).`;
       } else {
-        tipoHint.textContent = 'O sistema manterá o valor informado por parcela.';
+        valParcela = valorNum;
+        preview = valorNum > 0
+          ? `${restantes} parcela(s) de ${fmtBRL(valParcela)} — parcela ${parcIni} até ${qtd}.`
+          : `${restantes} parcela(s) da ${parcIni} até a ${qtd}.`;
       }
-    }
-  }
+      if (txt) txt.textContent = preview;
 
-  // Tabs de recorrência
-  modal.querySelectorAll('.cp-recorrencia-tab').forEach(btn => {
-    btn.addEventListener('click', () => {
-      modal.querySelectorAll('.cp-recorrencia-tab').forEach(b => b.classList.remove('cp-recorrencia-tab--active'));
-      btn.classList.add('cp-recorrencia-tab--active');
-      recorrencia = btn.dataset.rec;
-
-      const panel  = document.getElementById('cpNcParcelaPanel');
-      const iniBox = document.getElementById('cpNcParcelaIniBox');
-      const tipoBox= document.getElementById('cpNcTipoValorBox');
-
-      if (recorrencia === 'nao_recorrente') {
-        panel.style.display  = 'none';
-      } else {
-        panel.style.display  = 'block';
-        // Parcela inicial: só faz sentido em "parcelar"
-        if (iniBox) iniBox.style.display = recorrencia === 'parcelar' ? 'block' : 'none';
-        // Tipo de valor: só faz sentido em "parcelar"
-        if (tipoBox) tipoBox.style.display = recorrencia === 'parcelar' ? 'block' : 'none';
-        if (recorrencia === 'fixa_mensal') {
-          qtd = qtd < 2 ? 12 : qtd;
-          atualizarHints();
+      const parcelarHint = document.getElementById('cpNcRecParcelarHint');
+      if (parcelarHint) {
+        if (valorNum > 0) {
+          const v = tipoValor === 'total' ? `${fmtBRL(valorNum)} em ${qtd}x` : `${qtd}x de ${fmtBRL(valorNum)}`;
+          parcelarHint.textContent = `${v} — da ${parcIni} à ${qtd}`;
+        } else {
+          parcelarHint.textContent = `${qtd - parcIni + 1} parcela(s) a partir da ${parcIni}`;
         }
       }
-      atualizarHints();
-    });
-  });
-
-  // Tabs de tipo de valor
-  modal.querySelectorAll('.cp-tipo-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      modal.querySelectorAll('.cp-tipo-btn').forEach(b => b.classList.remove('cp-tipo-btn--active'));
-      btn.classList.add('cp-tipo-btn--active');
-      tipoValor = btn.dataset.tipo;
-      atualizarHints();
-    });
-  });
-
-  // Spinners
-  function spinHandler(idDec, idInc, get, set, min, max) {
-    document.getElementById(idDec)?.addEventListener('click', () => { set(Math.max(min, get() - 1)); atualizarHints(); });
-    document.getElementById(idInc)?.addEventListener('click', () => { set(Math.min(max, get() + 1)); atualizarHints(); });
+    }
   }
-  spinHandler('cpNcParcelaIniDec', 'cpNcParcelaIniInc',
-    () => parcIni, v => { parcIni = v; document.getElementById('cpNcParcelaIniVal').textContent = v; },
-    1, 360);
-  spinHandler('cpNcQtdDec', 'cpNcQtdInc',
-    () => qtd, v => { qtd = Math.max(parcIni, v); document.getElementById('cpNcQtdVal').textContent = Math.max(parcIni, v); qtd = Math.max(parcIni, v); },
-    2, 360);
 
-  document.getElementById('cpNcValor')?.addEventListener('input', atualizarHints);
+  function abrirConfigPanel(rec) {
+    const panel    = document.getElementById('cpNcConfigPanel');
+    const title    = document.getElementById('cpNcConfigTitle');
+    const iniBlock = document.getElementById('cpNcParcelaIniBlock');
+    const tipoBlk  = document.getElementById('cpNcTipoValorBlock');
 
-  // Fechar
+    title.textContent = rec === 'fixa_mensal' ? 'Configurar Repetição' : 'Configurar Parcelamento';
+    if (iniBlock) iniBlock.style.display = rec === 'parcelar' ? 'block' : 'none';
+    if (tipoBlk)  tipoBlk.style.display  = rec === 'parcelar' ? 'block' : 'none';
+    panel.style.display = 'block';
+    atualizarPreview();
+  }
+
+  // ── Rows de recorrência ───────────────────────────────────────────────────
+  modal.querySelectorAll('.cp-nc-rec-row').forEach(row => {
+    row.addEventListener('click', () => {
+      const rec = row.dataset.rec;
+
+      // Atualiza seleção visual
+      modal.querySelectorAll('.cp-nc-rec-row').forEach(r => {
+        r.classList.remove('cp-nc-rec-row--active');
+        r.querySelector('.cp-nc-rec-check')?.setAttribute('hidden', '');
+        r.querySelector('.cp-nc-rec-chevron')?.removeAttribute('hidden');
+      });
+
+      recorrencia = rec;
+
+      if (rec === 'nao_recorrente') {
+        row.classList.add('cp-nc-rec-row--active');
+        row.querySelector('.cp-nc-rec-check')?.removeAttribute('hidden');
+        row.querySelector('.cp-nc-rec-chevron')?.setAttribute('hidden', '');
+        document.getElementById('cpNcConfigPanel').style.display = 'none';
+      } else {
+        row.classList.add('cp-nc-rec-row--active');
+        row.querySelector('.cp-nc-rec-check')?.removeAttribute('hidden');
+        row.querySelector('.cp-nc-rec-chevron')?.setAttribute('hidden', '');
+        if (rec === 'fixa_mensal' && qtd < 2) { qtd = 12; }
+        abrirConfigPanel(rec);
+      }
+    });
+  });
+
+  // Esconder check e mostrar chevron nos rows que não são nao_recorrente
+  modal.querySelectorAll('.cp-nc-rec-row:not([data-rec="nao_recorrente"])').forEach(r => {
+    r.querySelector('.cp-nc-rec-check')?.setAttribute('hidden', '');
+  });
+  // Esconder chevron no row nao_recorrente
+  modal.querySelector('.cp-nc-rec-row[data-rec="nao_recorrente"]')?.querySelector('.cp-nc-rec-chevron')?.setAttribute('hidden', '');
+
+  // ── Tipo de valor ─────────────────────────────────────────────────────────
+  modal.querySelectorAll('.cp-nc-tipo-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      modal.querySelectorAll('.cp-nc-tipo-btn').forEach(b => b.classList.remove('cp-nc-tipo-btn--active'));
+      btn.classList.add('cp-nc-tipo-btn--active');
+      tipoValor = btn.dataset.tipo;
+      atualizarPreview();
+    });
+  });
+
+  // ── Spinners (up/down) ───────────────────────────────────────────────────
+  modal.querySelectorAll('[data-spin]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id  = btn.dataset.spin;
+      const dir = btn.dataset.dir;
+      const el  = document.getElementById(`${id}Val`);
+      if (!el) return;
+
+      if (id === 'cpNcParcelaIni') {
+        parcIni = dir === 'up' ? Math.min(qtd, parcIni + 1) : Math.max(1, parcIni - 1);
+        el.textContent = parcIni;
+      } else if (id === 'cpNcQtd') {
+        const min = recorrencia === 'parcelar' ? Math.max(parcIni, 2) : 2;
+        qtd = dir === 'up' ? Math.min(360, qtd + 1) : Math.max(min, qtd - 1);
+        el.textContent = qtd;
+      }
+      atualizarPreview();
+    });
+  });
+
+  document.getElementById('cpNcValor')?.addEventListener('input', atualizarPreview);
+  document.getElementById('cpNcPeriodicidade')?.addEventListener('change', atualizarPreview);
+
+  // ── Concluir (fecha o config panel, mantém seleção) ───────────────────────
+  document.getElementById('cpNcConcluir')?.addEventListener('click', () => {
+    document.getElementById('cpNcConfigPanel').style.display = 'none';
+  });
+
+  // ── Fechar ────────────────────────────────────────────────────────────────
   document.getElementById('cpNovaContaFechar')?.addEventListener('click', () => modal.remove());
   document.getElementById('cpNcCancelar')?.addEventListener('click', () => modal.remove());
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
 
-  // Salvar
+  // ── Salvar ────────────────────────────────────────────────────────────────
   document.getElementById('cpNcSalvar')?.addEventListener('click', async (e) => {
     const btn = e.currentTarget;
     if (btn.disabled) return;
@@ -1327,17 +1419,17 @@ async function salvarNovaContaPagar(modal, { recorrencia, tipoValor, parcIni, qt
 
   try {
     const resp = await api.criarContaPagarManual({
-      fornecedor_id:  fornecedorId || null,
+      fornecedor_id:   fornecedorId || null,
       fornecedor_nome: nomeManual || undefined,
       descricao,
       observacao,
       forma_pagamento: forma || undefined,
-      valor:          valorNum,
+      valor:           valorNum,
       data_vencimento: vencimento,
       recorrencia,
-      tipo_valor:     tipoValor,
+      tipo_valor:      tipoValor,
       parcela_inicial: parcIni,
-      quantidade:     recorrencia === 'nao_recorrente' ? 1 : qtd,
+      quantidade:      recorrencia === 'nao_recorrente' ? 1 : qtd,
       periodicidade
     });
 
@@ -1911,11 +2003,113 @@ function injectContasPagarStyles() {
     }
 
     /* ── Nova Conta a Pagar ── */
-    .cp-nova-conta-card { width: min(100%, 660px); }
+    .cp-nc-card { width: min(100%, 680px); }
 
-    .cp-recorrencia-group { margin-top: 4px; }
-    .cp-recorrencia-label {
+    .cp-nc-body { gap: 0; padding: 0; }
+
+    .cp-nc-section {
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--border);
+    }
+    .cp-nc-section:last-child { border-bottom: none; }
+
+    .cp-nc-section-title {
+      font-size: 0.74rem;
+      font-weight: 800;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-bottom: 12px;
+    }
+
+    .cp-nc-row-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .cp-nc-field--full { grid-column: 1 / -1; }
+
+    .cp-nc-lbl {
       display: block;
+      font-size: 0.74rem;
+      font-weight: 800;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      margin-bottom: 6px;
+    }
+    .cp-nc-req { color: var(--danger, #dc2626); }
+
+    .cp-nc-input {
+      border-radius: 12px;
+      min-height: 42px;
+    }
+    .cp-nc-valor { font-size: 1.1rem; font-weight: 700; }
+
+    /* Recorrência — rows */
+    .cp-nc-rec-list {
+      display: flex;
+      flex-direction: column;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    .cp-nc-rec-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 16px;
+      border: none;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      cursor: pointer;
+      text-align: left;
+      transition: background .12s;
+      width: 100%;
+    }
+    .cp-nc-rec-row:last-child { border-bottom: none; }
+    .cp-nc-rec-row:hover { background: var(--surface-2); }
+    .cp-nc-rec-row--active { background: var(--primary-soft, rgba(37,99,235,.06)); }
+
+    .cp-nc-rec-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.95rem;
+      flex-shrink: 0;
+    }
+    .cp-nc-rec-icon--gray  { background: var(--surface-2); color: var(--text-muted); }
+    .cp-nc-rec-icon--blue  { background: rgba(37,99,235,.1); color: #2563eb; }
+    .cp-nc-rec-icon--green { background: rgba(22,163,74,.1); color: #16a34a; }
+
+    .cp-nc-rec-info { flex: 1; min-width: 0; }
+    .cp-nc-rec-info strong { display: block; font-size: 0.92rem; font-weight: 800; color: var(--text); }
+    .cp-nc-rec-info small  { display: block; font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+
+    .cp-nc-rec-check { color: var(--primary); font-size: 1.05rem; flex-shrink: 0; }
+    .cp-nc-rec-chevron { color: var(--text-muted); font-size: 0.78rem; flex-shrink: 0; }
+
+    /* Config panel */
+    .cp-nc-config-panel {
+      margin-top: 14px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: var(--surface-2, #f8fafc);
+      overflow: hidden;
+    }
+    .cp-nc-config-inner { padding: 18px; display: grid; gap: 16px; }
+
+    .cp-nc-config-title {
+      font-size: 0.82rem;
+      font-weight: 800;
+      color: var(--text);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+    .cp-nc-config-sub {
       font-size: 0.76rem;
       font-weight: 800;
       color: var(--text-muted);
@@ -1923,96 +2117,71 @@ function injectContasPagarStyles() {
       letter-spacing: .04em;
       margin-bottom: 8px;
     }
-    .cp-recorrencia-tabs {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-    .cp-recorrencia-tab {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      padding: 9px 16px;
-      border: 1.5px solid var(--border);
-      border-radius: 12px;
-      background: var(--surface);
-      color: var(--text-muted);
-      font-size: 0.88rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: border-color .15s, background .15s, color .15s;
-    }
-    .cp-recorrencia-tab:hover { border-color: var(--primary); color: var(--primary); }
-    .cp-recorrencia-tab--active {
-      border-color: var(--primary);
-      background: var(--primary-soft);
-      color: var(--primary-hover);
-    }
 
-    .cp-parcela-panel {
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 16px;
-    }
-    .cp-parcela-inner {
+    .cp-nc-spinners-row {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(3, 1fr);
       gap: 14px;
     }
-    .cp-parcela-inner label {
-      display: block;
-      font-size: 0.76rem;
+    .cp-nc-spinner-block { display: grid; gap: 6px; }
+    .cp-nc-spinner-block small {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      line-height: 1.35;
+    }
+
+    /* Spinner vertical (chevron up/down) */
+    .cp-nc-field { display: grid; gap: 6px; }
+    .cp-nc-field__label {
+      font-size: 0.74rem;
       font-weight: 800;
       color: var(--text-muted);
       text-transform: uppercase;
-      margin-bottom: 8px;
+      letter-spacing: .04em;
     }
-    .cp-parcela-inner small {
-      display: block;
-      color: var(--text-muted);
-      font-size: 0.74rem;
-      margin-top: 6px;
-      font-weight: 600;
-      line-height: 1.4;
-    }
-
-    .cp-parcela-spinner {
+    .cp-nc-spinner {
       display: flex;
+      flex-direction: column;
       align-items: center;
-      gap: 12px;
-      border: 1px solid var(--border);
-      border-radius: 12px;
       background: var(--surface);
-      padding: 6px 12px;
-      width: fit-content;
-    }
-    .cp-parcela-spinner span {
-      font-size: 1.15rem;
-      font-weight: 900;
-      min-width: 24px;
-      text-align: center;
-      font-variant-numeric: tabular-nums;
-    }
-    .cp-spin-btn {
-      width: 28px;
-      height: 28px;
       border: 1px solid var(--border);
-      border-radius: 8px;
-      background: var(--surface-2);
+      border-radius: 14px;
+      padding: 6px;
+      width: fit-content;
+      min-width: 72px;
+    }
+    .cp-nc-spin-val {
+      font-size: 1.55rem;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
       color: var(--text);
+      padding: 4px 0;
+      line-height: 1;
+    }
+    .cp-nc-spin-up, .cp-nc-spin-down {
+      border: none;
+      background: none;
+      color: var(--text-muted);
       cursor: pointer;
+      padding: 4px 14px;
+      font-size: 0.78rem;
+      border-radius: 8px;
+      transition: background .1s, color .1s;
+      width: 100%;
+    }
+    .cp-nc-spin-up:hover, .cp-nc-spin-down:hover {
+      background: var(--primary-soft);
+      color: var(--primary);
+    }
+
+    /* Tipo de valor */
+    .cp-nc-tipo-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .cp-nc-tipo-btn {
       display: flex;
       align-items: center;
-      justify-content: center;
-      font-size: 0.72rem;
-      transition: background .12s;
-    }
-    .cp-spin-btn:hover { background: var(--primary-soft); color: var(--primary); }
-
-    .cp-tipo-valor-tabs { display: flex; gap: 8px; margin-top: 4px; }
-    .cp-tipo-btn {
-      padding: 7px 14px;
+      gap: 6px;
+      padding: 8px 14px;
       border: 1.5px solid var(--border);
       border-radius: 10px;
       background: var(--surface);
@@ -2022,16 +2191,42 @@ function injectContasPagarStyles() {
       cursor: pointer;
       transition: border-color .12s, background .12s, color .12s;
     }
-    .cp-tipo-btn:hover { border-color: var(--primary); color: var(--primary); }
-    .cp-tipo-btn--active {
+    .cp-nc-tipo-btn:hover { border-color: var(--primary); color: var(--primary); }
+    .cp-nc-tipo-btn--active {
       border-color: var(--primary);
       background: var(--primary-soft);
       color: var(--primary-hover);
     }
 
+    /* Preview */
+    .cp-nc-preview {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      background: var(--info-soft, rgba(8,145,178,.07));
+      border: 1px solid rgba(8,145,178,.18);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: #0e7490;
+    }
+    .cp-nc-preview i { margin-top: 2px; flex-shrink: 0; }
+
+    .cp-nc-concluir { justify-self: end; }
+
+    /* Dark mode */
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) .cp-nc-config-panel { background: rgba(255,255,255,.03); }
+      :root:not([data-theme="light"]) .cp-nc-preview { background: rgba(8,145,178,.12); color: #67e8f9; border-color: rgba(8,145,178,.25); }
+    }
+    :root[data-theme="dark"] .cp-nc-config-panel { background: rgba(255,255,255,.03); }
+    :root[data-theme="dark"] .cp-nc-preview { background: rgba(8,145,178,.12); color: #67e8f9; border-color: rgba(8,145,178,.25); }
+
     @media (max-width: 600px) {
-      .cp-parcela-inner { grid-template-columns: 1fr; }
-      .cp-recorrencia-tabs { flex-direction: column; }
+      .cp-nc-row-grid, .cp-nc-spinners-row { grid-template-columns: 1fr; }
+      .cp-nc-section { padding: 14px 16px; }
+      .cp-nc-tipo-row { flex-direction: column; }
     }
 
     .lf-pagination {
