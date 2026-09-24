@@ -3297,7 +3297,7 @@ function _injectCrNcStyles() {
   const s = document.createElement('style');
   s.id = 'crNcModalStyles';
   s.textContent = `
-    .cr-nc-card { width: min(96vw, 640px) !important; max-height: 92vh; }
+    .cr-nc-card { width: min(96vw, 760px) !important; max-height: 92vh; }
 
     .cr-nc-body { gap: 0; padding: 0; overflow-y: auto; }
 
@@ -3336,6 +3336,10 @@ function _injectCrNcStyles() {
     .cr-nc-cells-2col .cr-nc-cell { border-bottom: none; }
     .cr-nc-cells-2col .cr-nc-cell:first-child { border-right: 1px solid var(--border); }
     .cr-nc-cells-2col--last { border-bottom: none; }
+    .cr-nc-cells-3col { display: grid; grid-template-columns: 1fr 1fr 1fr; border-bottom: 1px solid var(--border); }
+    .cr-nc-cells-3col:last-child { border-bottom: none; }
+    .cr-nc-cells-3col .cr-nc-cell { border-bottom: none; }
+    .cr-nc-cells-3col .cr-nc-cell:not(:last-child) { border-right: 1px solid var(--border); }
 
     /* Ícone da cell */
     .cr-nc-cell-ico {
@@ -3521,6 +3525,8 @@ function _injectCrNcStyles() {
       .cr-nc-section { padding: 14px 16px; }
       .cr-nc-cells-2col { grid-template-columns: 1fr; }
       .cr-nc-cells-2col .cr-nc-cell:first-child { border-right: none; border-bottom: 1px solid var(--border); }
+      .cr-nc-cells-3col { grid-template-columns: 1fr; }
+      .cr-nc-cells-3col .cr-nc-cell:not(:last-child) { border-right: none; border-bottom: 1px solid var(--border); }
     }
 
     /* ── Baixa modal (cr-bx-*) ── */
@@ -3594,7 +3600,7 @@ function abrirModalContaManual() {
                 <input type="text" id="crManualDescricao" class="cr-nc-cell-input" placeholder="Ex: Promissória, dívida antiga..." autocomplete="off" />
               </div>
             </div>
-            <div class="cr-nc-cells-2col">
+            <div class="cr-nc-cells-3col">
               <div class="cr-nc-cell">
                 <span class="cr-nc-cell-ico cr-nc-cell-ico--green"><i class="fa-solid fa-brazilian-real-sign"></i></span>
                 <div class="cr-nc-cell-content">
@@ -3607,6 +3613,22 @@ function abrirModalContaManual() {
                 <div class="cr-nc-cell-content">
                   <label class="cr-nc-lbl" for="crManualVencimento">1º Vencimento <span class="cr-nc-req">*</span></label>
                   <input type="date" id="crManualVencimento" class="cr-nc-cell-input" value="${hoje}" />
+                </div>
+              </div>
+              <div class="cr-nc-cell">
+                <span class="cr-nc-cell-ico"><i class="fa-solid fa-credit-card"></i></span>
+                <div class="cr-nc-cell-content">
+                  <label class="cr-nc-lbl" for="crManualForma">Forma</label>
+                  <select id="crManualForma" class="cr-nc-cell-input">
+                    <option value="promissoria">Promissória</option>
+                    <option value="dinheiro">Dinheiro</option>
+                    <option value="pix">PIX</option>
+                    <option value="cheque">Cheque</option>
+                    <option value="cartao_credito">Cartão de Crédito</option>
+                    <option value="cartao_debito">Cartão de Débito</option>
+                    <option value="transferencia">Transferência</option>
+                    <option value="boleto">Boleto</option>
+                  </select>
                 </div>
               </div>
             </div>
@@ -3946,12 +3968,13 @@ function abrirModalContaManual() {
 
 async function salvarContaManual(modal, { recorrencia = 'nao_recorrente', tipoValor = 'parcela', parcIni = 1, qtd = 1, periodicidade = 30 } = {}) {
   try {
-    const clienteId  = document.getElementById('crManualCliente')?.value || '';
-    const nomeManual = document.getElementById('crManualNome')?.value?.trim() || '';
-    const valor      = document.getElementById('crManualValor')?.value || '';
-    const vencimento = document.getElementById('crManualVencimento')?.value || '';
-    const descricao  = document.getElementById('crManualDescricao')?.value?.trim() || '';
-    const observacao = document.getElementById('crManualObservacao')?.value?.trim() || '';
+    const clienteId      = document.getElementById('crManualCliente')?.value || '';
+    const nomeManual     = document.getElementById('crManualNome')?.value?.trim() || '';
+    const valor          = document.getElementById('crManualValor')?.value || '';
+    const vencimento     = document.getElementById('crManualVencimento')?.value || '';
+    const formaRecebimento = document.getElementById('crManualForma')?.value || 'promissoria';
+    const descricao      = document.getElementById('crManualDescricao')?.value?.trim() || '';
+    const observacao     = document.getElementById('crManualObservacao')?.value?.trim() || '';
 
     const valorNum = Number(valor);
     if (!valor || !Number.isFinite(valorNum) || valorNum <= 0) {
@@ -4010,7 +4033,7 @@ async function salvarContaManual(modal, { recorrencia = 'nao_recorrente', tipoVa
           data_vencimento: vencStr,
           descricao,
           observacao,
-          forma_pagamento: 'promissoria',
+          forma_pagamento: formaRecebimento,
           parcela:        recorrencia === 'parcelar' ? numParcela : null,
           total_parcelas: recorrencia === 'parcelar' ? totParcelas : null
         }
