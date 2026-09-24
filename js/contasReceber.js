@@ -753,38 +753,14 @@ function render() {
           </div>
 
           <div class="cr-primary-actions">
-            <button class="btn btn-primary" id="btnFiltrarContasReceber" type="button">
-              <i class="fa-solid fa-filter"></i> Filtrar
-              ${(state.filtros.status || state.filtros.cliente_id || state.filtros.busca)
-                ? `<span class="cr-filter-badge">${[state.filtros.status, state.filtros.cliente_id, state.filtros.busca].filter(Boolean).length}</span>`
-                : ''}
-            </button>
+            ${(() => {
+              const fpCount = [state.filtros.status, state.filtros.cliente_id].filter(Boolean).length + (state.ordemDir !== 'desc' || state.ordem !== 'data_vencimento' ? 1 : 0);
+              return `<button class="btn ${fpCount ? 'btn-primary cr-filtros-trigger' : 'btn-light'}" id="btnFiltrosPanel" type="button">
+                <i class="fa-solid fa-sliders"></i> Filtros${fpCount ? `<span class="cr-filtros-badge">${fpCount}</span>` : ''}
+              </button>`;
+            })()}
             <button class="btn${(state.filtros.status || state.filtros.cliente_id || state.filtros.busca) ? ' btn-warning' : ' btn-light'}" id="btnLimparFiltrosContasReceber" type="button">
               <i class="fa-solid fa-eraser"></i> Limpar
-            </button>
-          </div>
-        </div>
-
-        <!-- Linha 2: chips de status + ações utilitárias -->
-        <div class="cr-toolbar-row2">
-          <div class="cr-chips-row">
-            <input type="hidden" id="crStatus" value="${escapeHtml(state.filtros.status || '')}">
-            ${[
-              { val: '',                label: 'Todos',          icon: '' },
-              { val: 'pendente',        label: 'Pendentes',      icon: 'fa-regular fa-clock' },
-              { val: 'atrasado',        label: 'Atrasados',      icon: 'fa-solid fa-circle-xmark' },
-              { val: 'pago',            label: 'Recebidos',      icon: 'fa-solid fa-circle-check' },
-              { val: 'parcial_atrasado',label: 'Parcial atraso', icon: 'fa-solid fa-triangle-exclamation' },
-            ].map(({ val, label, icon }) => {
-              const active = state.filtros.status === val ? ' cr-chip--active' : '';
-              const icHtml = icon ? `<i class="${icon}"></i> ` : '';
-              return `<button type="button" class="cr-chip${active}" data-cr-status="${val}">${icHtml}${label}</button>`;
-            }).join('')}
-          </div>
-          <div class="cr-util-actions">
-            <button class="btn btn-light cr-util-btn" id="btnOrdemVenc" type="button" title="Ordenar por vencimento">
-              <i class="fa-solid fa-arrow-${state.ordem === 'data_vencimento' && state.ordemDir === 'desc' ? 'down' : 'up'}-wide-short"></i>
-              <span class="cr-util-label">Vencimento</span>
             </button>
             <button class="btn btn-light cr-util-btn" id="btnExportarCSV" type="button" title="Exportar CSV">
               <i class="fa-solid fa-file-csv"></i>
@@ -794,6 +770,7 @@ function render() {
             </button>
           </div>
         </div>
+
 
       </div>
 
@@ -1055,11 +1032,8 @@ function renderLinhas() {
 function bindEventos() {
   const btnAtualizar = document.getElementById('btnAtualizarContasReceber');
   const btnNovaContaManual = document.getElementById('btnNovaContaManual');
-  const btnFiltrar = document.getElementById('btnFiltrarContasReceber');
   const btnLimpar = document.getElementById('btnLimparFiltrosContasReceber');
   const busca = document.getElementById('crBusca');
-  const status = document.getElementById('crStatus');
-  const cliente = document.getElementById('crCliente');
 
   btnAtualizar?.addEventListener('click', async () => {
     await recarregar();
@@ -1069,45 +1043,118 @@ function bindEventos() {
     abrirModalContaManual();
   });
 
-  btnFiltrar?.addEventListener('click', async () => {
-    state.filtros.busca = busca?.value?.trim() || '';
-    state.filtros.status = status?.value || '';
-    state.filtros.cliente_id = cliente?.value || '';
-    state.pagina = 1;
-    salvarFiltrosCR();
-    await recarregar();
-  });
-
   btnLimpar?.addEventListener('click', async () => {
     state.filtros = { status: '', cliente_id: '', busca: '' };
+    state.ordem = 'data_vencimento';
+    state.ordemDir = 'desc';
     state.pagina = 1;
     salvarFiltrosCR();
     await recarregar();
   });
 
-  // Quick-filter chips de status — aplicação imediata
-  document.querySelectorAll('[data-cr-status]').forEach(chip => {
-    chip.addEventListener('click', async () => {
-      const val = chip.dataset.crStatus;
-      document.getElementById('crStatus').value = val;
-      state.filtros.status = val;
+  // ── Filter panel ─────────────────────────────────────────────────────────
+  {
+    document.getElementById('crFiltrosPanel')?.remove();
+    const STATUS_OPTS = [
+      { val: '',                 lbl: 'Todos' },
+      { val: 'pendente',         lbl: 'Pendentes' },
+      { val: 'atrasado',         lbl: 'Atrasados' },
+      { val: 'pago',             lbl: 'Recebidos' },
+      { val: 'parcial_atrasado', lbl: 'Parcial atraso' },
+    ];
+    const panel = document.createElement('div');
+    panel.className = 'cr-filtros-panel';
+    panel.id = 'crFiltrosPanel';
+    const _renderPanel = () => {
+      panel.innerHTML = `
+        <div class="cr-filtros-hdr">Filtros</div>
+        <div class="cr-filtros-section">
+          <div class="cr-filtros-lbl">Status</div>
+          <div class="cr-fpills">
+            ${STATUS_OPTS.map(o => `<button class="cr-fpill${state.filtros.status === o.val ? ' cr-fpill--active' : ''}" data-fp-status="${o.val}">${o.lbl}</button>`).join('')}
+          </div>
+        </div>
+        <div class="cr-filtros-section">
+          <div class="cr-filtros-lbl">Ordenar por vencimento</div>
+          <div class="cr-fpills">
+            <button class="cr-fpill${state.ordemDir === 'asc' && state.ordem === 'data_vencimento' ? ' cr-fpill--active' : ''}" data-fp-ordem="asc">↑ Mais antigo</button>
+            <button class="cr-fpill${state.ordemDir === 'desc' && state.ordem === 'data_vencimento' ? ' cr-fpill--active' : ''}" data-fp-ordem="desc">↓ Mais recente</button>
+          </div>
+        </div>
+        <hr class="cr-filtros-sep">
+        <div class="cr-filtros-footer">
+          <button class="btn btn-light btn-sm" id="crFiltrosCancelar">Cancelar</button>
+          <button class="btn btn-primary btn-sm" id="crAplicarFiltros">Aplicar</button>
+        </div>`;
+    };
+    _renderPanel();
+    document.body.appendChild(panel);
+
+    // Pill toggles (dentro do panel)
+    panel.addEventListener('click', e => {
+      const fpStatus = e.target.closest('[data-fp-status]');
+      const fpOrdem  = e.target.closest('[data-fp-ordem]');
+      if (fpStatus) {
+        panel.querySelectorAll('[data-fp-status]').forEach(b => b.classList.remove('cr-fpill--active'));
+        fpStatus.classList.add('cr-fpill--active');
+      }
+      if (fpOrdem) {
+        panel.querySelectorAll('[data-fp-ordem]').forEach(b => b.classList.remove('cr-fpill--active'));
+        fpOrdem.classList.add('cr-fpill--active');
+      }
+    });
+
+    const _closePanel = () => { panel.style.display = 'none'; };
+
+    panel.querySelector('#crFiltrosCancelar')?.addEventListener('click', _closePanel);
+
+    panel.querySelector('#crAplicarFiltros')?.addEventListener('click', async () => {
+      const selStatus = panel.querySelector('[data-fp-status].cr-fpill--active');
+      const selOrdem  = panel.querySelector('[data-fp-ordem].cr-fpill--active');
+      if (selStatus) state.filtros.status = selStatus.dataset.fpStatus;
+      if (selOrdem)  { state.ordem = 'data_vencimento'; state.ordemDir = selOrdem.dataset.fpOrdem; }
       state.pagina = 1;
       salvarFiltrosCR();
+      _closePanel();
       await recarregar();
     });
-  });
 
-  // Botão de ordenação por vencimento
-  document.getElementById('btnOrdemVenc')?.addEventListener('click', async () => {
-    if (state.ordem === 'data_vencimento') {
-      state.ordemDir = state.ordemDir === 'asc' ? 'desc' : 'asc';
-    } else {
-      state.ordem = 'data_vencimento';
-      state.ordemDir = 'asc';
-    }
-    _sortItems();
-    render();
-  });
+    const btnFiltros = document.getElementById('btnFiltrosPanel');
+    const _posPanel = () => {
+      if (!btnFiltros) return;
+      const r = btnFiltros.getBoundingClientRect();
+      panel.style.right = (window.innerWidth - r.right) + 'px';
+      panel.style.left  = 'auto';
+      panel.style.top   = (r.bottom + 6) + 'px';
+    };
+    btnFiltros?.addEventListener('click', () => {
+      if (panel.style.display === 'block') { _closePanel(); return; }
+      _renderPanel();
+      // Re-wire apply after re-render
+      panel.querySelector('#crFiltrosCancelar')?.addEventListener('click', _closePanel);
+      panel.querySelector('#crAplicarFiltros')?.addEventListener('click', async () => {
+        const selStatus = panel.querySelector('[data-fp-status].cr-fpill--active');
+        const selOrdem  = panel.querySelector('[data-fp-ordem].cr-fpill--active');
+        if (selStatus) state.filtros.status = selStatus.dataset.fpStatus;
+        if (selOrdem)  { state.ordem = 'data_vencimento'; state.ordemDir = selOrdem.dataset.fpOrdem; }
+        state.pagina = 1;
+        salvarFiltrosCR();
+        _closePanel();
+        await recarregar();
+      });
+      panel.style.display = 'block';
+      _posPanel();
+    });
+
+    const _crFpOutside = e => {
+      if (btnFiltros && !btnFiltros.contains(e.target) && !panel.contains(e.target)) _closePanel();
+    };
+    document.addEventListener('click', _crFpOutside);
+    // Cleanup quando o módulo é desmontado
+    new MutationObserver(() => {
+      if (!document.getElementById('btnFiltrosPanel')) { panel.remove(); document.removeEventListener('click', _crFpOutside); }
+    }).observe(document.body, { childList: true, subtree: true });
+  }
 
   // Exportar CSV
   document.getElementById('btnExportarCSV')?.addEventListener('click', () => exportarCSV());
@@ -1149,11 +1196,8 @@ function bindEventos() {
   busca?.addEventListener('keydown', async (event) => {
     if (event.key === 'Enter') {
       state.filtros.busca = busca.value.trim();
-      state.filtros.status = status?.value || '';
-      state.filtros.cliente_id = cliente?.value || '';
       state.pagina = 1;
       salvarFiltrosCR();
-
       await recarregar();
     }
   });
@@ -1162,8 +1206,6 @@ function bindEventos() {
     const inp = document.getElementById('crBusca');
     const curval = inp?.value || '';
     state.filtros.busca = curval.trim();
-    state.filtros.status = document.getElementById('crStatus')?.value || '';
-    state.filtros.cliente_id = document.getElementById('crCliente')?.value || '';
     state.pagina = 1;
     salvarFiltrosCR();
     await recarregar();
@@ -1270,7 +1312,7 @@ function bindEventos() {
       });
       crDrop.style.display = 'block';
     });
-    crDrop.addEventListener('mousedown', (e) => {
+    crDrop.addEventListener('mousedown', async (e) => {
       const opt = e.target.closest('.cr-combobox__opt');
       if (!opt) return;
       e.preventDefault();
@@ -1278,6 +1320,10 @@ function bindEventos() {
       crInput.value = opt.dataset.val ? opt.dataset.lbl : '';
       crDrop.style.display = 'none';
       crDrop.querySelectorAll('.cr-combobox__opt').forEach(o => (o.style.display = ''));
+      state.filtros.cliente_id = opt.dataset.val || '';
+      state.pagina = 1;
+      salvarFiltrosCR();
+      await recarregar();
     });
     if (_dropClickHandler) document.removeEventListener('click', _dropClickHandler);
     _dropClickHandler = (e) => {
@@ -2326,6 +2372,21 @@ function injectContasReceberStyles() {
       flex-shrink: 0;
       align-items: center;
     }
+
+    .cr-filtros-panel { display: none; position: fixed; z-index: 10002; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 8px 28px rgba(0,0,0,.14); padding: 16px; width: 300px; }
+    .cr-filtros-hdr { font-size: .75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 14px; }
+    .cr-filtros-section { margin-bottom: 14px; }
+    .cr-filtros-lbl { font-size: .72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 7px; }
+    .cr-fpills { display: flex; flex-wrap: wrap; gap: 6px; }
+    .cr-fpill { background: var(--surface-2); border: 1px solid var(--border); border-radius: 20px; padding: 5px 12px; font-size: .82rem; font-weight: 600; color: var(--text); cursor: pointer; transition: all .12s; }
+    .cr-fpill:hover { border-color: var(--primary, #2563eb); color: var(--primary, #2563eb); }
+    .cr-fpill--active { background: var(--primary, #2563eb) !important; color: #fff !important; border-color: var(--primary, #2563eb) !important; }
+    .cr-filtros-sep { border: none; border-top: 1px solid var(--border); margin: 14px 0 12px; }
+    .cr-filtros-footer { display: flex; justify-content: flex-end; gap: 8px; }
+    .cr-filtros-badge { background: #fff; color: var(--primary, #2563eb); font-size: .7rem; font-weight: 800; border-radius: 99px; padding: 1px 6px; margin-left: 4px; display: inline-block; }
+    .cr-filtros-trigger .cr-filtros-badge { background: rgba(255,255,255,.25); color: #fff; }
+    @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cr-filtros-panel { box-shadow: 0 8px 36px rgba(0,0,0,.5); } }
+    :root[data-theme="dark"] .cr-filtros-panel { box-shadow: 0 8px 36px rgba(0,0,0,.5); }
 
     .cr-util-btn {
       height: 34px;
