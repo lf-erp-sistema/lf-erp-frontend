@@ -3323,27 +3323,99 @@ function _injectCrNcStyles() {
   const s = document.createElement('style');
   s.id = 'crNcModalStyles';
   s.textContent = `
-    .cr-nc-card { width: min(96vw, 920px) !important; max-height: 90vh; }
+    .cr-nc-card { width: min(96vw, 560px) !important; max-height: 92vh; }
 
     .cr-nc-body { gap: 0; padding: 0; overflow-y: auto; }
+
     .cr-nc-section {
-      padding: 20px 26px;
+      padding: 18px 22px;
       border-bottom: 1px solid var(--border);
     }
     .cr-nc-section:last-child { border-bottom: none; }
     .cr-nc-section-title {
-      font-size: 0.74rem; font-weight: 800; color: var(--text-muted);
-      text-transform: uppercase; letter-spacing: .05em; margin-bottom: 14px;
+      font-size: 0.68rem; font-weight: 900; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .08em; margin-bottom: 10px;
     }
-    .cr-nc-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
-    .cr-nc-full { grid-column: 1 / -1; }
+
+    /* Agrupador de cells */
+    .cr-nc-card-group {
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      overflow: hidden;
+      background: var(--surface);
+    }
+
+    /* Cell individual */
+    .cr-nc-cell {
+      display: flex; align-items: center; gap: 14px;
+      padding: 13px 16px; border-bottom: 1px solid var(--border);
+      background: var(--surface); transition: background .1s;
+    }
+    .cr-nc-cell:last-child { border-bottom: none; }
+    .cr-nc-cell:focus-within { background: var(--surface-2, rgba(0,0,0,.025)); }
+
+    /* Duas cells em linha */
+    .cr-nc-cells-2col {
+      display: grid; grid-template-columns: 1fr 1fr;
+      border-bottom: 1px solid var(--border);
+    }
+    .cr-nc-cells-2col .cr-nc-cell { border-bottom: none; }
+    .cr-nc-cells-2col .cr-nc-cell:first-child { border-right: 1px solid var(--border); }
+    .cr-nc-cells-2col--last { border-bottom: none; }
+
+    /* Ícone da cell */
+    .cr-nc-cell-ico {
+      width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 0.88rem;
+      background: var(--surface-2); color: var(--text-muted);
+    }
+    .cr-nc-cell-ico--green { background: rgba(22,163,74,.1); color: #16a34a; }
+    .cr-nc-cell-ico--blue  { background: rgba(37,99,235,.1); color: #2563eb; }
+    .cr-nc-cell-ico--orange{ background: rgba(217,119,6,.12); color: #c2410c; }
+
+    /* Conteúdo da cell */
+    .cr-nc-cell-content { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+
     .cr-nc-lbl {
-      display: block; font-size: 0.74rem; font-weight: 800; color: var(--text-muted);
-      text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px;
+      display: block; font-size: 0.67rem; font-weight: 900; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .06em;
     }
     .cr-nc-req { color: var(--danger, #dc2626); }
-    .cr-nc-input { border-radius: 12px; min-height: 42px; }
-    .cr-nc-valor { font-size: 1.1rem; font-weight: 700; }
+
+    /* Input dentro da cell — sem borda, fundo transparente */
+    .cr-nc-cell-input {
+      border: none !important; outline: none !important;
+      background: transparent !important; padding: 0 !important;
+      margin: 0 !important; min-height: unset !important;
+      border-radius: 0 !important; box-shadow: none !important;
+      font-size: 0.93rem; font-weight: 600; color: var(--text);
+      width: 100%; font-family: inherit;
+      -webkit-appearance: none; appearance: none;
+    }
+    .cr-nc-cell-input::placeholder { color: var(--text-muted); font-weight: 500; }
+    .cr-nc-cell-input:focus { box-shadow: none !important; border: none !important; outline: none !important; }
+
+    /* Seta customizada no select */
+    select.cr-nc-cell-input {
+      cursor: pointer;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+      background-repeat: no-repeat !important;
+      background-position: right 0 center !important;
+      padding-right: 16px !important;
+    }
+
+    .cr-nc-valor { font-size: 1.2rem !important; font-weight: 800 !important; letter-spacing: -.02em; }
+
+    /* Textarea observação */
+    .cr-nc-obs {
+      width: 100%; resize: none; font-size: 0.9rem; font-weight: 500;
+      color: var(--text); line-height: 1.5;
+      background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: 14px; padding: 12px 14px; font-family: inherit;
+      box-sizing: border-box;
+    }
+    .cr-nc-obs::placeholder { color: var(--text-muted); }
+    .cr-nc-obs:focus { outline: none; border-color: var(--primary); background: var(--surface); }
 
     /* Recorrência — row único */
     .cr-nc-rec-single {
@@ -3471,14 +3543,10 @@ function _injectCrNcStyles() {
     }
     :root[data-theme="dark"] .cp-rec-cfg-preview { background: rgba(8,145,178,.12); color: #67e8f9; border-color: rgba(8,145,178,.25); }
 
-    @media (max-width: 860px) {
-      .cr-nc-grid { grid-template-columns: 1fr 1fr; }
-      .cr-nc-spinners { grid-template-columns: repeat(2, 1fr); }
-    }
     @media (max-width: 600px) {
-      .cr-nc-grid, .cr-nc-spinners { grid-template-columns: 1fr; }
       .cr-nc-section { padding: 14px 16px; }
-      .cr-nc-tipo-row { flex-direction: column; }
+      .cr-nc-cells-2col { grid-template-columns: 1fr; }
+      .cr-nc-cells-2col .cr-nc-cell:first-child { border-right: none; border-bottom: 1px solid var(--border); }
     }
   `;
   document.head.appendChild(s);
@@ -3513,32 +3581,58 @@ function abrirModalContaManual() {
 
       <div class="cr-detail-body cr-nc-body">
 
-        <!-- Campos principais em grade 3 colunas -->
+        <!-- Seção: Detalhes -->
         <div class="cr-nc-section">
-          <div class="cr-nc-grid">
-            <div class="cr-nc-full">
-              <label class="cr-nc-lbl">Descrição <span class="cr-nc-req">*</span></label>
-              <input type="text" id="crManualDescricao" class="input cr-nc-input" placeholder="Ex: Promissória, dívida antiga..." autocomplete="off" />
+          <p class="cr-nc-section-title">Detalhes</p>
+          <div class="cr-nc-card-group">
+            <div class="cr-nc-cell">
+              <span class="cr-nc-cell-ico"><i class="fa-solid fa-file-lines"></i></span>
+              <div class="cr-nc-cell-content">
+                <label class="cr-nc-lbl" for="crManualDescricao">Descrição <span class="cr-nc-req">*</span></label>
+                <input type="text" id="crManualDescricao" class="cr-nc-cell-input" placeholder="Ex: Promissória, dívida antiga..." autocomplete="off" />
+              </div>
             </div>
-            <div>
-              <label class="cr-nc-lbl">Valor (R$) <span class="cr-nc-req">*</span></label>
-              <input type="number" step="0.01" id="crManualValor" class="input cr-nc-input cr-nc-valor" inputmode="decimal" placeholder="0,00" />
+            <div class="cr-nc-cells-2col">
+              <div class="cr-nc-cell">
+                <span class="cr-nc-cell-ico cr-nc-cell-ico--green"><i class="fa-solid fa-brazilian-real-sign"></i></span>
+                <div class="cr-nc-cell-content">
+                  <label class="cr-nc-lbl" for="crManualValor">Valor <span class="cr-nc-req">*</span></label>
+                  <input type="number" step="0.01" id="crManualValor" class="cr-nc-cell-input cr-nc-valor" inputmode="decimal" placeholder="0,00" />
+                </div>
+              </div>
+              <div class="cr-nc-cell">
+                <span class="cr-nc-cell-ico cr-nc-cell-ico--blue"><i class="fa-solid fa-calendar-days"></i></span>
+                <div class="cr-nc-cell-content">
+                  <label class="cr-nc-lbl" for="crManualVencimento">1º Vencimento <span class="cr-nc-req">*</span></label>
+                  <input type="date" id="crManualVencimento" class="cr-nc-cell-input" value="${hoje}" />
+                </div>
+              </div>
             </div>
-            <div>
-              <label class="cr-nc-lbl">1º vencimento <span class="cr-nc-req">*</span></label>
-              <input type="date" id="crManualVencimento" class="input cr-nc-input" value="${hoje}" />
-            </div>
-            <div><!-- espaço --></div>
-            <div>
-              <label class="cr-nc-lbl">Cliente</label>
-              <select id="crManualCliente" class="input cr-nc-input">
-                <option value="">Cliente avulso</option>
-                ${clientesOptions}
-              </select>
-            </div>
-            <div>
-              <label class="cr-nc-lbl">Nome manual</label>
-              <input type="text" id="crManualNome" class="input cr-nc-input" placeholder="Nome avulso" autocomplete="off" />
+          </div>
+        </div>
+
+        <!-- Seção: Cliente -->
+        <div class="cr-nc-section">
+          <p class="cr-nc-section-title">Cliente</p>
+          <div class="cr-nc-card-group">
+            <div class="cr-nc-cells-2col cr-nc-cells-2col--last">
+              <div class="cr-nc-cell">
+                <span class="cr-nc-cell-ico"><i class="fa-solid fa-user"></i></span>
+                <div class="cr-nc-cell-content">
+                  <label class="cr-nc-lbl" for="crManualCliente">Cadastrado</label>
+                  <select id="crManualCliente" class="cr-nc-cell-input">
+                    <option value="">Cliente avulso</option>
+                    ${clientesOptions}
+                  </select>
+                </div>
+              </div>
+              <div class="cr-nc-cell">
+                <span class="cr-nc-cell-ico"><i class="fa-solid fa-pen-to-square"></i></span>
+                <div class="cr-nc-cell-content">
+                  <label class="cr-nc-lbl" for="crManualNome">Nome manual</label>
+                  <input type="text" id="crManualNome" class="cr-nc-cell-input" placeholder="Nome avulso" autocomplete="off" />
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -3558,8 +3652,8 @@ function abrirModalContaManual() {
 
         <!-- Observação -->
         <div class="cr-nc-section">
-          <label class="cr-nc-lbl">Observação</label>
-          <textarea id="crManualObservacao" class="input cr-nc-input" rows="3" placeholder="Observações da promissória..."></textarea>
+          <p class="cr-nc-section-title">Observação</p>
+          <textarea id="crManualObservacao" class="cr-nc-obs" rows="2" placeholder="Observações da promissória..."></textarea>
         </div>
 
       </div>
