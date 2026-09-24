@@ -3561,6 +3561,23 @@ function _injectCrNcStyles() {
     .cr-nc-combo-trigger { display: flex; align-items: center; justify-content: space-between; gap: 6px; cursor: pointer; font-size: 15px; font-weight: 500; color: var(--text); background: transparent; user-select: none; width: 100%; padding: 0; border: none; outline: none; }
     .cr-nc-combo-trigger .cr-nc-combo-chev { font-size: 11px; color: var(--text-muted, #6b7280); flex-shrink: 0; transition: transform 0.15s; }
     .cr-nc-combo-trigger.open .cr-nc-combo-chev { transform: rotate(180deg); }
+    .cr-nc-cal { display: none; position: fixed; z-index: 10002; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 8px 28px rgba(0,0,0,.14); padding: 14px 12px 12px; width: 272px; }
+    .cr-nc-cal-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .cr-nc-cal-hdr-lbl { font-size: .86rem; font-weight: 700; color: var(--text); text-transform: capitalize; }
+    .cr-nc-cal-nav { background: none; border: none; cursor: pointer; color: var(--text-muted, #6b7280); font-size: 1rem; padding: 3px 8px; border-radius: 6px; line-height: 1; }
+    .cr-nc-cal-nav:hover { background: var(--surface-2); }
+    .cr-nc-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+    .cr-nc-cal-wday { font-size: .7rem; font-weight: 700; color: var(--text-muted, #9ca3af); text-align: center; padding: 4px 0 6px; }
+    .cr-nc-cal-day { font-size: .83rem; font-weight: 500; color: var(--text); text-align: center; padding: 6px 2px; border-radius: 7px; cursor: pointer; transition: background .1s; }
+    .cr-nc-cal-day:hover { background: var(--surface-2); }
+    .cr-nc-cal-other { color: var(--text-muted, #9ca3af) !important; }
+    .cr-nc-cal-today { font-weight: 700; color: var(--primary, #2563eb); }
+    .cr-nc-cal-sel { background: var(--primary, #2563eb) !important; color: #fff !important; font-weight: 700; border-radius: 7px; }
+    .cr-nc-cal-foot { display: flex; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+    .cr-nc-cal-foot-btn { background: none; border: none; cursor: pointer; font-size: .82rem; font-weight: 600; color: var(--primary, #2563eb); padding: 4px 8px; border-radius: 6px; }
+    .cr-nc-cal-foot-btn:hover { background: var(--surface-2); }
+    @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cr-nc-cal { box-shadow: 0 8px 36px rgba(0,0,0,.5); } }
+    :root[data-theme="dark"] .cr-nc-cal { box-shadow: 0 8px 36px rgba(0,0,0,.5); }
     @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cr-nc-combo-drop { box-shadow: 0 8px 32px rgba(0,0,0,.45); } }
     :root[data-theme="dark"] .cr-nc-combo-drop { box-shadow: 0 8px 32px rgba(0,0,0,.45); }
   `;
@@ -3574,6 +3591,8 @@ function abrirModalContaManual() {
   if (modalExistente) modalExistente.remove();
 
   const hoje = todayFortaleza ? todayFortaleza() : new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Fortaleza' });
+  const [_hy, _hm, _hd] = hoje.split('-');
+  const hojeDisplay = `${_hd}/${_hm}/${_hy}`;
 
   const modal = document.createElement('div');
   modal.id = 'crContaManualModal';
@@ -3614,8 +3633,12 @@ function abrirModalContaManual() {
               <div class="cr-nc-cell">
                 <span class="cr-nc-cell-ico cr-nc-cell-ico--blue"><i class="fa-solid fa-calendar-days"></i></span>
                 <div class="cr-nc-cell-content">
-                  <label class="cr-nc-lbl" for="crManualVencimento">1º Vencimento <span class="cr-nc-req">*</span></label>
-                  <input type="date" id="crManualVencimento" class="cr-nc-cell-input" value="${hoje}" />
+                  <label class="cr-nc-lbl">1º Vencimento <span class="cr-nc-req">*</span></label>
+                  <div id="crManualVencTrigger" class="cr-nc-combo-trigger" tabindex="0" role="button">
+                    <span id="crManualVencLabel">${hojeDisplay}</span>
+                    <i class="fa-solid fa-calendar-days cr-nc-combo-chev" style="font-size:13px;color:var(--primary,#2563eb)"></i>
+                  </div>
+                  <input type="hidden" id="crManualVencimento" value="${hoje}">
                 </div>
               </div>
               <div class="cr-nc-cell">
@@ -3790,6 +3813,112 @@ function abrirModalContaManual() {
       }
     });
     _crFormaObs.observe(document.body, { childList: true });
+  }
+
+  // ── Date picker vencimento ────────────────────────────────────────────────
+  {
+    const hid     = document.getElementById('crManualVencimento');
+    const trigger = document.getElementById('crManualVencTrigger');
+    const lblEl   = document.getElementById('crManualVencLabel');
+    const MESES   = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                     'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    const WDAYS   = ['D','S','T','Q','Q','S','S'];
+
+    const _isoToDisplay = iso => { const [y,m,d] = iso.split('-'); return `${d}/${m}/${y}`; };
+
+    let curYear = 0, curMonth = 0;
+    const _initView = () => {
+      const v = hid.value;
+      if (v) { const [y,m] = v.split('-').map(Number); curYear = y; curMonth = m - 1; }
+      else { const n = new Date(); curYear = n.getFullYear(); curMonth = n.getMonth(); }
+    };
+
+    const cal = document.createElement('div');
+    cal.className = 'cr-nc-cal';
+    cal.innerHTML = `
+      <div class="cr-nc-cal-hdr">
+        <button class="cr-nc-cal-nav" id="crVencPrev">&#8249;</button>
+        <span class="cr-nc-cal-hdr-lbl" id="crVencLbl"></span>
+        <button class="cr-nc-cal-nav" id="crVencNext">&#8250;</button>
+      </div>
+      <div class="cr-nc-cal-grid" id="crVencGrid"></div>
+      <div class="cr-nc-cal-foot">
+        <button class="cr-nc-cal-foot-btn" id="crVencClear">Limpar</button>
+        <button class="cr-nc-cal-foot-btn" id="crVencHoje">Hoje</button>
+      </div>`;
+    document.body.appendChild(cal);
+
+    const _render = () => {
+      cal.querySelector('#crVencLbl').textContent = `${MESES[curMonth]} de ${curYear}`;
+      const selIso = hid.value;
+      const now = new Date();
+      const todayIso = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+      const firstWday = new Date(curYear, curMonth, 1).getDay();
+      const lastDate  = new Date(curYear, curMonth + 1, 0).getDate();
+      const prevLast  = new Date(curYear, curMonth, 0).getDate();
+      let html = WDAYS.map(w => `<div class="cr-nc-cal-wday">${w}</div>`).join('');
+      for (let i = firstWday - 1; i >= 0; i--) {
+        const d = prevLast - i;
+        const pm = curMonth === 0 ? 12 : curMonth;
+        const py = curMonth === 0 ? curYear - 1 : curYear;
+        const iso = `${py}-${String(pm).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        html += `<div class="cr-nc-cal-day cr-nc-cal-other${iso===selIso?' cr-nc-cal-sel':''}" data-iso="${iso}">${d}</div>`;
+      }
+      for (let d = 1; d <= lastDate; d++) {
+        const iso = `${curYear}-${String(curMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const cls = ['cr-nc-cal-day'];
+        if (iso === selIso) cls.push('cr-nc-cal-sel');
+        else if (iso === todayIso) cls.push('cr-nc-cal-today');
+        html += `<div class="${cls.join(' ')}" data-iso="${iso}">${d}</div>`;
+      }
+      const total = Math.ceil((firstWday + lastDate) / 7) * 7;
+      for (let d = 1; d <= total - firstWday - lastDate; d++) {
+        const nm = curMonth === 11 ? 1 : curMonth + 2;
+        const ny = curMonth === 11 ? curYear + 1 : curYear;
+        const iso = `${ny}-${String(nm).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        html += `<div class="cr-nc-cal-day cr-nc-cal-other${iso===selIso?' cr-nc-cal-sel':''}" data-iso="${iso}">${d}</div>`;
+      }
+      cal.querySelector('#crVencGrid').innerHTML = html;
+    };
+
+    const _posCal = () => {
+      const r = trigger.getBoundingClientRect();
+      cal.style.left = r.left + 'px';
+      const below = window.innerHeight - r.bottom;
+      cal.style.top = below >= 300 ? (r.bottom + 4) + 'px' : (r.top - cal.offsetHeight - 4) + 'px';
+    };
+    const _openCal  = () => { _initView(); _render(); cal.style.display = 'block'; trigger.classList.add('open'); requestAnimationFrame(_posCal); };
+    const _closeCal = () => { cal.style.display = 'none'; trigger.classList.remove('open'); };
+
+    trigger.addEventListener('click', () => cal.style.display === 'block' ? _closeCal() : _openCal());
+    trigger.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); cal.style.display === 'block' ? _closeCal() : _openCal(); } });
+
+    cal.querySelector('#crVencPrev').addEventListener('click', e => { e.stopPropagation(); curMonth--; if (curMonth < 0) { curMonth = 11; curYear--; } _render(); });
+    cal.querySelector('#crVencNext').addEventListener('click', e => { e.stopPropagation(); curMonth++; if (curMonth > 11) { curMonth = 0; curYear++; } _render(); });
+
+    cal.querySelector('#crVencClear').addEventListener('click', e => { e.stopPropagation(); hid.value = ''; lblEl.textContent = 'Selecionar data'; _closeCal(); });
+    cal.querySelector('#crVencHoje').addEventListener('click', e => {
+      e.stopPropagation();
+      const n = new Date();
+      const iso = `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;
+      hid.value = iso; lblEl.textContent = _isoToDisplay(iso); _initView(); _render(); _closeCal();
+    });
+
+    cal.addEventListener('click', e => {
+      const day = e.target.closest('.cr-nc-cal-day');
+      if (!day) return;
+      hid.value = day.dataset.iso;
+      lblEl.textContent = _isoToDisplay(day.dataset.iso);
+      _closeCal();
+    });
+
+    const _crVencOutside = e => { if (!trigger.contains(e.target) && !cal.contains(e.target)) _closeCal(); };
+    document.addEventListener('click', _crVencOutside);
+
+    const _crVencObs = new MutationObserver(() => {
+      if (!document.getElementById('crContaManualModal')) { cal.remove(); document.removeEventListener('click', _crVencOutside); _crVencObs.disconnect(); }
+    });
+    _crVencObs.observe(document.body, { childList: true });
   }
 
   // ── Estado local ──────────────────────────────────────────────────────────
