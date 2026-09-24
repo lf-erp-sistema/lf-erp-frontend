@@ -3368,7 +3368,7 @@ function _injectCrNcStyles() {
     .cr-nc-rec-icon--green { background: rgba(22,163,74,.1); color: #16a34a; }
 
     /* Modal de seleção de recorrência (shared — injected here as fallback) */
-    .cp-rec-sel-overlay { z-index: 2100 !important; }
+    .cp-rec-sel-overlay { z-index: 10000 !important; }
     .cp-rec-sel-card {
       background: var(--surface); border-radius: 24px;
       width: min(94vw, 420px); box-shadow: 0 24px 60px rgba(0,0,0,.28); overflow: hidden;
@@ -3399,7 +3399,7 @@ function _injectCrNcStyles() {
     }
 
     /* Modal de configuração de parcelamento (shared — injected here as fallback) */
-    .cp-rec-cfg-overlay { z-index: 2100 !important; }
+    .cp-rec-cfg-overlay { z-index: 10000 !important; }
     .cp-rec-cfg-card {
       background: var(--surface); border-radius: 24px;
       width: min(94vw, 460px); box-shadow: 0 24px 60px rgba(0,0,0,.28); overflow: hidden;
