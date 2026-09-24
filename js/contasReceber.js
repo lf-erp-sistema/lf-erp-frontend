@@ -3306,169 +3306,423 @@ function injectContasReceberStyles() {
   document.head.appendChild(style);
 }
 
-function abrirModalContaManual() {
-  const modalExistente = document.getElementById('crContaManualModal');
+function _crNcSpinner(id, label, ini) {
+  return `
+    <div class="cr-nc-spinner-block">
+      <span class="cr-nc-field-lbl">${label}</span>
+      <div class="cr-nc-spinner">
+        <button type="button" class="cr-nc-spin-up" data-spin="${id}"><i class="fa-solid fa-chevron-up"></i></button>
+        <span class="cr-nc-spin-val" id="${id}Val">${ini}</span>
+        <button type="button" class="cr-nc-spin-down" data-spin="${id}"><i class="fa-solid fa-chevron-down"></i></button>
+      </div>
+    </div>`;
+}
 
-  if (modalExistente) {
-    modalExistente.remove();
-  }
+function _injectCrNcStyles() {
+  if (document.getElementById('crNcModalStyles')) return;
+  const s = document.createElement('style');
+  s.id = 'crNcModalStyles';
+  s.textContent = `
+    .cr-nc-card { width: min(100%, 700px) !important; }
+
+    .cr-nc-body { gap: 0; padding: 0; }
+    .cr-nc-section {
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--border);
+    }
+    .cr-nc-section:last-child { border-bottom: none; }
+    .cr-nc-section-title {
+      font-size: 0.74rem; font-weight: 800; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .05em; margin-bottom: 12px;
+    }
+    .cr-nc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .cr-nc-full { grid-column: 1 / -1; }
+    .cr-nc-lbl {
+      display: block; font-size: 0.74rem; font-weight: 800; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px;
+    }
+    .cr-nc-req { color: var(--danger, #dc2626); }
+    .cr-nc-input { border-radius: 12px; min-height: 42px; }
+    .cr-nc-valor { font-size: 1.1rem; font-weight: 700; }
+
+    /* Recorrência rows */
+    .cr-nc-rec-list {
+      display: flex; flex-direction: column;
+      border: 1px solid var(--border); border-radius: 16px; overflow: hidden;
+    }
+    .cr-nc-rec-row {
+      display: flex; align-items: center; gap: 14px; padding: 14px 16px;
+      border: none; border-bottom: 1px solid var(--border);
+      background: var(--surface); cursor: pointer; text-align: left;
+      transition: background .12s; width: 100%;
+    }
+    .cr-nc-rec-row:last-child { border-bottom: none; }
+    .cr-nc-rec-row:hover { background: var(--surface-2); }
+    .cr-nc-rec-row--active { background: var(--primary-soft, rgba(37,99,235,.06)); }
+
+    .cr-nc-rec-icon {
+      width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 0.95rem;
+    }
+    .cr-nc-rec-icon--gray  { background: var(--surface-2); color: var(--text-muted); }
+    .cr-nc-rec-icon--blue  { background: rgba(37,99,235,.1); color: #2563eb; }
+    .cr-nc-rec-icon--green { background: rgba(22,163,74,.1); color: #16a34a; }
+
+    .cr-nc-rec-info { flex: 1; min-width: 0; }
+    .cr-nc-rec-info strong { display: block; font-size: 0.92rem; font-weight: 800; color: var(--text); }
+    .cr-nc-rec-info small  { display: block; font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+    .cr-nc-rec-check  { color: var(--primary); font-size: 1.05rem; flex-shrink: 0; }
+    .cr-nc-rec-chevron{ color: var(--text-muted); font-size: 0.78rem; flex-shrink: 0; }
+
+    /* Config panel */
+    .cr-nc-config {
+      margin-top: 14px; border: 1px solid var(--border); border-radius: 16px;
+      background: var(--surface-2, #f8fafc); overflow: hidden;
+    }
+    .cr-nc-config-inner { padding: 18px; display: grid; gap: 16px; }
+    .cr-nc-config-title {
+      font-size: 0.82rem; font-weight: 800; color: var(--text);
+      text-transform: uppercase; letter-spacing: .05em;
+    }
+    .cr-nc-config-sub {
+      font-size: 0.76rem; font-weight: 800; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px;
+    }
+    .cr-nc-spinners { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; }
+    .cr-nc-spinner-block { display: grid; gap: 6px; }
+    .cr-nc-spinner-block small { font-size: 0.72rem; color: var(--text-muted); font-weight: 600; line-height: 1.35; }
+    .cr-nc-field-lbl { font-size: 0.74rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; }
+
+    .cr-nc-spinner {
+      display: flex; flex-direction: column; align-items: center;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 6px; width: fit-content; min-width: 72px;
+    }
+    .cr-nc-spin-val {
+      font-size: 1.55rem; font-weight: 900; font-variant-numeric: tabular-nums;
+      color: var(--text); padding: 4px 0; line-height: 1;
+    }
+    .cr-nc-spin-up, .cr-nc-spin-down {
+      border: none; background: none; color: var(--text-muted);
+      cursor: pointer; padding: 4px 14px; font-size: 0.78rem;
+      border-radius: 8px; transition: background .1s, color .1s; width: 100%;
+    }
+    .cr-nc-spin-up:hover, .cr-nc-spin-down:hover { background: var(--primary-soft); color: var(--primary); }
+
+    .cr-nc-tipo-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .cr-nc-tipo-btn {
+      display: flex; align-items: center; gap: 6px; padding: 8px 14px;
+      border: 1.5px solid var(--border); border-radius: 10px;
+      background: var(--surface); color: var(--text-muted);
+      font-size: 0.83rem; font-weight: 700; cursor: pointer;
+      transition: border-color .12s, background .12s, color .12s;
+    }
+    .cr-nc-tipo-btn:hover { border-color: var(--primary); color: var(--primary); }
+    .cr-nc-tipo-btn--active { border-color: var(--primary); background: var(--primary-soft); color: var(--primary-hover); }
+
+    .cr-nc-preview {
+      display: flex; align-items: flex-start; gap: 8px;
+      background: var(--info-soft, rgba(8,145,178,.07));
+      border: 1px solid rgba(8,145,178,.18);
+      border-radius: 10px; padding: 10px 12px;
+      font-size: 0.84rem; font-weight: 700; color: #0e7490;
+    }
+    .cr-nc-preview i { margin-top: 2px; flex-shrink: 0; }
+
+    .cr-nc-concluir { justify-self: end; }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) .cr-nc-config { background: rgba(255,255,255,.03); }
+      :root:not([data-theme="light"]) .cr-nc-preview { background: rgba(8,145,178,.12); color: #67e8f9; border-color: rgba(8,145,178,.25); }
+    }
+    :root[data-theme="dark"] .cr-nc-config { background: rgba(255,255,255,.03); }
+    :root[data-theme="dark"] .cr-nc-preview { background: rgba(8,145,178,.12); color: #67e8f9; border-color: rgba(8,145,178,.25); }
+
+    @media (max-width: 600px) {
+      .cr-nc-grid, .cr-nc-spinners { grid-template-columns: 1fr; }
+      .cr-nc-section { padding: 14px 16px; }
+      .cr-nc-tipo-row { flex-direction: column; }
+    }
+  `;
+  document.head.appendChild(s);
+}
+
+function abrirModalContaManual() {
+  _injectCrNcStyles();
+
+  const modalExistente = document.getElementById('crContaManualModal');
+  if (modalExistente) modalExistente.remove();
+
+  const hoje = todayFortaleza ? todayFortaleza() : new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Fortaleza' });
+
+  const clientesOptions = state.clientes
+    .map(c => `<option value="${c.id}">${escapeHtml(c.nome)}</option>`)
+    .join('');
 
   const modal = document.createElement('div');
-
   modal.id = 'crContaManualModal';
   modal.className = 'modal-overlay cr-detail-overlay';
 
   modal.innerHTML = `
-    <div class="modal-card cr-detail-card">
+    <div class="modal-card cr-detail-card cr-nc-card">
       <div class="cr-detail-header">
         <div>
-          <span class="cr-detail-eyebrow">
-            Conta manual
-          </span>
-
-          <h3>Nova promissória antiga</h3>
-
-          <p>
-            Cadastre contas antigas sem gerar venda ou movimentar estoque.
-          </p>
+          <span class="cr-detail-eyebrow">Conta manual</span>
+          <h3>Nova promissória / conta a receber</h3>
+          <p>Sem gerar venda ou movimentar estoque.</p>
         </div>
-
-        <button
-          class="icon-button"
-          type="button"
-          id="fecharContaManual"
-        >
-          <i class="fa-solid fa-xmark"></i>
-        </button>
+        <button class="icon-button" type="button" id="fecharContaManual"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
-      <div class="cr-detail-body">
+      <div class="cr-detail-body cr-nc-body">
 
-        <div class="form-grid">
-
-          <div class="form-group">
-            <label>Cliente</label>
-
-            <select id="crManualCliente" class="input">
-              <option value="">Cliente avulso</option>
-
-              ${state.clientes
-                .map(
-                  (cliente) => `
-                    <option value="${cliente.id}">
-                      ${escapeHtml(cliente.nome)}
-                    </option>
-                  `
-                )
-                .join('')}
-            </select>
+        <!-- Cliente -->
+        <div class="cr-nc-section">
+          <div class="cr-nc-grid">
+            <div>
+              <label class="cr-nc-lbl">Cliente</label>
+              <select id="crManualCliente" class="input cr-nc-input">
+                <option value="">Cliente avulso</option>
+                ${clientesOptions}
+              </select>
+            </div>
+            <div>
+              <label class="cr-nc-lbl">Nome manual</label>
+              <input type="text" id="crManualNome" class="input cr-nc-input" placeholder="Nome avulso" autocomplete="off" />
+            </div>
           </div>
-
-          <div class="form-group">
-            <label>Nome manual</label>
-
-            <input
-              type="text"
-              id="crManualNome"
-              class="input"
-              placeholder="Nome do cliente"
-            />
-          </div>
-
-          <div class="form-group">
-            <label>Valor</label>
-
-            <input
-              type="number"
-              step="0.01"
-              id="crManualValor"
-              class="input"
-              inputmode="decimal"
-              placeholder="0,00"
-            />
-          </div>
-
-          <div class="form-group">
-            <label>Vencimento</label>
-
-            <input
-              type="date"
-              id="crManualVencimento"
-              class="input"
-            />
-          </div>
-
-          <div class="form-group form-group--full">
-            <label>Descrição</label>
-
-            <input
-              type="text"
-              id="crManualDescricao"
-              class="input"
-              placeholder="Ex: Promissória antiga"
-            />
-          </div>
-
-          <div class="form-group form-group--full">
-            <label>Observação</label>
-
-            <textarea
-              id="crManualObservacao"
-              class="input"
-              rows="3"
-              placeholder="Observações da promissória..."
-            ></textarea>
-          </div>
-
-          <div class="form-group form-group--full cr-manual-parc-toggle">
-            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:700">
-              <input type="checkbox" id="crManualParcelar" style="width:auto;cursor:pointer">
-              Parcelar em múltiplos meses
-            </label>
-          </div>
-
-          <div class="form-group form-group--full" id="crManualParcelasBox" style="display:none">
-            <label>Número de parcelas</label>
-            <input type="number" id="crManualParcelas" class="input" min="2" max="120" value="3" placeholder="Ex: 6">
-            <small style="color:var(--text-muted);font-size:.76rem;margin-top:4px;display:block">
-              O valor será dividido em parcelas iguais com vencimentos mensais a partir da data informada.
-            </small>
-          </div>
-
         </div>
+
+        <!-- Valor + Vencimento -->
+        <div class="cr-nc-section">
+          <div class="cr-nc-grid">
+            <div>
+              <label class="cr-nc-lbl">Valor (R$) <span class="cr-nc-req">*</span></label>
+              <input type="number" step="0.01" id="crManualValor" class="input cr-nc-input cr-nc-valor" inputmode="decimal" placeholder="0,00" />
+            </div>
+            <div>
+              <label class="cr-nc-lbl">1º vencimento <span class="cr-nc-req">*</span></label>
+              <input type="date" id="crManualVencimento" class="input cr-nc-input" value="${hoje}" />
+            </div>
+            <div class="cr-nc-full">
+              <label class="cr-nc-lbl">Descrição <span class="cr-nc-req">*</span></label>
+              <input type="text" id="crManualDescricao" class="input cr-nc-input" placeholder="Ex: Promissória, dívida antiga..." autocomplete="off" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Recorrência -->
+        <div class="cr-nc-section">
+          <p class="cr-nc-section-title">Recorrência</p>
+          <div class="cr-nc-rec-list">
+            <button type="button" class="cr-nc-rec-row cr-nc-rec-row--active" data-rec="nao_recorrente">
+              <span class="cr-nc-rec-icon cr-nc-rec-icon--gray"><i class="fa-solid fa-ban"></i></span>
+              <span class="cr-nc-rec-info">
+                <strong>Não recorrente</strong>
+                <small>Título único, sem repetição</small>
+              </span>
+              <span class="cr-nc-rec-check"><i class="fa-solid fa-circle-check"></i></span>
+              <span class="cr-nc-rec-chevron" hidden><i class="fa-solid fa-chevron-right"></i></span>
+            </button>
+            <button type="button" class="cr-nc-rec-row" data-rec="parcelar">
+              <span class="cr-nc-rec-icon cr-nc-rec-icon--blue"><i class="fa-solid fa-layer-group"></i></span>
+              <span class="cr-nc-rec-info">
+                <strong>Parcelar ou repetir</strong>
+                <small id="crNcParcelarHint">Defina quantidade e periodicidade</small>
+              </span>
+              <span class="cr-nc-rec-check" hidden><i class="fa-solid fa-circle-check"></i></span>
+              <span class="cr-nc-rec-chevron"><i class="fa-solid fa-chevron-right"></i></span>
+            </button>
+            <button type="button" class="cr-nc-rec-row" data-rec="fixa_mensal">
+              <span class="cr-nc-rec-icon cr-nc-rec-icon--green"><i class="fa-solid fa-calendar-days"></i></span>
+              <span class="cr-nc-rec-info">
+                <strong>Fixa mensal</strong>
+                <small id="crNcFixaHint">Cobrança recorrente mensal</small>
+              </span>
+              <span class="cr-nc-rec-check" hidden><i class="fa-solid fa-circle-check"></i></span>
+              <span class="cr-nc-rec-chevron"><i class="fa-solid fa-chevron-right"></i></span>
+            </button>
+          </div>
+
+          <!-- Config panel -->
+          <div class="cr-nc-config" id="crNcConfig" style="display:none">
+            <div class="cr-nc-config-inner">
+              <p class="cr-nc-config-title" id="crNcConfigTitle">Configurar Parcelamento</p>
+              <div class="cr-nc-spinners">
+                <div id="crNcParcelaIniBlock">
+                  ${_crNcSpinner('crNcParcelaIni', 'Parcela inicial', 1)}
+                  <small>A partir de qual parcela você está cadastrando.</small>
+                </div>
+                <div>
+                  ${_crNcSpinner('crNcQtd', 'Quantidade', 2)}
+                  <small id="crNcQtdHint">Total de parcelas da dívida.</small>
+                </div>
+                <div>
+                  <span class="cr-nc-field-lbl">Periodicidade</span>
+                  <select id="crNcPeriodicidade" class="input cr-nc-input" style="margin-top:6px">
+                    <option value="30">Mensal</option>
+                    <option value="15">Quinzenal</option>
+                    <option value="7">Semanal</option>
+                    <option value="60">Bimestral</option>
+                    <option value="90">Trimestral</option>
+                  </select>
+                </div>
+              </div>
+              <div id="crNcTipoBlock" style="display:none">
+                <p class="cr-nc-config-sub">O valor informado é:</p>
+                <div class="cr-nc-tipo-row">
+                  <button type="button" class="cr-nc-tipo-btn cr-nc-tipo-btn--active" data-tipo="parcela">
+                    <i class="fa-solid fa-equals"></i> Valor por parcela
+                  </button>
+                  <button type="button" class="cr-nc-tipo-btn" data-tipo="total">
+                    <i class="fa-solid fa-sigma"></i> Total da dívida
+                  </button>
+                </div>
+              </div>
+              <div class="cr-nc-preview" id="crNcPreview">
+                <i class="fa-solid fa-circle-info"></i>
+                <span id="crNcPreviewTxt">—</span>
+              </div>
+              <button type="button" class="btn btn-primary cr-nc-concluir" id="crNcConcluir">
+                Concluir <i class="fa-solid fa-check"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Observação -->
+        <div class="cr-nc-section">
+          <label class="cr-nc-lbl">Observação</label>
+          <textarea id="crManualObservacao" class="input cr-nc-input" rows="3" placeholder="Observações da promissória..."></textarea>
+        </div>
+
       </div>
 
       <div class="cr-detail-footer">
-
-        <button
-          class="btn btn-primary"
-          type="button"
-          id="salvarContaManual"
-        >
-          <i class="fa-solid fa-floppy-disk"></i>
-          Salvar conta
+        <button class="btn btn-primary" type="button" id="salvarContaManual">
+          <i class="fa-solid fa-floppy-disk"></i> Salvar conta
         </button>
-
-        <button
-          class="btn btn-light"
-          type="button"
-          id="cancelarContaManual"
-        >
-          Cancelar
-        </button>
+        <button class="btn btn-light" type="button" id="cancelarContaManual">Cancelar</button>
       </div>
     </div>
   `;
 
   document.body.appendChild(modal);
 
+  // ── Estado local ──────────────────────────────────────────────────────────
+  let recorrencia = 'nao_recorrente';
+  let tipoValor   = 'parcela';
+  let parcIni     = 1;
+  let qtd         = 2;
+
+  const fmtBRL = v => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+  function atualizarPreview() {
+    const valorNum  = parseFloat(document.getElementById('crManualValor')?.value || '') || 0;
+    const txt       = document.getElementById('crNcPreviewTxt');
+    const hintEl    = document.getElementById('crNcQtdHint');
+    const iniEl     = document.getElementById('crNcParcelaIniVal');
+    const qtdEl     = document.getElementById('crNcQtdVal');
+    if (iniEl) iniEl.textContent = parcIni;
+    if (qtdEl) qtdEl.textContent = qtd;
+
+    if (recorrencia === 'fixa_mensal') {
+      if (hintEl) hintEl.textContent = `${qtd} títulos independentes.`;
+      const v = valorNum > 0 ? ` de ${fmtBRL(valorNum)} cada` : '';
+      if (txt) txt.textContent = `Serão criados ${qtd} títulos mensais${v}.`;
+      const fixaHint = document.getElementById('crNcFixaHint');
+      if (fixaHint) fixaHint.textContent = `${qtd} meses — ${valorNum > 0 ? fmtBRL(valorNum) + '/mês' : 'valor a definir'}`;
+    } else {
+      const restantes = Math.max(1, qtd - parcIni + 1);
+      if (hintEl) hintEl.textContent = `${restantes} parcela(s) (da ${parcIni} à ${qtd}).`;
+      let preview;
+      if (tipoValor === 'total' && valorNum > 0 && qtd > 1) {
+        const vp = Number((valorNum / qtd).toFixed(2));
+        preview = `${restantes} parcela(s) de ~${fmtBRL(vp)} cada (total ${fmtBRL(valorNum)}).`;
+      } else {
+        preview = valorNum > 0
+          ? `${restantes} parcela(s) de ${fmtBRL(valorNum)} — da ${parcIni} à ${qtd}.`
+          : `${restantes} parcela(s) da ${parcIni} à ${qtd}.`;
+      }
+      if (txt) txt.textContent = preview;
+      const parcelarHint = document.getElementById('crNcParcelarHint');
+      if (parcelarHint) {
+        parcelarHint.textContent = valorNum > 0
+          ? (tipoValor === 'total' ? `${fmtBRL(valorNum)} em ${qtd}x — da ${parcIni} à ${qtd}` : `${qtd}x de ${fmtBRL(valorNum)} — da ${parcIni}`)
+          : `${qtd - parcIni + 1} parcela(s) da ${parcIni} à ${qtd}`;
+      }
+    }
+  }
+
+  // Rows de recorrência
+  modal.querySelectorAll('.cr-nc-rec-row').forEach(row => {
+    row.addEventListener('click', () => {
+      recorrencia = row.dataset.rec;
+      modal.querySelectorAll('.cr-nc-rec-row').forEach(r => {
+        r.classList.remove('cr-nc-rec-row--active');
+        r.querySelector('.cr-nc-rec-check')?.setAttribute('hidden', '');
+        r.querySelector('.cr-nc-rec-chevron')?.removeAttribute('hidden');
+      });
+      row.classList.add('cr-nc-rec-row--active');
+      row.querySelector('.cr-nc-rec-check')?.removeAttribute('hidden');
+      row.querySelector('.cr-nc-rec-chevron')?.setAttribute('hidden', '');
+
+      const config   = document.getElementById('crNcConfig');
+      const title    = document.getElementById('crNcConfigTitle');
+      const iniBlock = document.getElementById('crNcParcelaIniBlock');
+      const tipoBlk  = document.getElementById('crNcTipoBlock');
+
+      if (recorrencia === 'nao_recorrente') {
+        config.style.display = 'none';
+      } else {
+        title.textContent      = recorrencia === 'fixa_mensal' ? 'Configurar Repetição' : 'Configurar Parcelamento';
+        if (iniBlock) iniBlock.style.display = recorrencia === 'parcelar' ? 'block' : 'none';
+        if (tipoBlk)  tipoBlk.style.display  = recorrencia === 'parcelar' ? 'block' : 'none';
+        if (recorrencia === 'fixa_mensal' && qtd < 2) qtd = 12;
+        config.style.display = 'block';
+        atualizarPreview();
+      }
+    });
+  });
+
+  // Tipo de valor
+  modal.querySelectorAll('.cr-nc-tipo-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      modal.querySelectorAll('.cr-nc-tipo-btn').forEach(b => b.classList.remove('cr-nc-tipo-btn--active'));
+      btn.classList.add('cr-nc-tipo-btn--active');
+      tipoValor = btn.dataset.tipo;
+      atualizarPreview();
+    });
+  });
+
+  // Spinners
+  modal.querySelectorAll('[data-spin]').forEach(btn => {
+    const isUp = btn.classList.contains('cr-nc-spin-up');
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.spin;
+      const el = document.getElementById(`${id}Val`);
+      if (!el) return;
+      if (id === 'crNcParcelaIni') {
+        parcIni = isUp ? Math.min(qtd, parcIni + 1) : Math.max(1, parcIni - 1);
+        el.textContent = parcIni;
+      } else if (id === 'crNcQtd') {
+        const min = recorrencia === 'parcelar' ? Math.max(parcIni, 2) : 2;
+        qtd = isUp ? Math.min(360, qtd + 1) : Math.max(min, qtd - 1);
+        el.textContent = qtd;
+      }
+      atualizarPreview();
+    });
+  });
+
+  document.getElementById('crManualValor')?.addEventListener('input', atualizarPreview);
+  document.getElementById('crNcPeriodicidade')?.addEventListener('change', atualizarPreview);
+  document.getElementById('crNcConcluir')?.addEventListener('click', () => {
+    document.getElementById('crNcConfig').style.display = 'none';
+  });
+
   document.getElementById('fecharContaManual')?.addEventListener('click', () => modal.remove());
   document.getElementById('cancelarContaManual')?.addEventListener('click', () => modal.remove());
-
-  document.getElementById('crManualParcelar')?.addEventListener('change', (e) => {
-    const box = document.getElementById('crManualParcelasBox');
-    if (box) box.style.display = e.target.checked ? 'block' : 'none';
-  });
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
 
   document.getElementById('salvarContaManual')?.addEventListener('click', async (e) => {
     const btn = e.currentTarget;
@@ -3476,90 +3730,97 @@ function abrirModalContaManual() {
     btn.disabled = true;
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Salvando...';
     try {
-      await salvarContaManual(modal);
+      await salvarContaManual(modal, { recorrencia, tipoValor, parcIni, qtd });
     } finally {
       btn.disabled = false;
-      btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Salvar';
-    }
-  });
-
-  modal.addEventListener('click', (event) => {
-    if (event.target === modal) {
-      modal.remove();
+      btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Salvar conta';
     }
   });
 }
 
-async function salvarContaManual(modal) {
+async function salvarContaManual(modal, { recorrencia = 'nao_recorrente', tipoValor = 'parcela', parcIni = 1, qtd = 1 } = {}) {
   try {
-    const clienteId = document.getElementById('crManualCliente')?.value || '';
-
+    const clienteId  = document.getElementById('crManualCliente')?.value || '';
     const nomeManual = document.getElementById('crManualNome')?.value?.trim() || '';
-
-    const valor = document.getElementById('crManualValor')?.value || '';
-
+    const valor      = document.getElementById('crManualValor')?.value || '';
     const vencimento = document.getElementById('crManualVencimento')?.value || '';
-
-    const descricao = document.getElementById('crManualDescricao')?.value?.trim() || '';
-
+    const descricao  = document.getElementById('crManualDescricao')?.value?.trim() || '';
     const observacao = document.getElementById('crManualObservacao')?.value?.trim() || '';
+    const periodicidade = parseInt(document.getElementById('crNcPeriodicidade')?.value || '30', 10);
 
-    const _numValor = Number(valor);
-    if (!valor || !Number.isFinite(_numValor) || _numValor <= 0) {
-      showMessage('Informe um valor válido.', 'error');
-      return;
+    const valorNum = Number(valor);
+    if (!valor || !Number.isFinite(valorNum) || valorNum <= 0) {
+      showMessage('Informe um valor válido.', 'error'); return;
     }
-
     if (!vencimento) {
-      showMessage('Informe a data de vencimento.', 'error');
-      return;
+      showMessage('Informe a data de vencimento.', 'error'); return;
     }
-
     if (!clienteId && !nomeManual) {
-      showMessage('Selecione um cliente ou informe o nome manual.', 'error');
-      return;
+      showMessage('Selecione um cliente ou informe o nome manual.', 'error'); return;
     }
 
-    const parcelar   = document.getElementById('crManualParcelar')?.checked;
-    const nParcelas  = parcelar ? Math.min(120, Math.max(2, parseInt(document.getElementById('crManualParcelas')?.value || '2', 10) || 2)) : 1;
-    const valorParc  = Number((Number(valor) / nParcelas).toFixed(2));
-    // última parcela absorve ajuste de centavos
-    const valorUlt   = Number((Number(valor) - valorParc * (nParcelas - 1)).toFixed(2));
+    // Calcular linhas a criar
+    let nLinhas, totParcelas;
+    if (recorrencia === 'nao_recorrente') {
+      nLinhas = 1; totParcelas = 1;
+    } else if (recorrencia === 'parcelar') {
+      nLinhas = Math.max(1, qtd - parcIni + 1);
+      totParcelas = qtd;
+    } else { // fixa_mensal
+      nLinhas = Math.max(1, qtd);
+      totParcelas = 1; // cada título é independente
+    }
 
-    for (let i = 0; i < nParcelas; i++) {
-      const baseDate = new Date(`${vencimento}T12:00:00`);
-      baseDate.setMonth(baseDate.getMonth() + i);
+    // Valor por linha
+    let valorLinha;
+    if (tipoValor === 'total' && recorrencia === 'parcelar' && qtd > 1) {
+      valorLinha = Number((valorNum / qtd).toFixed(2));
+    } else {
+      valorLinha = valorNum;
+    }
+    const valorUlt = (tipoValor === 'total' && recorrencia === 'parcelar' && qtd > 1)
+      ? Number((valorNum - valorLinha * (nLinhas - 1)).toFixed(2))
+      : valorLinha;
+
+    function addDias(iso, dias) {
+      const d = new Date(`${iso}T12:00:00`);
+      d.setDate(d.getDate() + dias);
       const pad = n => String(n).padStart(2, '0');
-      const vencStr = `${baseDate.getFullYear()}-${pad(baseDate.getMonth()+1)}-${pad(baseDate.getDate())}`;
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    }
+
+    for (let i = 0; i < nLinhas; i++) {
+      const numParcela = recorrencia === 'parcelar' ? parcIni + i : (recorrencia === 'fixa_mensal' ? null : null);
+      const vencStr    = i === 0 ? vencimento : addDias(vencimento, i * periodicidade);
+      const valorInsert = i === nLinhas - 1 ? valorUlt : valorLinha;
+
       await api.request('/contas-receber/manual', {
         method: 'POST',
         body: {
-          empresa: api.getEmpresaNome(),
-          empresa_id: api.getEmpresaId(),
-          cliente_id: clienteId || null,
-          cliente_nome: nomeManual,
-          valor: i === nParcelas - 1 ? valorUlt : valorParc,
+          empresa:       api.getEmpresaNome(),
+          empresa_id:    api.getEmpresaId(),
+          cliente_id:    clienteId || null,
+          cliente_nome:  nomeManual,
+          valor:         valorInsert,
           data_vencimento: vencStr,
           descricao,
           observacao,
           forma_pagamento: 'promissoria',
-          parcela: nParcelas > 1 ? i + 1 : null,
-          total_parcelas: nParcelas > 1 ? nParcelas : null
+          parcela:        recorrencia === 'parcelar' ? numParcela : null,
+          total_parcelas: recorrencia === 'parcelar' ? totParcelas : null
         }
       });
     }
 
-    showMessage(nParcelas > 1 ? `${nParcelas} parcelas cadastradas com sucesso.` : 'Conta manual cadastrada com sucesso.', 'success');
-
+    const msg = nLinhas > 1
+      ? `${nLinhas} título(s) cadastrado(s) com sucesso.`
+      : 'Conta manual cadastrada com sucesso.';
+    showMessage(msg, 'success');
     modal.remove();
-
     await recarregar();
   } catch (error) {
     console.error('Erro ao salvar conta manual:', error);
-
-    const message = buildFriendlyError(error);
-
-    showMessage(message, 'error');
+    showMessage(buildFriendlyError(error), 'error');
   }
 }
 
