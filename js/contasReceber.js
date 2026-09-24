@@ -698,29 +698,32 @@ function render() {
       <div id="contasReceberFeedback" class="module-feedback"></div>
 
       <div class="cr-explain-card">
-        <div>
-          <strong>Importante</strong>
-          <span>Esta tela mostra títulos. Valores recebidos só entram no Fluxo de Caixa após baixa/pagamento.</span>
-        </div>
+        <i class="fa-solid fa-circle-info cr-explain-ico"></i>
+        <span><strong>Importante:</strong> Esta tela mostra títulos. Valores recebidos só entram no Fluxo de Caixa após baixa/pagamento.</span>
       </div>
 
       ${renderAlertasVencCR()}
 
-      <div class="periodo-local">
-        <span class="periodo-local__label">Período:</span>
-        <div class="periodo-local__presets">
-          ${['hoje','7dias','30dias','proximos30','mesAtual','mesAnterior'].map(p => {
-            const labels = { hoje:'Hoje', '7dias':'7 dias', '30dias':'Últ. 30 dias', proximos30:'Próx. 30 dias', mesAtual:'Este mês', mesAnterior:'Mês ant.' };
-            return `<button type="button" class="periodo-local__btn${state.periodo.preset===p?' periodo-local__btn--active':''}" data-cr-period="${p}">${labels[p]}</button>`;
-          }).join('')}
-          <button type="button" class="periodo-local__btn${state.periodo.preset==='personalizado'?' periodo-local__btn--active':''}" data-cr-period="personalizado">Personalizado</button>
+      <div class="cr-period-bar">
+        <div class="periodo-local">
+          <span class="periodo-local__label">Período:</span>
+          <div class="periodo-local__presets">
+            ${['hoje','7dias','30dias','proximos30','mesAtual','mesAnterior'].map(p => {
+              const labels = { hoje:'Hoje', '7dias':'7 dias', '30dias':'Últ. 30 dias', proximos30:'Próx. 30 dias', mesAtual:'Este mês', mesAnterior:'Mês ant.' };
+              return `<button type="button" class="periodo-local__btn${state.periodo.preset===p?' periodo-local__btn--active':''}" data-cr-period="${p}">${labels[p]}</button>`;
+            }).join('')}
+            <button type="button" class="periodo-local__btn${state.periodo.preset==='personalizado'?' periodo-local__btn--active':''}" data-cr-period="personalizado">Personalizado</button>
+          </div>
+          <div id="crPeriodoCustom" class="periodo-local__custom${state.periodo.preset==='personalizado'?'':' hidden'}">
+            <input type="date" id="crDataIni" class="input" value="${state.periodo.dataInicial}">
+            <span>até</span>
+            <input type="date" id="crDataFim" class="input" value="${state.periodo.dataFinal}">
+            <button type="button" class="btn btn-primary" id="crAplicarPeriodo">Aplicar</button>
+          </div>
         </div>
-        <div id="crPeriodoCustom" class="periodo-local__custom${state.periodo.preset==='personalizado'?'':' hidden'}">
-          <input type="date" id="crDataIni" class="input" value="${state.periodo.dataInicial}">
-          <span>até</span>
-          <input type="date" id="crDataFim" class="input" value="${state.periodo.dataFinal}">
-          <button type="button" class="btn btn-primary" id="crAplicarPeriodo">Aplicar</button>
-        </div>
+        <button class="btn btn-primary" id="btnNovaContaManual" type="button" style="flex-shrink:0">
+          <i class="fa-solid fa-plus"></i> Conta manual
+        </button>
       </div>
 
       <div class="cr-toolbar-grid">
@@ -750,9 +753,6 @@ function render() {
           </div>
 
           <div class="cr-primary-actions">
-            <button class="btn btn-primary" id="btnNovaContaManual" type="button">
-              <i class="fa-solid fa-plus"></i> Conta manual
-            </button>
             <button class="btn btn-primary" id="btnFiltrarContasReceber" type="button">
               <i class="fa-solid fa-filter"></i> Filtrar
               ${(state.filtros.status || state.filtros.cliente_id || state.filtros.busca)
@@ -2270,6 +2270,21 @@ function injectContasReceberStyles() {
   const style = document.createElement('style');
   style.id = 'contasReceberProfessionalStyles';
   style.textContent = `
+    .cr-period-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .cr-period-bar .periodo-local {
+      margin-bottom: 0;
+      flex: 1;
+      min-width: 0;
+    }
+
     .cr-toolbar-grid {
       display: flex;
       flex-direction: column;
@@ -2462,23 +2477,33 @@ function injectContasReceberStyles() {
 
     .cr-explain-card {
       border: 1px solid rgba(37, 99, 235, 0.14);
-      background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(8, 145, 178, 0.06));
-      border-radius: 18px;
-      padding: 14px 16px;
-      margin-bottom: 18px;
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.07), rgba(8, 145, 178, 0.05));
+      border-radius: 10px;
+      padding: 8px 14px;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
     .cr-explain-card strong {
-      display: block;
+      display: inline;
       color: var(--primary-hover);
-      font-weight: 800;
-      margin-bottom: 4px;
+      font-weight: 700;
+      margin-right: 4px;
     }
 
     .cr-explain-card span {
       color: var(--text-soft);
-      font-weight: 600;
-      line-height: 1.45;
+      font-weight: 500;
+      font-size: 0.85rem;
+      line-height: 1.3;
+    }
+
+    .cr-explain-card .cr-explain-ico {
+      color: var(--primary, #2563eb);
+      font-size: 0.85rem;
+      flex-shrink: 0;
     }
 
     .cr-stat-card {
