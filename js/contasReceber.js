@@ -3546,6 +3546,14 @@ function _injectCrNcStyles() {
     select.cr-bx-cell-input { cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat !important; background-position: right 0 center !important; padding-right: 16px !important; }
     .cr-bx-valor { font-size: 1.2rem !important; font-weight: 800 !important; }
     .cr-bx-obs { width: 100%; resize: none; font-size: 0.9rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; font-family: inherit; color: var(--text); box-sizing: border-box; }
+    /* ── Autocomplete cliente (modal conta manual) ── */
+    .cr-nc-combo-drop { display: none; position: fixed; z-index: 10001; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.12); max-height: 220px; overflow-y: auto; }
+    .cr-nc-combo-opt { padding: 10px 16px; cursor: pointer; font-size: .88rem; font-weight: 600; color: var(--text); border-bottom: 1px solid var(--border); transition: background .1s; }
+    .cr-nc-combo-opt:last-child { border-bottom: none; }
+    .cr-nc-combo-opt:hover, .cr-nc-combo-opt--sel { background: var(--surface-2); }
+    .cr-nc-combo-opt--sel { color: var(--primary, #2563eb); }
+    @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cr-nc-combo-drop { box-shadow: 0 8px 32px rgba(0,0,0,.45); } }
+    :root[data-theme="dark"] .cr-nc-combo-drop { box-shadow: 0 8px 32px rgba(0,0,0,.45); }
   `;
   document.head.appendChild(s);
 }
@@ -3557,10 +3565,6 @@ function abrirModalContaManual() {
   if (modalExistente) modalExistente.remove();
 
   const hoje = todayFortaleza ? todayFortaleza() : new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Fortaleza' });
-
-  const clientesOptions = state.clientes
-    .map(c => `<option value="${c.id}">${escapeHtml(c.nome)}</option>`)
-    .join('');
 
   const modal = document.createElement('div');
   modal.id = 'crContaManualModal';
@@ -3617,11 +3621,9 @@ function abrirModalContaManual() {
               <div class="cr-nc-cell">
                 <span class="cr-nc-cell-ico"><i class="fa-solid fa-user"></i></span>
                 <div class="cr-nc-cell-content">
-                  <label class="cr-nc-lbl" for="crManualCliente">Cadastrado</label>
-                  <select id="crManualCliente" class="cr-nc-cell-input">
-                    <option value="">Cliente avulso</option>
-                    ${clientesOptions}
-                  </select>
+                  <label class="cr-nc-lbl" for="crManualClienteSearch">Cadastrado</label>
+                  <input type="text" id="crManualClienteSearch" class="cr-nc-cell-input" placeholder="Buscar cliente..." autocomplete="off" />
+                  <input type="hidden" id="crManualCliente" value="" />
                 </div>
               </div>
               <div class="cr-nc-cell">
@@ -3666,6 +3668,47 @@ function abrirModalContaManual() {
   `;
 
   document.body.appendChild(modal);
+
+  // ── Combobox cliente ─────────────────────────────────────────────────────
+  {
+    const srch = document.getElementById('crManualClienteSearch');
+    const hid  = document.getElementById('crManualCliente');
+    const drop = document.createElement('div');
+    drop.className = 'cr-nc-combo-drop';
+    drop.innerHTML =
+      `<div class="cr-nc-combo-opt cr-nc-combo-opt--sel" data-val="" data-lbl="">Avulso / sem cliente</div>` +
+      state.clientes.map(c => `<div class="cr-nc-combo-opt" data-val="${c.id}" data-lbl="${escapeHtml(c.nome)}">${escapeHtml(c.nome)}</div>`).join('');
+    document.body.appendChild(drop);
+    const _pos = () => {
+      const r = srch.getBoundingClientRect();
+      drop.style.left  = r.left + 'px';
+      drop.style.top   = (r.bottom + 4) + 'px';
+      drop.style.width = r.width + 'px';
+    };
+    srch.addEventListener('focus', () => { _pos(); drop.style.display = 'block'; });
+    srch.addEventListener('input', () => {
+      const q = srch.value.toLowerCase();
+      drop.querySelectorAll('.cr-nc-combo-opt').forEach(o => {
+        o.style.display = !q || o.dataset.lbl.toLowerCase().includes(q) ? '' : 'none';
+      });
+      _pos(); drop.style.display = 'block';
+    });
+    drop.addEventListener('mousedown', e => {
+      const opt = e.target.closest('.cr-nc-combo-opt');
+      if (!opt) return;
+      e.preventDefault();
+      hid.value  = opt.dataset.val;
+      srch.value = opt.dataset.val ? opt.dataset.lbl : '';
+      drop.querySelectorAll('.cr-nc-combo-opt').forEach(o => { o.style.display = ''; o.classList.remove('cr-nc-combo-opt--sel'); });
+      opt.classList.add('cr-nc-combo-opt--sel');
+      drop.style.display = 'none';
+    });
+    srch.addEventListener('blur', () => setTimeout(() => { drop.style.display = 'none'; }, 150));
+    const _crCliObs = new MutationObserver(() => {
+      if (!document.getElementById('crContaManualModal')) { drop.remove(); _crCliObs.disconnect(); }
+    });
+    _crCliObs.observe(document.body, { childList: true });
+  }
 
   // ── Estado local ──────────────────────────────────────────────────────────
   let recorrencia  = 'nao_recorrente';

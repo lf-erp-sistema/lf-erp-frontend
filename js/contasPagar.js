@@ -1077,10 +1077,6 @@ function abrirModalNovaContaPagar() {
 
   const hoje = todayFortaleza();
 
-  const fornecedoresOptions = state.fornecedores
-    .map(f => `<option value="${f.id}">${escapeHtml(f.nome)}</option>`)
-    .join('');
-
   const modal = document.createElement('div');
   modal.id = 'cpNovaContaModal';
   modal.className = 'modal-overlay cp-detail-overlay';
@@ -1151,11 +1147,9 @@ function abrirModalNovaContaPagar() {
               <div class="cp-nc-cell">
                 <span class="cp-nc-cell-ico"><i class="fa-solid fa-building"></i></span>
                 <div class="cp-nc-cell-content">
-                  <label class="cp-nc-lbl" for="cpNcFornecedor">Cadastrado</label>
-                  <select id="cpNcFornecedor" class="cp-nc-cell-input">
-                    <option value="">Avulso / sem fornecedor</option>
-                    ${fornecedoresOptions}
-                  </select>
+                  <label class="cp-nc-lbl" for="cpNcFornecedorSearch">Cadastrado</label>
+                  <input type="text" id="cpNcFornecedorSearch" class="cp-nc-cell-input" placeholder="Buscar fornecedor..." autocomplete="off" />
+                  <input type="hidden" id="cpNcFornecedor" value="" />
                 </div>
               </div>
               <div class="cp-nc-cell">
@@ -1200,6 +1194,47 @@ function abrirModalNovaContaPagar() {
   `;
 
   document.body.appendChild(modal);
+
+  // ── Combobox fornecedor ───────────────────────────────────────────────────
+  {
+    const srch = document.getElementById('cpNcFornecedorSearch');
+    const hid  = document.getElementById('cpNcFornecedor');
+    const drop = document.createElement('div');
+    drop.className = 'cp-nc-combo-drop';
+    drop.innerHTML =
+      `<div class="cp-nc-combo-opt cp-nc-combo-opt--sel" data-val="" data-lbl="">Avulso / sem fornecedor</div>` +
+      state.fornecedores.map(f => `<div class="cp-nc-combo-opt" data-val="${f.id}" data-lbl="${escapeHtml(f.nome)}">${escapeHtml(f.nome)}</div>`).join('');
+    document.body.appendChild(drop);
+    const _pos = () => {
+      const r = srch.getBoundingClientRect();
+      drop.style.left  = r.left + 'px';
+      drop.style.top   = (r.bottom + 4) + 'px';
+      drop.style.width = r.width + 'px';
+    };
+    srch.addEventListener('focus', () => { _pos(); drop.style.display = 'block'; });
+    srch.addEventListener('input', () => {
+      const q = srch.value.toLowerCase();
+      drop.querySelectorAll('.cp-nc-combo-opt').forEach(o => {
+        o.style.display = !q || o.dataset.lbl.toLowerCase().includes(q) ? '' : 'none';
+      });
+      _pos(); drop.style.display = 'block';
+    });
+    drop.addEventListener('mousedown', e => {
+      const opt = e.target.closest('.cp-nc-combo-opt');
+      if (!opt) return;
+      e.preventDefault();
+      hid.value  = opt.dataset.val;
+      srch.value = opt.dataset.val ? opt.dataset.lbl : '';
+      drop.querySelectorAll('.cp-nc-combo-opt').forEach(o => { o.style.display = ''; o.classList.remove('cp-nc-combo-opt--sel'); });
+      opt.classList.add('cp-nc-combo-opt--sel');
+      drop.style.display = 'none';
+    });
+    srch.addEventListener('blur', () => setTimeout(() => { drop.style.display = 'none'; }, 150));
+    const _cpFornObs = new MutationObserver(() => {
+      if (!document.getElementById('cpNovaContaModal')) { drop.remove(); _cpFornObs.disconnect(); }
+    });
+    _cpFornObs.observe(document.body, { childList: true });
+  }
 
   // ── Estado local ──────────────────────────────────────────────────────────
   let recorrencia  = 'nao_recorrente';
@@ -2382,6 +2417,14 @@ function injectContasPagarStyles() {
     .cp-pg-cell-input { border: none !important; outline: none !important; background: transparent !important; padding: 0 !important; font-size: 0.93rem; font-weight: 600; color: var(--text); width: 100%; font-family: inherit; -webkit-appearance: none; appearance: none; }
     select.cp-pg-cell-input { cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat !important; background-position: right 0 center !important; padding-right: 16px !important; }
     .cp-pg-valor { font-size: 1.2rem !important; font-weight: 800 !important; }
+    /* ── Autocomplete fornecedor (modal nova conta) ── */
+    .cp-nc-combo-drop { display: none; position: fixed; z-index: 10001; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.12); max-height: 220px; overflow-y: auto; }
+    .cp-nc-combo-opt { padding: 10px 16px; cursor: pointer; font-size: .88rem; font-weight: 600; color: var(--text); border-bottom: 1px solid var(--border); transition: background .1s; }
+    .cp-nc-combo-opt:last-child { border-bottom: none; }
+    .cp-nc-combo-opt:hover, .cp-nc-combo-opt--sel { background: var(--surface-2); }
+    .cp-nc-combo-opt--sel { color: var(--primary, #2563eb); }
+    @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cp-nc-combo-drop { box-shadow: 0 8px 32px rgba(0,0,0,.45); } }
+    :root[data-theme="dark"] .cp-nc-combo-drop { box-shadow: 0 8px 32px rgba(0,0,0,.45); }
   `;
 
   document.head.appendChild(style);
