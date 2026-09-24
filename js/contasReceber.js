@@ -1068,41 +1068,50 @@ function bindEventos() {
     const _renderPanel = () => {
       const isCustom = state.periodo.preset === 'personalizado';
       panel.innerHTML = `
-        <div class="cr-filtros-hdr">Filtros</div>
-        <div class="cr-filtros-section">
-          <div class="cr-filtros-lbl">Período</div>
-          <div class="cr-fpills">
-            ${PERIOD_OPTS.map(o => `<button class="cr-fpill${state.periodo.preset === o.val ? ' cr-fpill--active' : ''}" data-fp-period="${o.val}">${o.lbl}</button>`).join('')}
+        <div class="cr-filtros-modal-card" id="crFiltrosCard">
+          <div class="cr-filtros-modal-hdr">
+            <button class="cr-filtros-close" id="crFiltrosCancelar" title="Fechar"><i class="fa-solid fa-xmark"></i></button>
+            <span class="cr-filtros-modal-title">Filtrar</span>
+            <button class="btn btn-primary btn-sm" id="crAplicarFiltros">Aplicar</button>
           </div>
-          <div class="cr-fp-custom-dates${isCustom ? '' : ' hidden'}" id="crFpCustomDates">
-            <input type="date" id="crFpDataIni" class="input" value="${state.periodo.dataInicial}">
-            <span>até</span>
-            <input type="date" id="crFpDataFim" class="input" value="${state.periodo.dataFinal}">
+          <div class="cr-filtros-modal-body">
+            <div class="cr-filtros-section">
+              <div class="cr-filtros-lbl">Período</div>
+              <div class="cr-fpills">
+                ${PERIOD_OPTS.map(o => `<button class="cr-fpill${state.periodo.preset === o.val ? ' cr-fpill--active' : ''}" data-fp-period="${o.val}">${o.lbl}</button>`).join('')}
+              </div>
+              <div class="cr-fp-custom-dates${isCustom ? '' : ' hidden'}" id="crFpCustomDates">
+                <input type="date" id="crFpDataIni" class="input" value="${state.periodo.dataInicial}">
+                <span>até</span>
+                <input type="date" id="crFpDataFim" class="input" value="${state.periodo.dataFinal}">
+              </div>
+            </div>
+            <div class="cr-filtros-section">
+              <div class="cr-filtros-lbl">Status</div>
+              <div class="cr-fpills">
+                ${STATUS_OPTS.map(o => `<button class="cr-fpill${state.filtros.status === o.val ? ' cr-fpill--active' : ''}" data-fp-status="${o.val}">${o.lbl}</button>`).join('')}
+              </div>
+            </div>
+            <div class="cr-filtros-section">
+              <div class="cr-filtros-lbl">Ordenar por vencimento</div>
+              <div class="cr-fpills">
+                <button class="cr-fpill${state.ordemDir === 'asc' && state.ordem === 'data_vencimento' ? ' cr-fpill--active' : ''}" data-fp-ordem="asc">↑ Mais antigo</button>
+                <button class="cr-fpill${state.ordemDir === 'desc' && state.ordem === 'data_vencimento' ? ' cr-fpill--active' : ''}" data-fp-ordem="desc">↓ Mais recente</button>
+              </div>
+            </div>
           </div>
-        </div>
-        <div class="cr-filtros-section">
-          <div class="cr-filtros-lbl">Status</div>
-          <div class="cr-fpills">
-            ${STATUS_OPTS.map(o => `<button class="cr-fpill${state.filtros.status === o.val ? ' cr-fpill--active' : ''}" data-fp-status="${o.val}">${o.lbl}</button>`).join('')}
+          <div class="cr-filtros-modal-footer">
+            <button class="btn btn-light btn-sm" id="crLimparFiltrosModal">
+              <i class="fa-solid fa-rotate-left"></i> Limpar filtros
+            </button>
           </div>
-        </div>
-        <div class="cr-filtros-section">
-          <div class="cr-filtros-lbl">Ordenar por vencimento</div>
-          <div class="cr-fpills">
-            <button class="cr-fpill${state.ordemDir === 'asc' && state.ordem === 'data_vencimento' ? ' cr-fpill--active' : ''}" data-fp-ordem="asc">↑ Mais antigo</button>
-            <button class="cr-fpill${state.ordemDir === 'desc' && state.ordem === 'data_vencimento' ? ' cr-fpill--active' : ''}" data-fp-ordem="desc">↓ Mais recente</button>
-          </div>
-        </div>
-        <hr class="cr-filtros-sep">
-        <div class="cr-filtros-footer">
-          <button class="btn btn-light btn-sm" id="crFiltrosCancelar">Cancelar</button>
-          <button class="btn btn-primary btn-sm" id="crAplicarFiltros">Aplicar</button>
         </div>`;
     };
     _renderPanel();
     document.body.appendChild(panel);
 
-    const _closePanel = () => { panel.style.display = 'none'; };
+    const _openPanel  = () => { _renderPanel(); panel.classList.add('cr-filtros-open'); };
+    const _closePanel = () => { panel.classList.remove('cr-filtros-open'); };
 
     const _applyFiltros = async () => {
       const selPeriod = panel.querySelector('[data-fp-period].cr-fpill--active');
@@ -1128,8 +1137,10 @@ function bindEventos() {
       await recarregar();
     };
 
-    // Pill toggles e datas custom (event delegation)
+    // Event delegation (pill toggles + ações)
     panel.addEventListener('click', e => {
+      // Fechar ao clicar no overlay (fora do card)
+      if (e.target === panel) { _closePanel(); return; }
       const fpPeriod = e.target.closest('[data-fp-period]');
       const fpStatus = e.target.closest('[data-fp-status]');
       const fpOrdem  = e.target.closest('[data-fp-ordem]');
@@ -1147,32 +1158,23 @@ function bindEventos() {
         panel.querySelectorAll('[data-fp-ordem]').forEach(b => b.classList.remove('cr-fpill--active'));
         fpOrdem.classList.add('cr-fpill--active');
       }
-      if (e.target.id === 'crFiltrosCancelar') _closePanel();
-      if (e.target.id === 'crAplicarFiltros')  _applyFiltros();
+      if (e.target.closest('#crFiltrosCancelar')) _closePanel();
+      if (e.target.closest('#crAplicarFiltros'))  _applyFiltros();
+      if (e.target.closest('#crLimparFiltrosModal')) {
+        state.filtros = { status: '', cliente_id: '', busca: '' };
+        state.ordem = 'data_vencimento'; state.ordemDir = 'desc';
+        state.periodo.preset = '30dias';
+        const { dataInicial, dataFinal } = calcPeriodoLocal('30dias');
+        state.periodo.dataInicial = dataInicial; state.periodo.dataFinal = dataFinal;
+        salvarFiltrosCR(); _closePanel(); recarregar();
+      }
     });
 
-    const btnFiltros = document.getElementById('btnFiltrosPanel');
-    const _posPanel = () => {
-      if (!btnFiltros) return;
-      const r = btnFiltros.getBoundingClientRect();
-      panel.style.right = (window.innerWidth - r.right) + 'px';
-      panel.style.left  = 'auto';
-      panel.style.top   = (r.bottom + 6) + 'px';
-    };
-    btnFiltros?.addEventListener('click', () => {
-      if (panel.style.display === 'block') { _closePanel(); return; }
-      _renderPanel();
-      panel.style.display = 'block';
-      _posPanel();
-    });
+    document.getElementById('btnFiltrosPanel')?.addEventListener('click', _openPanel);
 
-    const _crFpOutside = e => {
-      if (btnFiltros && !btnFiltros.contains(e.target) && !panel.contains(e.target)) _closePanel();
-    };
-    document.addEventListener('click', _crFpOutside);
     // Cleanup quando o módulo é desmontado
     new MutationObserver(() => {
-      if (!document.getElementById('btnFiltrosPanel')) { panel.remove(); document.removeEventListener('click', _crFpOutside); }
+      if (!document.getElementById('btnFiltrosPanel')) { panel.remove(); }
     }).observe(document.body, { childList: true, subtree: true });
   }
 
@@ -2372,24 +2374,29 @@ function injectContasReceberStyles() {
       align-items: center;
     }
 
-    .cr-filtros-panel { display: none; position: fixed; z-index: 10002; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 8px 28px rgba(0,0,0,.14); padding: 16px; width: 300px; }
-    .cr-filtros-hdr { font-size: .75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 14px; }
-    .cr-filtros-section { margin-bottom: 14px; }
-    .cr-filtros-lbl { font-size: .72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 7px; }
+    .cr-filtros-panel { display: none; position: fixed; inset: 0; z-index: 10002; background: rgba(0,0,0,.45); backdrop-filter: blur(3px); align-items: center; justify-content: center; }
+    .cr-filtros-panel.cr-filtros-open { display: flex; }
+    .cr-filtros-modal-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; box-shadow: 0 24px 64px rgba(0,0,0,.18); width: min(96vw, 460px); max-height: 88vh; overflow-y: auto; display: flex; flex-direction: column; }
+    .cr-filtros-modal-hdr { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--surface); z-index: 1; border-radius: 20px 20px 0 0; }
+    .cr-filtros-modal-title { font-size: 1rem; font-weight: 700; color: var(--text); }
+    .cr-filtros-close { background: var(--surface-2); border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); font-size: .9rem; flex-shrink: 0; }
+    .cr-filtros-close:hover { background: var(--border); }
+    .cr-filtros-modal-body { padding: 20px; display: flex; flex-direction: column; gap: 20px; }
+    .cr-filtros-section { display: flex; flex-direction: column; gap: 10px; }
+    .cr-filtros-lbl { font-size: .72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; }
     .cr-fpills { display: flex; flex-wrap: wrap; gap: 6px; }
-    .cr-fpill { background: var(--surface-2); border: 1px solid var(--border); border-radius: 20px; padding: 5px 12px; font-size: .82rem; font-weight: 600; color: var(--text); cursor: pointer; transition: all .12s; }
+    .cr-fpill { background: var(--surface-2); border: 1px solid var(--border); border-radius: 20px; padding: 6px 14px; font-size: .83rem; font-weight: 600; color: var(--text); cursor: pointer; transition: all .12s; }
     .cr-fpill:hover { border-color: var(--primary, #2563eb); color: var(--primary, #2563eb); }
     .cr-fpill--active { background: var(--primary, #2563eb) !important; color: #fff !important; border-color: var(--primary, #2563eb) !important; }
-    .cr-filtros-sep { border: none; border-top: 1px solid var(--border); margin: 14px 0 12px; }
-    .cr-filtros-footer { display: flex; justify-content: flex-end; gap: 8px; }
+    .cr-filtros-modal-footer { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-top: 1px solid var(--border); gap: 10px; }
     .cr-filtros-badge { background: #fff; color: var(--primary, #2563eb); font-size: .7rem; font-weight: 800; border-radius: 99px; padding: 1px 6px; margin-left: 4px; display: inline-block; }
     .cr-filtros-trigger .cr-filtros-badge { background: rgba(255,255,255,.25); color: #fff; }
-    .cr-fp-custom-dates { display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
-    .cr-fp-custom-dates .input { height: 34px; font-size: .82rem; padding: 0 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); flex: 1; min-width: 110px; }
-    .cr-fp-custom-dates span { color: var(--text-muted); font-size: .82rem; }
+    .cr-fp-custom-dates { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .cr-fp-custom-dates .input { height: 36px; font-size: .82rem; padding: 0 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); flex: 1; min-width: 120px; }
+    .cr-fp-custom-dates span { color: var(--text-muted); font-size: .82rem; flex-shrink: 0; }
     .cr-fp-custom-dates.hidden { display: none; }
-    @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cr-filtros-panel { box-shadow: 0 8px 36px rgba(0,0,0,.5); } }
-    :root[data-theme="dark"] .cr-filtros-panel { box-shadow: 0 8px 36px rgba(0,0,0,.5); }
+    @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cr-filtros-modal-card { box-shadow: 0 24px 80px rgba(0,0,0,.6); } }
+    :root[data-theme="dark"] .cr-filtros-modal-card { box-shadow: 0 24px 80px rgba(0,0,0,.6); }
 
     .cr-util-btn {
       height: 34px;
