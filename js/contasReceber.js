@@ -3201,15 +3201,15 @@ function injectContasReceberStyles() {
       padding: 14px 24px 20px; border-top: 1px solid var(--border);
     }
     .cr-detail-summary {
-      display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
     }
     .cr-detail-summary article {
-      background: var(--surface-2); border-radius: 12px; padding: 10px 14px;
-      display: flex; flex-direction: column; gap: 2px;
+      background: var(--surface-2); border-radius: 12px; padding: 10px 12px;
+      display: flex; flex-direction: column; gap: 3px; min-width: 0;
     }
-    .cr-detail-summary article span { font-size: .72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
-    .cr-detail-summary article strong { font-size: 1.05rem; font-weight: 900; }
-    .cr-detail-summary article small { font-size: .72rem; color: var(--text-muted); }
+    .cr-detail-summary article span { font-size: .68rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cr-detail-summary article strong { font-size: clamp(.88rem, 2.2vw, 1.05rem); font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+    .cr-detail-summary article small { font-size: .7rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .cr-detail-summary__main { background: var(--primary-pale, color-mix(in srgb,var(--primary) 12%,transparent)) !important; }
     .cr-detail-section { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
     .cr-detail-section__header {
