@@ -3558,6 +3558,9 @@ function _injectCrNcStyles() {
     .cr-nc-combo-opt:last-child { border-bottom: none; }
     .cr-nc-combo-opt:hover, .cr-nc-combo-opt--sel { background: var(--surface-2); }
     .cr-nc-combo-opt--sel { color: var(--primary, #2563eb); }
+    .cr-nc-combo-trigger { display: flex; align-items: center; justify-content: space-between; gap: 6px; cursor: pointer; font-size: 15px; font-weight: 500; color: var(--text); background: transparent; user-select: none; width: 100%; padding: 0; border: none; outline: none; }
+    .cr-nc-combo-trigger .cr-nc-combo-chev { font-size: 11px; color: var(--text-muted, #6b7280); flex-shrink: 0; transition: transform 0.15s; }
+    .cr-nc-combo-trigger.open .cr-nc-combo-chev { transform: rotate(180deg); }
     @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cr-nc-combo-drop { box-shadow: 0 8px 32px rgba(0,0,0,.45); } }
     :root[data-theme="dark"] .cr-nc-combo-drop { box-shadow: 0 8px 32px rgba(0,0,0,.45); }
   `;
@@ -3618,17 +3621,12 @@ function abrirModalContaManual() {
               <div class="cr-nc-cell">
                 <span class="cr-nc-cell-ico"><i class="fa-solid fa-credit-card"></i></span>
                 <div class="cr-nc-cell-content">
-                  <label class="cr-nc-lbl" for="crManualForma">Forma</label>
-                  <select id="crManualForma" class="cr-nc-cell-input">
-                    <option value="promissoria">Promissória</option>
-                    <option value="dinheiro">Dinheiro</option>
-                    <option value="pix">PIX</option>
-                    <option value="cheque">Cheque</option>
-                    <option value="cartao_credito">Cartão de Crédito</option>
-                    <option value="cartao_debito">Cartão de Débito</option>
-                    <option value="transferencia">Transferência</option>
-                    <option value="boleto">Boleto</option>
-                  </select>
+                  <label class="cr-nc-lbl">Forma</label>
+                  <div id="crManualFormaTrigger" class="cr-nc-combo-trigger" tabindex="0" role="button" aria-haspopup="listbox">
+                    <span id="crManualFormaLabel">Promissória</span>
+                    <i class="fa-solid fa-chevron-down cr-nc-combo-chev"></i>
+                  </div>
+                  <input type="hidden" id="crManualForma" value="promissoria">
                 </div>
               </div>
             </div>
@@ -3730,6 +3728,68 @@ function abrirModalContaManual() {
       if (!document.getElementById('crContaManualModal')) { drop.remove(); _crCliObs.disconnect(); }
     });
     _crCliObs.observe(document.body, { childList: true });
+  }
+
+  // ── Combobox forma de recebimento ─────────────────────────────────────────
+  {
+    const FORMAS = [
+      { val: 'promissoria',   lbl: 'Promissória' },
+      { val: 'dinheiro',      lbl: 'Dinheiro' },
+      { val: 'pix',           lbl: 'PIX' },
+      { val: 'cheque',        lbl: 'Cheque' },
+      { val: 'cartao_credito',lbl: 'Cartão de Crédito' },
+      { val: 'cartao_debito', lbl: 'Cartão de Débito' },
+      { val: 'transferencia', lbl: 'Transferência' },
+      { val: 'boleto',        lbl: 'Boleto' },
+    ];
+    const trigger = document.getElementById('crManualFormaTrigger');
+    const lblEl   = document.getElementById('crManualFormaLabel');
+    const hid     = document.getElementById('crManualForma');
+    const drop    = document.createElement('div');
+    drop.className = 'cr-nc-combo-drop';
+    drop.innerHTML = FORMAS.map(f =>
+      `<div class="cr-nc-combo-opt${f.val === 'promissoria' ? ' cr-nc-combo-opt--sel' : ''}" data-val="${f.val}">${f.lbl}</div>`
+    ).join('');
+    document.body.appendChild(drop);
+
+    const _posForma = () => {
+      const r = trigger.getBoundingClientRect();
+      drop.style.left  = r.left + 'px';
+      drop.style.top   = (r.bottom + 4) + 'px';
+      drop.style.width = r.width + 'px';
+    };
+    const _openForma  = () => { _posForma(); drop.style.display = 'block'; trigger.classList.add('open'); };
+    const _closeForma = () => { drop.style.display = 'none'; trigger.classList.remove('open'); };
+
+    trigger.addEventListener('click', () => drop.style.display === 'block' ? _closeForma() : _openForma());
+    trigger.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); drop.style.display === 'block' ? _closeForma() : _openForma(); }
+    });
+
+    drop.addEventListener('mousedown', e => {
+      const opt = e.target.closest('.cr-nc-combo-opt');
+      if (!opt) return;
+      e.preventDefault();
+      hid.value = opt.dataset.val;
+      lblEl.textContent = opt.textContent;
+      drop.querySelectorAll('.cr-nc-combo-opt').forEach(o => o.classList.remove('cr-nc-combo-opt--sel'));
+      opt.classList.add('cr-nc-combo-opt--sel');
+      _closeForma();
+    });
+
+    const _crFormaOutside = e => {
+      if (!trigger.contains(e.target) && !drop.contains(e.target)) _closeForma();
+    };
+    document.addEventListener('click', _crFormaOutside);
+
+    const _crFormaObs = new MutationObserver(() => {
+      if (!document.getElementById('crContaManualModal')) {
+        drop.remove();
+        document.removeEventListener('click', _crFormaOutside);
+        _crFormaObs.disconnect();
+      }
+    });
+    _crFormaObs.observe(document.body, { childList: true });
   }
 
   // ── Estado local ──────────────────────────────────────────────────────────
