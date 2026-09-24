@@ -3345,20 +3345,19 @@ function _injectCrNcStyles() {
     .cr-nc-input { border-radius: 12px; min-height: 42px; }
     .cr-nc-valor { font-size: 1.1rem; font-weight: 700; }
 
-    /* Recorrência rows */
-    .cr-nc-rec-list {
-      display: flex; flex-direction: column;
-      border: 1px solid var(--border); border-radius: 16px; overflow: hidden;
-    }
-    .cr-nc-rec-row {
-      display: flex; align-items: center; gap: 14px; padding: 14px 16px;
-      border: none; border-bottom: 1px solid var(--border);
+    /* Recorrência — row único */
+    .cr-nc-rec-single {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 16px; width: 100%;
+      border: 1px solid var(--border); border-radius: 16px;
       background: var(--surface); cursor: pointer; text-align: left;
-      transition: background .12s; width: 100%;
+      transition: background .12s;
     }
-    .cr-nc-rec-row:last-child { border-bottom: none; }
-    .cr-nc-rec-row:hover { background: var(--surface-2); }
-    .cr-nc-rec-row--active { background: var(--primary-soft, rgba(37,99,235,.06)); }
+    .cr-nc-rec-single:hover { background: var(--surface-2); }
+    .cr-nc-rec-texts { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+    .cr-nc-rec-label { font-size: .92rem; font-weight: 800; color: var(--text); }
+    .cr-nc-rec-summary-txt { font-size: .78rem; color: var(--text-muted); font-weight: 600; }
+    .cr-nc-rec-chev { color: var(--text-muted); font-size: .78rem; flex-shrink: 0; }
 
     .cr-nc-rec-icon {
       width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
@@ -3368,75 +3367,109 @@ function _injectCrNcStyles() {
     .cr-nc-rec-icon--blue  { background: rgba(37,99,235,.1); color: #2563eb; }
     .cr-nc-rec-icon--green { background: rgba(22,163,74,.1); color: #16a34a; }
 
-    .cr-nc-rec-info { flex: 1; min-width: 0; }
-    .cr-nc-rec-info strong { display: block; font-size: 0.92rem; font-weight: 800; color: var(--text); }
-    .cr-nc-rec-info small  { display: block; font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
-    .cr-nc-rec-check  { color: var(--primary); font-size: 1.05rem; flex-shrink: 0; }
-    .cr-nc-rec-chevron{ color: var(--text-muted); font-size: 0.78rem; flex-shrink: 0; }
+    /* Modal de seleção de recorrência (shared — injected here as fallback) */
+    .cp-rec-sel-overlay { z-index: 2100 !important; }
+    .cp-rec-sel-card {
+      background: var(--surface); border-radius: 24px;
+      width: min(94vw, 420px); box-shadow: 0 24px 60px rgba(0,0,0,.28); overflow: hidden;
+    }
+    .cp-rec-sel-header {
+      padding: 16px 20px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .cp-rec-sel-header strong { font-size: 1rem; font-weight: 800; }
+    .cp-rec-sel-body { padding: 8px 0 10px; }
+    .cp-rec-sel-opt {
+      display: flex; align-items: center; gap: 14px; padding: 14px 20px;
+      width: 100%; border: none; background: none; cursor: pointer;
+      text-align: left; transition: background .1s;
+    }
+    .cp-rec-sel-opt:hover { background: var(--surface-2); }
+    .cp-rec-sel-opt--active { background: var(--primary-soft, rgba(37,99,235,.06)); }
+    .cp-rec-sel-info { flex: 1; min-width: 0; }
+    .cp-rec-sel-info strong { display: block; font-size: .93rem; font-weight: 700; color: var(--text); }
+    .cp-rec-sel-info small  { display: block; font-size: .78rem; color: var(--text-muted); margin-top: 2px; }
+    .cp-rec-radio {
+      width: 22px; height: 22px; border-radius: 50%;
+      border: 2px solid var(--border); flex-shrink: 0; position: relative;
+    }
+    .cp-rec-radio--sel { border-color: #16a34a; background: #16a34a; }
+    .cp-rec-radio--sel::after {
+      content: ''; position: absolute; inset: 4px; background: #fff; border-radius: 50%;
+    }
 
-    /* Config panel */
-    .cr-nc-config {
-      margin-top: 14px; border: 1px solid var(--border); border-radius: 16px;
-      background: var(--surface-2, #f8fafc); overflow: hidden;
+    /* Modal de configuração de parcelamento (shared — injected here as fallback) */
+    .cp-rec-cfg-overlay { z-index: 2100 !important; }
+    .cp-rec-cfg-card {
+      background: var(--surface); border-radius: 24px;
+      width: min(94vw, 460px); box-shadow: 0 24px 60px rgba(0,0,0,.28); overflow: hidden;
     }
-    .cr-nc-config-inner { padding: 18px; display: grid; gap: 16px; }
-    .cr-nc-config-title {
-      font-size: 0.82rem; font-weight: 800; color: var(--text);
-      text-transform: uppercase; letter-spacing: .05em;
+    .cp-rec-cfg-header {
+      padding: 14px 20px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
     }
-    .cr-nc-config-sub {
-      font-size: 0.76rem; font-weight: 800; color: var(--text-muted);
-      text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px;
+    .cp-rec-cfg-header strong { font-size: .98rem; font-weight: 800; flex: 1; text-align: center; }
+    .cp-rec-cfg-concluir {
+      background: #16a34a; color: #fff; border: none; border-radius: 20px;
+      padding: 8px 18px; font-size: .88rem; font-weight: 700;
+      cursor: pointer; transition: background .12s; white-space: nowrap;
     }
-    .cr-nc-spinners { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; }
-    .cr-nc-spinner-block { display: grid; gap: 6px; }
-    .cr-nc-spinner-block small { font-size: 0.72rem; color: var(--text-muted); font-weight: 600; line-height: 1.35; }
-    .cr-nc-field-lbl { font-size: 0.74rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; }
-
-    .cr-nc-spinner {
-      display: flex; flex-direction: column; align-items: center;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 14px; padding: 6px; width: fit-content; min-width: 72px;
+    .cp-rec-cfg-concluir:hover { background: #15803d; }
+    .cp-rec-cfg-body { padding: 6px 0 10px; }
+    .cp-rec-cfg-row {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 20px; border-bottom: 1px solid var(--border);
     }
-    .cr-nc-spin-val {
-      font-size: 1.55rem; font-weight: 900; font-variant-numeric: tabular-nums;
-      color: var(--text); padding: 4px 0; line-height: 1;
+    .cp-rec-cfg-row:last-of-type { border-bottom: none; }
+    .cp-rec-cfg-icon { color: var(--text-muted); font-size: .9rem; width: 20px; text-align: center; flex-shrink: 0; }
+    .cp-rec-cfg-lbl { flex: 1; font-size: .9rem; font-weight: 600; color: var(--text); }
+    .cp-rec-cfg-spin {
+      display: flex; align-items: center;
+      border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
     }
-    .cr-nc-spin-up, .cr-nc-spin-down {
-      border: none; background: none; color: var(--text-muted);
-      cursor: pointer; padding: 4px 14px; font-size: 0.78rem;
-      border-radius: 8px; transition: background .1s, color .1s; width: 100%;
+    .cp-rec-cfg-dn, .cp-rec-cfg-up {
+      border: none; background: var(--surface-2); color: var(--text-muted);
+      padding: 8px 12px; cursor: pointer; font-size: .75rem;
+      transition: background .1s, color .1s;
     }
-    .cr-nc-spin-up:hover, .cr-nc-spin-down:hover { background: var(--primary-soft); color: var(--primary); }
-
-    .cr-nc-tipo-row { display: flex; gap: 8px; flex-wrap: wrap; }
-    .cr-nc-tipo-btn {
+    .cp-rec-cfg-dn:hover, .cp-rec-cfg-up:hover { background: var(--primary-soft); color: var(--primary); }
+    .cp-rec-cfg-val {
+      font-size: 1.1rem; font-weight: 900; font-variant-numeric: tabular-nums;
+      color: var(--text); padding: 0 16px; min-width: 44px; text-align: center;
+    }
+    .cp-rec-cfg-sel {
+      border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px;
+      font-size: .88rem; background: var(--surface); color: var(--text); cursor: pointer;
+    }
+    .cp-rec-cfg-tipo { padding: 14px 20px; border-bottom: 1px solid var(--border); }
+    .cp-rec-cfg-tipo-lbl {
+      font-size: .74rem; font-weight: 800; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .04em; margin-bottom: 10px;
+    }
+    .cp-rec-cfg-tipo-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .cp-rec-cfg-tipo-btn {
       display: flex; align-items: center; gap: 6px; padding: 8px 14px;
       border: 1.5px solid var(--border); border-radius: 10px;
       background: var(--surface); color: var(--text-muted);
-      font-size: 0.83rem; font-weight: 700; cursor: pointer;
+      font-size: .83rem; font-weight: 700; cursor: pointer;
       transition: border-color .12s, background .12s, color .12s;
     }
-    .cr-nc-tipo-btn:hover { border-color: var(--primary); color: var(--primary); }
-    .cr-nc-tipo-btn--active { border-color: var(--primary); background: var(--primary-soft); color: var(--primary-hover); }
-
-    .cr-nc-preview {
+    .cp-rec-cfg-tipo-btn:hover { border-color: var(--primary); color: var(--primary); }
+    .cp-rec-cfg-tipo-btn--active { border-color: var(--primary); background: var(--primary-soft); color: var(--primary-hover); }
+    .cp-rec-cfg-preview {
       display: flex; align-items: flex-start; gap: 8px;
+      margin: 12px 20px;
       background: var(--info-soft, rgba(8,145,178,.07));
       border: 1px solid rgba(8,145,178,.18);
       border-radius: 10px; padding: 10px 12px;
-      font-size: 0.84rem; font-weight: 700; color: #0e7490;
+      font-size: .84rem; font-weight: 700; color: #0e7490;
     }
-    .cr-nc-preview i { margin-top: 2px; flex-shrink: 0; }
-
-    .cr-nc-concluir { justify-self: end; }
+    .cp-rec-cfg-preview i { margin-top: 2px; flex-shrink: 0; }
 
     @media (prefers-color-scheme: dark) {
-      :root:not([data-theme="light"]) .cr-nc-config { background: rgba(255,255,255,.03); }
-      :root:not([data-theme="light"]) .cr-nc-preview { background: rgba(8,145,178,.12); color: #67e8f9; border-color: rgba(8,145,178,.25); }
+      :root:not([data-theme="light"]) .cp-rec-cfg-preview { background: rgba(8,145,178,.12); color: #67e8f9; border-color: rgba(8,145,178,.25); }
     }
-    :root[data-theme="dark"] .cr-nc-config { background: rgba(255,255,255,.03); }
-    :root[data-theme="dark"] .cr-nc-preview { background: rgba(8,145,178,.12); color: #67e8f9; border-color: rgba(8,145,178,.25); }
+    :root[data-theme="dark"] .cp-rec-cfg-preview { background: rgba(8,145,178,.12); color: #67e8f9; border-color: rgba(8,145,178,.25); }
 
     @media (max-width: 860px) {
       .cr-nc-grid { grid-template-columns: 1fr 1fr; }
@@ -3511,82 +3544,16 @@ function abrirModalContaManual() {
         </div>
 
         <!-- Recorrência -->
-        <div class="cr-nc-section">
+        <div class="cr-nc-section cr-nc-section--rec">
           <p class="cr-nc-section-title">Recorrência</p>
-          <div class="cr-nc-rec-list">
-            <button type="button" class="cr-nc-rec-row cr-nc-rec-row--active" data-rec="nao_recorrente">
-              <span class="cr-nc-rec-icon cr-nc-rec-icon--gray"><i class="fa-solid fa-ban"></i></span>
-              <span class="cr-nc-rec-info">
-                <strong>Não recorrente</strong>
-                <small>Título único, sem repetição</small>
-              </span>
-              <span class="cr-nc-rec-check"><i class="fa-solid fa-circle-check"></i></span>
-              <span class="cr-nc-rec-chevron" hidden><i class="fa-solid fa-chevron-right"></i></span>
-            </button>
-            <button type="button" class="cr-nc-rec-row" data-rec="parcelar">
-              <span class="cr-nc-rec-icon cr-nc-rec-icon--blue"><i class="fa-solid fa-layer-group"></i></span>
-              <span class="cr-nc-rec-info">
-                <strong>Parcelar ou repetir</strong>
-                <small id="crNcParcelarHint">Defina quantidade e periodicidade</small>
-              </span>
-              <span class="cr-nc-rec-check" hidden><i class="fa-solid fa-circle-check"></i></span>
-              <span class="cr-nc-rec-chevron"><i class="fa-solid fa-chevron-right"></i></span>
-            </button>
-            <button type="button" class="cr-nc-rec-row" data-rec="fixa_mensal">
-              <span class="cr-nc-rec-icon cr-nc-rec-icon--green"><i class="fa-solid fa-calendar-days"></i></span>
-              <span class="cr-nc-rec-info">
-                <strong>Fixa mensal</strong>
-                <small id="crNcFixaHint">Cobrança recorrente mensal</small>
-              </span>
-              <span class="cr-nc-rec-check" hidden><i class="fa-solid fa-circle-check"></i></span>
-              <span class="cr-nc-rec-chevron"><i class="fa-solid fa-chevron-right"></i></span>
-            </button>
-          </div>
-
-          <!-- Config panel -->
-          <div class="cr-nc-config" id="crNcConfig" style="display:none">
-            <div class="cr-nc-config-inner">
-              <p class="cr-nc-config-title" id="crNcConfigTitle">Configurar Parcelamento</p>
-              <div class="cr-nc-spinners">
-                <div id="crNcParcelaIniBlock">
-                  ${_crNcSpinner('crNcParcelaIni', 'Parcela inicial', 1)}
-                  <small>A partir de qual parcela você está cadastrando.</small>
-                </div>
-                <div>
-                  ${_crNcSpinner('crNcQtd', 'Quantidade', 2)}
-                  <small id="crNcQtdHint">Total de parcelas da dívida.</small>
-                </div>
-                <div>
-                  <span class="cr-nc-field-lbl">Periodicidade</span>
-                  <select id="crNcPeriodicidade" class="input cr-nc-input" style="margin-top:6px">
-                    <option value="30">Mensal</option>
-                    <option value="15">Quinzenal</option>
-                    <option value="7">Semanal</option>
-                    <option value="60">Bimestral</option>
-                    <option value="90">Trimestral</option>
-                  </select>
-                </div>
-              </div>
-              <div id="crNcTipoBlock" style="display:none">
-                <p class="cr-nc-config-sub">O valor informado é:</p>
-                <div class="cr-nc-tipo-row">
-                  <button type="button" class="cr-nc-tipo-btn cr-nc-tipo-btn--active" data-tipo="parcela">
-                    <i class="fa-solid fa-equals"></i> Valor por parcela
-                  </button>
-                  <button type="button" class="cr-nc-tipo-btn" data-tipo="total">
-                    <i class="fa-solid fa-sigma"></i> Total da dívida
-                  </button>
-                </div>
-              </div>
-              <div class="cr-nc-preview" id="crNcPreview">
-                <i class="fa-solid fa-circle-info"></i>
-                <span id="crNcPreviewTxt">—</span>
-              </div>
-              <button type="button" class="btn btn-primary cr-nc-concluir" id="crNcConcluir">
-                Concluir <i class="fa-solid fa-check"></i>
-              </button>
-            </div>
-          </div>
+          <button type="button" class="cr-nc-rec-single" id="crNcRecRow">
+            <span class="cr-nc-rec-icon cr-nc-rec-icon--gray" id="crNcRecIcon"><i class="fa-solid fa-ban"></i></span>
+            <span class="cr-nc-rec-texts">
+              <span class="cr-nc-rec-label" id="crNcRecLabel">Não recorrente</span>
+              <span class="cr-nc-rec-summary-txt" id="crNcRecSummary"></span>
+            </span>
+            <i class="fa-solid fa-chevron-right cr-nc-rec-chev"></i>
+          </button>
         </div>
 
         <!-- Observação -->
@@ -3609,116 +3576,221 @@ function abrirModalContaManual() {
   document.body.appendChild(modal);
 
   // ── Estado local ──────────────────────────────────────────────────────────
-  let recorrencia = 'nao_recorrente';
-  let tipoValor   = 'parcela';
-  let parcIni     = 1;
-  let qtd         = 2;
+  let recorrencia  = 'nao_recorrente';
+  let tipoValor    = 'parcela';
+  let parcIni      = 1;
+  let qtd          = 2;
+  let periodicidade = 30;
 
   const fmtBRL = v => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-  function atualizarPreview() {
-    const valorNum  = parseFloat(document.getElementById('crManualValor')?.value || '') || 0;
-    const txt       = document.getElementById('crNcPreviewTxt');
-    const hintEl    = document.getElementById('crNcQtdHint');
-    const iniEl     = document.getElementById('crNcParcelaIniVal');
-    const qtdEl     = document.getElementById('crNcQtdVal');
-    if (iniEl) iniEl.textContent = parcIni;
-    if (qtdEl) qtdEl.textContent = qtd;
-
-    if (recorrencia === 'fixa_mensal') {
-      if (hintEl) hintEl.textContent = `${qtd} títulos independentes.`;
-      const v = valorNum > 0 ? ` de ${fmtBRL(valorNum)} cada` : '';
-      if (txt) txt.textContent = `Serão criados ${qtd} títulos mensais${v}.`;
-      const fixaHint = document.getElementById('crNcFixaHint');
-      if (fixaHint) fixaHint.textContent = `${qtd} meses — ${valorNum > 0 ? fmtBRL(valorNum) + '/mês' : 'valor a definir'}`;
-    } else {
-      const restantes = Math.max(1, qtd - parcIni + 1);
-      if (hintEl) hintEl.textContent = `${restantes} parcela(s) (da ${parcIni} à ${qtd}).`;
-      let preview;
-      if (tipoValor === 'total' && valorNum > 0 && qtd > 1) {
-        const vp = Number((valorNum / qtd).toFixed(2));
-        preview = `${restantes} parcela(s) de ~${fmtBRL(vp)} cada (total ${fmtBRL(valorNum)}).`;
+  function atualizarRecRow() {
+    const icons = { nao_recorrente:'fa-ban', parcelar:'fa-layer-group', fixa_mensal:'fa-calendar-days' };
+    const cls   = { nao_recorrente:'gray',   parcelar:'blue',           fixa_mensal:'green' };
+    const lbls  = { nao_recorrente:'Não recorrente', parcelar:'Parcelar ou repetir', fixa_mensal:'Fixa mensal' };
+    const iconEl    = document.getElementById('crNcRecIcon');
+    const labelEl   = document.getElementById('crNcRecLabel');
+    const summaryEl = document.getElementById('crNcRecSummary');
+    if (iconEl) {
+      iconEl.className = `cr-nc-rec-icon cr-nc-rec-icon--${cls[recorrencia]}`;
+      iconEl.innerHTML = `<i class="fa-solid ${icons[recorrencia]}"></i>`;
+    }
+    if (labelEl) labelEl.textContent = lbls[recorrencia];
+    if (summaryEl) {
+      const valorNum = parseFloat(document.getElementById('crManualValor')?.value || '') || 0;
+      const perLabel = { 30:'mensal', 15:'quinzenal', 7:'semanal', 60:'bimestral', 90:'trimestral' }[periodicidade] || 'mensal';
+      if (recorrencia === 'nao_recorrente') {
+        summaryEl.textContent = '';
+      } else if (recorrencia === 'fixa_mensal') {
+        summaryEl.textContent = valorNum > 0
+          ? `${qtd}× ${fmtBRL(valorNum)} (${perLabel})`
+          : `${qtd} títulos ${perLabel}`;
       } else {
-        preview = valorNum > 0
-          ? `${restantes} parcela(s) de ${fmtBRL(valorNum)} — da ${parcIni} à ${qtd}.`
-          : `${restantes} parcela(s) da ${parcIni} à ${qtd}.`;
-      }
-      if (txt) txt.textContent = preview;
-      const parcelarHint = document.getElementById('crNcParcelarHint');
-      if (parcelarHint) {
-        parcelarHint.textContent = valorNum > 0
-          ? (tipoValor === 'total' ? `${fmtBRL(valorNum)} em ${qtd}x — da ${parcIni} à ${qtd}` : `${qtd}x de ${fmtBRL(valorNum)} — da ${parcIni}`)
-          : `${qtd - parcIni + 1} parcela(s) da ${parcIni} à ${qtd}`;
+        const restantes = Math.max(1, qtd - parcIni + 1);
+        summaryEl.textContent = tipoValor === 'total' && valorNum > 0
+          ? `${restantes}× ~${fmtBRL(Number((valorNum/qtd).toFixed(2)))} — da ${parcIni} à ${qtd}`
+          : valorNum > 0
+            ? `${restantes}× ${fmtBRL(valorNum)} — da ${parcIni} à ${qtd}`
+            : `${restantes} parcela(s) da ${parcIni} à ${qtd}`;
       }
     }
   }
 
-  // Rows de recorrência
-  modal.querySelectorAll('.cr-nc-rec-row').forEach(row => {
-    row.addEventListener('click', () => {
-      recorrencia = row.dataset.rec;
-      modal.querySelectorAll('.cr-nc-rec-row').forEach(r => {
-        r.classList.remove('cr-nc-rec-row--active');
-        r.querySelector('.cr-nc-rec-check')?.setAttribute('hidden', '');
-        r.querySelector('.cr-nc-rec-chevron')?.removeAttribute('hidden');
+  function abrirSelecaoRec() {
+    document.getElementById('crRecSelModal')?.remove();
+    const opcs = [
+      { rec:'nao_recorrente', icon:'fa-ban',           cls:'gray',  label:'Não recorrente',      desc:'Título único, sem repetição' },
+      { rec:'parcelar',       icon:'fa-layer-group',   cls:'blue',  label:'Parcelar ou repetir', desc:'Defina parcelas e periodicidade' },
+      { rec:'fixa_mensal',    icon:'fa-calendar-days', cls:'green', label:'Fixa mensal',         desc:'Receitas recorrentes independentes' }
+    ];
+    const sel = document.createElement('div');
+    sel.id = 'crRecSelModal';
+    sel.className = 'modal-overlay cp-rec-sel-overlay';
+    sel.innerHTML = `
+      <div class="cp-rec-sel-card">
+        <div class="cp-rec-sel-header">
+          <strong>Recorrência</strong>
+          <button type="button" class="icon-button" id="crRecSelFechar"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="cp-rec-sel-body">
+          ${opcs.map(o => `
+            <button type="button" class="cp-rec-sel-opt${recorrencia === o.rec ? ' cp-rec-sel-opt--active' : ''}" data-rec="${o.rec}">
+              <span class="cr-nc-rec-icon cr-nc-rec-icon--${o.cls}"><i class="fa-solid ${o.icon}"></i></span>
+              <span class="cp-rec-sel-info">
+                <strong>${o.label}</strong>
+                <small>${o.desc}</small>
+              </span>
+              <span class="cp-rec-radio${recorrencia === o.rec ? ' cp-rec-radio--sel' : ''}"></span>
+            </button>`).join('')}
+        </div>
+      </div>`;
+    document.body.appendChild(sel);
+    document.getElementById('crRecSelFechar')?.addEventListener('click', () => sel.remove());
+    sel.addEventListener('click', e => { if (e.target === sel) sel.remove(); });
+    sel.querySelectorAll('.cp-rec-sel-opt').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const rec = btn.dataset.rec;
+        sel.remove();
+        recorrencia = rec;
+        if (rec === 'fixa_mensal' && qtd < 2) qtd = 12;
+        atualizarRecRow();
+        if (rec === 'parcelar' || rec === 'fixa_mensal') abrirConfigRec();
       });
-      row.classList.add('cr-nc-rec-row--active');
-      row.querySelector('.cr-nc-rec-check')?.removeAttribute('hidden');
-      row.querySelector('.cr-nc-rec-chevron')?.setAttribute('hidden', '');
+    });
+  }
 
-      const config   = document.getElementById('crNcConfig');
-      const title    = document.getElementById('crNcConfigTitle');
-      const iniBlock = document.getElementById('crNcParcelaIniBlock');
-      const tipoBlk  = document.getElementById('crNcTipoBlock');
+  function abrirConfigRec() {
+    document.getElementById('crRecConfigModal')?.remove();
+    const perOpts = [
+      {v:'30',label:'Mensal'},{v:'15',label:'Quinzenal'},{v:'7',label:'Semanal'},
+      {v:'60',label:'Bimestral'},{v:'90',label:'Trimestral'}
+    ];
+    const cfg = document.createElement('div');
+    cfg.id = 'crRecConfigModal';
+    cfg.className = 'modal-overlay cp-rec-cfg-overlay';
+    cfg.innerHTML = `
+      <div class="cp-rec-cfg-card">
+        <div class="cp-rec-cfg-header">
+          <button type="button" class="icon-button" id="crRecCfgFechar"><i class="fa-solid fa-xmark"></i></button>
+          <strong>${recorrencia === 'fixa_mensal' ? 'Configurar Repetição' : 'Configurar Parcelamento'}</strong>
+          <button type="button" class="cp-rec-cfg-concluir" id="crRecCfgConcluir">Concluir</button>
+        </div>
+        <div class="cp-rec-cfg-body">
+          ${recorrencia === 'parcelar' ? `
+          <div class="cp-rec-cfg-row">
+            <span class="cp-rec-cfg-icon"><i class="fa-solid fa-hashtag"></i></span>
+            <span class="cp-rec-cfg-lbl">Parcela inicial</span>
+            <div class="cp-rec-cfg-spin">
+              <button type="button" class="cp-rec-cfg-dn" data-spin="parcIni"><i class="fa-solid fa-chevron-down"></i></button>
+              <span class="cp-rec-cfg-val" id="crCfgParcelaIniVal">${parcIni}</span>
+              <button type="button" class="cp-rec-cfg-up" data-spin="parcIni"><i class="fa-solid fa-chevron-up"></i></button>
+            </div>
+          </div>` : ''}
+          <div class="cp-rec-cfg-row">
+            <span class="cp-rec-cfg-icon"><i class="fa-solid fa-layer-group"></i></span>
+            <span class="cp-rec-cfg-lbl">Quantidade</span>
+            <div class="cp-rec-cfg-spin">
+              <button type="button" class="cp-rec-cfg-dn" data-spin="qtd"><i class="fa-solid fa-chevron-down"></i></button>
+              <span class="cp-rec-cfg-val" id="crCfgQtdVal">${qtd}</span>
+              <button type="button" class="cp-rec-cfg-up" data-spin="qtd"><i class="fa-solid fa-chevron-up"></i></button>
+            </div>
+          </div>
+          <div class="cp-rec-cfg-row">
+            <span class="cp-rec-cfg-icon"><i class="fa-solid fa-calendar-days"></i></span>
+            <span class="cp-rec-cfg-lbl">Periodicidade</span>
+            <select class="cp-rec-cfg-sel" id="crCfgPeriodicidade">
+              ${perOpts.map(o => `<option value="${o.v}"${String(periodicidade)===o.v?' selected':''}>${o.label}</option>`).join('')}
+            </select>
+          </div>
+          ${recorrencia === 'parcelar' ? `
+          <div class="cp-rec-cfg-tipo">
+            <p class="cp-rec-cfg-tipo-lbl">O valor informado é:</p>
+            <div class="cp-rec-cfg-tipo-row">
+              <button type="button" class="cp-rec-cfg-tipo-btn${tipoValor==='parcela'?' cp-rec-cfg-tipo-btn--active':''}" data-tipo="parcela">
+                <i class="fa-solid fa-equals"></i> Por parcela
+              </button>
+              <button type="button" class="cp-rec-cfg-tipo-btn${tipoValor==='total'?' cp-rec-cfg-tipo-btn--active':''}" data-tipo="total">
+                <i class="fa-solid fa-sigma"></i> Total da dívida
+              </button>
+            </div>
+          </div>` : ''}
+          <div class="cp-rec-cfg-preview">
+            <i class="fa-solid fa-circle-info"></i>
+            <span id="crCfgPreviewTxt">—</span>
+          </div>
+        </div>
+      </div>`;
+    document.body.appendChild(cfg);
 
-      if (recorrencia === 'nao_recorrente') {
-        config.style.display = 'none';
+    function atualizarCfgPreview() {
+      const valorNum = parseFloat(document.getElementById('crManualValor')?.value || '') || 0;
+      const perSel = cfg.querySelector('#crCfgPeriodicidade');
+      const perLabel = perSel?.options?.[perSel?.selectedIndex]?.text || 'Mensal';
+      const txt = document.getElementById('crCfgPreviewTxt');
+      if (!txt) return;
+      if (recorrencia === 'fixa_mensal') {
+        const v = valorNum > 0 ? ` de ${fmtBRL(valorNum)} cada` : '';
+        txt.textContent = `${qtd} título(s) ${perLabel.toLowerCase()}${v}.`;
       } else {
-        title.textContent      = recorrencia === 'fixa_mensal' ? 'Configurar Repetição' : 'Configurar Parcelamento';
-        if (iniBlock) iniBlock.style.display = recorrencia === 'parcelar' ? 'block' : 'none';
-        if (tipoBlk)  tipoBlk.style.display  = recorrencia === 'parcelar' ? 'block' : 'none';
-        if (recorrencia === 'fixa_mensal' && qtd < 2) qtd = 12;
-        config.style.display = 'block';
-        atualizarPreview();
+        const restantes = Math.max(1, qtd - parcIni + 1);
+        if (tipoValor === 'total' && valorNum > 0 && qtd > 1) {
+          txt.textContent = `${restantes} parcela(s) de ~${fmtBRL(Number((valorNum/qtd).toFixed(2)))} (total ${fmtBRL(valorNum)}).`;
+        } else {
+          txt.textContent = valorNum > 0
+            ? `${restantes} parcela(s) de ${fmtBRL(valorNum)} — da ${parcIni} à ${qtd}.`
+            : `${restantes} parcela(s) da ${parcIni} à ${qtd}.`;
+        }
       }
+    }
+
+    cfg.querySelectorAll('[data-spin]').forEach(btn => {
+      const isUp = btn.classList.contains('cp-rec-cfg-up');
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.spin;
+        if (id === 'parcIni') {
+          parcIni = isUp ? Math.min(qtd, parcIni + 1) : Math.max(1, parcIni - 1);
+          const el = document.getElementById('crCfgParcelaIniVal');
+          if (el) el.textContent = parcIni;
+        } else if (id === 'qtd') {
+          const min = recorrencia === 'parcelar' ? Math.max(parcIni, 2) : 2;
+          qtd = isUp ? Math.min(360, qtd + 1) : Math.max(min, qtd - 1);
+          const el = document.getElementById('crCfgQtdVal');
+          if (el) el.textContent = qtd;
+        }
+        atualizarCfgPreview();
+      });
     });
-  });
 
-  // Tipo de valor
-  modal.querySelectorAll('.cr-nc-tipo-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      modal.querySelectorAll('.cr-nc-tipo-btn').forEach(b => b.classList.remove('cr-nc-tipo-btn--active'));
-      btn.classList.add('cr-nc-tipo-btn--active');
-      tipoValor = btn.dataset.tipo;
-      atualizarPreview();
+    cfg.querySelector('#crCfgPeriodicidade')?.addEventListener('change', (e) => {
+      periodicidade = parseInt(e.target.value, 10);
+      atualizarCfgPreview();
     });
-  });
 
-  // Spinners
-  modal.querySelectorAll('[data-spin]').forEach(btn => {
-    const isUp = btn.classList.contains('cr-nc-spin-up');
-    btn.addEventListener('click', () => {
-      const id = btn.dataset.spin;
-      const el = document.getElementById(`${id}Val`);
-      if (!el) return;
-      if (id === 'crNcParcelaIni') {
-        parcIni = isUp ? Math.min(qtd, parcIni + 1) : Math.max(1, parcIni - 1);
-        el.textContent = parcIni;
-      } else if (id === 'crNcQtd') {
-        const min = recorrencia === 'parcelar' ? Math.max(parcIni, 2) : 2;
-        qtd = isUp ? Math.min(360, qtd + 1) : Math.max(min, qtd - 1);
-        el.textContent = qtd;
-      }
-      atualizarPreview();
+    cfg.querySelectorAll('.cp-rec-cfg-tipo-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        cfg.querySelectorAll('.cp-rec-cfg-tipo-btn').forEach(b => b.classList.remove('cp-rec-cfg-tipo-btn--active'));
+        btn.classList.add('cp-rec-cfg-tipo-btn--active');
+        tipoValor = btn.dataset.tipo;
+        atualizarCfgPreview();
+      });
     });
-  });
 
-  document.getElementById('crManualValor')?.addEventListener('input', atualizarPreview);
-  document.getElementById('crNcPeriodicidade')?.addEventListener('change', atualizarPreview);
-  document.getElementById('crNcConcluir')?.addEventListener('click', () => {
-    document.getElementById('crNcConfig').style.display = 'none';
-  });
+    const concluir = () => {
+      periodicidade = parseInt(cfg.querySelector('#crCfgPeriodicidade')?.value || '30', 10);
+      cfg.remove();
+      atualizarRecRow();
+    };
+    document.getElementById('crRecCfgFechar')?.addEventListener('click', concluir);
+    document.getElementById('crRecCfgConcluir')?.addEventListener('click', concluir);
+    cfg.addEventListener('click', e => { if (e.target === cfg) concluir(); });
 
+    atualizarCfgPreview();
+  }
+
+  // ── Recorrência row ───────────────────────────────────────────────────────
+  document.getElementById('crNcRecRow')?.addEventListener('click', abrirSelecaoRec);
+
+  // ── Fechar ────────────────────────────────────────────────────────────────
   document.getElementById('fecharContaManual')?.addEventListener('click', () => modal.remove());
   document.getElementById('cancelarContaManual')?.addEventListener('click', () => modal.remove());
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
@@ -3729,7 +3801,7 @@ function abrirModalContaManual() {
     btn.disabled = true;
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Salvando...';
     try {
-      await salvarContaManual(modal, { recorrencia, tipoValor, parcIni, qtd });
+      await salvarContaManual(modal, { recorrencia, tipoValor, parcIni, qtd, periodicidade });
     } finally {
       btn.disabled = false;
       btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Salvar conta';
@@ -3737,7 +3809,7 @@ function abrirModalContaManual() {
   });
 }
 
-async function salvarContaManual(modal, { recorrencia = 'nao_recorrente', tipoValor = 'parcela', parcIni = 1, qtd = 1 } = {}) {
+async function salvarContaManual(modal, { recorrencia = 'nao_recorrente', tipoValor = 'parcela', parcIni = 1, qtd = 1, periodicidade = 30 } = {}) {
   try {
     const clienteId  = document.getElementById('crManualCliente')?.value || '';
     const nomeManual = document.getElementById('crManualNome')?.value?.trim() || '';
@@ -3745,7 +3817,6 @@ async function salvarContaManual(modal, { recorrencia = 'nao_recorrente', tipoVa
     const vencimento = document.getElementById('crManualVencimento')?.value || '';
     const descricao  = document.getElementById('crManualDescricao')?.value?.trim() || '';
     const observacao = document.getElementById('crManualObservacao')?.value?.trim() || '';
-    const periodicidade = parseInt(document.getElementById('crNcPeriodicidade')?.value || '30', 10);
 
     const valorNum = Number(valor);
     if (!valor || !Number.isFinite(valorNum) || valorNum <= 0) {
