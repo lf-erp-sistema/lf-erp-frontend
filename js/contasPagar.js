@@ -1078,30 +1078,13 @@ function abrirModalNovaContaPagar() {
 
       <div class="cp-detail-body cp-nc-body">
 
-        <!-- Bloco: fornecedor -->
+        <!-- Bloco principal: todos os campos em grade 3 colunas -->
         <div class="cp-nc-section">
           <div class="cp-nc-row-grid">
             <div class="cp-nc-field cp-nc-field--full">
               <label class="cp-nc-lbl">Descrição <span class="cp-nc-req">*</span></label>
               <input type="text" id="cpNcDescricao" class="input cp-nc-input" placeholder="Ex: Aluguel, energia, material..." autocomplete="off" />
             </div>
-            <div class="cp-nc-field">
-              <label class="cp-nc-lbl">Fornecedor</label>
-              <select id="cpNcFornecedor" class="input cp-nc-input">
-                <option value="">Avulso / sem fornecedor</option>
-                ${fornecedoresOptions}
-              </select>
-            </div>
-            <div class="cp-nc-field">
-              <label class="cp-nc-lbl">Nome manual</label>
-              <input type="text" id="cpNcNome" class="input cp-nc-input" placeholder="Fornecedor avulso" autocomplete="off" />
-            </div>
-          </div>
-        </div>
-
-        <!-- Bloco: valor + vencimento -->
-        <div class="cp-nc-section">
-          <div class="cp-nc-row-grid">
             <div class="cp-nc-field">
               <label class="cp-nc-lbl">Valor (R$) <span class="cp-nc-req">*</span></label>
               <input type="number" id="cpNcValor" class="input cp-nc-input cp-nc-valor" step="0.01" min="0.01" inputmode="decimal" placeholder="0,00" />
@@ -1122,6 +1105,17 @@ function abrirModalNovaContaPagar() {
                 <option value="transferencia">Transferência</option>
                 <option value="cheque">Cheque</option>
               </select>
+            </div>
+            <div class="cp-nc-field">
+              <label class="cp-nc-lbl">Fornecedor</label>
+              <select id="cpNcFornecedor" class="input cp-nc-input">
+                <option value="">Avulso / sem fornecedor</option>
+                ${fornecedoresOptions}
+              </select>
+            </div>
+            <div class="cp-nc-field">
+              <label class="cp-nc-lbl">Nome manual</label>
+              <input type="text" id="cpNcNome" class="input cp-nc-input" placeholder="Fornecedor avulso" autocomplete="off" />
             </div>
           </div>
         </div>
@@ -2003,12 +1997,15 @@ function injectContasPagarStyles() {
     }
 
     /* ── Nova Conta a Pagar ── */
-    .cp-nc-card { width: min(100%, 680px); }
+    .cp-nc-card {
+      width: min(96vw, 920px) !important;
+      max-height: 90vh;
+    }
 
-    .cp-nc-body { gap: 0; padding: 0; }
+    .cp-nc-body { gap: 0; padding: 0; overflow-y: auto; }
 
     .cp-nc-section {
-      padding: 18px 22px;
+      padding: 20px 26px;
       border-bottom: 1px solid var(--border);
     }
     .cp-nc-section:last-child { border-bottom: none; }
@@ -2019,13 +2016,13 @@ function injectContasPagarStyles() {
       color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: .05em;
-      margin-bottom: 12px;
+      margin-bottom: 14px;
     }
 
     .cp-nc-row-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 14px;
     }
     .cp-nc-field--full { grid-column: 1 / -1; }
 
@@ -2120,7 +2117,7 @@ function injectContasPagarStyles() {
 
     .cp-nc-spinners-row {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 14px;
     }
     .cp-nc-spinner-block { display: grid; gap: 6px; }
@@ -2223,6 +2220,10 @@ function injectContasPagarStyles() {
     :root[data-theme="dark"] .cp-nc-config-panel { background: rgba(255,255,255,.03); }
     :root[data-theme="dark"] .cp-nc-preview { background: rgba(8,145,178,.12); color: #67e8f9; border-color: rgba(8,145,178,.25); }
 
+    @media (max-width: 860px) {
+      .cp-nc-row-grid { grid-template-columns: 1fr 1fr; }
+      .cp-nc-spinners-row { grid-template-columns: repeat(2, 1fr); }
+    }
     @media (max-width: 600px) {
       .cp-nc-row-grid, .cp-nc-spinners-row { grid-template-columns: 1fr; }
       .cp-nc-section { padding: 14px 16px; }

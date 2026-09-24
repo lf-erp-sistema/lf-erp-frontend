@@ -3323,19 +3323,19 @@ function _injectCrNcStyles() {
   const s = document.createElement('style');
   s.id = 'crNcModalStyles';
   s.textContent = `
-    .cr-nc-card { width: min(100%, 700px) !important; }
+    .cr-nc-card { width: min(96vw, 920px) !important; max-height: 90vh; }
 
-    .cr-nc-body { gap: 0; padding: 0; }
+    .cr-nc-body { gap: 0; padding: 0; overflow-y: auto; }
     .cr-nc-section {
-      padding: 18px 22px;
+      padding: 20px 26px;
       border-bottom: 1px solid var(--border);
     }
     .cr-nc-section:last-child { border-bottom: none; }
     .cr-nc-section-title {
       font-size: 0.74rem; font-weight: 800; color: var(--text-muted);
-      text-transform: uppercase; letter-spacing: .05em; margin-bottom: 12px;
+      text-transform: uppercase; letter-spacing: .05em; margin-bottom: 14px;
     }
-    .cr-nc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .cr-nc-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
     .cr-nc-full { grid-column: 1 / -1; }
     .cr-nc-lbl {
       display: block; font-size: 0.74rem; font-weight: 800; color: var(--text-muted);
@@ -3438,6 +3438,10 @@ function _injectCrNcStyles() {
     :root[data-theme="dark"] .cr-nc-config { background: rgba(255,255,255,.03); }
     :root[data-theme="dark"] .cr-nc-preview { background: rgba(8,145,178,.12); color: #67e8f9; border-color: rgba(8,145,178,.25); }
 
+    @media (max-width: 860px) {
+      .cr-nc-grid { grid-template-columns: 1fr 1fr; }
+      .cr-nc-spinners { grid-template-columns: repeat(2, 1fr); }
+    }
     @media (max-width: 600px) {
       .cr-nc-grid, .cr-nc-spinners { grid-template-columns: 1fr; }
       .cr-nc-section { padding: 14px 16px; }
@@ -3476,9 +3480,22 @@ function abrirModalContaManual() {
 
       <div class="cr-detail-body cr-nc-body">
 
-        <!-- Cliente -->
+        <!-- Campos principais em grade 3 colunas -->
         <div class="cr-nc-section">
           <div class="cr-nc-grid">
+            <div class="cr-nc-full">
+              <label class="cr-nc-lbl">Descrição <span class="cr-nc-req">*</span></label>
+              <input type="text" id="crManualDescricao" class="input cr-nc-input" placeholder="Ex: Promissória, dívida antiga..." autocomplete="off" />
+            </div>
+            <div>
+              <label class="cr-nc-lbl">Valor (R$) <span class="cr-nc-req">*</span></label>
+              <input type="number" step="0.01" id="crManualValor" class="input cr-nc-input cr-nc-valor" inputmode="decimal" placeholder="0,00" />
+            </div>
+            <div>
+              <label class="cr-nc-lbl">1º vencimento <span class="cr-nc-req">*</span></label>
+              <input type="date" id="crManualVencimento" class="input cr-nc-input" value="${hoje}" />
+            </div>
+            <div><!-- espaço --></div>
             <div>
               <label class="cr-nc-lbl">Cliente</label>
               <select id="crManualCliente" class="input cr-nc-input">
@@ -3489,24 +3506,6 @@ function abrirModalContaManual() {
             <div>
               <label class="cr-nc-lbl">Nome manual</label>
               <input type="text" id="crManualNome" class="input cr-nc-input" placeholder="Nome avulso" autocomplete="off" />
-            </div>
-          </div>
-        </div>
-
-        <!-- Valor + Vencimento -->
-        <div class="cr-nc-section">
-          <div class="cr-nc-grid">
-            <div>
-              <label class="cr-nc-lbl">Valor (R$) <span class="cr-nc-req">*</span></label>
-              <input type="number" step="0.01" id="crManualValor" class="input cr-nc-input cr-nc-valor" inputmode="decimal" placeholder="0,00" />
-            </div>
-            <div>
-              <label class="cr-nc-lbl">1º vencimento <span class="cr-nc-req">*</span></label>
-              <input type="date" id="crManualVencimento" class="input cr-nc-input" value="${hoje}" />
-            </div>
-            <div class="cr-nc-full">
-              <label class="cr-nc-lbl">Descrição <span class="cr-nc-req">*</span></label>
-              <input type="text" id="crManualDescricao" class="input cr-nc-input" placeholder="Ex: Promissória, dívida antiga..." autocomplete="off" />
             </div>
           </div>
         </div>
