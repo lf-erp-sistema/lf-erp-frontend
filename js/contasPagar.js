@@ -1078,49 +1078,79 @@ function abrirModalNovaContaPagar() {
 
       <div class="cp-detail-body cp-nc-body">
 
-        <!-- Bloco principal: todos os campos em grade 3 colunas -->
+        <!-- Seção: Detalhes -->
         <div class="cp-nc-section">
-          <div class="cp-nc-row-grid">
-            <div class="cp-nc-field cp-nc-field--full">
-              <label class="cp-nc-lbl">Descrição <span class="cp-nc-req">*</span></label>
-              <input type="text" id="cpNcDescricao" class="input cp-nc-input" placeholder="Ex: Aluguel, energia, material..." autocomplete="off" />
+          <p class="cp-nc-section-title">Detalhes</p>
+          <div class="cp-nc-card-group">
+            <div class="cp-nc-cell">
+              <span class="cp-nc-cell-ico"><i class="fa-solid fa-file-lines"></i></span>
+              <div class="cp-nc-cell-content">
+                <label class="cp-nc-lbl" for="cpNcDescricao">Descrição <span class="cp-nc-req">*</span></label>
+                <input type="text" id="cpNcDescricao" class="cp-nc-cell-input" placeholder="Ex: Aluguel, energia, material..." autocomplete="off" />
+              </div>
             </div>
-            <div class="cp-nc-field">
-              <label class="cp-nc-lbl">Valor (R$) <span class="cp-nc-req">*</span></label>
-              <input type="number" id="cpNcValor" class="input cp-nc-input cp-nc-valor" step="0.01" min="0.01" inputmode="decimal" placeholder="0,00" />
+            <div class="cp-nc-cells-2col">
+              <div class="cp-nc-cell">
+                <span class="cp-nc-cell-ico cp-nc-cell-ico--green"><i class="fa-solid fa-brazilian-real-sign"></i></span>
+                <div class="cp-nc-cell-content">
+                  <label class="cp-nc-lbl" for="cpNcValor">Valor <span class="cp-nc-req">*</span></label>
+                  <input type="number" id="cpNcValor" class="cp-nc-cell-input cp-nc-valor" step="0.01" min="0.01" inputmode="decimal" placeholder="0,00" />
+                </div>
+              </div>
+              <div class="cp-nc-cell">
+                <span class="cp-nc-cell-ico cp-nc-cell-ico--blue"><i class="fa-solid fa-calendar-days"></i></span>
+                <div class="cp-nc-cell-content">
+                  <label class="cp-nc-lbl" for="cpNcVencimento">1º Vencimento <span class="cp-nc-req">*</span></label>
+                  <input type="date" id="cpNcVencimento" class="cp-nc-cell-input" value="${hoje}" />
+                </div>
+              </div>
             </div>
-            <div class="cp-nc-field">
-              <label class="cp-nc-lbl">1º vencimento <span class="cp-nc-req">*</span></label>
-              <input type="date" id="cpNcVencimento" class="input cp-nc-input" value="${hoje}" />
-            </div>
-            <div class="cp-nc-field">
-              <label class="cp-nc-lbl">Forma de pagamento</label>
-              <select id="cpNcForma" class="input cp-nc-input">
-                <option value="">Não informado</option>
-                <option value="dinheiro">Dinheiro</option>
-                <option value="pix">PIX</option>
-                <option value="boleto">Boleto</option>
-                <option value="cartao_credito">Cartão de Crédito</option>
-                <option value="cartao_debito">Cartão de Débito</option>
-                <option value="transferencia">Transferência</option>
-                <option value="cheque">Cheque</option>
-              </select>
-            </div>
-            <div class="cp-nc-field">
-              <label class="cp-nc-lbl">Fornecedor</label>
-              <select id="cpNcFornecedor" class="input cp-nc-input">
-                <option value="">Avulso / sem fornecedor</option>
-                ${fornecedoresOptions}
-              </select>
-            </div>
-            <div class="cp-nc-field">
-              <label class="cp-nc-lbl">Nome manual</label>
-              <input type="text" id="cpNcNome" class="input cp-nc-input" placeholder="Fornecedor avulso" autocomplete="off" />
+            <div class="cp-nc-cell">
+              <span class="cp-nc-cell-ico"><i class="fa-solid fa-credit-card"></i></span>
+              <div class="cp-nc-cell-content">
+                <label class="cp-nc-lbl" for="cpNcForma">Forma de pagamento</label>
+                <select id="cpNcForma" class="cp-nc-cell-input">
+                  <option value="">Não informado</option>
+                  <option value="dinheiro">Dinheiro</option>
+                  <option value="pix">PIX</option>
+                  <option value="boleto">Boleto</option>
+                  <option value="cartao_credito">Cartão de Crédito</option>
+                  <option value="cartao_debito">Cartão de Débito</option>
+                  <option value="transferencia">Transferência</option>
+                  <option value="cheque">Cheque</option>
+                </select>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Bloco: recorrência (row único) -->
+        <!-- Seção: Fornecedor -->
+        <div class="cp-nc-section">
+          <p class="cp-nc-section-title">Fornecedor</p>
+          <div class="cp-nc-card-group">
+            <div class="cp-nc-cells-2col cp-nc-cells-2col--last">
+              <div class="cp-nc-cell">
+                <span class="cp-nc-cell-ico"><i class="fa-solid fa-building"></i></span>
+                <div class="cp-nc-cell-content">
+                  <label class="cp-nc-lbl" for="cpNcFornecedor">Cadastrado</label>
+                  <select id="cpNcFornecedor" class="cp-nc-cell-input">
+                    <option value="">Avulso / sem fornecedor</option>
+                    ${fornecedoresOptions}
+                  </select>
+                </div>
+              </div>
+              <div class="cp-nc-cell">
+                <span class="cp-nc-cell-ico"><i class="fa-solid fa-pen-to-square"></i></span>
+                <div class="cp-nc-cell-content">
+                  <label class="cp-nc-lbl" for="cpNcNome">Nome manual</label>
+                  <input type="text" id="cpNcNome" class="cp-nc-cell-input" placeholder="Fornecedor avulso" autocomplete="off" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recorrência -->
         <div class="cp-nc-section cp-nc-section--rec">
           <p class="cp-nc-section-title">Recorrência</p>
           <button type="button" class="cp-nc-rec-single" id="cpNcRecRow">
@@ -1135,10 +1165,8 @@ function abrirModalNovaContaPagar() {
 
         <!-- Observação -->
         <div class="cp-nc-section">
-          <div class="cp-nc-field cp-nc-field--full">
-            <label class="cp-nc-lbl">Observação</label>
-            <textarea id="cpNcObservacao" class="input cp-nc-input" rows="2" placeholder="Observações..."></textarea>
-          </div>
+          <p class="cp-nc-section-title">Observação</p>
+          <textarea id="cpNcObservacao" class="cp-nc-obs" rows="2" placeholder="Observações sobre esta conta..."></textarea>
         </div>
 
       </div>
@@ -1996,50 +2024,127 @@ function injectContasPagarStyles() {
 
     /* ── Nova Conta a Pagar ── */
     .cp-nc-card {
-      width: min(96vw, 920px) !important;
-      max-height: 90vh;
+      width: min(96vw, 560px) !important;
+      max-height: 92vh;
     }
 
     .cp-nc-body { gap: 0; padding: 0; overflow-y: auto; }
 
     .cp-nc-section {
-      padding: 20px 26px;
+      padding: 18px 22px;
       border-bottom: 1px solid var(--border);
     }
     .cp-nc-section:last-child { border-bottom: none; }
 
     .cp-nc-section-title {
-      font-size: 0.74rem;
-      font-weight: 800;
+      font-size: 0.68rem;
+      font-weight: 900;
       color: var(--text-muted);
       text-transform: uppercase;
-      letter-spacing: .05em;
-      margin-bottom: 14px;
+      letter-spacing: .08em;
+      margin-bottom: 10px;
     }
 
-    .cp-nc-row-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 14px;
+    /* Agrupador de cells */
+    .cp-nc-card-group {
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      overflow: hidden;
+      background: var(--surface);
     }
-    .cp-nc-field--full { grid-column: 1 / -1; }
+
+    /* Cell individual */
+    .cp-nc-cell {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 13px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      transition: background .1s;
+    }
+    .cp-nc-cell:last-child { border-bottom: none; }
+    .cp-nc-cell:focus-within { background: var(--surface-2, rgba(0,0,0,.025)); }
+
+    /* Duas cells em linha */
+    .cp-nc-cells-2col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border-bottom: 1px solid var(--border);
+    }
+    .cp-nc-cells-2col .cp-nc-cell { border-bottom: none; }
+    .cp-nc-cells-2col .cp-nc-cell:first-child { border-right: 1px solid var(--border); }
+    .cp-nc-cells-2col--last { border-bottom: none; }
+
+    /* Ícone da cell */
+    .cp-nc-cell-ico {
+      width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.88rem;
+      background: var(--surface-2); color: var(--text-muted);
+    }
+    .cp-nc-cell-ico--green { background: rgba(22,163,74,.1); color: #16a34a; }
+    .cp-nc-cell-ico--blue  { background: rgba(37,99,235,.1); color: #2563eb; }
+    .cp-nc-cell-ico--orange{ background: rgba(217,119,6,.12); color: #c2410c; }
+
+    /* Conteúdo da cell */
+    .cp-nc-cell-content {
+      flex: 1; min-width: 0;
+      display: flex; flex-direction: column; gap: 1px;
+    }
 
     .cp-nc-lbl {
       display: block;
-      font-size: 0.74rem;
-      font-weight: 800;
+      font-size: 0.67rem;
+      font-weight: 900;
       color: var(--text-muted);
       text-transform: uppercase;
-      letter-spacing: .04em;
-      margin-bottom: 6px;
+      letter-spacing: .06em;
     }
     .cp-nc-req { color: var(--danger, #dc2626); }
 
-    .cp-nc-input {
-      border-radius: 12px;
-      min-height: 42px;
+    /* Input dentro da cell — sem borda, fundo transparente */
+    .cp-nc-cell-input {
+      border: none !important;
+      outline: none !important;
+      background: transparent !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      min-height: unset !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      font-size: 0.93rem;
+      font-weight: 600;
+      color: var(--text);
+      width: 100%;
+      font-family: inherit;
+      -webkit-appearance: none;
+      appearance: none;
     }
-    .cp-nc-valor { font-size: 1.1rem; font-weight: 700; }
+    .cp-nc-cell-input::placeholder { color: var(--text-muted); font-weight: 500; }
+    .cp-nc-cell-input:focus { box-shadow: none !important; border: none !important; outline: none !important; }
+
+    /* Seta customizada no select */
+    select.cp-nc-cell-input {
+      cursor: pointer;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+      background-repeat: no-repeat !important;
+      background-position: right 0 center !important;
+      padding-right: 16px !important;
+    }
+
+    .cp-nc-valor { font-size: 1.2rem !important; font-weight: 800 !important; letter-spacing: -.02em; }
+
+    /* Textarea observação */
+    .cp-nc-obs {
+      width: 100%; resize: none; font-size: 0.9rem; font-weight: 500;
+      color: var(--text); line-height: 1.5;
+      background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: 14px; padding: 12px 14px; font-family: inherit;
+      box-sizing: border-box;
+    }
+    .cp-nc-obs::placeholder { color: var(--text-muted); }
+    .cp-nc-obs:focus { outline: none; border-color: var(--primary); background: var(--surface); }
 
     /* Recorrência — row único */
     .cp-nc-rec-single {
@@ -2168,14 +2273,10 @@ function injectContasPagarStyles() {
     }
     :root[data-theme="dark"] .cp-rec-cfg-preview { background: rgba(8,145,178,.12); color: #67e8f9; border-color: rgba(8,145,178,.25); }
 
-    @media (max-width: 860px) {
-      .cp-nc-row-grid { grid-template-columns: 1fr 1fr; }
-      .cp-nc-spinners-row { grid-template-columns: repeat(2, 1fr); }
-    }
     @media (max-width: 600px) {
-      .cp-nc-row-grid, .cp-nc-spinners-row { grid-template-columns: 1fr; }
       .cp-nc-section { padding: 14px 16px; }
-      .cp-nc-tipo-row { flex-direction: column; }
+      .cp-nc-cells-2col { grid-template-columns: 1fr; }
+      .cp-nc-cells-2col .cp-nc-cell:first-child { border-right: none; border-bottom: 1px solid var(--border); }
     }
 
     .lf-pagination {
