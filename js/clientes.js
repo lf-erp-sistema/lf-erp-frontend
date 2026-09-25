@@ -866,12 +866,13 @@ const ClientesModule = {
               <h3 id="extratoClienteTitulo">Extrato</h3>
               <p id="extratoClienteSubtitulo" style="color:var(--text-muted);font-size:.9rem"></p>
             </div>
-            <div style="display:flex;align-items:center;gap:2px;border:1px solid var(--border);border-radius:20px;padding:3px 10px">
+            <div id="extratoMesNav" style="display:flex;align-items:center;gap:2px;border:1px solid var(--border);border-radius:20px;padding:3px 10px">
               <button type="button" class="icon-button" id="extratoMesAnterior" style="width:26px;height:26px;font-size:.8rem"><i class="fa-solid fa-chevron-left"></i></button>
               <span id="extratoMesLabel" style="font-weight:700;min-width:130px;text-align:center;font-size:.88rem"></span>
               <button type="button" class="icon-button" id="extratoMesSeguinte" style="width:26px;height:26px;font-size:.8rem"><i class="fa-solid fa-chevron-right"></i></button>
             </div>
             <div style="display:flex;gap:8px;align-items:center">
+              <button type="button" class="btn btn-light btn-sm" id="extratoBtnTotal">Dívida total</button>
               <button type="button" class="btn btn-light btn-sm" id="extratoClienteImprimirBtn">
                 <i class="fa-solid fa-print"></i> Imprimir
               </button>
@@ -905,46 +906,83 @@ const ClientesModule = {
       this._extratoAtual = data;
 
       let mesAtivo = new Date().toISOString().slice(0, 7);
+      let totalMode = false;
 
-      this._renderExtratoComMes(data, corpo, subtitulo, mesAtivo);
+      const render = () => {
+        const navEl = document.getElementById('extratoMesNav');
+        const btnTotal = document.getElementById('extratoBtnTotal');
+        if (navEl) navEl.style.display = totalMode ? 'none' : 'flex';
+        if (btnTotal) btnTotal.textContent = totalMode ? 'Ver por mês' : 'Dívida total';
+        this._renderExtratoComMes(data, corpo, subtitulo, mesAtivo, totalMode);
+      };
+
+      render();
 
       document.getElementById('extratoMesAnterior').onclick = () => {
+        if (totalMode) return;
         const [y, m] = mesAtivo.split('-').map(Number);
         const prev = new Date(y, m - 2, 1);
         mesAtivo = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}`;
-        this._renderExtratoComMes(data, corpo, subtitulo, mesAtivo);
+        render();
       };
       document.getElementById('extratoMesSeguinte').onclick = () => {
+        if (totalMode) return;
         const [y, m] = mesAtivo.split('-').map(Number);
         const next = new Date(y, m, 1);
         mesAtivo = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}`;
-        this._renderExtratoComMes(data, corpo, subtitulo, mesAtivo);
+        render();
+      };
+      document.getElementById('extratoBtnTotal').onclick = () => {
+        totalMode = !totalMode;
+        render();
       };
     } catch (err) {
       if (corpo) corpo.innerHTML = `<div class="module-feedback module-feedback--error">${escapeHtml(err.message || 'Erro ao carregar extrato')}</div>`;
     }
   },
 
-  _renderExtratoComMes(data, corpo, subtitulo, mes) {
+  _renderExtratoComMes(data, corpo, subtitulo, mes, totalMode = false) {
     const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-    const [y, m] = mes.split('-').map(Number);
-    const label = document.getElementById('extratoMesLabel');
-    if (label) label.textContent = `${MESES[m - 1]} ${y}`;
-
     const N = (v) => Number(v || 0);
-    const parcelas = (data.parcelas || []).filter(p => String(p.data_vencimento || '').slice(0, 7) === mes);
-    const resumo = {
-      qtd_pendente:   parcelas.filter(p => ['pendente','atrasado','parcial','parcial_atrasado'].includes(p.status)).length,
-      total_aberto:   parcelas.filter(p => ['pendente','parcial'].includes(p.status)).reduce((s, p) => s + N(p.valor_atualizado || p.valor), 0),
-      total_atrasado: parcelas.filter(p => ['atrasado','parcial_atrasado'].includes(p.status)).reduce((s, p) => s + N(p.valor_atualizado || p.valor), 0),
-      total_pago:     parcelas.filter(p => p.status === 'pago').reduce((s, p) => s + N(p.valor_pago || p.valor), 0),
-      total_parcial:  parcelas.filter(p => ['parcial','parcial_atrasado'].includes(p.status)).reduce((s, p) => s + N(p.valor_pago || 0), 0),
-    };
-    this._renderExtratoCorpo({ ...data, parcelas, resumo }, corpo, subtitulo);
+    const cur = (v) => N(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const calcResumo = (list) => ({
+      qtd_pendente:   list.filter(p => ['pendente','atrasado','parcial','parcial_atrasado'].includes(p.status)).length,
+      total_aberto:   list.filter(p => ['pendente','parcial'].includes(p.status)).reduce((s, p) => s + N(p.valor_atualizado || p.valor), 0),
+      total_atrasado: list.filter(p => ['atrasado','parcial_atrasado'].includes(p.status)).reduce((s, p) => s + N(p.valor_atualizado || p.valor), 0),
+      total_pago:     list.filter(p => p.status === 'pago').reduce((s, p) => s + N(p.valor_pago || p.valor), 0),
+      total_parcial:  list.filter(p => ['parcial','parcial_atrasado'].includes(p.status)).reduce((s, p) => s + N(p.valor_pago || 0), 0),
+    });
+
+    let parcelas, resumo, totalCard = '';
+
+    if (totalMode) {
+      parcelas = data.parcelas || [];
+      resumo   = calcResumo(parcelas);
+      const divida = resumo.total_aberto + resumo.total_atrasado;
+      totalCard = `
+        <div style="background:color-mix(in srgb,var(--primary,#2563eb) 10%,transparent);border:2px solid var(--primary,#2563eb);border-radius:16px;padding:18px 22px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <div>
+            <div style="font-size:.7rem;font-weight:800;color:var(--primary,#2563eb);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Dívida total</div>
+            <div style="font-size:1.7rem;font-weight:900;color:var(--primary,#2563eb);line-height:1">${cur(divida)}</div>
+          </div>
+          <div style="text-align:right;font-size:.82rem;color:var(--text-muted);line-height:1.6">
+            <div>${resumo.qtd_pendente} parcela(s) em aberto</div>
+            <div>${parcelas.length} parcela(s) no total</div>
+          </div>
+        </div>`;
+    } else {
+      const [y, m] = mes.split('-').map(Number);
+      const label = document.getElementById('extratoMesLabel');
+      if (label) label.textContent = `${MESES[m - 1]} ${y}`;
+      parcelas = (data.parcelas || []).filter(p => String(p.data_vencimento || '').slice(0, 7) === mes);
+      resumo   = calcResumo(parcelas);
+    }
+
+    this._renderExtratoCorpo({ ...data, parcelas, resumo, totalCard }, corpo, subtitulo);
   },
 
   _renderExtratoCorpo(data, corpo, subtitulo) {
-    const { cliente, resumo, parcelas } = data;
+    const { cliente, resumo, parcelas, totalCard = '' } = data;
     const cur = (v) => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     const dt  = (v) => v ? new Date(`${v}T12:00:00`).toLocaleDateString('pt-BR') : '-';
 
@@ -958,6 +996,7 @@ const ClientesModule = {
     }
 
     corpo.innerHTML = `
+      ${totalCard}
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:20px">
         ${[
           ['Em aberto',   resumo.total_aberto,   resumo.total_aberto > 0   ? 'var(--warning,#d69e2e)' : 'var(--text-muted)'],
