@@ -1019,6 +1019,17 @@ function renderLinhas() {
         Boleto
       </button>
 
+      <button
+        class="btn-inline"
+        type="button"
+        data-action="editar-cr"
+        data-id="${conta.id}"
+        title="Editar descrição ou vencimento"
+      >
+        <i class="fa-solid fa-pen"></i>
+        Editar
+      </button>
+
       ${
         !conta.venda_id && status !== 'pago'
           ? `
@@ -1042,6 +1053,67 @@ function renderLinhas() {
     `;
     })
     .join('');
+}
+
+function abrirModalEditarConta(conta) {
+  document.getElementById('crEditarContaModal')?.remove();
+  const modal = document.createElement('div');
+  modal.id = 'crEditarContaModal';
+  modal.className = 'modal-overlay';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:10003;display:flex;align-items:center;justify-content:center;padding:20px';
+
+  const hojeISO = todayFortaleza();
+  const vencISO = conta.data_vencimento ? String(conta.data_vencimento).slice(0, 10) : hojeISO;
+
+  modal.innerHTML = `
+    <div style="background:var(--surface);border-radius:18px;width:100%;max-width:420px;box-shadow:0 8px 40px rgba(0,0,0,.2);display:flex;flex-direction:column">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px 0">
+        <h3 style="margin:0;font-size:1.05rem;font-weight:900">Editar conta</h3>
+        <button class="icon-button" id="crEditarFechar" type="button"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div style="padding:16px 22px 22px;display:flex;flex-direction:column;gap:14px">
+        <div>
+          <label style="font-size:.78rem;font-weight:700;color:var(--text-muted);display:block;margin-bottom:4px">Descrição</label>
+          <input id="crEditarObs" class="form-control" type="text" value="${escapeHtml(conta.observacao || '')}" placeholder="Ex: Iphone 16 – prestação 1/4" maxlength="200">
+        </div>
+        <div>
+          <label style="font-size:.78rem;font-weight:700;color:var(--text-muted);display:block;margin-bottom:4px">Vencimento</label>
+          <input id="crEditarVenc" class="form-control" type="date" value="${vencISO}">
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
+          <button class="btn btn-light" id="crEditarCancelar" type="button">Cancelar</button>
+          <button class="btn btn-primary" id="crEditarSalvar" type="button">Salvar</button>
+        </div>
+      </div>
+    </div>`;
+
+  document.body.appendChild(modal);
+
+  const fechar = () => modal.remove();
+  document.getElementById('crEditarFechar').onclick = fechar;
+  document.getElementById('crEditarCancelar').onclick = fechar;
+  modal.addEventListener('click', (e) => { if (e.target === modal) fechar(); });
+
+  document.getElementById('crEditarSalvar').onclick = async () => {
+    const btn = document.getElementById('crEditarSalvar');
+    const obs  = document.getElementById('crEditarObs')?.value.trim();
+    const venc = document.getElementById('crEditarVenc')?.value;
+    if (!obs) { showMessage('Descrição obrigatória.', 'error'); return; }
+    btn.disabled = true;
+    try {
+      await api.request(`/contas-receber/${conta.id}`, {
+        method: 'PUT',
+        body: { observacao: obs, data_vencimento: venc }
+      });
+      fechar();
+      showMessage('Conta atualizada.', 'success');
+      await recarregar();
+    } catch (err) {
+      showMessage(err.message || 'Erro ao salvar.', 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  };
 }
 
 function bindEventos() {
@@ -1321,6 +1393,13 @@ function bindEventos() {
       } finally {
         button.disabled = false;
       }
+    });
+  });
+
+  document.querySelectorAll("[data-action='editar-cr']").forEach((button) => {
+    button.addEventListener('click', () => {
+      const conta = state.contas.find(c => String(c.id) === button.dataset.id);
+      if (conta) abrirModalEditarConta(conta);
     });
   });
 
