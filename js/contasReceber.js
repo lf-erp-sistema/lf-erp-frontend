@@ -1159,14 +1159,23 @@ function abrirModalEditarConta(conta) {
     // Detecta grupo: parcelas de venda OU contas manuais com mesma descrição e mesmo cliente
     const temParcelas = Number(conta.total_parcelas || 1) > 1 && !!conta.venda_id;
     const obsOrig = String(conta.observacao || '').trim().toLowerCase();
-    const outrasDoGrupo = !conta.venda_id && conta.cliente_id && obsOrig
-      ? state.contas.filter(c =>
-          String(c.cliente_id) === String(conta.cliente_id) &&
+
+    // Para contas manuais: busca via API (sem filtro de data) para encontrar todas as parcelas do grupo,
+    // mesmo que estejam em meses não exibidos no estado atual
+    let outrasDoGrupo = [];
+    if (!conta.venda_id && conta.cliente_id && obsOrig) {
+      try {
+        const r = await api.request('/contas-receber', {
+          query: { empresa_id: api.getEmpresaId(), cliente_id: conta.cliente_id, limit: 200 }
+        });
+        const todas = r.contas || r.data || r || [];
+        outrasDoGrupo = todas.filter(c =>
           String(c.id) !== String(conta.id) &&
           String(c.observacao || '').trim().toLowerCase() === obsOrig &&
           !['pago', 'parcial', 'parcial_atrasado'].includes(String(c.status || ''))
-        )
-      : [];
+        );
+      } catch (_) { /* ignora erro — segue sem diálogo de escopo */ }
+    }
 
     let escopo = 'apenas_esta';
     if (temParcelas || outrasDoGrupo.length > 0) {
@@ -1671,14 +1680,23 @@ async function excluirConta(id) {
   // Detecta grupo: parcelas de venda OU contas manuais com mesma descrição e mesmo cliente
   const _temParcelas = Number(_cr?.total_parcelas || 1) > 1 && !!_cr?.venda_id;
   const _obsOrig = String(_cr?.observacao || '').trim().toLowerCase();
-  const _outrasDoGrupo = !_cr?.venda_id && _cr?.cliente_id && _obsOrig
-    ? state.contas.filter(c =>
-        String(c.cliente_id) === String(_cr.cliente_id) &&
+
+  // Para contas manuais: busca via API (sem filtro de data) para encontrar todas as parcelas do grupo,
+  // mesmo que estejam em meses não exibidos no estado atual
+  let _outrasDoGrupo = [];
+  if (!_cr?.venda_id && _cr?.cliente_id && _obsOrig) {
+    try {
+      const _r = await api.request('/contas-receber', {
+        query: { empresa_id: api.getEmpresaId(), cliente_id: _cr.cliente_id, limit: 200 }
+      });
+      const _todas = _r.contas || _r.data || _r || [];
+      _outrasDoGrupo = _todas.filter(c =>
         String(c.id) !== String(id) &&
         String(c.observacao || '').trim().toLowerCase() === _obsOrig &&
         !['pago', 'parcial', 'parcial_atrasado'].includes(String(c.status || ''))
-      )
-    : [];
+      );
+    } catch (_) { /* ignora erro — segue sem diálogo de escopo */ }
+  }
 
   let escopo = 'apenas_esta';
   if (_temParcelas || _outrasDoGrupo.length > 0) {
