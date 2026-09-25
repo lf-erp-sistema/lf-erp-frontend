@@ -1234,6 +1234,29 @@ const ProdutosModule = {
       </div>`;
   },
 
+  _proximoCodigoBarras() {
+    const numCodes = (this.state.items || [])
+      .map(p => p.codigo_barras)
+      .filter(c => c && /^\d+$/.test(c))
+      .map(Number);
+    const next = numCodes.length > 0 ? Math.max(...numCodes) + 1 : 1;
+    return String(next).padStart(6, '0');
+  },
+
+  _setCodigoBarrasReadonly(readonly) {
+    const el = this.el.codigoBarras;
+    if (!el) return;
+    el.readOnly = readonly;
+    el.style.color = readonly ? 'var(--text-muted)' : '';
+    el.style.cursor = readonly ? 'default' : '';
+    const lbl = el.closest('.prd-nc-cell')?.querySelector('.prd-nc-lbl');
+    if (lbl) {
+      lbl.innerHTML = readonly
+        ? 'Código de barras <span style="font-weight:500;text-transform:none;letter-spacing:0;font-size:.62rem;background:var(--surface-2);padding:1px 5px;border-radius:4px;margin-left:3px;color:var(--text-muted)">auto</span>'
+        : 'Código de barras';
+    }
+  },
+
   openCreateModal() {
     this.state.editingId = null;
     this.state.activeTab = 'dados';
@@ -1252,6 +1275,9 @@ const ProdutosModule = {
     this.setFormFeedback('', 'info');
     const promoRowCreate = document.getElementById('prdPromoPrecoRow');
     if (promoRowCreate) promoRowCreate.style.display = 'none';
+    // Exibe código estimado como somente leitura
+    if (this.el.codigoBarras) this.el.codigoBarras.value = this._proximoCodigoBarras();
+    this._setCodigoBarrasReadonly(true);
     this.el.modal?.classList.remove('hidden');
   },
 
@@ -1268,6 +1294,7 @@ const ProdutosModule = {
     if (this.el.nome) this.el.nome.value = item.nome || '';
     if (this.el.categoria) this.el.categoria.value = item.categoria || '';
     if (this.el.codigoBarras) this.el.codigoBarras.value = item.codigo_barras || '';
+    this._setCodigoBarrasReadonly(false);
     if (this.el.preco) { this.el.preco.value = Number(item.preco || 0); this.el.preco.classList.remove('input--sugerido'); }
     if (this.el.custo) this.el.custo.value = Number(item.custo || 0);
     if (this.el.precoPromocional) this.el.precoPromocional.value = Number(item.preco_promocional || 0);
@@ -1325,7 +1352,7 @@ const ProdutosModule = {
       empresa_id: api.getEmpresaId(),
       nome: this.el.nome?.value?.trim() || '',
       categoria: this.el.categoria?.value?.trim() || '',
-      codigo_barras: this.el.codigoBarras?.value?.trim() || '',
+      codigo_barras: this.state.editingId ? (this.el.codigoBarras?.value?.trim() || '') : '',
       preco: Number(this.el.preco?.value || 0),
       custo: Number(this.el.custo?.value || 0),
       preco_promocional: Number(this.el.precoPromocional?.value || 0),
