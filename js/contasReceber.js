@@ -1165,9 +1165,7 @@ function abrirModalEditarConta(conta) {
     let outrasDoGrupo = [];
     if (!conta.venda_id && conta.cliente_id && obsOrig) {
       try {
-        const r = await api.request('/contas-receber', {
-          query: { empresa_id: api.getEmpresaId(), cliente_id: conta.cliente_id, limit: 200 }
-        });
+        const r = await api.getContasReceber({ cliente_id: conta.cliente_id, limit: 200 });
         const todas = r.contas || r.data || r || [];
         outrasDoGrupo = todas.filter(c =>
           String(c.id) !== String(conta.id) &&
@@ -1686,16 +1684,14 @@ async function excluirConta(id) {
   let _outrasDoGrupo = [];
   if (!_cr?.venda_id && _cr?.cliente_id && _obsOrig) {
     try {
-      const _r = await api.request('/contas-receber', {
-        query: { empresa_id: api.getEmpresaId(), cliente_id: _cr.cliente_id, limit: 200 }
-      });
+      const _r = await api.getContasReceber({ cliente_id: _cr.cliente_id, limit: 200 });
       const _todas = _r.contas || _r.data || _r || [];
       _outrasDoGrupo = _todas.filter(c =>
         String(c.id) !== String(id) &&
         String(c.observacao || '').trim().toLowerCase() === _obsOrig &&
         !['pago', 'parcial', 'parcial_atrasado'].includes(String(c.status || ''))
       );
-    } catch (_) { /* ignora erro — segue sem diálogo de escopo */ }
+    } catch (_e) { /* ignora erro — segue sem diálogo de escopo */ }
   }
 
   let escopo = 'apenas_esta';
