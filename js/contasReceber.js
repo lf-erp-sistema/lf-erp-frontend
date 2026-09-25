@@ -1060,7 +1060,7 @@ function renderLinhas() {
     .join('');
 }
 
-function _escolherEscopo(conta, tipo) {
+function _escolherEscopo(conta, tipo, { mostrarProximas = true, totalLabel = null } = {}) {
   return new Promise((resolve) => {
     document.getElementById('crEscopoModal')?.remove();
     const m = document.createElement('div');
@@ -1069,21 +1069,23 @@ function _escolherEscopo(conta, tipo) {
     const parc = conta.parcela || 1;
     const total = conta.total_parcelas || 1;
     const v = tipo === 'excluir' ? 'Excluir' : 'Alterar';
+    const subtitulo = conta.venda_id ? `Parcela ${parc}/${total}` : (totalLabel || '');
     m.innerHTML = `
       <div style="background:var(--surface);border-radius:18px;width:100%;max-width:380px;box-shadow:0 8px 40px rgba(0,0,0,.25);padding:24px;display:flex;flex-direction:column;gap:16px">
         <div>
           <h3 style="margin:0 0 4px;font-size:1.05rem;font-weight:900">O que você deseja?</h3>
-          <p style="margin:0;font-size:.85rem;color:var(--text-muted)">Parcela ${parc}/${total}</p>
+          ${subtitulo ? `<p style="margin:0;font-size:.85rem;color:var(--text-muted)">${subtitulo}</p>` : ''}
         </div>
         <div style="display:flex;flex-direction:column;gap:8px">
           <button class="btn btn-light" id="crEscopoApenas" type="button" style="justify-content:flex-start;gap:10px;text-align:left;padding:12px 16px">
             <i class="fa-solid fa-check" style="color:var(--success,#22c55e);min-width:16px"></i> ${v} apenas esta
           </button>
+          ${mostrarProximas ? `
           <button class="btn btn-light" id="crEscopoProximas" type="button" style="justify-content:flex-start;gap:10px;text-align:left;padding:12px 16px">
             <i class="fa-regular fa-circle-check" style="color:var(--success,#22c55e);min-width:16px"></i> ${v} esta e as próximas
-          </button>
+          </button>` : ''}
           <button class="btn btn-light" id="crEscopoTodas" type="button" style="justify-content:flex-start;gap:10px;text-align:left;padding:12px 16px">
-            <i class="fa-solid fa-check-double" style="color:var(--success,#22c55e);min-width:16px"></i> ${v} todas (${total})
+            <i class="fa-solid fa-check-double" style="color:var(--success,#22c55e);min-width:16px"></i> ${v} todas${conta.venda_id ? ` (${total})` : ''}
           </button>
         </div>
         <button class="btn btn-light" id="crEscopoCancelar" type="button">Cancelar</button>
@@ -1091,7 +1093,7 @@ function _escolherEscopo(conta, tipo) {
     document.body.appendChild(m);
     const fechar = (val) => { m.remove(); resolve(val); };
     document.getElementById('crEscopoApenas').onclick   = () => fechar('apenas_esta');
-    document.getElementById('crEscopoProximas').onclick = () => fechar('esta_e_proximas');
+    if (mostrarProximas) document.getElementById('crEscopoProximas').onclick = () => fechar('esta_e_proximas');
     document.getElementById('crEscopoTodas').onclick    = () => fechar('todas');
     document.getElementById('crEscopoCancelar').onclick = () => fechar(null);
     m.addEventListener('click', (e) => { if (e.target === m) fechar(null); });
@@ -1632,14 +1634,32 @@ async function excluirConta(id) {
   const _devedor = _cr?.nome_devedor || _cr?.cliente_nome || null;
   const _val = _cr ? ` (${Number(_cr.valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})` : '';
 
+  // Detecta se há múltiplas contas do mesmo cliente para oferecer escopo
+  const temParcelas = Number(_cr?.total_parcelas || 1) > 1; // conta de venda com parcelas
+  const outrasDoCliente = _cr?.cliente_id
+    ? state.contas.filter(c =>
+        String(c.cliente_id) === String(_cr.cliente_id) &&
+        String(c.id) !== String(id) &&
+        !['pago', 'parcial', 'parcial_atrasado'].includes(String(c.status || ''))
+      )
+    : [];
+  const devePerguntar = temParcelas || outrasDoCliente.length > 0;
+
   let escopo = 'apenas_esta';
-  if (Number(_cr?.total_parcelas || 1) > 1) {
-    escopo = await _escolherEscopo(_cr, 'excluir');
+  if (devePerguntar) {
+    const totalLabel = !temParcelas && outrasDoCliente.length > 0
+      ? `${outrasDoCliente.length + 1} conta(s) pendente(s) deste cliente`
+      : null;
+    escopo = await _escolherEscopo(_cr, 'excluir', {
+      mostrarProximas: temParcelas, // "esta e as próximas" só faz sentido para parcelas de venda
+      totalLabel
+    });
     if (escopo === null) return;
   }
 
+  const _totalLabel = temParcelas ? _cr?.total_parcelas : (outrasDoCliente.length + 1);
   const _msgCr = escopo === 'todas'
-    ? `Excluir TODAS as ${_cr?.total_parcelas} parcelas de "${_devedor}"? Esta ação não pode ser desfeita.`
+    ? `Excluir TODAS as ${_totalLabel} conta(s) pendentes de "${_devedor}"? Esta ação não pode ser desfeita.`
     : escopo === 'esta_e_proximas'
       ? `Excluir esta e as próximas parcelas de "${_devedor}"? Esta ação não pode ser desfeita.`
       : _devedor
