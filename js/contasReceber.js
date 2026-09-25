@@ -1634,32 +1634,15 @@ async function excluirConta(id) {
   const _devedor = _cr?.nome_devedor || _cr?.cliente_nome || null;
   const _val = _cr ? ` (${Number(_cr.valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})` : '';
 
-  // Detecta se há múltiplas contas do mesmo cliente para oferecer escopo
-  const temParcelas = Number(_cr?.total_parcelas || 1) > 1; // conta de venda com parcelas
-  const outrasDoCliente = _cr?.cliente_id
-    ? state.contas.filter(c =>
-        String(c.cliente_id) === String(_cr.cliente_id) &&
-        String(c.id) !== String(id) &&
-        !['pago', 'parcial', 'parcial_atrasado'].includes(String(c.status || ''))
-      )
-    : [];
-  const devePerguntar = temParcelas || outrasDoCliente.length > 0;
-
+  // Diálogo de escopo apenas para parcelas de venda (total_parcelas > 1 com venda_id)
   let escopo = 'apenas_esta';
-  if (devePerguntar) {
-    const totalLabel = !temParcelas && outrasDoCliente.length > 0
-      ? `${outrasDoCliente.length + 1} conta(s) pendente(s) deste cliente`
-      : null;
-    escopo = await _escolherEscopo(_cr, 'excluir', {
-      mostrarProximas: temParcelas, // "esta e as próximas" só faz sentido para parcelas de venda
-      totalLabel
-    });
+  if (Number(_cr?.total_parcelas || 1) > 1 && _cr?.venda_id) {
+    escopo = await _escolherEscopo(_cr, 'excluir', { mostrarProximas: true });
     if (escopo === null) return;
   }
 
-  const _totalLabel = temParcelas ? _cr?.total_parcelas : (outrasDoCliente.length + 1);
   const _msgCr = escopo === 'todas'
-    ? `Excluir TODAS as ${_totalLabel} conta(s) pendentes de "${_devedor}"? Esta ação não pode ser desfeita.`
+    ? `Excluir TODAS as ${_cr?.total_parcelas} parcelas de "${_devedor}"? Esta ação não pode ser desfeita.`
     : escopo === 'esta_e_proximas'
       ? `Excluir esta e as próximas parcelas de "${_devedor}"? Esta ação não pode ser desfeita.`
       : _devedor
