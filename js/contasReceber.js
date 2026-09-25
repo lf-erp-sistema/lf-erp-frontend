@@ -406,16 +406,45 @@ function getDiasAtrasoText(dataVencimento) {
   return dias > 0 ? `${dias} dia${dias !== 1 ? 's' : ''} em atraso` : 'Atrasado';
 }
 
-function _gerarMsgCobranca(abertas, total) {
-  const linhas = abertas.map((c, i) => {
-    const num  = String(i + 1).padStart(2, '0');
-    const desc = (c.observacao || 'Produto').trim();
-    const parc = c.parcela != null && c.total_parcelas != null ? ` - ${c.parcela}/${c.total_parcelas}` : '';
-    const val  = Number(c.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    return `${num} - ${desc}${parc} - R$ ${val}`;
+function _gerarMsgCobranca(abertas, _total, clienteNome) {
+  const fmt = (v) => Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const fmtDt = (d) => {
+    if (!d) return 'sem data';
+    const [y, m, day] = String(d).slice(0, 10).split('-');
+    return `${day}/${m}/${y}`;
+  };
+
+  // Filtra apenas parcelas do mês atual
+  const hoje = todayFortaleza();
+  const mesAtual = hoje.slice(0, 7); // "YYYY-MM"
+  const doMes = abertas.filter(c => String(c.data_vencimento || '').slice(0, 7) === mesAtual);
+  const lista = doMes.length ? doMes : abertas; // fallback: tudo se não há nada no mês
+
+  // Agrupa por data de vencimento (ordem cronológica)
+  const grupos = new Map();
+  [...lista]
+    .sort((a, b) => String(a.data_vencimento || '').localeCompare(String(b.data_vencimento || '')))
+    .forEach(c => {
+      const chave = String(c.data_vencimento || '').slice(0, 10);
+      if (!grupos.has(chave)) grupos.set(chave, []);
+      grupos.get(chave).push(c);
+    });
+
+  const blocos = [];
+  grupos.forEach((itens, dt) => {
+    const dtLabel = fmtDt(dt);
+    const sub = itens.map(c => {
+      const desc = (c.observacao || 'Produto').trim();
+      const parc = c.parcela != null && c.total_parcelas != null ? ` (${c.parcela}/${c.total_parcelas})` : '';
+      return `  ↳ ${desc}${parc} — R$ ${fmt(c.valor)}`;
+    });
+    blocos.push(`• *Vence ${dtLabel}*:\n${sub.join('\n')}`);
   });
-  const tot = total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  return linhas.join('\n') + `\n\n*Total - R$ ${tot}*`;
+
+  const totalMes = lista.reduce((s, c) => s + Number(c.valor), 0);
+  const primeiro = clienteNome ? clienteNome.trim().split(' ')[0] : '';
+  const saudacao = primeiro ? `Olá, ${primeiro}! Seguem suas parcelas deste mês:\n\n` : 'Parcelas deste mês:\n\n';
+  return `${saudacao}${blocos.join('\n\n')}\n\n*Total: R$ ${fmt(totalMes)}*`;
 }
 
 async function abrirVisaoCliente(clienteId, clienteNome) {
@@ -572,7 +601,7 @@ async function abrirVisaoCliente(clienteId, clienteNome) {
     let tel = (cliente.telefone || '').replace(/\D/g, '');
     if (tel.length === 11 || tel.length === 10) tel = '55' + tel;
     const waUrl = tel.length >= 12 && abertas.length
-      ? `https://wa.me/${tel}?text=${encodeURIComponent(_gerarMsgCobranca(abertas, totalAberto))}`
+      ? `https://wa.me/${tel}?text=${encodeURIComponent(_gerarMsgCobranca(abertas, totalAberto, clienteNome))}`
       : null;
 
     const footer = document.getElementById('crVCFooter');
