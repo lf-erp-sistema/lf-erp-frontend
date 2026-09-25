@@ -1104,36 +1104,40 @@ function abrirModalEditarConta(conta) {
   document.getElementById('crEditarContaModal')?.remove();
   const modal = document.createElement('div');
   modal.id = 'crEditarContaModal';
-  modal.className = 'modal-overlay';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:10003;display:flex;align-items:center;justify-content:center;padding:20px';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:10003;display:flex;align-items:center;justify-content:center;padding:20px';
 
-  const hojeISO = todayFortaleza();
-  const vencISO = conta.data_vencimento ? String(conta.data_vencimento).slice(0, 10) : hojeISO;
+  const inp = 'width:100%;padding:9px 12px;border:1.5px solid var(--border-color,#d1d5db);border-radius:10px;font-size:.93rem;background:var(--surface-2,#f9fafb);color:var(--text,#111);outline:none;box-sizing:border-box';
+  const lbl = 'font-size:.72rem;font-weight:700;color:var(--text-muted);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em';
+  const vencISO = conta.data_vencimento ? String(conta.data_vencimento).slice(0, 10) : todayFortaleza();
+  const parc = (conta.parcela && conta.total_parcelas) ? `Parcela ${conta.parcela}/${conta.total_parcelas}` : '';
 
   modal.innerHTML = `
-    <div style="background:var(--surface);border-radius:18px;width:100%;max-width:420px;box-shadow:0 8px 40px rgba(0,0,0,.2);display:flex;flex-direction:column">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px 0">
-        <h3 style="margin:0;font-size:1.05rem;font-weight:900">Editar conta</h3>
-        <button class="icon-button" id="crEditarFechar" type="button"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-      <div style="padding:16px 22px 22px;display:flex;flex-direction:column;gap:14px">
+    <div style="background:var(--surface,#fff);border-radius:20px;width:100%;max-width:440px;box-shadow:0 12px 48px rgba(0,0,0,.22);display:flex;flex-direction:column;overflow:hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px 16px;border-bottom:1px solid var(--border-color,#e5e7eb)">
         <div>
-          <label style="font-size:.78rem;font-weight:700;color:var(--text-muted);display:block;margin-bottom:4px">Descrição</label>
-          <input id="crEditarObs" class="form-control" type="text" value="${escapeHtml(conta.observacao || '')}" placeholder="Ex: Iphone 16 – prestação 1/4" maxlength="200">
+          <h3 style="margin:0;font-size:1rem;font-weight:900;color:var(--text,#111)">Editar conta</h3>
+          ${parc ? `<span style="font-size:.78rem;color:var(--text-muted)">${parc}</span>` : ''}
+        </div>
+        <button class="icon-button" id="crEditarFechar" type="button" style="flex-shrink:0"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div style="padding:20px 24px 24px;display:flex;flex-direction:column;gap:16px">
+        <div>
+          <label style="${lbl}">Descrição</label>
+          <input id="crEditarObs" style="${inp}" type="text" value="${escapeHtml(conta.observacao || '')}" placeholder="Ex: iPhone 15 – parcela 1" maxlength="200" autocomplete="off">
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
           <div>
-            <label style="font-size:.78rem;font-weight:700;color:var(--text-muted);display:block;margin-bottom:4px">Valor (R$)</label>
-            <input id="crEditarValor" class="form-control" type="number" min="0.01" step="0.01" value="${Number(conta.valor || 0).toFixed(2)}" placeholder="0,00">
+            <label style="${lbl}">Valor (R$)</label>
+            <input id="crEditarValor" style="${inp}" type="number" min="0.01" step="0.01" value="${Number(conta.valor || 0).toFixed(2)}">
           </div>
           <div>
-            <label style="font-size:.78rem;font-weight:700;color:var(--text-muted);display:block;margin-bottom:4px">Vencimento</label>
-            <input id="crEditarVenc" class="form-control" type="date" value="${vencISO}">
+            <label style="${lbl}">Vencimento</label>
+            <input id="crEditarVenc" style="${inp}" type="date" value="${vencISO}">
           </div>
         </div>
-        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
+        <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:4px;border-top:1px solid var(--border-color,#e5e7eb)">
           <button class="btn btn-light" id="crEditarCancelar" type="button">Cancelar</button>
-          <button class="btn btn-primary" id="crEditarSalvar" type="button">Salvar</button>
+          <button class="btn btn-primary" id="crEditarSalvar" type="button"><i class="fa-solid fa-floppy-disk"></i> Salvar</button>
         </div>
       </div>
     </div>`;
@@ -1149,31 +1153,61 @@ function abrirModalEditarConta(conta) {
     const btn = document.getElementById('crEditarSalvar');
     const obs  = document.getElementById('crEditarObs')?.value.trim();
     const venc = document.getElementById('crEditarVenc')?.value;
+    const valorRaw = parseFloat(document.getElementById('crEditarValor')?.value || '0');
     if (!obs) { showMessage('Descrição obrigatória.', 'error'); return; }
 
+    // Detecta grupo: parcelas de venda OU contas manuais com mesma descrição e mesmo cliente
+    const temParcelas = Number(conta.total_parcelas || 1) > 1 && !!conta.venda_id;
+    const obsOrig = String(conta.observacao || '').trim().toLowerCase();
+    const outrasDoGrupo = !conta.venda_id && conta.cliente_id && obsOrig
+      ? state.contas.filter(c =>
+          String(c.cliente_id) === String(conta.cliente_id) &&
+          String(c.id) !== String(conta.id) &&
+          String(c.observacao || '').trim().toLowerCase() === obsOrig &&
+          !['pago', 'parcial', 'parcial_atrasado'].includes(String(c.status || ''))
+        )
+      : [];
+
     let escopo = 'apenas_esta';
-    if (Number(conta.total_parcelas || 1) > 1) {
-      escopo = await _escolherEscopo(conta, 'editar');
+    if (temParcelas || outrasDoGrupo.length > 0) {
+      escopo = await _escolherEscopo(conta, 'editar', {
+        mostrarProximas: temParcelas,
+        totalLabel: !temParcelas ? `${outrasDoGrupo.length + 1} conta(s) com esta descrição` : null
+      });
       if (escopo === null) return;
     }
 
     btn.disabled = true;
     try {
-      const valorRaw = parseFloat(document.getElementById('crEditarValor')?.value || '0');
-      await api.request(`/contas-receber/${conta.id}`, {
-        method: 'PUT',
-        body: { observacao: obs, data_vencimento: venc, valor: valorRaw, escopo }
-      });
+      if (temParcelas || escopo === 'apenas_esta') {
+        // Parcelas de venda (escopo via backend) ou única conta manual
+        await api.request(`/contas-receber/${conta.id}`, {
+          method: 'PUT',
+          body: { observacao: obs, data_vencimento: venc, valor: valorRaw, escopo }
+        });
+      } else {
+        // Contas manuais "todas": atualiza cada uma individualmente
+        const ids = [conta.id, ...outrasDoGrupo.map(c => c.id)];
+        for (const cid of ids) {
+          await api.request(`/contas-receber/${cid}`, {
+            method: 'PUT',
+            body: { observacao: obs, data_vencimento: venc, valor: valorRaw, escopo: 'apenas_esta' }
+          });
+        }
+      }
       fechar();
-      const msg = escopo === 'todas' ? 'Todas as parcelas atualizadas.'
-                : escopo === 'esta_e_proximas' ? 'Esta e as próximas atualizadas.'
-                : 'Conta atualizada.';
+      const msg = !temParcelas && escopo === 'todas'
+        ? `${outrasDoGrupo.length + 1} conta(s) atualizadas.`
+        : escopo === 'todas' ? 'Todas as parcelas atualizadas.'
+        : escopo === 'esta_e_proximas' ? 'Esta e as próximas atualizadas.'
+        : 'Conta atualizada.';
       showMessage(msg, 'success');
       await recarregar();
     } catch (err) {
       showMessage(err.message || 'Erro ao salvar.', 'error');
     } finally {
-      btn.disabled = false;
+      const b = document.getElementById('crEditarSalvar');
+      if (b) b.disabled = false;
     }
   };
 }
@@ -1634,15 +1668,30 @@ async function excluirConta(id) {
   const _devedor = _cr?.nome_devedor || _cr?.cliente_nome || null;
   const _val = _cr ? ` (${Number(_cr.valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})` : '';
 
-  // Diálogo de escopo apenas para parcelas de venda (total_parcelas > 1 com venda_id)
+  // Detecta grupo: parcelas de venda OU contas manuais com mesma descrição e mesmo cliente
+  const _temParcelas = Number(_cr?.total_parcelas || 1) > 1 && !!_cr?.venda_id;
+  const _obsOrig = String(_cr?.observacao || '').trim().toLowerCase();
+  const _outrasDoGrupo = !_cr?.venda_id && _cr?.cliente_id && _obsOrig
+    ? state.contas.filter(c =>
+        String(c.cliente_id) === String(_cr.cliente_id) &&
+        String(c.id) !== String(id) &&
+        String(c.observacao || '').trim().toLowerCase() === _obsOrig &&
+        !['pago', 'parcial', 'parcial_atrasado'].includes(String(c.status || ''))
+      )
+    : [];
+
   let escopo = 'apenas_esta';
-  if (Number(_cr?.total_parcelas || 1) > 1 && _cr?.venda_id) {
-    escopo = await _escolherEscopo(_cr, 'excluir', { mostrarProximas: true });
+  if (_temParcelas || _outrasDoGrupo.length > 0) {
+    escopo = await _escolherEscopo(_cr, 'excluir', {
+      mostrarProximas: _temParcelas,
+      totalLabel: !_temParcelas ? `${_outrasDoGrupo.length + 1} conta(s) com esta descrição` : null
+    });
     if (escopo === null) return;
   }
 
+  const _totalLabel = _temParcelas ? _cr?.total_parcelas : (_outrasDoGrupo.length + 1);
   const _msgCr = escopo === 'todas'
-    ? `Excluir TODAS as ${_cr?.total_parcelas} parcelas de "${_devedor}"? Esta ação não pode ser desfeita.`
+    ? `Excluir TODAS as ${_totalLabel} conta(s) de "${_devedor}" com esta descrição? Esta ação não pode ser desfeita.`
     : escopo === 'esta_e_proximas'
       ? `Excluir esta e as próximas parcelas de "${_devedor}"? Esta ação não pode ser desfeita.`
       : _devedor
@@ -1653,12 +1702,23 @@ async function excluirConta(id) {
   if (!confirmar) return;
 
   try {
-    await api.request(`/contas-receber/${id}`, {
-      method: 'DELETE',
-      query: { empresa_id: api.getEmpresaId(), escopo }
-    });
-
-    const msg = escopo === 'todas' ? 'Todas as parcelas excluídas.'
+    if (_temParcelas || escopo === 'apenas_esta') {
+      // Parcelas de venda (escopo via backend) ou conta manual única
+      await api.request(`/contas-receber/${id}`, {
+        method: 'DELETE',
+        query: { empresa_id: api.getEmpresaId(), escopo }
+      });
+    } else {
+      // Contas manuais "todas": exclui cada uma individualmente
+      const ids = [id, ..._outrasDoGrupo.map(c => c.id)];
+      for (const cid of ids) {
+        await api.request(`/contas-receber/${cid}`, {
+          method: 'DELETE',
+          query: { empresa_id: api.getEmpresaId(), escopo: 'apenas_esta' }
+        });
+      }
+    }
+    const msg = escopo === 'todas' ? `${_totalLabel} conta(s) excluída(s).`
               : escopo === 'esta_e_proximas' ? 'Esta e as próximas parcelas excluídas.'
               : 'Conta excluída com sucesso.';
     showMessage(msg, 'success');
