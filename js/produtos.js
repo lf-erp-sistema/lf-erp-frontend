@@ -604,13 +604,66 @@ const ProdutosModule = {
     const s = document.createElement('style');
     s.id = 'prd-nc-styles';
     s.textContent = `
-      .prd-nc-card { width: min(96vw, 600px) !important; max-height: 92vh; }
-      .prd-nc-body { overflow-y: auto; }
-      .prd-nc-section { padding: 16px 20px 0; }
-      .prd-nc-section:last-child { padding-bottom: 20px; }
-      .prd-nc-section-title { font-size: 0.7rem; font-weight: 900; color: var(--text-muted); text-transform: uppercase; letter-spacing: .08em; margin: 0 0 8px; }
-      .prd-nc-card-group { border: 1px solid var(--border); border-radius: 18px; overflow: hidden; background: var(--surface); }
-      .prd-nc-cell { display: flex; align-items: center; gap: 14px; padding: 13px 16px; border-bottom: 1px solid var(--border); background: var(--surface); transition: background .1s; }
+      /* ── Modal container ─────────────────────────────────────── */
+      .prd-nc-card {
+        width: min(96vw, 560px) !important;
+        max-height: 90vh;
+        padding: 0 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        overflow: hidden !important;
+        border-radius: 24px !important;
+        box-shadow: 0 24px 80px rgba(0,0,0,.18), 0 2px 8px rgba(0,0,0,.08) !important;
+      }
+      /* header já tem padding via modal-card__header — apenas ajustar */
+      .prd-nc-card .modal-card__header {
+        padding: 20px 22px 16px !important;
+        border-bottom: 1px solid var(--border) !important;
+        flex-shrink: 0;
+      }
+      .prd-nc-card .modal-card__header h3 {
+        font-size: 1.05rem !important;
+        font-weight: 900 !important;
+        margin: 0 0 2px !important;
+      }
+      .prd-nc-card .modal-card__header p {
+        font-size: 0.8rem !important;
+        color: var(--text-muted) !important;
+        margin: 0 !important;
+      }
+      /* tabs */
+      .prd-nc-card .prod-tabs { flex-shrink: 0; border-bottom: 1px solid var(--border); }
+      /* tab panels e form — crescem e permitem scroll interno */
+      .prd-nc-card .prod-tab-panel { display: none; flex-direction: column; flex: 1; overflow: hidden; min-height: 0; }
+      .prd-nc-card .prod-tab-panel.active { display: flex; }
+      .prd-nc-card form { display: flex; flex-direction: column; flex: 1; overflow: hidden; min-height: 0; }
+      /* body scrollável */
+      .prd-nc-body { flex: 1; overflow-y: auto; min-height: 0; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+      .prd-nc-body::-webkit-scrollbar { width: 4px; }
+      .prd-nc-body::-webkit-scrollbar-track { background: transparent; }
+      .prd-nc-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+      /* footer fixo */
+      .prd-nc-card .modal-card__footer { flex-shrink: 0; padding: 14px 20px !important; border-top: 1px solid var(--border) !important; }
+
+      /* ── Seções ───────────────────────────────────────────────── */
+      .prd-nc-section { padding: 14px 18px 0; }
+      .prd-nc-section:last-child { padding-bottom: 16px; }
+      .prd-nc-section-title {
+        font-size: 0.65rem; font-weight: 900; color: var(--text-muted);
+        text-transform: uppercase; letter-spacing: .1em; margin: 0 0 8px;
+      }
+      .prd-nc-card-group {
+        border: 1px solid var(--border); border-radius: 16px;
+        overflow: hidden; background: var(--surface);
+        box-shadow: 0 1px 3px rgba(0,0,0,.04);
+      }
+
+      /* ── Células ──────────────────────────────────────────────── */
+      .prd-nc-cell {
+        display: flex; align-items: center; gap: 12px;
+        padding: 11px 14px; border-bottom: 1px solid var(--border);
+        background: var(--surface); transition: background .12s;
+      }
       .prd-nc-cell:last-child { border-bottom: none; }
       .prd-nc-cell:focus-within { background: var(--surface-2, rgba(0,0,0,.025)); }
       .prd-nc-cells-2col { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--border); }
@@ -621,28 +674,68 @@ const ProdutosModule = {
       .prd-nc-cells-3col:last-child { border-bottom: none; }
       .prd-nc-cells-3col .prd-nc-cell { border-bottom: none; }
       .prd-nc-cells-3col .prd-nc-cell:not(:last-child) { border-right: 1px solid var(--border); }
-      .prd-nc-cell-ico { width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 0.88rem; background: var(--surface-2); color: var(--text-muted); }
-      .prd-nc-cell-ico--green { background: rgba(22,163,74,.1); color: #16a34a; }
-      .prd-nc-cell-ico--blue { background: rgba(37,99,235,.1); color: #2563eb; }
-      .prd-nc-cell-ico--red { background: rgba(220,38,38,.1); color: #dc2626; }
-      .prd-nc-cell-ico--purple { background: rgba(124,58,237,.1); color: #7c3aed; }
-      .prd-nc-cell-ico--orange { background: rgba(234,88,12,.1); color: #ea580c; }
-      .prd-nc-cell-ico--yellow { background: rgba(202,138,4,.1); color: #ca8a04; }
+
+      /* ── Ícones ───────────────────────────────────────────────── */
+      .prd-nc-cell-ico {
+        width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.82rem; background: var(--surface-2); color: var(--text-muted);
+      }
+      .prd-nc-cell-ico--green  { background: rgba(22,163,74,.12);  color: #16a34a; }
+      .prd-nc-cell-ico--blue   { background: rgba(37,99,235,.12);  color: #2563eb; }
+      .prd-nc-cell-ico--red    { background: rgba(220,38,38,.12);  color: #dc2626; }
+      .prd-nc-cell-ico--purple { background: rgba(124,58,237,.12); color: #7c3aed; }
+      .prd-nc-cell-ico--orange { background: rgba(234,88,12,.12);  color: #ea580c; }
+      .prd-nc-cell-ico--yellow { background: rgba(202,138,4,.12);  color: #ca8a04; }
+
+      /* ── Conteúdo das células ─────────────────────────────────── */
       .prd-nc-cell-content { flex: 1; min-width: 0; }
-      .prd-nc-lbl { display: block; font-size: 0.67rem; font-weight: 900; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 2px; }
+      .prd-nc-lbl {
+        display: block; font-size: 0.63rem; font-weight: 900;
+        color: var(--text-muted); text-transform: uppercase;
+        letter-spacing: .07em; margin-bottom: 1px;
+      }
       .prd-nc-req { color: #dc2626; }
-      .prd-nc-cell-input { border: none !important; outline: none !important; background: transparent !important; padding: 0 !important; font-size: 0.93rem; font-weight: 600; color: var(--text); width: 100%; font-family: inherit; -webkit-appearance: none; appearance: none; }
-      select.prd-nc-cell-input { cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat !important; background-position: right 0 center !important; padding-right: 16px !important; }
-      .prd-nc-valor { font-size: 1.1rem !important; font-weight: 800 !important; letter-spacing: -.02em; }
-      .prd-nc-promo-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 0.9rem; font-weight: 600; }
-      .prd-nc-toggle { position: relative; width: 42px; height: 24px; }
+      .prd-nc-cell-input {
+        border: none !important; outline: none !important;
+        background: transparent !important; padding: 0 !important;
+        font-size: 0.9rem; font-weight: 600; color: var(--text);
+        width: 100%; font-family: inherit;
+        -webkit-appearance: none; appearance: none;
+      }
+      select.prd-nc-cell-input {
+        cursor: pointer;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat !important;
+        background-position: right 0 center !important;
+        padding-right: 16px !important;
+      }
+      .prd-nc-valor { font-size: 1.05rem !important; font-weight: 800 !important; letter-spacing: -.02em; }
+
+      /* ── Toggle promoção ──────────────────────────────────────── */
+      .prd-nc-promo-row {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 11px 14px; border-bottom: 1px solid var(--border);
+        font-size: 0.88rem; font-weight: 600;
+      }
+      .prd-nc-toggle { position: relative; width: 40px; height: 22px; }
       .prd-nc-toggle input { opacity: 0; width: 0; height: 0; }
-      .prd-nc-toggle-slider { position: absolute; inset: 0; background: var(--border); border-radius: 24px; transition: .2s; cursor: pointer; }
-      .prd-nc-toggle-slider::before { content: ''; position: absolute; left: 3px; bottom: 3px; width: 18px; height: 18px; background: #fff; border-radius: 50%; transition: .2s; }
+      .prd-nc-toggle-slider {
+        position: absolute; inset: 0; background: var(--border);
+        border-radius: 22px; transition: .2s; cursor: pointer;
+      }
+      .prd-nc-toggle-slider::before {
+        content: ''; position: absolute; left: 3px; bottom: 3px;
+        width: 16px; height: 16px; background: #fff;
+        border-radius: 50%; transition: .2s;
+      }
       .prd-nc-toggle input:checked + .prd-nc-toggle-slider { background: #16a34a; }
-      .prd-nc-toggle input:checked + .prd-nc-toggle-slider::before { transform: translateX(18px); }
+      .prd-nc-toggle input:checked + .prd-nc-toggle-slider::before { transform: translateX(17px); }
+
+      /* ── Responsivo ───────────────────────────────────────────── */
       @media (max-width: 600px) {
-        .prd-nc-section { padding: 14px 16px 0; }
+        .prd-nc-card { max-height: 95vh !important; border-radius: 20px !important; }
+        .prd-nc-section { padding: 12px 14px 0; }
         .prd-nc-cells-2col, .prd-nc-cells-3col { grid-template-columns: 1fr; }
         .prd-nc-cells-2col .prd-nc-cell:first-child,
         .prd-nc-cells-3col .prd-nc-cell:not(:last-child) { border-right: none; border-bottom: 1px solid var(--border); }
