@@ -1036,7 +1036,7 @@ function renderLinhas() {
       </button>
 
       ${
-        !conta.venda_id && status !== 'pago'
+        !['pago','parcial','parcial_atrasado'].includes(status)
           ? `
             <button
               class="btn-inline btn-inline--danger"
@@ -1058,6 +1058,44 @@ function renderLinhas() {
     `;
     })
     .join('');
+}
+
+function _escolherEscopo(conta, tipo) {
+  return new Promise((resolve) => {
+    document.getElementById('crEscopoModal')?.remove();
+    const m = document.createElement('div');
+    m.id = 'crEscopoModal';
+    m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:11000;display:flex;align-items:center;justify-content:center;padding:20px';
+    const parc = conta.parcela || 1;
+    const total = conta.total_parcelas || 1;
+    const v = tipo === 'excluir' ? 'Excluir' : 'Alterar';
+    m.innerHTML = `
+      <div style="background:var(--surface);border-radius:18px;width:100%;max-width:380px;box-shadow:0 8px 40px rgba(0,0,0,.25);padding:24px;display:flex;flex-direction:column;gap:16px">
+        <div>
+          <h3 style="margin:0 0 4px;font-size:1.05rem;font-weight:900">O que você deseja?</h3>
+          <p style="margin:0;font-size:.85rem;color:var(--text-muted)">Parcela ${parc}/${total}</p>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button class="btn btn-light" id="crEscopoApenas" type="button" style="justify-content:flex-start;gap:10px;text-align:left;padding:12px 16px">
+            <i class="fa-solid fa-check" style="color:var(--success,#22c55e);min-width:16px"></i> ${v} apenas esta
+          </button>
+          <button class="btn btn-light" id="crEscopoProximas" type="button" style="justify-content:flex-start;gap:10px;text-align:left;padding:12px 16px">
+            <i class="fa-regular fa-circle-check" style="color:var(--success,#22c55e);min-width:16px"></i> ${v} esta e as próximas
+          </button>
+          <button class="btn btn-light" id="crEscopoTodas" type="button" style="justify-content:flex-start;gap:10px;text-align:left;padding:12px 16px">
+            <i class="fa-solid fa-check-double" style="color:var(--success,#22c55e);min-width:16px"></i> ${v} todas (${total})
+          </button>
+        </div>
+        <button class="btn btn-light" id="crEscopoCancelar" type="button">Cancelar</button>
+      </div>`;
+    document.body.appendChild(m);
+    const fechar = (val) => { m.remove(); resolve(val); };
+    document.getElementById('crEscopoApenas').onclick   = () => fechar('apenas_esta');
+    document.getElementById('crEscopoProximas').onclick = () => fechar('esta_e_proximas');
+    document.getElementById('crEscopoTodas').onclick    = () => fechar('todas');
+    document.getElementById('crEscopoCancelar').onclick = () => fechar(null);
+    m.addEventListener('click', (e) => { if (e.target === m) fechar(null); });
+  });
 }
 
 function abrirModalEditarConta(conta) {
@@ -1110,15 +1148,25 @@ function abrirModalEditarConta(conta) {
     const obs  = document.getElementById('crEditarObs')?.value.trim();
     const venc = document.getElementById('crEditarVenc')?.value;
     if (!obs) { showMessage('Descrição obrigatória.', 'error'); return; }
+
+    let escopo = 'apenas_esta';
+    if (Number(conta.total_parcelas || 1) > 1) {
+      escopo = await _escolherEscopo(conta, 'editar');
+      if (escopo === null) return;
+    }
+
     btn.disabled = true;
     try {
       const valorRaw = parseFloat(document.getElementById('crEditarValor')?.value || '0');
       await api.request(`/contas-receber/${conta.id}`, {
         method: 'PUT',
-        body: { observacao: obs, data_vencimento: venc, valor: valorRaw }
+        body: { observacao: obs, data_vencimento: venc, valor: valorRaw, escopo }
       });
       fechar();
-      showMessage('Conta atualizada.', 'success');
+      const msg = escopo === 'todas' ? 'Todas as parcelas atualizadas.'
+                : escopo === 'esta_e_proximas' ? 'Esta e as próximas atualizadas.'
+                : 'Conta atualizada.';
+      showMessage(msg, 'success');
       await recarregar();
     } catch (err) {
       showMessage(err.message || 'Erro ao salvar.', 'error');
@@ -1583,26 +1631,37 @@ async function excluirConta(id) {
   const _cr = state.contas.find(c => String(c.id) === String(id));
   const _devedor = _cr?.nome_devedor || _cr?.cliente_nome || null;
   const _val = _cr ? ` (${Number(_cr.valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})` : '';
-  const _msgCr = _devedor ? `Excluir conta de "${_devedor}"${_val}? Esta ação não pode ser desfeita.` : 'Excluir esta conta manual? Esta ação não pode ser desfeita.';
-  const confirmar = await confirmarAcao(_msgCr, 'Excluir', 'danger');
 
+  let escopo = 'apenas_esta';
+  if (Number(_cr?.total_parcelas || 1) > 1) {
+    escopo = await _escolherEscopo(_cr, 'excluir');
+    if (escopo === null) return;
+  }
+
+  const _msgCr = escopo === 'todas'
+    ? `Excluir TODAS as ${_cr?.total_parcelas} parcelas de "${_devedor}"? Esta ação não pode ser desfeita.`
+    : escopo === 'esta_e_proximas'
+      ? `Excluir esta e as próximas parcelas de "${_devedor}"? Esta ação não pode ser desfeita.`
+      : _devedor
+        ? `Excluir conta de "${_devedor}"${_val}? Esta ação não pode ser desfeita.`
+        : 'Excluir esta conta? Esta ação não pode ser desfeita.';
+
+  const confirmar = await confirmarAcao(_msgCr, 'Excluir', 'danger');
   if (!confirmar) return;
 
   try {
     await api.request(`/contas-receber/${id}`, {
       method: 'DELETE',
-      query: { empresa_id: api.getEmpresaId() }
+      query: { empresa_id: api.getEmpresaId(), escopo }
     });
 
-    showMessage('Conta manual excluída com sucesso.', 'success');
-
+    const msg = escopo === 'todas' ? 'Todas as parcelas excluídas.'
+              : escopo === 'esta_e_proximas' ? 'Esta e as próximas parcelas excluídas.'
+              : 'Conta excluída com sucesso.';
+    showMessage(msg, 'success');
     await recarregar();
   } catch (error) {
-    console.error('Erro ao excluir conta manual:', error);
-
-    const message = buildFriendlyError(error);
-
-    showMessage(message, 'error');
+    showMessage(buildFriendlyError(error), 'error');
   }
 }
 
