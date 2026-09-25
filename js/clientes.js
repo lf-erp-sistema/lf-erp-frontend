@@ -904,9 +904,7 @@ const ClientesModule = {
       const data = await api.request(`/clientes/${clienteId}/extrato`, { method: 'GET', query: { empresa_id: api.getEmpresaId() } });
       this._extratoAtual = data;
 
-      const hoje = new Date().toISOString().slice(0, 7);
-      const meses = [...new Set((data.parcelas || []).map(p => String(p.data_vencimento || '').slice(0, 7)).filter(Boolean))].sort();
-      let mesAtivo = meses.includes(hoje) ? hoje : (meses[meses.length - 1] || hoje);
+      let mesAtivo = new Date().toISOString().slice(0, 7);
 
       this._renderExtratoComMes(data, corpo, subtitulo, mesAtivo);
 
