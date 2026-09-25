@@ -606,8 +606,8 @@ const ProdutosModule = {
     s.textContent = `
       /* ── Modal container ─────────────────────────────────────── */
       .prd-nc-card {
-        width: min(96vw, 560px) !important;
-        max-height: 90vh;
+        width: min(96vw, 780px) !important;
+        max-height: 92vh;
         padding: 0 !important;
         display: flex !important;
         flex-direction: column !important;
@@ -615,53 +615,59 @@ const ProdutosModule = {
         border-radius: 24px !important;
         box-shadow: 0 24px 80px rgba(0,0,0,.18), 0 2px 8px rgba(0,0,0,.08) !important;
       }
-      /* header já tem padding via modal-card__header — apenas ajustar */
+      /* Header */
       .prd-nc-card .modal-card__header {
-        padding: 20px 22px 16px !important;
+        padding: 22px 26px 18px !important;
         border-bottom: 1px solid var(--border) !important;
         flex-shrink: 0;
       }
       .prd-nc-card .modal-card__header h3 {
-        font-size: 1.05rem !important;
-        font-weight: 900 !important;
-        margin: 0 0 2px !important;
+        font-size: 1.1rem !important; font-weight: 900 !important; margin: 0 0 3px !important;
       }
       .prd-nc-card .modal-card__header p {
-        font-size: 0.8rem !important;
-        color: var(--text-muted) !important;
-        margin: 0 !important;
+        font-size: 0.82rem !important; color: var(--text-muted) !important; margin: 0 !important;
       }
-      /* tabs */
+      /* Tabs */
       .prd-nc-card .prod-tabs { flex-shrink: 0; border-bottom: 1px solid var(--border); }
-      /* tab panels e form — crescem e permitem scroll interno */
+      /* Tab panels e form — estrutura flex sem overflow externo */
       .prd-nc-card .prod-tab-panel { display: none; flex-direction: column; flex: 1; overflow: hidden; min-height: 0; }
       .prd-nc-card .prod-tab-panel.active { display: flex; }
       .prd-nc-card form { display: flex; flex-direction: column; flex: 1; overflow: hidden; min-height: 0; }
-      /* body scrollável */
-      .prd-nc-body { flex: 1; overflow-y: auto; min-height: 0; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
-      .prd-nc-body::-webkit-scrollbar { width: 4px; }
-      .prd-nc-body::-webkit-scrollbar-track { background: transparent; }
-      .prd-nc-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-      /* footer fixo */
-      .prd-nc-card .modal-card__footer { flex-shrink: 0; padding: 14px 20px !important; border-top: 1px solid var(--border) !important; }
+      /* Body: grid 2 colunas — Identificação à esq, Preços+Estoque à dir — sem overflow */
+      .prd-nc-body {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        align-items: start;
+        gap: 0;
+        padding: 20px 24px;
+        column-gap: 20px;
+        overflow: visible;
+      }
+      /* Identificação (1ª seção) — coluna esquerda, 2 linhas */
+      .prd-nc-body > .prd-nc-section:nth-child(1) { grid-column: 1; grid-row: 1 / span 2; }
+      /* Preços (2ª seção) — coluna direita linha 1 */
+      .prd-nc-body > .prd-nc-section:nth-child(2) { grid-column: 2; grid-row: 1; }
+      /* Estoque (3ª seção) — coluna direita linha 2 */
+      .prd-nc-body > .prd-nc-section:nth-child(3) { grid-column: 2; grid-row: 2; margin-top: 16px; }
+      /* Footer fixo */
+      .prd-nc-card .modal-card__footer { flex-shrink: 0; padding: 16px 24px !important; border-top: 1px solid var(--border) !important; }
 
       /* ── Seções ───────────────────────────────────────────────── */
-      .prd-nc-section { padding: 14px 18px 0; }
-      .prd-nc-section:last-child { padding-bottom: 16px; }
+      .prd-nc-section { padding: 0; }
       .prd-nc-section-title {
         font-size: 0.65rem; font-weight: 900; color: var(--text-muted);
-        text-transform: uppercase; letter-spacing: .1em; margin: 0 0 8px;
+        text-transform: uppercase; letter-spacing: .1em; margin: 0 0 10px;
       }
       .prd-nc-card-group {
         border: 1px solid var(--border); border-radius: 16px;
         overflow: hidden; background: var(--surface);
-        box-shadow: 0 1px 3px rgba(0,0,0,.04);
+        box-shadow: 0 1px 4px rgba(0,0,0,.05);
       }
 
       /* ── Células ──────────────────────────────────────────────── */
       .prd-nc-cell {
-        display: flex; align-items: center; gap: 12px;
-        padding: 11px 14px; border-bottom: 1px solid var(--border);
+        display: flex; align-items: center; gap: 13px;
+        padding: 13px 16px; border-bottom: 1px solid var(--border);
         background: var(--surface); transition: background .12s;
       }
       .prd-nc-cell:last-child { border-bottom: none; }
@@ -677,9 +683,9 @@ const ProdutosModule = {
 
       /* ── Ícones ───────────────────────────────────────────────── */
       .prd-nc-cell-ico {
-        width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
+        width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
         display: flex; align-items: center; justify-content: center;
-        font-size: 0.82rem; background: var(--surface-2); color: var(--text-muted);
+        font-size: 0.85rem; background: var(--surface-2); color: var(--text-muted);
       }
       .prd-nc-cell-ico--green  { background: rgba(22,163,74,.12);  color: #16a34a; }
       .prd-nc-cell-ico--blue   { background: rgba(37,99,235,.12);  color: #2563eb; }
@@ -688,54 +694,60 @@ const ProdutosModule = {
       .prd-nc-cell-ico--orange { background: rgba(234,88,12,.12);  color: #ea580c; }
       .prd-nc-cell-ico--yellow { background: rgba(202,138,4,.12);  color: #ca8a04; }
 
-      /* ── Conteúdo das células ─────────────────────────────────── */
+      /* ── Conteúdo ─────────────────────────────────────────────── */
       .prd-nc-cell-content { flex: 1; min-width: 0; }
       .prd-nc-lbl {
         display: block; font-size: 0.63rem; font-weight: 900;
         color: var(--text-muted); text-transform: uppercase;
-        letter-spacing: .07em; margin-bottom: 1px;
+        letter-spacing: .07em; margin-bottom: 2px;
       }
       .prd-nc-req { color: #dc2626; }
       .prd-nc-cell-input {
         border: none !important; outline: none !important;
         background: transparent !important; padding: 0 !important;
-        font-size: 0.9rem; font-weight: 600; color: var(--text);
-        width: 100%; font-family: inherit;
-        -webkit-appearance: none; appearance: none;
+        font-size: 0.93rem; font-weight: 600; color: var(--text);
+        width: 100%; font-family: inherit; -webkit-appearance: none; appearance: none;
       }
       select.prd-nc-cell-input {
         cursor: pointer;
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-        background-repeat: no-repeat !important;
-        background-position: right 0 center !important;
-        padding-right: 16px !important;
+        background-repeat: no-repeat !important; background-position: right 0 center !important; padding-right: 16px !important;
       }
-      .prd-nc-valor { font-size: 1.05rem !important; font-weight: 800 !important; letter-spacing: -.02em; }
+      .prd-nc-valor { font-size: 1.08rem !important; font-weight: 800 !important; letter-spacing: -.02em; }
 
       /* ── Toggle promoção ──────────────────────────────────────── */
       .prd-nc-promo-row {
         display: flex; align-items: center; justify-content: space-between;
-        padding: 11px 14px; border-bottom: 1px solid var(--border);
-        font-size: 0.88rem; font-weight: 600;
+        padding: 13px 16px; border-bottom: 1px solid var(--border);
+        font-size: 0.9rem; font-weight: 600;
       }
-      .prd-nc-toggle { position: relative; width: 40px; height: 22px; }
+      .prd-nc-toggle { position: relative; width: 42px; height: 24px; }
       .prd-nc-toggle input { opacity: 0; width: 0; height: 0; }
       .prd-nc-toggle-slider {
         position: absolute; inset: 0; background: var(--border);
-        border-radius: 22px; transition: .2s; cursor: pointer;
+        border-radius: 24px; transition: .2s; cursor: pointer;
       }
       .prd-nc-toggle-slider::before {
         content: ''; position: absolute; left: 3px; bottom: 3px;
-        width: 16px; height: 16px; background: #fff;
-        border-radius: 50%; transition: .2s;
+        width: 18px; height: 18px; background: #fff; border-radius: 50%; transition: .2s;
       }
       .prd-nc-toggle input:checked + .prd-nc-toggle-slider { background: #16a34a; }
-      .prd-nc-toggle input:checked + .prd-nc-toggle-slider::before { transform: translateX(17px); }
+      .prd-nc-toggle input:checked + .prd-nc-toggle-slider::before { transform: translateX(18px); }
 
       /* ── Responsivo ───────────────────────────────────────────── */
-      @media (max-width: 600px) {
+      @media (max-width: 680px) {
         .prd-nc-card { max-height: 95vh !important; border-radius: 20px !important; }
-        .prd-nc-section { padding: 12px 14px 0; }
+        .prd-nc-body {
+          grid-template-columns: 1fr !important;
+          overflow-y: auto !important;
+          scrollbar-width: thin;
+        }
+        .prd-nc-body > .prd-nc-section:nth-child(1),
+        .prd-nc-body > .prd-nc-section:nth-child(2),
+        .prd-nc-body > .prd-nc-section:nth-child(3) {
+          grid-column: 1 !important; grid-row: auto !important; margin-top: 0 !important;
+        }
+        .prd-nc-body > .prd-nc-section + .prd-nc-section { margin-top: 16px; }
         .prd-nc-cells-2col, .prd-nc-cells-3col { grid-template-columns: 1fr; }
         .prd-nc-cells-2col .prd-nc-cell:first-child,
         .prd-nc-cells-3col .prd-nc-cell:not(:last-child) { border-right: none; border-bottom: 1px solid var(--border); }
