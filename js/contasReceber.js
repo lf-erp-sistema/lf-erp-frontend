@@ -22,7 +22,7 @@ const state = {
     cliente_id: '',
     busca: ''
   },
-  periodo: { preset: '30dias', dataInicial: '', dataFinal: '' },
+  periodo: { preset: 'mesAtual', dataInicial: '', dataFinal: '' },
   pagina: 1,
   totalPaginas: 1,
   totalRegistros: 0,
@@ -760,6 +760,11 @@ function render() {
           </div>
 
           <div class="cr-primary-actions">
+            <div id="crMesNav" style="display:flex;align-items:center;gap:2px;border:1px solid var(--border-color,#e5e7eb);border-radius:20px;padding:3px 10px;background:var(--surface,#fff);flex-shrink:0">
+              <button type="button" class="icon-button" id="crMesAnterior" style="width:26px;height:26px;font-size:.8rem;border-radius:50%"><i class="fa-solid fa-chevron-left"></i></button>
+              <span id="crMesNavLabel" style="font-weight:700;min-width:130px;text-align:center;font-size:.88rem">${_getMesNavLabel()}</span>
+              <button type="button" class="icon-button" id="crMesSeguinte" style="width:26px;height:26px;font-size:.8rem;border-radius:50%"><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
             <button class="btn btn-primary" id="btnNovaContaManual" type="button">
               <i class="fa-solid fa-plus"></i> Conta manual
             </button>
@@ -767,14 +772,14 @@ function render() {
               const fpCount = [
                 state.filtros.status,
                 state.filtros.cliente_id,
-                state.periodo.preset !== '30dias' ? 'period' : '',
+                state.periodo.preset !== 'mesAtual' ? 'period' : '',
                 (state.ordemDir !== 'desc' || state.ordem !== 'data_vencimento') ? 'sort' : ''
               ].filter(Boolean).length;
               return `<button class="btn ${fpCount ? 'btn-primary cr-filtros-trigger' : 'btn-light'}" id="btnFiltrosPanel" type="button">
                 <i class="fa-solid fa-sliders"></i> Filtros${fpCount ? `<span class="cr-filtros-badge">${fpCount}</span>` : ''}
               </button>`;
             })()}
-            <button class="btn${(state.filtros.status || state.filtros.cliente_id || state.filtros.busca || state.periodo.preset !== '30dias') ? ' btn-warning' : ' btn-light'}" id="btnLimparFiltrosContasReceber" type="button">
+            <button class="btn${(state.filtros.status || state.filtros.cliente_id || state.filtros.busca || state.periodo.preset !== 'mesAtual') ? ' btn-warning' : ' btn-light'}" id="btnLimparFiltrosContasReceber" type="button">
               <i class="fa-solid fa-eraser"></i> Limpar
             </button>
             <button class="btn btn-light cr-util-btn" id="btnExportarCSV" type="button" title="Exportar CSV">
@@ -1123,6 +1128,28 @@ function abrirModalEditarConta(conta) {
   };
 }
 
+function _getMesNavLabel() {
+  const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const d = state.periodo.dataInicial || todayFortaleza();
+  const [y, m] = d.slice(0, 7).split('-').map(Number);
+  return `${MESES[m - 1]} ${y}`;
+}
+
+function _navegarMes(delta) {
+  const d = state.periodo.dataInicial || todayFortaleza();
+  const [y, m] = d.slice(0, 7).split('-').map(Number);
+  const nova = new Date(y, m - 1 + delta, 1);
+  const novoAno = nova.getFullYear();
+  const novoMes = nova.getMonth() + 1;
+  const ini = `${novoAno}-${String(novoMes).padStart(2,'0')}-01`;
+  const ultimo = new Date(novoAno, novoMes, 0).getDate();
+  const fim = `${novoAno}-${String(novoMes).padStart(2,'0')}-${String(ultimo).padStart(2,'0')}`;
+  state.periodo = { preset: 'personalizado', dataInicial: ini, dataFinal: fim };
+  state.pagina = 1;
+  salvarFiltrosCR();
+  recarregar();
+}
+
 function bindEventos() {
   const btnAtualizar = document.getElementById('btnAtualizarContasReceber');
   const btnNovaContaManual = document.getElementById('btnNovaContaManual');
@@ -1133,6 +1160,9 @@ function bindEventos() {
     await recarregar();
   });
 
+  document.getElementById('crMesAnterior')?.addEventListener('click', () => _navegarMes(-1));
+  document.getElementById('crMesSeguinte')?.addEventListener('click', () => _navegarMes(+1));
+
   btnNovaContaManual?.addEventListener('click', () => {
     abrirModalContaManual();
   });
@@ -1141,8 +1171,8 @@ function bindEventos() {
     state.filtros = { status: '', cliente_id: '', busca: '' };
     state.ordem = 'data_vencimento';
     state.ordemDir = 'desc';
-    state.periodo.preset = '30dias';
-    const { dataInicial, dataFinal } = calcPeriodoLocal('30dias');
+    state.periodo.preset = 'mesAtual';
+    const { dataInicial, dataFinal } = calcPeriodoLocal('mesAtual');
     state.periodo.dataInicial = dataInicial;
     state.periodo.dataFinal   = dataFinal;
     state.pagina = 1;
