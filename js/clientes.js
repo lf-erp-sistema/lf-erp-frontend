@@ -860,7 +860,7 @@ const ClientesModule = {
       el.className = 'modal-overlay hidden';
       el.id = 'extratoClienteModal';
       el.innerHTML = `
-        <div class="modal-card" style="max-width:780px;width:95vw">
+        <div class="modal-card" style="max-width:1060px;width:95vw">
           <div class="modal-card__header">
             <div>
               <h3 id="extratoClienteTitulo">Extrato</h3>
@@ -1015,7 +1015,7 @@ const ClientesModule = {
         : `<div class="table-wrapper">
            <table class="data-table">
              <thead><tr>
-               <th>Venda</th><th>Parcela</th><th>Vencimento</th>
+               <th>Venda</th><th>Parcela</th><th>Produto / Descrição</th><th>Vencimento</th>
                <th class="text-right">Valor</th><th class="text-right">Atualizado</th>
                <th>Pagamento</th><th>Status</th>
              </tr></thead>
@@ -1024,6 +1024,7 @@ const ClientesModule = {
                  <tr>
                    <td><small>#${escapeHtml(String(p.venda_id || '-'))}</small></td>
                    <td>${p.parcela}/${p.total_parcelas}</td>
+                   <td style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${escapeHtml(p.observacao || '')}">${escapeHtml(p.observacao || '-')}</td>
                    <td>${dt(p.data_vencimento)}${p.dias_atraso > 0 ? `<br><small style="color:var(--danger,#e53e3e)">${p.dias_atraso}d atraso</small>` : ''}</td>
                    <td class="text-right">${cur(p.valor)}</td>
                    <td class="text-right">${p.valor_atualizado !== p.valor ? `<strong>${cur(p.valor_atualizado)}</strong>` : cur(p.valor)}</td>
@@ -1072,7 +1073,7 @@ const ClientesModule = {
       </div>
       <table>
         <thead><tr>
-          <th>Venda</th><th>Parcela</th><th>Vencimento</th>
+          <th>Venda</th><th>Parcela</th><th>Produto / Descrição</th><th>Vencimento</th>
           <th class="text-right">Valor</th><th class="text-right">Atualizado</th>
           <th>Pagamento</th><th>Status</th>
         </tr></thead>
@@ -1081,6 +1082,7 @@ const ClientesModule = {
             <tr>
               <td>#${p.venda_id || '-'}</td>
               <td>${p.parcela}/${p.total_parcelas}</td>
+              <td>${escapeHtml(p.observacao || '-')}</td>
               <td>${dt(p.data_vencimento)}</td>
               <td class="text-right">${cur(p.valor)}</td>
               <td class="text-right">${cur(p.valor_atualizado)}</td>
