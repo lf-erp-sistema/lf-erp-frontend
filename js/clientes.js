@@ -866,6 +866,11 @@ const ClientesModule = {
               <h3 id="extratoClienteTitulo">Extrato</h3>
               <p id="extratoClienteSubtitulo" style="color:var(--text-muted);font-size:.9rem"></p>
             </div>
+            <div style="display:flex;align-items:center;gap:2px;border:1px solid var(--border);border-radius:20px;padding:3px 10px">
+              <button type="button" class="icon-button" id="extratoMesAnterior" style="width:26px;height:26px;font-size:.8rem"><i class="fa-solid fa-chevron-left"></i></button>
+              <span id="extratoMesLabel" style="font-weight:700;min-width:130px;text-align:center;font-size:.88rem"></span>
+              <button type="button" class="icon-button" id="extratoMesSeguinte" style="width:26px;height:26px;font-size:.8rem"><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
             <div style="display:flex;gap:8px;align-items:center">
               <button type="button" class="btn btn-light btn-sm" id="extratoClienteImprimirBtn">
                 <i class="fa-solid fa-print"></i> Imprimir
@@ -898,10 +903,46 @@ const ClientesModule = {
     try {
       const data = await api.request(`/clientes/${clienteId}/extrato`, { method: 'GET', query: { empresa_id: api.getEmpresaId() } });
       this._extratoAtual = data;
-      this._renderExtratoCorpo(data, corpo, subtitulo);
+
+      const hoje = new Date().toISOString().slice(0, 7);
+      const meses = [...new Set((data.parcelas || []).map(p => String(p.data_vencimento || '').slice(0, 7)).filter(Boolean))].sort();
+      let mesAtivo = meses.includes(hoje) ? hoje : (meses[meses.length - 1] || hoje);
+
+      this._renderExtratoComMes(data, corpo, subtitulo, mesAtivo);
+
+      document.getElementById('extratoMesAnterior').onclick = () => {
+        const [y, m] = mesAtivo.split('-').map(Number);
+        const prev = new Date(y, m - 2, 1);
+        mesAtivo = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}`;
+        this._renderExtratoComMes(data, corpo, subtitulo, mesAtivo);
+      };
+      document.getElementById('extratoMesSeguinte').onclick = () => {
+        const [y, m] = mesAtivo.split('-').map(Number);
+        const next = new Date(y, m, 1);
+        mesAtivo = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}`;
+        this._renderExtratoComMes(data, corpo, subtitulo, mesAtivo);
+      };
     } catch (err) {
       if (corpo) corpo.innerHTML = `<div class="module-feedback module-feedback--error">${escapeHtml(err.message || 'Erro ao carregar extrato')}</div>`;
     }
+  },
+
+  _renderExtratoComMes(data, corpo, subtitulo, mes) {
+    const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    const [y, m] = mes.split('-').map(Number);
+    const label = document.getElementById('extratoMesLabel');
+    if (label) label.textContent = `${MESES[m - 1]} ${y}`;
+
+    const N = (v) => Number(v || 0);
+    const parcelas = (data.parcelas || []).filter(p => String(p.data_vencimento || '').slice(0, 7) === mes);
+    const resumo = {
+      qtd_pendente:   parcelas.filter(p => ['pendente','atrasado','parcial','parcial_atrasado'].includes(p.status)).length,
+      total_aberto:   parcelas.filter(p => ['pendente','parcial'].includes(p.status)).reduce((s, p) => s + N(p.valor_atualizado || p.valor), 0),
+      total_atrasado: parcelas.filter(p => ['atrasado','parcial_atrasado'].includes(p.status)).reduce((s, p) => s + N(p.valor_atualizado || p.valor), 0),
+      total_pago:     parcelas.filter(p => p.status === 'pago').reduce((s, p) => s + N(p.valor_pago || p.valor), 0),
+      total_parcial:  parcelas.filter(p => ['parcial','parcial_atrasado'].includes(p.status)).reduce((s, p) => s + N(p.valor_pago || 0), 0),
+    };
+    this._renderExtratoCorpo({ ...data, parcelas, resumo }, corpo, subtitulo);
   },
 
   _renderExtratoCorpo(data, corpo, subtitulo) {
