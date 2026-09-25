@@ -1076,9 +1076,15 @@ function abrirModalEditarConta(conta) {
           <label style="font-size:.78rem;font-weight:700;color:var(--text-muted);display:block;margin-bottom:4px">Descrição</label>
           <input id="crEditarObs" class="form-control" type="text" value="${escapeHtml(conta.observacao || '')}" placeholder="Ex: Iphone 16 – prestação 1/4" maxlength="200">
         </div>
-        <div>
-          <label style="font-size:.78rem;font-weight:700;color:var(--text-muted);display:block;margin-bottom:4px">Vencimento</label>
-          <input id="crEditarVenc" class="form-control" type="date" value="${vencISO}">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div>
+            <label style="font-size:.78rem;font-weight:700;color:var(--text-muted);display:block;margin-bottom:4px">Valor (R$)</label>
+            <input id="crEditarValor" class="form-control" type="number" min="0.01" step="0.01" value="${Number(conta.valor || 0).toFixed(2)}" placeholder="0,00">
+          </div>
+          <div>
+            <label style="font-size:.78rem;font-weight:700;color:var(--text-muted);display:block;margin-bottom:4px">Vencimento</label>
+            <input id="crEditarVenc" class="form-control" type="date" value="${vencISO}">
+          </div>
         </div>
         <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
           <button class="btn btn-light" id="crEditarCancelar" type="button">Cancelar</button>
@@ -1101,9 +1107,10 @@ function abrirModalEditarConta(conta) {
     if (!obs) { showMessage('Descrição obrigatória.', 'error'); return; }
     btn.disabled = true;
     try {
+      const valorRaw = parseFloat(document.getElementById('crEditarValor')?.value || '0');
       await api.request(`/contas-receber/${conta.id}`, {
         method: 'PUT',
-        body: { observacao: obs, data_vencimento: venc }
+        body: { observacao: obs, data_vencimento: venc, valor: valorRaw }
       });
       fechar();
       showMessage('Conta atualizada.', 'success');
