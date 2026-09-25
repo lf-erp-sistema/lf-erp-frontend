@@ -606,7 +606,7 @@ const ProdutosModule = {
     s.textContent = `
       /* ── Modal container ─────────────────────────────────────── */
       .prd-nc-card {
-        width: min(96vw, 780px) !important;
+        width: min(94vw, 900px) !important;
         max-height: 92vh;
         padding: 0 !important;
         display: flex !important;
@@ -617,45 +617,43 @@ const ProdutosModule = {
       }
       /* Header */
       .prd-nc-card .modal-card__header {
-        padding: 22px 26px 18px !important;
+        padding: 22px 28px 18px !important;
         border-bottom: 1px solid var(--border) !important;
         flex-shrink: 0;
       }
       .prd-nc-card .modal-card__header h3 {
-        font-size: 1.1rem !important; font-weight: 900 !important; margin: 0 0 3px !important;
+        font-size: 1.12rem !important; font-weight: 900 !important; margin: 0 0 3px !important;
       }
       .prd-nc-card .modal-card__header p {
         font-size: 0.82rem !important; color: var(--text-muted) !important; margin: 0 !important;
       }
       /* Tabs */
       .prd-nc-card .prod-tabs { flex-shrink: 0; border-bottom: 1px solid var(--border); }
-      /* Tab panels e form — estrutura flex sem overflow externo */
+      /* Tab panels e form */
       .prd-nc-card .prod-tab-panel { display: none; flex-direction: column; flex: 1; overflow: hidden; min-height: 0; }
       .prd-nc-card .prod-tab-panel.active { display: flex; }
       .prd-nc-card form { display: flex; flex-direction: column; flex: 1; overflow: hidden; min-height: 0; }
-      /* Body: grid 2 colunas — Identificação à esq, Preços+Estoque à dir — sem overflow */
+      /* Body: grid 2 colunas */
       .prd-nc-body {
         display: grid;
         grid-template-columns: 1fr 1fr;
         align-items: start;
-        gap: 0;
-        padding: 20px 24px;
-        column-gap: 20px;
+        column-gap: 24px;
+        padding: 22px 28px;
         overflow: visible;
       }
-      /* Identificação (1ª seção) — coluna esquerda, 2 linhas */
       .prd-nc-body > .prd-nc-section:nth-child(1) { grid-column: 1; grid-row: 1 / span 2; }
-      /* Preços (2ª seção) — coluna direita linha 1 */
       .prd-nc-body > .prd-nc-section:nth-child(2) { grid-column: 2; grid-row: 1; }
-      /* Estoque (3ª seção) — coluna direita linha 2 */
-      .prd-nc-body > .prd-nc-section:nth-child(3) { grid-column: 2; grid-row: 2; margin-top: 16px; }
-      /* Footer fixo */
-      .prd-nc-card .modal-card__footer { flex-shrink: 0; padding: 16px 24px !important; border-top: 1px solid var(--border) !important; }
+      .prd-nc-body > .prd-nc-section:nth-child(3) { grid-column: 2; grid-row: 2; margin-top: 18px; }
+      /* Footer */
+      .prd-nc-card .modal-card__footer {
+        flex-shrink: 0; padding: 16px 28px !important; border-top: 1px solid var(--border) !important;
+      }
 
       /* ── Seções ───────────────────────────────────────────────── */
       .prd-nc-section { padding: 0; }
       .prd-nc-section-title {
-        font-size: 0.65rem; font-weight: 900; color: var(--text-muted);
+        font-size: 0.64rem; font-weight: 900; color: var(--text-muted);
         text-transform: uppercase; letter-spacing: .1em; margin: 0 0 10px;
       }
       .prd-nc-card-group {
@@ -667,19 +665,34 @@ const ProdutosModule = {
       /* ── Células ──────────────────────────────────────────────── */
       .prd-nc-cell {
         display: flex; align-items: center; gap: 13px;
-        padding: 13px 16px; border-bottom: 1px solid var(--border);
+        padding: 14px 16px; border-bottom: 1px solid var(--border);
         background: var(--surface); transition: background .12s;
+        min-width: 0;
       }
       .prd-nc-cell:last-child { border-bottom: none; }
       .prd-nc-cell:focus-within { background: var(--surface-2, rgba(0,0,0,.025)); }
+
+      /* 2 colunas */
       .prd-nc-cells-2col { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--border); }
       .prd-nc-cells-2col:last-child { border-bottom: none; }
-      .prd-nc-cells-2col .prd-nc-cell { border-bottom: none; }
+      .prd-nc-cells-2col .prd-nc-cell { border-bottom: none; min-width: 0; }
       .prd-nc-cells-2col .prd-nc-cell:first-child { border-right: 1px solid var(--border); }
-      .prd-nc-cells-3col { display: grid; grid-template-columns: 1fr 1fr 1fr; border-bottom: 1px solid var(--border); }
+
+      /* 3 colunas → Custo|Margem na linha 1, Preço na linha 2 (full-width, destaque) */
+      .prd-nc-cells-3col { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--border); }
       .prd-nc-cells-3col:last-child { border-bottom: none; }
-      .prd-nc-cells-3col .prd-nc-cell { border-bottom: none; }
-      .prd-nc-cells-3col .prd-nc-cell:not(:last-child) { border-right: 1px solid var(--border); }
+      .prd-nc-cells-3col .prd-nc-cell { border-bottom: none; min-width: 0; }
+      .prd-nc-cells-3col .prd-nc-cell:nth-child(1) { border-right: 1px solid var(--border); }
+      .prd-nc-cells-3col .prd-nc-cell:nth-child(3) {
+        grid-column: 1 / -1;
+        border-top: 1px solid var(--border);
+        padding: 16px 16px;
+      }
+      .prd-nc-cells-3col .prd-nc-cell:nth-child(3) .prd-nc-valor {
+        font-size: 1.4rem !important;
+        font-weight: 900 !important;
+        color: var(--text) !important;
+      }
 
       /* ── Ícones ───────────────────────────────────────────────── */
       .prd-nc-cell-ico {
@@ -694,26 +707,29 @@ const ProdutosModule = {
       .prd-nc-cell-ico--orange { background: rgba(234,88,12,.12);  color: #ea580c; }
       .prd-nc-cell-ico--yellow { background: rgba(202,138,4,.12);  color: #ca8a04; }
 
-      /* ── Conteúdo ─────────────────────────────────────────────── */
-      .prd-nc-cell-content { flex: 1; min-width: 0; }
+      /* ── Conteúdo das células ─────────────────────────────────── */
+      .prd-nc-cell-content { flex: 1; min-width: 0; overflow: hidden; }
       .prd-nc-lbl {
         display: block; font-size: 0.63rem; font-weight: 900;
         color: var(--text-muted); text-transform: uppercase;
         letter-spacing: .07em; margin-bottom: 2px;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
       }
       .prd-nc-req { color: #dc2626; }
       .prd-nc-cell-input {
         border: none !important; outline: none !important;
         background: transparent !important; padding: 0 !important;
         font-size: 0.93rem; font-weight: 600; color: var(--text);
-        width: 100%; font-family: inherit; -webkit-appearance: none; appearance: none;
+        width: 100%; font-family: inherit;
+        -webkit-appearance: none; appearance: none;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
       }
       select.prd-nc-cell-input {
-        cursor: pointer;
+        cursor: pointer; white-space: normal;
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
         background-repeat: no-repeat !important; background-position: right 0 center !important; padding-right: 16px !important;
       }
-      .prd-nc-valor { font-size: 1.08rem !important; font-weight: 800 !important; letter-spacing: -.02em; }
+      .prd-nc-valor { font-size: 1.1rem !important; font-weight: 800 !important; letter-spacing: -.02em; }
 
       /* ── Toggle promoção ──────────────────────────────────────── */
       .prd-nc-promo-row {
@@ -735,11 +751,12 @@ const ProdutosModule = {
       .prd-nc-toggle input:checked + .prd-nc-toggle-slider::before { transform: translateX(18px); }
 
       /* ── Responsivo ───────────────────────────────────────────── */
-      @media (max-width: 680px) {
+      @media (max-width: 720px) {
         .prd-nc-card { max-height: 95vh !important; border-radius: 20px !important; }
         .prd-nc-body {
           grid-template-columns: 1fr !important;
           overflow-y: auto !important;
+          padding: 16px 18px !important;
           scrollbar-width: thin;
         }
         .prd-nc-body > .prd-nc-section:nth-child(1),
@@ -748,9 +765,8 @@ const ProdutosModule = {
           grid-column: 1 !important; grid-row: auto !important; margin-top: 0 !important;
         }
         .prd-nc-body > .prd-nc-section + .prd-nc-section { margin-top: 16px; }
-        .prd-nc-cells-2col, .prd-nc-cells-3col { grid-template-columns: 1fr; }
-        .prd-nc-cells-2col .prd-nc-cell:first-child,
-        .prd-nc-cells-3col .prd-nc-cell:not(:last-child) { border-right: none; border-bottom: 1px solid var(--border); }
+        .prd-nc-cells-2col { grid-template-columns: 1fr 1fr; }
+        .prd-nc-cells-3col { grid-template-columns: 1fr 1fr; }
       }
     `;
     document.head.appendChild(s);
