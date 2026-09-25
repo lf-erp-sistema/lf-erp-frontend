@@ -3079,9 +3079,7 @@ function injectContasReceberStyles() {
 }
 
 .cr-detail-footer {
-  position: sticky;
-  bottom: 0;
-  z-index: 2;
+  flex-shrink: 0;
 }
 
 .lf-pagination {
@@ -3188,17 +3186,17 @@ function injectContasReceberStyles() {
     }
     .cr-detail-header {
       display: flex; justify-content: space-between; align-items: flex-start;
-      padding: 20px 24px 0; gap: 12px;
+      padding: 20px 24px 0; gap: 12px; flex-shrink: 0;
     }
     .cr-detail-header h3 { margin: 0; font-size: 1.2rem; font-weight: 900; }
     .cr-detail-eyebrow {
       display: block; font-size: .7rem; font-weight: 800; letter-spacing: .06em;
       text-transform: uppercase; color: var(--primary); margin-bottom: 2px;
     }
-    .cr-detail-body { padding: 16px 24px; overflow-y: auto; max-height: 62vh; }
+    .cr-detail-body { padding: 16px 24px 24px; overflow-y: auto; }
     .cr-detail-footer {
       display: flex; gap: 10px; justify-content: flex-end;
-      padding: 14px 24px 20px; border-top: 1px solid var(--border);
+      padding: 14px 24px 20px; border-top: 1px solid var(--border); flex-shrink: 0;
     }
     .cr-detail-summary {
       display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
