@@ -3672,15 +3672,25 @@ function _injectCrNcStyles() {
   const s = document.createElement('style');
   s.id = 'crNcModalStyles';
   s.textContent = `
-    .cr-nc-card { width: min(96vw, 760px) !important; max-height: 92vh; }
+    .cr-nc-card { width: min(96vw, 900px) !important; max-height: 94vh; }
 
-    .cr-nc-body { gap: 0; padding: 0; overflow-y: auto; }
+    .cr-nc-body {
+      display: grid !important;
+      grid-template-columns: 1fr 1fr !important;
+      gap: 0 !important;
+      padding: 0 !important;
+      overflow: visible !important;
+      min-height: unset !important;
+      flex: unset !important;
+    }
+    .cr-nc-col { display: flex; flex-direction: column; }
+    .cr-nc-col:first-child { border-right: 1px solid var(--border); }
 
     .cr-nc-section {
       padding: 18px 22px;
       border-bottom: 1px solid var(--border);
     }
-    .cr-nc-section:last-child { border-bottom: none; }
+    .cr-nc-col .cr-nc-section:last-child { border-bottom: none; }
     .cr-nc-section-title {
       font-size: 0.68rem; font-weight: 900; color: var(--text-muted);
       text-transform: uppercase; letter-spacing: .08em; margin-bottom: 10px;
@@ -3896,7 +3906,11 @@ function _injectCrNcStyles() {
     }
     :root[data-theme="dark"] .cp-rec-cfg-preview { background: rgba(8,145,178,.12); color: #67e8f9; border-color: rgba(8,145,178,.25); }
 
-    @media (max-width: 600px) {
+    @media (max-width: 640px) {
+      .cr-nc-body { grid-template-columns: 1fr !important; }
+      .cr-nc-col:first-child { border-right: none; border-bottom: 1px solid var(--border); }
+      .cr-nc-col .cr-nc-section:last-child { border-bottom: 1px solid var(--border); }
+      .cr-nc-col:last-child .cr-nc-section:last-child { border-bottom: none; }
       .cr-nc-section { padding: 14px 16px; }
       .cr-nc-cells-2col { grid-template-columns: 1fr; }
       .cr-nc-cells-2col .cr-nc-cell:first-child { border-right: none; border-bottom: 1px solid var(--border); }
@@ -3986,92 +4000,102 @@ function abrirModalContaManual() {
 
       <div class="cr-detail-body cr-nc-body">
 
-        <!-- Seção: Detalhes -->
-        <div class="cr-nc-section">
-          <p class="cr-nc-section-title">Detalhes</p>
-          <div class="cr-nc-card-group">
-            <div class="cr-nc-cell">
-              <span class="cr-nc-cell-ico"><i class="fa-solid fa-file-lines"></i></span>
-              <div class="cr-nc-cell-content">
-                <label class="cr-nc-lbl" for="crManualDescricao">Descrição <span class="cr-nc-req">*</span></label>
-                <input type="text" id="crManualDescricao" class="cr-nc-cell-input" placeholder="Ex: Promissória, dívida antiga..." autocomplete="off" />
-              </div>
-            </div>
-            <div class="cr-nc-cells-3col">
+        <!-- Coluna esquerda: Detalhes + Observação -->
+        <div class="cr-nc-col">
+
+          <!-- Seção: Detalhes -->
+          <div class="cr-nc-section">
+            <p class="cr-nc-section-title">Detalhes</p>
+            <div class="cr-nc-card-group">
               <div class="cr-nc-cell">
-                <span class="cr-nc-cell-ico cr-nc-cell-ico--green"><i class="fa-solid fa-brazilian-real-sign"></i></span>
+                <span class="cr-nc-cell-ico"><i class="fa-solid fa-file-lines"></i></span>
                 <div class="cr-nc-cell-content">
-                  <label class="cr-nc-lbl" for="crManualValor">Valor <span class="cr-nc-req">*</span></label>
-                  <input type="number" step="0.01" id="crManualValor" class="cr-nc-cell-input cr-nc-valor" inputmode="decimal" placeholder="0,00" />
+                  <label class="cr-nc-lbl" for="crManualDescricao">Descrição <span class="cr-nc-req">*</span></label>
+                  <input type="text" id="crManualDescricao" class="cr-nc-cell-input" placeholder="Ex: Promissória, dívida antiga..." autocomplete="off" />
                 </div>
               </div>
-              <div class="cr-nc-cell">
-                <span class="cr-nc-cell-ico cr-nc-cell-ico--blue"><i class="fa-solid fa-calendar-days"></i></span>
-                <div class="cr-nc-cell-content">
-                  <label class="cr-nc-lbl">1º Vencimento <span class="cr-nc-req">*</span></label>
-                  <div id="crManualVencTrigger" class="cr-nc-combo-trigger" tabindex="0" role="button">
-                    <span id="crManualVencLabel">${hojeDisplay}</span>
-                    <i class="fa-solid fa-calendar-days cr-nc-combo-chev" style="font-size:13px;color:var(--primary,#2563eb)"></i>
+              <div class="cr-nc-cells-3col">
+                <div class="cr-nc-cell">
+                  <span class="cr-nc-cell-ico cr-nc-cell-ico--green"><i class="fa-solid fa-brazilian-real-sign"></i></span>
+                  <div class="cr-nc-cell-content">
+                    <label class="cr-nc-lbl" for="crManualValor">Valor <span class="cr-nc-req">*</span></label>
+                    <input type="number" step="0.01" id="crManualValor" class="cr-nc-cell-input cr-nc-valor" inputmode="decimal" placeholder="0,00" />
                   </div>
-                  <input type="hidden" id="crManualVencimento" value="${hoje}">
                 </div>
-              </div>
-              <div class="cr-nc-cell">
-                <span class="cr-nc-cell-ico"><i class="fa-solid fa-credit-card"></i></span>
-                <div class="cr-nc-cell-content">
-                  <label class="cr-nc-lbl">Forma</label>
-                  <div id="crManualFormaTrigger" class="cr-nc-combo-trigger" tabindex="0" role="button" aria-haspopup="listbox">
-                    <span id="crManualFormaLabel">Promissória</span>
-                    <i class="fa-solid fa-chevron-down cr-nc-combo-chev"></i>
+                <div class="cr-nc-cell">
+                  <span class="cr-nc-cell-ico cr-nc-cell-ico--blue"><i class="fa-solid fa-calendar-days"></i></span>
+                  <div class="cr-nc-cell-content">
+                    <label class="cr-nc-lbl">1º Vencimento <span class="cr-nc-req">*</span></label>
+                    <div id="crManualVencTrigger" class="cr-nc-combo-trigger" tabindex="0" role="button">
+                      <span id="crManualVencLabel">${hojeDisplay}</span>
+                      <i class="fa-solid fa-calendar-days cr-nc-combo-chev" style="font-size:13px;color:var(--primary,#2563eb)"></i>
+                    </div>
+                    <input type="hidden" id="crManualVencimento" value="${hoje}">
                   </div>
-                  <input type="hidden" id="crManualForma" value="promissoria">
+                </div>
+                <div class="cr-nc-cell">
+                  <span class="cr-nc-cell-ico"><i class="fa-solid fa-credit-card"></i></span>
+                  <div class="cr-nc-cell-content">
+                    <label class="cr-nc-lbl">Forma</label>
+                    <div id="crManualFormaTrigger" class="cr-nc-combo-trigger" tabindex="0" role="button" aria-haspopup="listbox">
+                      <span id="crManualFormaLabel">Promissória</span>
+                      <i class="fa-solid fa-chevron-down cr-nc-combo-chev"></i>
+                    </div>
+                    <input type="hidden" id="crManualForma" value="promissoria">
+                  </div>
                 </div>
               </div>
             </div>
           </div>
+
+          <!-- Observação -->
+          <div class="cr-nc-section">
+            <p class="cr-nc-section-title">Observação</p>
+            <textarea id="crManualObservacao" class="cr-nc-obs" rows="3" placeholder="Observações da promissória..."></textarea>
+          </div>
+
         </div>
 
-        <!-- Seção: Cliente -->
-        <div class="cr-nc-section">
-          <p class="cr-nc-section-title">Cliente</p>
-          <div class="cr-nc-card-group">
-            <div class="cr-nc-cells-2col cr-nc-cells-2col--last">
-              <div class="cr-nc-cell">
-                <span class="cr-nc-cell-ico"><i class="fa-solid fa-user"></i></span>
-                <div class="cr-nc-cell-content">
-                  <label class="cr-nc-lbl" for="crManualClienteSearch">Cadastrado</label>
-                  <input type="text" id="crManualClienteSearch" class="cr-nc-cell-input" placeholder="Buscar cliente..." autocomplete="off" />
-                  <input type="hidden" id="crManualCliente" value="" />
+        <!-- Coluna direita: Cliente + Recorrência -->
+        <div class="cr-nc-col">
+
+          <!-- Seção: Cliente -->
+          <div class="cr-nc-section">
+            <p class="cr-nc-section-title">Cliente</p>
+            <div class="cr-nc-card-group">
+              <div class="cr-nc-cells-2col cr-nc-cells-2col--last">
+                <div class="cr-nc-cell">
+                  <span class="cr-nc-cell-ico"><i class="fa-solid fa-user"></i></span>
+                  <div class="cr-nc-cell-content">
+                    <label class="cr-nc-lbl" for="crManualClienteSearch">Cadastrado</label>
+                    <input type="text" id="crManualClienteSearch" class="cr-nc-cell-input" placeholder="Buscar cliente..." autocomplete="off" />
+                    <input type="hidden" id="crManualCliente" value="" />
+                  </div>
                 </div>
-              </div>
-              <div class="cr-nc-cell">
-                <span class="cr-nc-cell-ico"><i class="fa-solid fa-pen-to-square"></i></span>
-                <div class="cr-nc-cell-content">
-                  <label class="cr-nc-lbl" for="crManualNome">Nome manual</label>
-                  <input type="text" id="crManualNome" class="cr-nc-cell-input" placeholder="Nome avulso" autocomplete="off" />
+                <div class="cr-nc-cell">
+                  <span class="cr-nc-cell-ico"><i class="fa-solid fa-pen-to-square"></i></span>
+                  <div class="cr-nc-cell-content">
+                    <label class="cr-nc-lbl" for="crManualNome">Nome manual</label>
+                    <input type="text" id="crManualNome" class="cr-nc-cell-input" placeholder="Nome avulso" autocomplete="off" />
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Recorrência -->
-        <div class="cr-nc-section cr-nc-section--rec">
-          <p class="cr-nc-section-title">Recorrência</p>
-          <button type="button" class="cr-nc-rec-single" id="crNcRecRow">
-            <span class="cr-nc-rec-icon cr-nc-rec-icon--gray" id="crNcRecIcon"><i class="fa-solid fa-ban"></i></span>
-            <span class="cr-nc-rec-texts">
-              <span class="cr-nc-rec-label" id="crNcRecLabel">Não recorrente</span>
-              <span class="cr-nc-rec-summary-txt" id="crNcRecSummary"></span>
-            </span>
-            <i class="fa-solid fa-chevron-right cr-nc-rec-chev"></i>
-          </button>
-        </div>
+          <!-- Recorrência -->
+          <div class="cr-nc-section cr-nc-section--rec">
+            <p class="cr-nc-section-title">Recorrência</p>
+            <button type="button" class="cr-nc-rec-single" id="crNcRecRow">
+              <span class="cr-nc-rec-icon cr-nc-rec-icon--gray" id="crNcRecIcon"><i class="fa-solid fa-ban"></i></span>
+              <span class="cr-nc-rec-texts">
+                <span class="cr-nc-rec-label" id="crNcRecLabel">Não recorrente</span>
+                <span class="cr-nc-rec-summary-txt" id="crNcRecSummary"></span>
+              </span>
+              <i class="fa-solid fa-chevron-right cr-nc-rec-chev"></i>
+            </button>
+          </div>
 
-        <!-- Observação -->
-        <div class="cr-nc-section">
-          <p class="cr-nc-section-title">Observação</p>
-          <textarea id="crManualObservacao" class="cr-nc-obs" rows="2" placeholder="Observações da promissória..."></textarea>
         </div>
 
       </div>
