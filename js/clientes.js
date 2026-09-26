@@ -1190,7 +1190,7 @@ const ClientesModule = {
     const total = abertas.reduce((s, p) => s + Number(p.valor || 0), 0)
       .toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const msg = `Olá, *${nomeCliente}*! 😊\nSegue o resumo das suas parcelas em aberto${periodoLabel}:\n\n${linhas.join('\n')}\n\n*Total em aberto: R$ ${total}*\n\nQualquer dúvida, estamos à disposição! 🙏`;
-    this._enviarMsgWhatsapp(cliente, msg);
+    this._mostrarMsgCobrancaSemTelefone(msg);
   },
 
   _gerarMsgAniversario(cliente) {
