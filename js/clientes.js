@@ -1177,19 +1177,31 @@ const ClientesModule = {
       const [y, m] = mesAtivo.split('-').map(Number);
       periodoLabel = ` de ${MESES[m - 1]} de ${y}`;
     }
-    const linhas = abertas.map((p, i) => {
-      const num  = String(i + 1).padStart(2, '0');
-      const desc = (p.observacao || 'Produto').trim();
-      const parc = p.parcela != null && p.total_parcelas != null && Number(p.total_parcelas) > 1
-        ? ` (${p.parcela}/${p.total_parcelas})` : '';
-      const venc = p.data_vencimento
-        ? ` - vence ${new Date(`${p.data_vencimento}T12:00:00`).toLocaleDateString('pt-BR')}` : '';
-      const val  = Number(p.valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      return `${num} - ${desc}${parc}${venc} - R$ ${val}`;
-    });
+    // Agrupa por data de vencimento
+    const grupos = new Map();
+    for (const p of abertas) {
+      const key = p.data_vencimento ? String(p.data_vencimento).slice(0, 10) : 'sem_data';
+      if (!grupos.has(key)) grupos.set(key, []);
+      grupos.get(key).push(p);
+    }
+    const blocos = [];
+    for (const [dataKey, itens] of grupos) {
+      const dataLabel = dataKey !== 'sem_data'
+        ? `*${new Date(`${dataKey}T12:00:00`).toLocaleDateString('pt-BR')}:*`
+        : '*Sem data de vencimento:*';
+      const linhasGrupo = itens.map((p, i) => {
+        const num  = String(i + 1).padStart(2, '0');
+        const desc = (p.observacao || 'Produto').trim();
+        const parc = p.parcela != null && p.total_parcelas != null && Number(p.total_parcelas) > 1
+          ? ` (${p.parcela}/${p.total_parcelas})` : '';
+        const val  = Number(p.valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return `${num} - ${desc}${parc} - R$ ${val}`;
+      });
+      blocos.push(`${dataLabel}\n${linhasGrupo.join('\n')}`);
+    }
     const total = abertas.reduce((s, p) => s + Number(p.valor || 0), 0)
       .toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    const msg = `Olá, *${nomeCliente}*! 😊\nSegue o resumo das suas parcelas em aberto${periodoLabel}:\n\n${linhas.join('\n')}\n\n*Total em aberto: R$ ${total}*\n\nQualquer dúvida, estamos à disposição! 🙏`;
+    const msg = `Olá, *${nomeCliente}*! 😊\nSegue o resumo das suas parcelas em aberto${periodoLabel}:\n\n${blocos.join('\n\n')}\n\n*Total em aberto: R$ ${total}*\n\nQualquer dúvida, estamos à disposição! 🙏`;
     this._mostrarMsgCobrancaSemTelefone(msg);
   },
 
