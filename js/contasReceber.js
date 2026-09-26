@@ -1117,12 +1117,12 @@ function abrirModalEditarConta(conta) {
         });
       } else {
         // Contas manuais "todas": atualiza cada uma individualmente
+        // data_vencimento só é enviado para a conta sendo editada — cada parcela mantém sua própria data
         const ids = [conta.id, ...outrasDoGrupo.map(c => c.id)];
         for (const cid of ids) {
-          await api.request(`/contas-receber/${cid}`, {
-            method: 'PUT',
-            body: { observacao: obs, data_vencimento: venc, valor: valorRaw, escopo: 'apenas_esta' }
-          });
+          const body = { observacao: obs, valor: valorRaw, escopo: 'apenas_esta' };
+          if (String(cid) === String(conta.id)) body.data_vencimento = venc;
+          await api.request(`/contas-receber/${cid}`, { method: 'PUT', body });
         }
       }
       fechar();
