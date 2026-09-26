@@ -485,8 +485,8 @@ const EstoqueModule = {
 
     if (btnAtualizar) {
       btnAtualizar.innerHTML = value
-        ? '<i class="fa-solid fa-spinner fa-spin"></i> Atualizando...'
-        : '<i class="fa-solid fa-rotate"></i> Atualizar';
+        ? '<i class="fa-solid fa-spinner fa-spin"></i>'
+        : '<i class="fa-solid fa-rotate"></i>';
     }
   },
 
