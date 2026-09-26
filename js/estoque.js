@@ -175,83 +175,68 @@ const EstoqueModule = {
       <section class="module-card">
         <div id="estoqueFeedback" class="module-feedback"></div>
 
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:14px">
-          <h2 id="estoqueViewTitle" style="font-size:1rem;font-weight:600;margin:0;color:var(--text-primary)">
-            Produtos em estoque
-          </h2>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+        <!-- Toolbar unificado -->
+        <div class="est-top-bar">
+          <span id="estoqueViewTitle" class="est-view-title">Produtos em estoque</span>
+          <div class="estoque-search-box" style="flex:1;min-width:180px">
+            <i class="fa-solid fa-search"></i>
+            <input id="estoqueSearch" placeholder="Buscar por nome, categoria ou código de barras..."
+              value="${escapeHtml(this.getCurrentSearchValue())}" />
+          </div>
+          <select id="estoqueStatusFiltro" class="est-sel">
+            <option value="">Todos</option>
+            <option value="normal" ${this.getCurrentStatusValue() === 'normal' ? 'selected' : ''}>Estoque normal</option>
+            <option value="baixo" ${this.getCurrentStatusValue() === 'baixo' ? 'selected' : ''}>Baixo estoque</option>
+            <option value="sem_estoque" ${this.getCurrentStatusValue() === 'sem_estoque' ? 'selected' : ''}>Sem estoque</option>
+          </select>
+          <div class="est-top-actions">
             <button class="btn btn-light" id="estoqueFaltaBtn" type="button">
               <i class="fa-solid fa-circle-exclamation"></i>
-              Produtos em falta <span id="estoqueFaltaCount" class="badge badge--danger" style="margin-left:4px;display:none">0</span>
+              <span class="est-lbl">Em falta</span>
+              <span id="estoqueFaltaCount" class="badge badge--danger" style="margin-left:4px;display:none">0</span>
             </button>
             <button class="btn btn-light" id="estoqueDepositosBtn" type="button">
-              <i class="fa-solid fa-warehouse"></i> Depósitos
+              <i class="fa-solid fa-warehouse"></i> <span class="est-lbl">Depósitos</span>
             </button>
             <button class="btn btn-light" id="estoqueSugestaoBtn" type="button">
-              <i class="fa-solid fa-cart-shopping"></i> Sugestão de compra
+              <i class="fa-solid fa-cart-shopping"></i> <span class="est-lbl">Sugestão</span>
             </button>
-            <button class="btn btn-light" id="estoqueAtualizarBtn" type="button">
-              <i class="fa-solid fa-rotate"></i> Atualizar
+            <button class="btn btn-light" id="estoqueAtualizarBtn" type="button" title="Atualizar">
+              <i class="fa-solid fa-rotate"></i>
             </button>
           </div>
         </div>
 
-        <div class="estoque-toolbar-grid">
-          <div class="module-toolbar__search estoque-search-box">
-            <i class="fa-solid fa-search"></i>
-            <input
-              id="estoqueSearch"
-              placeholder="Buscar por nome, categoria ou código de barras..."
-              value="${escapeHtml(this.getCurrentSearchValue())}"
-            />
+        <!-- KPI strip conectado -->
+        <div class="est-kpi-strip">
+          <div class="est-kpi-item">
+            <span class="est-kpi-lbl">Total de produtos</span>
+            <strong class="est-kpi-val" id="estoqueTotalProdutos">0</strong>
           </div>
-
-          <div class="estoque-filter-box">
-            <select id="estoqueStatusFiltro" class="input">
-              <option value="">Todos</option>
-              <option value="normal" ${this.getCurrentStatusValue() === 'normal' ? 'selected' : ''}>Estoque normal</option>
-              <option value="baixo" ${this.getCurrentStatusValue() === 'baixo' ? 'selected' : ''}>Baixo estoque</option>
-              <option value="sem_estoque" ${this.getCurrentStatusValue() === 'sem_estoque' ? 'selected' : ''}>Sem estoque</option>
-            </select>
+          <div class="est-kpi-sep"></div>
+          <div class="est-kpi-item">
+            <span class="est-kpi-lbl">Baixo estoque</span>
+            <strong class="est-kpi-val est-kpi-warn" id="estoqueTotalBaixo">0</strong>
           </div>
-        </div>
-
-        <div class="kpi-grid" style="margin-bottom: 20px;">
-          <div class="kpi-card">
-            <div class="kpi-card__content">
-              <span>Total de produtos</span>
-              <strong id="estoqueTotalProdutos">0</strong>
-            </div>
+          <div class="est-kpi-sep"></div>
+          <div class="est-kpi-item">
+            <span class="est-kpi-lbl">Sem estoque</span>
+            <strong class="est-kpi-val est-kpi-danger" id="estoqueTotalZerado">0</strong>
           </div>
-          <div class="kpi-card">
-            <div class="kpi-card__content">
-              <span>Baixo estoque</span>
-              <strong id="estoqueTotalBaixo" style="color:var(--warning,#ca8a04)">0</strong>
-            </div>
+          <div class="est-kpi-sep est-kpi-sep--group"></div>
+          <div class="est-kpi-item">
+            <span class="est-kpi-lbl">Custo do estoque</span>
+            <strong class="est-kpi-val" id="estoqueValorCusto">R$ 0,00</strong>
           </div>
-          <div class="kpi-card">
-            <div class="kpi-card__content">
-              <span>Sem estoque</span>
-              <strong id="estoqueTotalZerado" style="color:var(--danger,#dc2626)">0</strong>
-            </div>
+          <div class="est-kpi-sep"></div>
+          <div class="est-kpi-item">
+            <span class="est-kpi-lbl">Valor de venda</span>
+            <strong class="est-kpi-val" id="estoqueValorVenda">R$ 0,00</strong>
           </div>
-          <div class="kpi-card">
-            <div class="kpi-card__content">
-              <span>Custo do estoque</span>
-              <strong id="estoqueValorCusto">R$ 0,00</strong>
-            </div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-card__content">
-              <span>Valor de venda</span>
-              <strong id="estoqueValorVenda">R$ 0,00</strong>
-            </div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-card__content">
-              <span>Lucro estimado</span>
-              <strong id="estoqueValorLucro" style="color:var(--success,#16a34a)">R$ 0,00</strong>
-            </div>
+          <div class="est-kpi-sep"></div>
+          <div class="est-kpi-item">
+            <span class="est-kpi-lbl">Lucro estimado</span>
+            <strong class="est-kpi-val est-kpi-ok" id="estoqueValorLucro">R$ 0,00</strong>
           </div>
         </div>
 
@@ -568,29 +553,17 @@ const EstoqueModule = {
         .est-margem--low { background:rgba(234,179,8,.2); color:#fbbf24; }
         .est-margem--neg { background:rgba(239,68,68,.18); color:#f87171; }
       }
-      .estoque-toolbar-grid {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        align-items: center;
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        padding: 14px 16px;
-        margin-bottom: 16px;
+      /* ── Toolbar unificado ─────────────────────── */
+      .est-top-bar {
+        display: flex; align-items: center; gap: 8px; margin-bottom: 14px; flex-wrap: wrap;
+      }
+      .est-view-title {
+        font-size: .78rem; font-weight: 700; color: var(--text-muted); white-space: nowrap; flex-shrink: 0;
       }
       .estoque-search-box {
-        flex: 1;
-        min-width: 200px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        background: var(--bg-card, var(--surface));
-        border: 1px solid var(--border);
-        border-radius: 14px;
-        padding: 0 14px;
-        min-height: 44px;
-        transition: border-color .15s;
+        display: flex; align-items: center; gap: 8px;
+        background: var(--surface); border: 1px solid var(--border);
+        border-radius: 12px; padding: 0 14px; min-height: 40px; transition: border-color .15s;
       }
       .estoque-search-box:focus-within { border-color: var(--primary); }
       .estoque-search-box i { color: var(--text-muted); font-size: .85rem; flex-shrink: 0; }
@@ -598,24 +571,49 @@ const EstoqueModule = {
         border: none; background: transparent; flex: 1;
         font-size: 14px; outline: none; color: var(--text);
       }
-      .estoque-filter-box {
-        display: flex;
-        align-items: center;
+      .est-sel {
+        border: 1px solid var(--border); border-radius: 12px;
+        background: var(--surface); color: var(--text);
+        font-size: 13px; padding: 0 12px; min-height: 40px; min-width: 148px;
+        outline: none; cursor: pointer; transition: border-color .15s;
       }
-      .estoque-filter-box select {
-        border: 1px solid var(--border);
-        border-radius: 14px;
-        background: var(--bg-card, var(--surface));
-        color: var(--text);
-        font-size: 13px;
-        padding: 0 12px;
-        min-height: 44px;
-        min-width: 160px;
-        outline: none;
-        cursor: pointer;
-        transition: border-color .15s;
+      .est-sel:focus { border-color: var(--primary); }
+      .est-top-actions { display: flex; gap: 6px; flex-shrink: 0; }
+      .est-top-actions .btn { height: 40px; }
+      @media (max-width: 860px) { .est-lbl { display: none; } }
+
+      /* ── KPI strip conectado ────────────────────── */
+      .est-kpi-strip {
+        display: flex; align-items: stretch;
+        background: var(--surface); border: 1px solid var(--border);
+        border-radius: 18px; margin-bottom: 20px; overflow: hidden;
+        box-shadow: 0 1px 6px rgba(0,0,0,.05);
       }
-      .estoque-filter-box select:focus { border-color: var(--primary); }
+      .est-kpi-item {
+        flex: 1; padding: 14px 18px; display: flex; flex-direction: column; gap: 5px; min-width: 0;
+      }
+      .est-kpi-lbl {
+        font-size: .66rem; font-weight: 800; color: var(--text-muted);
+        text-transform: uppercase; letter-spacing: .06em;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
+      .est-kpi-val {
+        font-size: 1.3rem; font-weight: 900; color: var(--text);
+        letter-spacing: -.02em; font-variant-numeric: tabular-nums;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
+      .est-kpi-warn   { color: var(--warning, #ca8a04); }
+      .est-kpi-danger { color: var(--danger,  #dc2626); }
+      .est-kpi-ok     { color: var(--success, #16a34a); }
+      .est-kpi-sep {
+        width: 1px; background: var(--border); margin: 10px 0; flex-shrink: 0;
+      }
+      .est-kpi-sep--group { margin: 0; background: var(--border); opacity: .7; }
+      @media (max-width: 900px) {
+        .est-kpi-strip { flex-wrap: wrap; }
+        .est-kpi-sep { display: none; }
+        .est-kpi-item { flex: 0 0 33.33%; border-bottom: 1px solid var(--border); padding: 12px 14px; }
+      }
     `;
     document.head.appendChild(style);
   },
