@@ -215,6 +215,11 @@ const EstoqueModule = {
           </div>
           <div class="est-kpi-sep"></div>
           <div class="est-kpi-item">
+            <span class="est-kpi-lbl">Total em estoque</span>
+            <strong class="est-kpi-val" id="estoqueTotalUnidades">0</strong>
+          </div>
+          <div class="est-kpi-sep"></div>
+          <div class="est-kpi-item">
             <span class="est-kpi-lbl">Baixo estoque</span>
             <strong class="est-kpi-val est-kpi-warn" id="estoqueTotalBaixo">0</strong>
           </div>
@@ -371,6 +376,7 @@ const EstoqueModule = {
 
   updateStats() {
     const totalProdutos = this.state.filteredItems.length;
+    const totalUnidades = this.state.items.reduce((acc, p) => acc + Number(p.estoque || 0), 0);
     const totalBaixo = this.state.filteredItems.filter((produto) => {
       const estoque = Number(produto.estoque || 0);
       const estoqueMinimo = Number(produto.estoque_minimo || 0);
@@ -383,6 +389,8 @@ const EstoqueModule = {
     const { custo, venda, lucro } = this.getValoresEstoque();
 
     if (this.el.totalProdutos) this.el.totalProdutos.textContent = String(totalProdutos);
+    const elUnidades = document.getElementById('estoqueTotalUnidades');
+    if (elUnidades) elUnidades.textContent = totalUnidades.toLocaleString('pt-BR');
     if (this.el.totalBaixo) this.el.totalBaixo.textContent = String(totalBaixo);
     if (this.el.totalZerado) this.el.totalZerado.textContent = String(totalZerado);
     const elCusto = document.getElementById('estoqueValorCusto');
