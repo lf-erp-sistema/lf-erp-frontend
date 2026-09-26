@@ -1023,6 +1023,39 @@ function _escolherEscopo(conta, tipo, { mostrarProximas = true, totalLabel = nul
   });
 }
 
+function _escolherModoData(diaNum) {
+  return new Promise((resolve) => {
+    document.getElementById('crModoDataModal')?.remove();
+    const m = document.createElement('div');
+    m.id = 'crModoDataModal';
+    m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:11001;display:flex;align-items:center;justify-content:center;padding:20px';
+    m.innerHTML = `
+      <div style="background:var(--surface);border-radius:18px;width:100%;max-width:380px;box-shadow:0 8px 40px rgba(0,0,0,.25);padding:24px;display:flex;flex-direction:column;gap:16px">
+        <div>
+          <h3 style="margin:0 0 4px;font-size:1.05rem;font-weight:900">Como alterar a data?</h3>
+          <p style="margin:0;font-size:.85rem;color:var(--text-muted)">Você alterou o vencimento. Escolha como aplicar nas demais contas.</p>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button class="btn btn-light" id="crModoDataDia" type="button" style="justify-content:flex-start;gap:10px;text-align:left;padding:12px 16px">
+            <i class="fa-solid fa-calendar-day" style="color:var(--primary,#2563eb);min-width:16px"></i>
+            <span><strong>Apenas o dia (dia ${diaNum})</strong><br><small style="color:var(--text-muted)">Cada conta mantém seu próprio mês e ano</small></span>
+          </button>
+          <button class="btn btn-light" id="crModoDataCompleta" type="button" style="justify-content:flex-start;gap:10px;text-align:left;padding:12px 16px">
+            <i class="fa-solid fa-calendar" style="color:var(--primary,#2563eb);min-width:16px"></i>
+            <span><strong>Data completa</strong><br><small style="color:var(--text-muted)">Sobrescreve todas para a mesma data</small></span>
+          </button>
+        </div>
+        <button class="btn btn-light" id="crModoDataCancelar" type="button">Cancelar</button>
+      </div>`;
+    document.body.appendChild(m);
+    const fechar = (val) => { m.remove(); resolve(val); };
+    document.getElementById('crModoDataDia').onclick      = () => fechar('dia');
+    document.getElementById('crModoDataCompleta').onclick = () => fechar('completa');
+    document.getElementById('crModoDataCancelar').onclick = () => fechar(null);
+    m.addEventListener('click', (e) => { if (e.target === m) fechar(null); });
+  });
+}
+
 function abrirModalEditarConta(conta) {
   document.getElementById('crEditarContaModal')?.remove();
   const modal = document.createElement('div');
@@ -1117,11 +1150,37 @@ function abrirModalEditarConta(conta) {
         });
       } else {
         // Contas manuais "todas": atualiza cada uma individualmente
-        // data_vencimento só é enviado para a conta sendo editada — cada parcela mantém sua própria data
+        const vencOrig = String(conta.data_vencimento || '').slice(0, 10);
+        const dateChanged = venc !== vencOrig;
+
+        let modoData = null;
+        if (dateChanged) {
+          const diaNum = parseInt(venc.split('-')[2], 10);
+          btn.disabled = false; // libera enquanto aguarda resposta do diálogo
+          modoData = await _escolherModoData(diaNum);
+          btn.disabled = true;
+          if (modoData === null) return; // cancelou
+        }
+
         const ids = [conta.id, ...outrasDoGrupo.map(c => c.id)];
         for (const cid of ids) {
           const body = { observacao: obs, valor: valorRaw, escopo: 'apenas_esta' };
-          if (String(cid) === String(conta.id)) body.data_vencimento = venc;
+          if (!dateChanged) {
+            // data não mudou — só envia para a conta editada
+            if (String(cid) === String(conta.id)) body.data_vencimento = venc;
+          } else if (modoData === 'completa') {
+            body.data_vencimento = venc;
+          } else {
+            // modoData === 'dia': aplica o mesmo dia mas preserva mês/ano de cada conta
+            if (String(cid) === String(conta.id)) {
+              body.data_vencimento = venc;
+            } else {
+              const outra = outrasDoGrupo.find(c => String(c.id) === String(cid));
+              const baseDate = String(outra?.data_vencimento || venc).slice(0, 10);
+              const [y, mo] = baseDate.split('-');
+              body.data_vencimento = `${y}-${mo}-${venc.split('-')[2]}`;
+            }
+          }
           await api.request(`/contas-receber/${cid}`, { method: 'PUT', body });
         }
       }
