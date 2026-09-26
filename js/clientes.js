@@ -873,10 +873,10 @@ const ClientesModule = {
             </div>
             <div style="display:flex;gap:8px;align-items:center">
               <button type="button" class="btn btn-light btn-sm" id="extratoBtnTotal">Dívida total</button>
-              <button type="button" class="btn btn-sm" id="extratoWhatsappBtn"
-                style="background:#25D366;color:#fff;border:none;display:flex;align-items:center;gap:6px"
-                title="Enviar aviso de cobrança via WhatsApp">
-                <i class="fa-brands fa-whatsapp"></i> Cobrar
+              <button type="button" class="icon-button" id="extratoWhatsappBtn"
+                style="background:#25D366;color:#fff;width:34px;height:34px;font-size:1.1rem;border-radius:50%;flex-shrink:0"
+                title="Enviar mensagem via WhatsApp">
+                <i class="fa-brands fa-whatsapp"></i>
               </button>
               <button type="button" class="btn btn-light btn-sm" id="extratoClienteImprimirBtn">
                 <i class="fa-solid fa-print"></i> Imprimir
@@ -922,11 +922,12 @@ const ClientesModule = {
 
         const btnWpp = document.getElementById('extratoWhatsappBtn');
         if (btnWpp) {
-          btnWpp.onclick = () => {
+          btnWpp.onclick = (e) => {
+            e.stopPropagation();
             const parcelasMes = totalMode
               ? (data.parcelas || [])
               : (data.parcelas || []).filter(p => String(p.data_vencimento || '').slice(0, 7) === mesAtivo);
-            this._enviarCobrancaExtrato(data.cliente, parcelasMes, mesAtivo, totalMode);
+            this._abrirMenuWhatsappExtrato(btnWpp, data.cliente, parcelasMes, mesAtivo, totalMode);
           };
         }
       };
@@ -1119,13 +1120,56 @@ const ClientesModule = {
     win.print();
   },
 
+  _abrirMenuWhatsappExtrato(btnEl, cliente, parcelasMes, mesAtivo, totalMode) {
+    document.getElementById('extratoWppMenu')?.remove();
+    const rect = btnEl.getBoundingClientRect();
+    const menu = document.createElement('div');
+    menu.id = 'extratoWppMenu';
+    menu.style.cssText = `position:fixed;top:${rect.bottom + 6}px;right:${window.innerWidth - rect.right}px;background:var(--surface,#fff);border:1px solid var(--border-color,#e5e7eb);border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.18);z-index:12000;min-width:210px;overflow:hidden;padding:6px 0`;
+    const opcoes = [
+      { icon: '💸', label: 'Cobrar',            key: 'cobrar'        },
+      { icon: '🎂', label: 'Feliz aniversário',  key: 'aniversario'   },
+      { icon: '🙏', label: 'Agradecimento',      key: 'agradecimento' },
+      { icon: '📢', label: 'Novidades / Oferta', key: 'novidade'      },
+    ];
+    menu.innerHTML = opcoes.map(o => `
+      <button type="button" data-wpp-opcao="${o.key}"
+        style="display:flex;align-items:center;gap:10px;width:100%;padding:10px 16px;border:none;background:none;cursor:pointer;font-size:.88rem;color:var(--text,#111);text-align:left;transition:background .15s"
+        onmouseover="this.style.background='var(--surface-2,#f3f4f6)'" onmouseout="this.style.background='none'">
+        <span style="font-size:1rem;width:20px;text-align:center">${o.icon}</span>${o.label}
+      </button>`).join('');
+    document.body.appendChild(menu);
+
+    menu.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-wpp-opcao]');
+      if (!btn) return;
+      menu.remove();
+      const key = btn.dataset.wppOpcao;
+      if (key === 'cobrar') {
+        this._enviarCobrancaExtrato(cliente, parcelasMes, mesAtivo, totalMode);
+      } else {
+        const msg = key === 'aniversario'   ? this._gerarMsgAniversario(cliente)
+                  : key === 'agradecimento' ? this._gerarMsgAgradecimento(cliente)
+                  :                           this._gerarMsgNovidade(cliente);
+        this._enviarMsgWhatsapp(cliente, msg);
+      }
+    });
+
+    const fechar = (e) => {
+      if (!menu.contains(e.target) && e.target !== btnEl) {
+        menu.remove();
+        document.removeEventListener('click', fechar, true);
+      }
+    };
+    setTimeout(() => document.addEventListener('click', fechar, true), 0);
+  },
+
   _enviarCobrancaExtrato(cliente, parcelas, mesAtivo, totalMode) {
     const abertas = parcelas.filter(p => !['pago'].includes(String(p.status || '')));
     if (abertas.length === 0) {
       showToast('Nenhuma parcela em aberto neste período.', 'info');
       return;
     }
-
     const nomeCliente = cliente.nome || 'Cliente';
     const MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
     let periodoLabel = '';
@@ -1133,7 +1177,6 @@ const ClientesModule = {
       const [y, m] = mesAtivo.split('-').map(Number);
       periodoLabel = ` de ${MESES[m - 1]} de ${y}`;
     }
-
     const linhas = abertas.map((p, i) => {
       const num  = String(i + 1).padStart(2, '0');
       const desc = (p.observacao || 'Produto').trim();
@@ -1144,15 +1187,30 @@ const ClientesModule = {
       const val  = Number(p.valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       return `${num} - ${desc}${parc}${venc} - R$ ${val}`;
     });
-
     const total = abertas.reduce((s, p) => s + Number(p.valor || 0), 0)
       .toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
     const msg = `Olá, *${nomeCliente}*! 😊\nSegue o resumo das suas parcelas em aberto${periodoLabel}:\n\n${linhas.join('\n')}\n\n*Total em aberto: R$ ${total}*\n\nQualquer dúvida, estamos à disposição! 🙏`;
+    this._enviarMsgWhatsapp(cliente, msg);
+  },
 
+  _gerarMsgAniversario(cliente) {
+    const nome = cliente.nome || 'Cliente';
+    return `Olá, *${nome}*! 🎂🎉\nA nossa equipe deseja a você um feliz aniversário!\n\nQue seu dia seja repleto de alegria, saúde e realizações! 🥳\n\nObrigado por ser nosso cliente! 💚`;
+  },
+
+  _gerarMsgAgradecimento(cliente) {
+    const nome = cliente.nome || 'Cliente';
+    return `Olá, *${nome}*! 😊\nGostaríamos de agradecer pela sua preferência e confiança em nós! 🙏\n\nÉ sempre um prazer atendê-lo(a). Estamos à disposição para o que precisar! 💚`;
+  },
+
+  _gerarMsgNovidade(cliente) {
+    const nome = cliente.nome || 'Cliente';
+    return `Olá, *${nome}*! 📢\nTemos novidades e ofertas especiais esperando por você!\n\nEntre em contato e saiba mais. Será um prazer atendê-lo(a)! 😊`;
+  },
+
+  _enviarMsgWhatsapp(cliente, msg) {
     let tel = (cliente.telefone || '').replace(/\D/g, '');
     if (tel.length === 11 || tel.length === 10) tel = '55' + tel;
-
     if (tel.length >= 12) {
       window.open(`https://wa.me/${tel}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener,noreferrer');
     } else {
@@ -1164,14 +1222,14 @@ const ClientesModule = {
     document.getElementById('extratoMsgCopyOverlay')?.remove();
     const m = document.createElement('div');
     m.id = 'extratoMsgCopyOverlay';
-    m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:12000;display:flex;align-items:center;justify-content:center;padding:20px';
+    m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:12001;display:flex;align-items:center;justify-content:center;padding:20px';
     m.innerHTML = `
       <div style="background:var(--surface,#fff);border-radius:18px;width:100%;max-width:440px;box-shadow:0 8px 40px rgba(0,0,0,.25);padding:24px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <h3 style="margin:0;font-size:.95rem;font-weight:900"><i class="fa-brands fa-whatsapp" style="color:#25D366"></i> Mensagem de cobrança</h3>
+          <h3 style="margin:0;font-size:.95rem;font-weight:900"><i class="fa-brands fa-whatsapp" style="color:#25D366"></i> Mensagem WhatsApp</h3>
           <button id="extratoMsgCopyFechar" class="icon-button"><i class="fa-solid fa-xmark"></i></button>
         </div>
-        <p style="font-size:.82rem;color:var(--text-muted);margin:0 0 10px">Telefone não cadastrado. Copie a mensagem abaixo:</p>
+        <p style="font-size:.82rem;color:var(--text-muted);margin:0 0 10px">Telefone não cadastrado — copie a mensagem e envie manualmente:</p>
         <textarea id="extratoMsgCopyText" rows="9" readonly
           style="width:100%;padding:10px;border:1.5px solid var(--border-color,#e5e7eb);border-radius:10px;font-size:.82rem;font-family:monospace;resize:vertical;box-sizing:border-box">${escapeHtml(msg)}</textarea>
         <button class="btn btn-primary" id="extratoMsgCopyBtn" style="margin-top:12px;width:100%">
