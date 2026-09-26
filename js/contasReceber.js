@@ -4019,7 +4019,7 @@ function abrirModalContaManual() {
                   <input type="text" id="crManualDescricao" class="cr-nc-cell-input" placeholder="Ex: Promissória, dívida antiga..." autocomplete="off" />
                 </div>
               </div>
-              <div class="cr-nc-cells-3col">
+              <div class="cr-nc-cells-2col cr-nc-cells-2col--last">
                 <div class="cr-nc-cell">
                   <span class="cr-nc-cell-ico cr-nc-cell-ico--green"><i class="fa-solid fa-brazilian-real-sign"></i></span>
                   <div class="cr-nc-cell-content">
@@ -4036,17 +4036,6 @@ function abrirModalContaManual() {
                       <i class="fa-solid fa-calendar-days cr-nc-combo-chev" style="font-size:13px;color:var(--primary,#2563eb)"></i>
                     </div>
                     <input type="hidden" id="crManualVencimento" value="${hoje}">
-                  </div>
-                </div>
-                <div class="cr-nc-cell">
-                  <span class="cr-nc-cell-ico"><i class="fa-solid fa-credit-card"></i></span>
-                  <div class="cr-nc-cell-content">
-                    <label class="cr-nc-lbl">Forma</label>
-                    <div id="crManualFormaTrigger" class="cr-nc-combo-trigger" tabindex="0" role="button" aria-haspopup="listbox">
-                      <span id="crManualFormaLabel">Promissória</span>
-                      <i class="fa-solid fa-chevron-down cr-nc-combo-chev"></i>
-                    </div>
-                    <input type="hidden" id="crManualForma" value="promissoria">
                   </div>
                 </div>
               </div>
@@ -4083,6 +4072,24 @@ function abrirModalContaManual() {
                     <label class="cr-nc-lbl" for="crManualNome">Nome manual</label>
                     <input type="text" id="crManualNome" class="cr-nc-cell-input" placeholder="Nome avulso" autocomplete="off" />
                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Forma de pagamento -->
+          <div class="cr-nc-section">
+            <p class="cr-nc-section-title">Forma de pagamento</p>
+            <div class="cr-nc-card-group">
+              <div class="cr-nc-cell">
+                <span class="cr-nc-cell-ico"><i class="fa-solid fa-credit-card"></i></span>
+                <div class="cr-nc-cell-content">
+                  <label class="cr-nc-lbl">Forma</label>
+                  <div id="crManualFormaTrigger" class="cr-nc-combo-trigger" tabindex="0" role="button" aria-haspopup="listbox">
+                    <span id="crManualFormaLabel">Promissória</span>
+                    <i class="fa-solid fa-chevron-down cr-nc-combo-chev"></i>
+                  </div>
+                  <input type="hidden" id="crManualForma" value="promissoria">
                 </div>
               </div>
             </div>
