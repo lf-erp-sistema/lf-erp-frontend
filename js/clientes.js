@@ -1023,7 +1023,7 @@ const ClientesModule = {
                ${parcelas.map((p) => `
                  <tr>
                    <td><small>#${escapeHtml(String(p.venda_id || '-'))}</small></td>
-                   <td>${p.parcela}/${p.total_parcelas}</td>
+                   <td>${Number(p.total_parcelas || 1) > 1 ? `${p.parcela}/${p.total_parcelas}` : '-'}</td>
                    <td style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${escapeHtml(p.observacao || '')}">${escapeHtml(p.observacao || '-')}</td>
                    <td>${dt(p.data_vencimento)}${p.dias_atraso > 0 ? `<br><small style="color:var(--danger,#e53e3e)">${p.dias_atraso}d atraso</small>` : ''}</td>
                    <td class="text-right">${cur(p.valor)}</td>
