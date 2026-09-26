@@ -3774,6 +3774,18 @@ function _injectCrNcStyles() {
 
     .cr-nc-valor { font-size: 1.2rem !important; font-weight: 800 !important; letter-spacing: -.02em; }
 
+    /* Divisor "ou" entre campos de cliente */
+    .cr-nc-or-divider {
+      display: flex; align-items: center; gap: 10px;
+      padding: 2px 16px; color: var(--text-muted); font-size: .7rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .08em;
+    }
+    .cr-nc-or-divider::before, .cr-nc-or-divider::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+    /* Célula final no grupo (sem border-bottom) */
+    .cr-nc-cell--last { border-bottom: none !important; }
+
     /* Textarea observação */
     .cr-nc-obs {
       width: 100%; resize: none; font-size: 0.9rem; font-weight: 500;
@@ -4005,7 +4017,7 @@ function abrirModalContaManual() {
 
       <div class="cr-detail-body cr-nc-body">
 
-        <!-- Coluna esquerda: Detalhes + Observação -->
+        <!-- Coluna esquerda: Detalhes + Cliente -->
         <div class="cr-nc-col">
 
           <!-- Seção: Detalhes -->
@@ -4042,46 +4054,39 @@ function abrirModalContaManual() {
             </div>
           </div>
 
-          <!-- Observação -->
-          <div class="cr-nc-section">
-            <p class="cr-nc-section-title">Observação</p>
-            <textarea id="crManualObservacao" class="cr-nc-obs" rows="3" placeholder="Observações da promissória..."></textarea>
-          </div>
-
-        </div>
-
-        <!-- Coluna direita: Cliente + Recorrência -->
-        <div class="cr-nc-col">
-
           <!-- Seção: Cliente -->
           <div class="cr-nc-section">
             <p class="cr-nc-section-title">Cliente</p>
             <div class="cr-nc-card-group">
-              <div class="cr-nc-cells-2col cr-nc-cells-2col--last">
-                <div class="cr-nc-cell">
-                  <span class="cr-nc-cell-ico"><i class="fa-solid fa-user"></i></span>
-                  <div class="cr-nc-cell-content">
-                    <label class="cr-nc-lbl" for="crManualClienteSearch">Cadastrado</label>
-                    <input type="text" id="crManualClienteSearch" class="cr-nc-cell-input" placeholder="Buscar cliente..." autocomplete="off" />
-                    <input type="hidden" id="crManualCliente" value="" />
-                  </div>
+              <div class="cr-nc-cell">
+                <span class="cr-nc-cell-ico"><i class="fa-solid fa-user"></i></span>
+                <div class="cr-nc-cell-content">
+                  <label class="cr-nc-lbl" for="crManualClienteSearch">Buscar cadastrado</label>
+                  <input type="text" id="crManualClienteSearch" class="cr-nc-cell-input" placeholder="Nome, telefone ou CPF..." autocomplete="off" />
+                  <input type="hidden" id="crManualCliente" value="" />
                 </div>
-                <div class="cr-nc-cell">
-                  <span class="cr-nc-cell-ico"><i class="fa-solid fa-pen-to-square"></i></span>
-                  <div class="cr-nc-cell-content">
-                    <label class="cr-nc-lbl" for="crManualNome">Nome manual</label>
-                    <input type="text" id="crManualNome" class="cr-nc-cell-input" placeholder="Nome avulso" autocomplete="off" />
-                  </div>
+              </div>
+              <div class="cr-nc-or-divider"><span>ou</span></div>
+              <div class="cr-nc-cell cr-nc-cell--last">
+                <span class="cr-nc-cell-ico"><i class="fa-solid fa-pen-to-square"></i></span>
+                <div class="cr-nc-cell-content">
+                  <label class="cr-nc-lbl" for="crManualNome">Nome avulso</label>
+                  <input type="text" id="crManualNome" class="cr-nc-cell-input" placeholder="Cliente sem cadastro..." autocomplete="off" />
                 </div>
               </div>
             </div>
           </div>
 
+        </div>
+
+        <!-- Coluna direita: Forma de pagamento + Recorrência + Observação -->
+        <div class="cr-nc-col">
+
           <!-- Forma de pagamento -->
           <div class="cr-nc-section">
             <p class="cr-nc-section-title">Forma de pagamento</p>
             <div class="cr-nc-card-group">
-              <div class="cr-nc-cell">
+              <div class="cr-nc-cell cr-nc-cell--last">
                 <span class="cr-nc-cell-ico"><i class="fa-solid fa-credit-card"></i></span>
                 <div class="cr-nc-cell-content">
                   <label class="cr-nc-lbl">Forma</label>
@@ -4106,6 +4111,12 @@ function abrirModalContaManual() {
               </span>
               <i class="fa-solid fa-chevron-right cr-nc-rec-chev"></i>
             </button>
+          </div>
+
+          <!-- Observação -->
+          <div class="cr-nc-section">
+            <p class="cr-nc-section-title">Observação</p>
+            <textarea id="crManualObservacao" class="cr-nc-obs" rows="3" placeholder="Observações da promissória..."></textarea>
           </div>
 
         </div>
