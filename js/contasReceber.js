@@ -3672,18 +3672,23 @@ function _injectCrNcStyles() {
   const s = document.createElement('style');
   s.id = 'crNcModalStyles';
   s.textContent = `
-    .cr-nc-card { width: min(96vw, 900px) !important; max-height: 94vh; }
+    .cr-nc-card {
+      width: min(96vw, 900px) !important;
+      max-width: min(96vw, 900px) !important;
+      max-height: 94vh;
+    }
 
     .cr-nc-body {
       display: grid !important;
-      grid-template-columns: 1fr 1fr !important;
+      grid-template-columns: minmax(0,1fr) minmax(0,1fr) !important;
       gap: 0 !important;
       padding: 0 !important;
       overflow: visible !important;
+      width: 100% !important;
       min-height: unset !important;
-      flex: unset !important;
+      flex: 1 1 auto !important;
     }
-    .cr-nc-col { display: flex; flex-direction: column; }
+    .cr-nc-col { display: flex; flex-direction: column; min-width: 0; }
     .cr-nc-col:first-child { border-right: 1px solid var(--border); }
 
     .cr-nc-section {
