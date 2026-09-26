@@ -284,6 +284,7 @@ const ClientesModule = {
   },
 
   render() {
+    this._injectClStyles();
     const c = document.getElementById('clientesContainer');
     if (!c) return;
 
