@@ -835,8 +835,8 @@ function render() {
               <th data-sort-col="id" style="cursor:pointer;user-select:none">Título${si('id')}</th>
               <th data-sort-col="cliente_nome" style="cursor:pointer;user-select:none">Cliente${si('cliente_nome')}</th>
               <th>Origem</th>
-              <th data-sort-col="data_vencimento" style="cursor:pointer;user-select:none">Vencimento${si('data_vencimento')}</th>
-              <th class="text-right" data-sort-col="valor" style="cursor:pointer;user-select:none">Valor${si('valor')}</th>
+              <th class="text-center" data-sort-col="data_vencimento" style="cursor:pointer;user-select:none">Vencimento${si('data_vencimento')}</th>
+              <th class="text-center" data-sort-col="valor" style="cursor:pointer;user-select:none">Valor${si('valor')}</th>
               <th class="text-right">Ações</th>
             </tr>
           </thead>
@@ -959,8 +959,8 @@ function renderLinhas() {
           </div>
         </td>
 
-        <td>
-          <div class="table-primary">
+        <td class="text-center">
+          <div class="table-primary" style="align-items:center">
             <strong>${formatDate(conta.data_vencimento)}</strong>
             ${status === 'pago'
               ? `<small>Recebido em ${formatDate(conta.data_pagamento)}</small>`
@@ -968,7 +968,7 @@ function renderLinhas() {
           </div>
         </td>
 
-        <td class="text-right">
+        <td class="text-center">
           <strong>${formatCurrency(conta.valor)}</strong>
         </td>
 
