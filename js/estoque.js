@@ -35,6 +35,7 @@ const EstoqueModule = {
       table: document.getElementById('estoqueTable'),
       search: document.getElementById('estoqueSearch'),
       status: document.getElementById('estoqueStatusFiltro'),
+      statusBtn: document.getElementById('estoqueStatusBtn'),
       totalProdutos: document.getElementById('estoqueTotalProdutos'),
       totalBaixo: document.getElementById('estoqueTotalBaixo'),
       totalZerado: document.getElementById('estoqueTotalZerado'),
@@ -65,6 +66,13 @@ const EstoqueModule = {
     });
 
     document.addEventListener('click', async (e) => {
+      // Fechar dropdown de status ao clicar fora
+      const _sDDMenu = document.getElementById('estoqueStatusMenu');
+      if (_sDDMenu && !_sDDMenu.hidden && !e.target.closest('#estoqueStatusWrap')) {
+        _sDDMenu.hidden = true;
+        document.getElementById('estoqueStatusBtn')?.setAttribute('aria-expanded', 'false');
+      }
+
       const th = e.target.closest('th[data-sort-col]');
       if (th) {
         const col = th.dataset.sortCol;
@@ -85,6 +93,31 @@ const EstoqueModule = {
 
       if (btn.id === 'estoqueAtualizarBtn') {
         await this.load();
+      }
+
+      if (btn.id === 'estoqueStatusBtn') {
+        const menu = document.getElementById('estoqueStatusMenu');
+        if (!menu) return;
+        const open = !menu.hidden;
+        menu.hidden = open;
+        btn.setAttribute('aria-expanded', String(!open));
+        return;
+      }
+
+      if (btn.dataset.statusVal !== undefined) {
+        const val = btn.dataset.statusVal;
+        const hiddenInput = document.getElementById('estoqueStatusFiltro');
+        if (hiddenInput) hiddenInput.value = val;
+        const lbl = document.getElementById('estoqueStatusLabel');
+        if (lbl) lbl.textContent = btn.textContent.trim();
+        document.querySelectorAll('.est-filter-dd-item').forEach((item) => {
+          item.classList.toggle('est-filter-dd-item--sel', item.dataset.statusVal === val);
+        });
+        const menu = document.getElementById('estoqueStatusMenu');
+        if (menu) menu.hidden = true;
+        document.getElementById('estoqueStatusBtn')?.setAttribute('aria-expanded', 'false');
+        this.applyFilters();
+        return;
       }
 
       if (btn.id === 'estoqueFaltaBtn') {
@@ -171,6 +204,10 @@ const EstoqueModule = {
         : '<span class="sort-icon sort-icon--desc">↓</span>';
     };
 
+    const _sVal = this.getCurrentStatusValue();
+    const _sLbls = { '': 'Todos', 'normal': 'Estoque normal', 'baixo': 'Baixo estoque', 'sem_estoque': 'Sem estoque' };
+    const _sLbl = _sLbls[_sVal] || 'Todos';
+
     c.innerHTML = `
       <section class="module-card">
         <div id="estoqueFeedback" class="module-feedback"></div>
@@ -183,12 +220,19 @@ const EstoqueModule = {
             <input id="estoqueSearch" placeholder="Buscar por nome, categoria ou código de barras..."
               value="${escapeHtml(this.getCurrentSearchValue())}" />
           </div>
-          <select id="estoqueStatusFiltro" class="est-sel">
-            <option value="">Todos</option>
-            <option value="normal" ${this.getCurrentStatusValue() === 'normal' ? 'selected' : ''}>Estoque normal</option>
-            <option value="baixo" ${this.getCurrentStatusValue() === 'baixo' ? 'selected' : ''}>Baixo estoque</option>
-            <option value="sem_estoque" ${this.getCurrentStatusValue() === 'sem_estoque' ? 'selected' : ''}>Sem estoque</option>
-          </select>
+          <div class="est-filter-dd" id="estoqueStatusWrap">
+            <button type="button" class="est-filter-dd-btn" id="estoqueStatusBtn" aria-haspopup="listbox" aria-expanded="false">
+              <span id="estoqueStatusLabel">${_sLbl}</span>
+              <i class="fa-solid fa-chevron-down est-dd-chevron"></i>
+            </button>
+            <div class="est-filter-dd-menu" id="estoqueStatusMenu" hidden>
+              <button type="button" class="est-filter-dd-item${_sVal==='' ? ' est-filter-dd-item--sel' : ''}" data-status-val="">Todos</button>
+              <button type="button" class="est-filter-dd-item${_sVal==='normal' ? ' est-filter-dd-item--sel' : ''}" data-status-val="normal">Estoque normal</button>
+              <button type="button" class="est-filter-dd-item${_sVal==='baixo' ? ' est-filter-dd-item--sel' : ''}" data-status-val="baixo">Baixo estoque</button>
+              <button type="button" class="est-filter-dd-item${_sVal==='sem_estoque' ? ' est-filter-dd-item--sel' : ''}" data-status-val="sem_estoque">Sem estoque</button>
+            </div>
+            <input type="hidden" id="estoqueStatusFiltro" value="${_sVal}" />
+          </div>
           <div class="est-top-actions">
             <button class="est-action-btn" id="estoqueFaltaBtn" type="button">
               <i class="fa-solid fa-circle-exclamation"></i>
@@ -479,6 +523,7 @@ const EstoqueModule = {
 
     if (this.el.search) this.el.search.disabled = value;
     if (this.el.status) this.el.status.disabled = value;
+    if (this.el.statusBtn) this.el.statusBtn.disabled = value;
 
     const btnAtualizar = document.getElementById('estoqueAtualizarBtn');
     if (btnAtualizar) btnAtualizar.disabled = value;
@@ -579,13 +624,31 @@ const EstoqueModule = {
         border: none; background: transparent; flex: 1;
         font-size: 14px; outline: none; color: var(--text);
       }
-      .est-sel {
+      .est-filter-dd { position: relative; flex-shrink: 0; }
+      .est-filter-dd-btn {
+        display: inline-flex; align-items: center; justify-content: space-between; gap: 10px;
+        height: 40px; padding: 0 14px; min-width: 148px;
         border: 1px solid var(--border); border-radius: 12px;
         background: var(--surface); color: var(--text);
-        font-size: 13px; padding: 0 12px; min-height: 40px; min-width: 148px;
-        outline: none; cursor: pointer; transition: border-color .15s;
+        font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap;
+        transition: border-color .15s;
       }
-      .est-sel:focus { border-color: var(--primary); }
+      .est-filter-dd-btn:hover,
+      .est-filter-dd-btn[aria-expanded="true"] { border-color: var(--primary, #3b82f6); }
+      .est-dd-chevron { font-size: .65rem; color: var(--text-muted); transition: transform .15s; flex-shrink: 0; }
+      .est-filter-dd-btn[aria-expanded="true"] .est-dd-chevron { transform: rotate(180deg); }
+      .est-filter-dd-menu {
+        position: absolute; top: calc(100% + 6px); left: 0; z-index: 300;
+        background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+        padding: 6px; box-shadow: 0 8px 24px rgba(0,0,0,.12); min-width: 100%;
+      }
+      .est-filter-dd-item {
+        display: block; width: 100%; text-align: left; padding: 9px 12px;
+        border: none; background: transparent; color: var(--text);
+        font-size: 13px; border-radius: 8px; cursor: pointer; transition: background .12s;
+      }
+      .est-filter-dd-item:hover { background: rgba(0,0,0,.05); }
+      .est-filter-dd-item--sel { color: var(--primary, #3b82f6); font-weight: 600; }
       .est-top-actions { display: flex; gap: 6px; flex-shrink: 0; align-items: center; }
       .est-action-btn {
         display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;
