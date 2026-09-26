@@ -594,21 +594,21 @@ const EstoqueModule = {
       .est-kpi-strip {
         display: flex; align-items: stretch;
         background: var(--surface); border: 1px solid var(--border);
-        border-radius: 18px; margin-bottom: 20px; overflow: hidden;
+        border-radius: 18px; margin-bottom: 20px; overflow-x: auto; overflow-y: hidden;
         box-shadow: 0 1px 6px rgba(0,0,0,.05);
       }
       .est-kpi-item {
-        flex: 1; padding: 14px 18px; display: flex; flex-direction: column; gap: 5px; min-width: 0;
+        flex: 1 1 110px; min-width: 110px; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px;
       }
       .est-kpi-lbl {
-        font-size: .66rem; font-weight: 800; color: var(--text-muted);
+        font-size: .64rem; font-weight: 800; color: var(--text-muted);
         text-transform: uppercase; letter-spacing: .06em;
-        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        white-space: normal; line-height: 1.3;
       }
       .est-kpi-val {
-        font-size: 1.3rem; font-weight: 900; color: var(--text);
+        font-size: 1.15rem; font-weight: 900; color: var(--text);
         letter-spacing: -.02em; font-variant-numeric: tabular-nums;
-        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        white-space: nowrap;
       }
       .est-kpi-warn   { color: var(--warning, #ca8a04); }
       .est-kpi-danger { color: var(--danger,  #dc2626); }
