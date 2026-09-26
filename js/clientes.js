@@ -1151,7 +1151,7 @@ const ClientesModule = {
         const msg = key === 'aniversario'   ? this._gerarMsgAniversario(cliente)
                   : key === 'agradecimento' ? this._gerarMsgAgradecimento(cliente)
                   :                           this._gerarMsgNovidade(cliente);
-        this._enviarMsgWhatsapp(cliente, msg);
+        this._mostrarMsgCobrancaSemTelefone(msg);
       }
     });
 
