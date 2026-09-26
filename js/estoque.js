@@ -190,18 +190,20 @@ const EstoqueModule = {
             <option value="sem_estoque" ${this.getCurrentStatusValue() === 'sem_estoque' ? 'selected' : ''}>Sem estoque</option>
           </select>
           <div class="est-top-actions">
-            <button class="btn btn-light" id="estoqueFaltaBtn" type="button">
-              <i class="fa-solid fa-circle-exclamation"></i>
-              <span class="est-lbl">Em falta</span>
-              <span id="estoqueFaltaCount" class="badge badge--danger" style="margin-left:4px;display:none">0</span>
-            </button>
-            <button class="btn btn-light" id="estoqueDepositosBtn" type="button">
-              <i class="fa-solid fa-warehouse"></i> <span class="est-lbl">Depósitos</span>
-            </button>
-            <button class="btn btn-light" id="estoqueSugestaoBtn" type="button">
-              <i class="fa-solid fa-cart-shopping"></i> <span class="est-lbl">Sugestão</span>
-            </button>
-            <button class="btn btn-light" id="estoqueAtualizarBtn" type="button" title="Atualizar">
+            <div class="est-btn-group">
+              <button class="est-group-btn" id="estoqueFaltaBtn" type="button">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                <span class="est-lbl">Em falta</span>
+                <span id="estoqueFaltaCount" class="badge badge--danger" style="margin-left:4px;display:none">0</span>
+              </button>
+              <button class="est-group-btn" id="estoqueDepositosBtn" type="button">
+                <i class="fa-solid fa-warehouse"></i><span class="est-lbl">Depósitos</span>
+              </button>
+              <button class="est-group-btn" id="estoqueSugestaoBtn" type="button">
+                <i class="fa-solid fa-cart-shopping"></i><span class="est-lbl">Sugestão</span>
+              </button>
+            </div>
+            <button class="est-refresh-btn" id="estoqueAtualizarBtn" type="button" title="Atualizar">
               <i class="fa-solid fa-rotate"></i>
             </button>
           </div>
@@ -412,9 +414,9 @@ const EstoqueModule = {
 
     if (this.el.faltaBtn) {
       this.el.faltaBtn.innerHTML = emFalta
-        ? '<i class="fa-solid fa-arrow-left"></i> Voltar ao estoque'
-        : `<i class="fa-solid fa-circle-exclamation"></i> Produtos em falta${count > 0 ? ` <span class="badge badge--danger" style="margin-left:4px">${count}</span>` : ''}`;
-      this.el.faltaBtn.className = emFalta ? 'btn btn-warning' : 'btn btn-light';
+        ? '<i class="fa-solid fa-arrow-left"></i><span class="est-lbl">Ver todos</span>'
+        : `<i class="fa-solid fa-circle-exclamation"></i><span class="est-lbl">Em falta</span>${count > 0 ? ` <span class="badge badge--danger" style="margin-left:4px">${count}</span>` : ''}`;
+      this.el.faltaBtn.className = emFalta ? 'est-group-btn active' : 'est-group-btn';
     }
 
     if (this.el.viewTitle) {
@@ -586,8 +588,30 @@ const EstoqueModule = {
         outline: none; cursor: pointer; transition: border-color .15s;
       }
       .est-sel:focus { border-color: var(--primary); }
-      .est-top-actions { display: flex; gap: 6px; flex-shrink: 0; }
-      .est-top-actions .btn { height: 40px; }
+      .est-top-actions { display: flex; gap: 8px; flex-shrink: 0; align-items: center; }
+      .est-btn-group {
+        display: flex; align-items: stretch;
+        border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+        background: var(--surface);
+      }
+      .est-group-btn {
+        border: none; border-left: 1px solid var(--border);
+        background: transparent; color: var(--text-muted);
+        font-size: 13px; font-weight: 500; height: 40px; padding: 0 14px;
+        display: flex; align-items: center; gap: 6px;
+        cursor: pointer; white-space: nowrap; transition: background .15s, color .15s;
+      }
+      .est-group-btn:first-child { border-left: none; }
+      .est-group-btn:hover { background: var(--hover, rgba(0,0,0,.05)); color: var(--text); }
+      .est-group-btn.active { background: rgba(var(--primary-rgb, 59,130,246),.08); color: var(--primary); }
+      .est-refresh-btn {
+        width: 40px; height: 40px; padding: 0; flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center;
+        border: 1px solid var(--border); border-radius: 12px;
+        background: var(--surface); color: var(--text-muted);
+        cursor: pointer; transition: background .15s, color .15s;
+      }
+      .est-refresh-btn:hover { background: var(--hover, rgba(0,0,0,.05)); color: var(--text); }
       @media (max-width: 860px) { .est-lbl { display: none; } }
 
       /* ── KPI strip conectado ────────────────────── */
