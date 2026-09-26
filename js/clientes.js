@@ -106,6 +106,11 @@ const ClientesModule = {
         this.closeModal();
       }
 
+      if (btn.dataset.action === 'cli-acoes') {
+        const cli = this.state.items.find(c => String(c.id) === btn.dataset.id);
+        if (cli) this._abrirAcoesClienteModal(cli);
+      }
+
       if (btn.dataset.action === 'edit-cliente') {
         this.edit(btn.dataset.id);
       }
@@ -386,21 +391,12 @@ const ClientesModule = {
         <td>${escapeHtml(cliente.cpf || '-')}</td>
         <td>${formatDate(cliente.nascimento)}</td>
 
-        <td class="text-right">
-          <div class="table-actions">
-            <button class="btn-inline" data-action="edit-cliente" data-id="${cliente.id}">
-              Editar
-            </button>
-            <button class="btn-inline" data-action="extrato-cliente" data-id="${cliente.id}" data-nome="${escapeHtml(cliente.nome || '')}">
-              <i class="fa-solid fa-file-invoice-dollar"></i> Extrato
-            </button>
-            <button class="btn-inline ${cliente.portal_ativo ? 'btn-inline--active' : ''}" data-action="portal-cliente" data-id="${cliente.id}" data-nome="${escapeHtml(cliente.nome || '')}">
-              <i class="fa-solid fa-globe"></i> Portal
-            </button>
-            <button class="btn-inline btn-inline--danger" data-action="delete-cliente" data-id="${cliente.id}">
-              Excluir
-            </button>
-          </div>
+        <td>
+          <button type="button" class="cr-act-toggle" data-action="cli-acoes"
+            data-id="${cliente.id}" data-nome="${escapeHtml(cliente.nome || '')}"
+            data-portal="${cliente.portal_ativo ? '1' : '0'}">
+            <i class="fa-solid fa-ellipsis-vertical"></i>
+          </button>
         </td>
       </tr>
     `;
@@ -848,6 +844,55 @@ const ClientesModule = {
 
     document.getElementById('abcVoltarBtn2').addEventListener('click', () => {
       this.render(); this.cache(); this.renderTable();
+    });
+  },
+
+  // ── Modal de ações do cliente ────────────────────────────────────────────────
+
+  _abrirAcoesClienteModal(cliente) {
+    document.getElementById('cliAcoesModal')?.remove();
+    const overlay = document.createElement('div');
+    overlay.id = 'cliAcoesModal';
+    overlay.className = 'cr-mai-overlay';
+
+    const portalLabel = cliente.portal_ativo ? 'Portal (ativo)' : 'Portal';
+    const portalDesc  = cliente.portal_ativo ? 'Gerenciar acesso ao portal do cliente' : 'Configurar acesso ao portal do cliente';
+
+    overlay.innerHTML = `
+      <div class="cr-mai-card">
+        <div class="cr-mai-header">
+          <div>
+            <div style="font-weight:900;font-size:.95rem">${escapeHtml(cliente.nome || 'Cliente')}</div>
+            ${cliente.telefone ? `<div style="font-size:.78rem;color:var(--text-muted)">${escapeHtml(cliente.telefone)}</div>` : ''}
+          </div>
+          <button type="button" class="cr-mai-fechar" id="cliAcoesFechar"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="cr-mai-actions">
+          <button type="button" class="cr-mai-item" data-action="edit-cliente" data-id="${cliente.id}">
+            <span class="cr-mai-ico cr-mai-ico--pix"><i class="fa-solid fa-pen"></i></span>
+            <span class="cr-mai-texts"><span class="cr-mai-lbl">Editar</span><span class="cr-mai-desc">Alterar dados do cliente</span></span>
+          </button>
+          <button type="button" class="cr-mai-item" data-action="extrato-cliente" data-id="${cliente.id}" data-nome="${escapeHtml(cliente.nome || '')}">
+            <span class="cr-mai-ico cr-mai-ico--success"><i class="fa-solid fa-file-invoice-dollar"></i></span>
+            <span class="cr-mai-texts"><span class="cr-mai-lbl">Extrato</span><span class="cr-mai-desc">Ver extrato e histórico financeiro</span></span>
+          </button>
+          <button type="button" class="cr-mai-item" data-action="portal-cliente" data-id="${cliente.id}" data-nome="${escapeHtml(cliente.nome || '')}">
+            <span class="cr-mai-ico cr-mai-ico--warning"><i class="fa-solid fa-globe"></i></span>
+            <span class="cr-mai-texts"><span class="cr-mai-lbl">${portalLabel}</span><span class="cr-mai-desc">${portalDesc}</span></span>
+          </button>
+          <button type="button" class="cr-mai-item" data-action="delete-cliente" data-id="${cliente.id}">
+            <span class="cr-mai-ico cr-mai-ico--danger"><i class="fa-solid fa-trash"></i></span>
+            <span class="cr-mai-texts"><span class="cr-mai-lbl">Excluir</span><span class="cr-mai-desc">Remover cliente permanentemente</span></span>
+          </button>
+        </div>
+      </div>`;
+
+    document.body.appendChild(overlay);
+    document.getElementById('cliAcoesFechar').onclick = () => overlay.remove();
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+
+    overlay.querySelectorAll('[data-action]').forEach(btn => {
+      btn.addEventListener('click', () => overlay.remove());
     });
   },
 
