@@ -973,85 +973,23 @@ function renderLinhas() {
         </td>
 
         <td class="text-right">
-          <div class="table-actions">
-          ${conta.cliente_id
-              ? `<button class="btn-inline" type="button" data-action="visao-cliente-cr" data-id="${conta.cliente_id}" data-nome="${escapeHtml(conta.cliente_nome || '')}"><i class="fa-solid fa-user"></i> Cliente</button>`
-              : ''}
-            <button class="btn-inline" type="button" data-action="detalhe-cr" data-id="${conta.id}">
-              <i class="fa-solid fa-eye"></i>
-              Detalhes
+          <div class="cr-act-wrap">
+            <button type="button" class="cr-act-toggle" data-cr-toggle="${conta.id}" aria-expanded="false" aria-haspopup="true">
+              Ações <i class="fa-solid fa-chevron-down cr-act-chev"></i>
             </button>
-
-            ${
-              conta.venda_id
-                ? `
-                  <button class="btn-inline" type="button" data-action="origem-venda-cr" data-id="${conta.id}">
-                    <i class="fa-solid fa-receipt"></i>
-                    Venda
-                  </button>
-                `
-                : ''
-            }
-
-           ${
-             status === 'pago'
-               ? `
-      <button class="btn-inline btn-inline--warning" type="button" data-action="estornar-cr" data-id="${conta.id}">
-        <i class="fa-solid fa-rotate-left"></i>
-        Estornar
-      </button>
-    `
-               : `
-      <button class="btn-inline btn-inline--success" type="button" data-action="baixar-cr" data-id="${conta.id}">
-        <i class="fa-solid fa-check"></i>
-        Baixar
-      </button>
-
-      <button class="btn-inline btn-inline--pix" type="button"
-        data-action="cobrar-pix-cr"
-        data-id="${conta.id}"
-        data-valor="${conta.valor}"
-        data-cliente="${escapeHtml(conta.cliente_nome || '')}">
-        <i class="fa-brands fa-pix"></i>
-        PIX
-      </button>
-
-      <button class="btn-inline" type="button"
-        data-action="gerar-boleto-cr"
-        data-id="${conta.id}"
-        title="Gerar boleto bancário (Asaas)">
-        <i class="fa-solid fa-barcode"></i>
-        Boleto
-      </button>
-
-      <button
-        class="btn-inline"
-        type="button"
-        data-action="editar-cr"
-        data-id="${conta.id}"
-        title="Editar descrição ou vencimento"
-      >
-        <i class="fa-solid fa-pen"></i>
-        Editar
-      </button>
-
-      ${
-        !['pago','parcial','parcial_atrasado'].includes(status)
-          ? `
-            <button
-              class="btn-inline btn-inline--danger"
-              type="button"
-              data-action="excluir-cr"
-              data-id="${conta.id}"
-            >
-              <i class="fa-solid fa-trash"></i>
-              Excluir
-            </button>
-          `
-          : ''
-      }
-    `
-           }
+            <div class="cr-act-menu" data-cr-menu="${conta.id}" hidden>
+              ${conta.cliente_id ? `<button class="cr-act-item" type="button" data-action="visao-cliente-cr" data-id="${conta.cliente_id}" data-nome="${escapeHtml(conta.cliente_nome || '')}"><i class="fa-solid fa-user"></i> Cliente</button>` : ''}
+              <button class="cr-act-item" type="button" data-action="detalhe-cr" data-id="${conta.id}"><i class="fa-solid fa-eye"></i> Detalhes</button>
+              ${conta.venda_id ? `<button class="cr-act-item" type="button" data-action="origem-venda-cr" data-id="${conta.id}"><i class="fa-solid fa-receipt"></i> Venda</button>` : ''}
+              ${status === 'pago'
+                ? `<button class="cr-act-item cr-act-item--warning" type="button" data-action="estornar-cr" data-id="${conta.id}"><i class="fa-solid fa-rotate-left"></i> Estornar</button>`
+                : `<button class="cr-act-item cr-act-item--success" type="button" data-action="baixar-cr" data-id="${conta.id}"><i class="fa-solid fa-check"></i> Baixar</button>
+                   <button class="cr-act-item cr-act-item--pix" type="button" data-action="cobrar-pix-cr" data-id="${conta.id}" data-valor="${conta.valor}" data-cliente="${escapeHtml(conta.cliente_nome || '')}"><i class="fa-brands fa-pix"></i> PIX</button>
+                   <button class="cr-act-item" type="button" data-action="gerar-boleto-cr" data-id="${conta.id}"><i class="fa-solid fa-barcode"></i> Boleto</button>
+                   <button class="cr-act-item" type="button" data-action="editar-cr" data-id="${conta.id}"><i class="fa-solid fa-pen"></i> Editar</button>
+                   ${!['pago','parcial','parcial_atrasado'].includes(status) ? `<button class="cr-act-item cr-act-item--danger" type="button" data-action="excluir-cr" data-id="${conta.id}"><i class="fa-solid fa-trash"></i> Excluir</button>` : ''}`
+              }
+            </div>
           </div>
         </td>
       </tr>
@@ -1614,6 +1552,31 @@ function bindEventos() {
       }
     });
   });
+
+  // Dropdown de ações por linha
+  document.querySelectorAll('.cr-act-toggle').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.crToggle;
+      const menu = document.querySelector(`.cr-act-menu[data-cr-menu="${id}"]`);
+      if (!menu) return;
+      const isOpen = !menu.hidden;
+      document.querySelectorAll('.cr-act-menu').forEach(m => { m.hidden = true; });
+      document.querySelectorAll('.cr-act-toggle[aria-expanded="true"]').forEach(b => b.setAttribute('aria-expanded', 'false'));
+      if (!isOpen) {
+        menu.hidden = false;
+        btn.setAttribute('aria-expanded', 'true');
+      }
+    });
+  });
+
+  if (!window._crActOutsideAdded) {
+    window._crActOutsideAdded = true;
+    document.addEventListener('click', () => {
+      document.querySelectorAll('.cr-act-menu').forEach(m => { m.hidden = true; });
+      document.querySelectorAll('.cr-act-toggle[aria-expanded="true"]').forEach(b => b.setAttribute('aria-expanded', 'false'));
+    });
+  }
 }
 
 async function recarregar() {

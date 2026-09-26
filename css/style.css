@@ -1708,6 +1708,39 @@ img {
   color: var(--danger);
 }
 
+/* CR Actions Dropdown */
+.cr-act-wrap { position: relative; display: inline-block; }
+.cr-act-toggle {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 34px; padding: 0 12px; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--surface);
+  color: var(--text-muted); font-size: 13px; font-weight: 600;
+  cursor: pointer; white-space: nowrap; transition: border-color .15s, color .15s;
+}
+.cr-act-toggle:hover { border-color: var(--primary); color: var(--text); }
+.cr-act-chev { font-size: .65rem; transition: transform .15s; }
+.cr-act-toggle[aria-expanded="true"] .cr-act-chev { transform: rotate(180deg); }
+.cr-act-menu {
+  position: absolute; right: 0; top: calc(100% + 4px); z-index: 500;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 6px; box-shadow: 0 8px 24px rgba(0,0,0,.12); min-width: 160px;
+}
+.cr-act-item {
+  display: flex; align-items: center; gap: 8px; width: 100%; text-align: left;
+  padding: 8px 10px; border: none; background: transparent;
+  color: var(--text); font-size: 13px; border-radius: 8px;
+  cursor: pointer; transition: background .12s; white-space: nowrap;
+}
+.cr-act-item:hover { background: rgba(0,0,0,.05); }
+.cr-act-item--success { color: var(--success, #16a34a); }
+.cr-act-item--success:hover { background: rgba(22,163,74,.08); color: #15803d; }
+.cr-act-item--pix { color: #00875a; }
+.cr-act-item--pix:hover { background: rgba(0,135,90,.08); }
+.cr-act-item--warning { color: #d97706; }
+.cr-act-item--warning:hover { background: rgba(217,119,6,.08); color: #b45309; }
+.cr-act-item--danger { color: #dc2626; }
+.cr-act-item--danger:hover { background: rgba(220,38,38,.08); color: #b91c1c; }
+
 /* =========================
    SCROLL
 ========================= */
