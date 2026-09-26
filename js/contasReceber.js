@@ -973,24 +973,9 @@ function renderLinhas() {
         </td>
 
         <td class="text-right">
-          <div class="cr-act-wrap">
-            <button type="button" class="cr-act-toggle" data-cr-toggle="${conta.id}" aria-expanded="false" aria-haspopup="true">
-              Ações <i class="fa-solid fa-chevron-down cr-act-chev"></i>
-            </button>
-            <div class="cr-act-menu" data-cr-menu="${conta.id}" hidden>
-              ${conta.cliente_id ? `<button class="cr-act-item" type="button" data-action="visao-cliente-cr" data-id="${conta.cliente_id}" data-nome="${escapeHtml(conta.cliente_nome || '')}"><i class="fa-solid fa-user"></i> Cliente</button>` : ''}
-              <button class="cr-act-item" type="button" data-action="detalhe-cr" data-id="${conta.id}"><i class="fa-solid fa-eye"></i> Detalhes</button>
-              ${conta.venda_id ? `<button class="cr-act-item" type="button" data-action="origem-venda-cr" data-id="${conta.id}"><i class="fa-solid fa-receipt"></i> Venda</button>` : ''}
-              ${status === 'pago'
-                ? `<button class="cr-act-item cr-act-item--warning" type="button" data-action="estornar-cr" data-id="${conta.id}"><i class="fa-solid fa-rotate-left"></i> Estornar</button>`
-                : `<button class="cr-act-item cr-act-item--success" type="button" data-action="baixar-cr" data-id="${conta.id}"><i class="fa-solid fa-check"></i> Baixar</button>
-                   <button class="cr-act-item cr-act-item--pix" type="button" data-action="cobrar-pix-cr" data-id="${conta.id}" data-valor="${conta.valor}" data-cliente="${escapeHtml(conta.cliente_nome || '')}"><i class="fa-brands fa-pix"></i> PIX</button>
-                   <button class="cr-act-item" type="button" data-action="gerar-boleto-cr" data-id="${conta.id}"><i class="fa-solid fa-barcode"></i> Boleto</button>
-                   <button class="cr-act-item" type="button" data-action="editar-cr" data-id="${conta.id}"><i class="fa-solid fa-pen"></i> Editar</button>
-                   ${!['pago','parcial','parcial_atrasado'].includes(status) ? `<button class="cr-act-item cr-act-item--danger" type="button" data-action="excluir-cr" data-id="${conta.id}"><i class="fa-solid fa-trash"></i> Excluir</button>` : ''}`
-              }
-            </div>
-          </div>
+          <button type="button" class="cr-act-toggle" data-cr-id="${conta.id}">
+            <i class="fa-solid fa-ellipsis-vertical"></i>
+          </button>
         </td>
       </tr>
     `;
@@ -1553,30 +1538,89 @@ function bindEventos() {
     });
   });
 
-  // Dropdown de ações por linha
+  // Modal de ações por linha
   document.querySelectorAll('.cr-act-toggle').forEach((btn) => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const id = btn.dataset.crToggle;
-      const menu = document.querySelector(`.cr-act-menu[data-cr-menu="${id}"]`);
-      if (!menu) return;
-      const isOpen = !menu.hidden;
-      document.querySelectorAll('.cr-act-menu').forEach(m => { m.hidden = true; });
-      document.querySelectorAll('.cr-act-toggle[aria-expanded="true"]').forEach(b => b.setAttribute('aria-expanded', 'false'));
-      if (!isOpen) {
-        menu.hidden = false;
-        btn.setAttribute('aria-expanded', 'true');
-      }
+    btn.addEventListener('click', () => {
+      const conta = state.contas.find(c => String(c.id) === btn.dataset.crId);
+      if (conta) _abrirAcoesCRModal(conta);
     });
   });
+}
 
-  if (!window._crActOutsideAdded) {
-    window._crActOutsideAdded = true;
-    document.addEventListener('click', () => {
-      document.querySelectorAll('.cr-act-menu').forEach(m => { m.hidden = true; });
-      document.querySelectorAll('.cr-act-toggle[aria-expanded="true"]').forEach(b => b.setAttribute('aria-expanded', 'false'));
+function _abrirAcoesCRModal(conta) {
+  document.getElementById('crAcoesModal')?.remove();
+  const status = normalizarStatus(conta.status);
+  const isPago = status === 'pago';
+  const podeExcluir = !['pago', 'parcial', 'parcial_atrasado'].includes(status);
+
+  const _item = (ico, icoClass, label, desc, onclick, cls = '') => `
+    <button type="button" class="cr-mai-item ${cls}" data-cr-mai-action="${onclick}">
+      <span class="cr-mai-ico ${icoClass}"><i class="${ico}"></i></span>
+      <span class="cr-mai-texts">
+        <span class="cr-mai-lbl">${label}</span>
+        ${desc ? `<span class="cr-mai-desc">${desc}</span>` : ''}
+      </span>
+    </button>`;
+
+  const acoes = [
+    conta.cliente_id ? _item('fa-solid fa-user', '', 'Cliente', 'Ver histórico do cliente', 'cliente') : '',
+    _item('fa-solid fa-eye', '', 'Detalhes', 'Ver parcelas e pagamentos', 'detalhes'),
+    conta.venda_id   ? _item('fa-solid fa-receipt', '', 'Venda origem', `Venda #${conta.venda_id}`, 'venda') : '',
+    isPago
+      ? _item('fa-solid fa-rotate-left', 'cr-mai-ico--warning', 'Estornar', 'Desfazer o recebimento', 'estornar', 'cr-mai-item--warning')
+      : [
+          _item('fa-solid fa-check', 'cr-mai-ico--success', 'Baixar', 'Registrar como recebido', 'baixar', 'cr-mai-item--success'),
+          _item('fa-brands fa-pix', 'cr-mai-ico--pix', 'Cobrar via PIX', 'Gerar QR Code PIX', 'pix', 'cr-mai-item--pix'),
+          _item('fa-solid fa-barcode', '', 'Gerar Boleto', 'Emitir boleto bancário', 'boleto'),
+          _item('fa-solid fa-pen', '', 'Editar', 'Alterar descrição ou vencimento', 'editar'),
+          podeExcluir ? _item('fa-solid fa-trash', 'cr-mai-ico--danger', 'Excluir', 'Remover este título', 'excluir', 'cr-mai-item--danger') : '',
+        ].join(''),
+  ].join('');
+
+  const wrap = document.createElement('div');
+  wrap.id = 'crAcoesModal';
+  wrap.className = 'cr-mai-overlay';
+  wrap.innerHTML = `
+    <div class="cr-mai-card">
+      <div class="cr-mai-header">
+        <div>
+          <span class="cr-mai-eyebrow">Título #${conta.id}</span>
+          <div class="cr-mai-cliente">${escapeHtml(conta.cliente_nome || 'Cliente não informado')}</div>
+          ${conta.descricao ? `<div class="cr-mai-desc-conta">${escapeHtml(conta.descricao)}</div>` : ''}
+          <div class="cr-mai-meta">
+            <strong>${formatCurrency(conta.valor)}</strong>
+            <span class="cr-mai-dot">·</span>
+            <span>Vence ${formatDate(conta.data_vencimento)}</span>
+          </div>
+        </div>
+        <button type="button" class="cr-mai-fechar" id="crAcoesFechar">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="cr-mai-actions">${acoes}</div>
+    </div>`;
+
+  document.body.appendChild(wrap);
+
+  const fechar = () => wrap.remove();
+  document.getElementById('crAcoesFechar').addEventListener('click', fechar);
+  wrap.addEventListener('click', e => { if (e.target === wrap) fechar(); });
+
+  wrap.querySelectorAll('[data-cr-mai-action]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      fechar();
+      const act = btn.dataset.crMaiAction;
+      if (act === 'cliente')  await abrirVisaoCliente(conta.cliente_id, conta.cliente_nome || '');
+      if (act === 'detalhes') await abrirDetalheConta(conta.id);
+      if (act === 'venda')    await abrirOrigemVenda(conta.id);
+      if (act === 'estornar') await estornarConta(conta.id);
+      if (act === 'baixar')   await baixarConta(conta.id);
+      if (act === 'pix')      gerarPIX({ contaReceberID: Number(conta.id), valor: Number(conta.valor), clienteNome: conta.cliente_nome || '', onPago: () => recarregar() });
+      if (act === 'boleto')   await gerarBoleto(Number(conta.id));
+      if (act === 'editar')   abrirModalEditarConta(conta);
+      if (act === 'excluir')  await excluirConta(conta.id);
     });
-  }
+  });
 }
 
 async function recarregar() {
