@@ -223,25 +223,34 @@ const EstoqueModule = {
               <strong id="estoqueTotalProdutos">0</strong>
             </div>
           </div>
-
           <div class="kpi-card">
             <div class="kpi-card__content">
               <span>Baixo estoque</span>
-              <strong id="estoqueTotalBaixo">0</strong>
+              <strong id="estoqueTotalBaixo" style="color:var(--warning,#ca8a04)">0</strong>
             </div>
           </div>
-
           <div class="kpi-card">
             <div class="kpi-card__content">
               <span>Sem estoque</span>
-              <strong id="estoqueTotalZerado">0</strong>
+              <strong id="estoqueTotalZerado" style="color:var(--danger,#dc2626)">0</strong>
             </div>
           </div>
-
           <div class="kpi-card">
             <div class="kpi-card__content">
-              <span>Valor em estoque</span>
-              <strong id="estoqueValorTotal">R$ 0,00</strong>
+              <span>Custo do estoque</span>
+              <strong id="estoqueValorCusto">R$ 0,00</strong>
+            </div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-card__content">
+              <span>Valor de venda</span>
+              <strong id="estoqueValorVenda">R$ 0,00</strong>
+            </div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-card__content">
+              <span>Lucro estimado</span>
+              <strong id="estoqueValorLucro" style="color:var(--success,#16a34a)">R$ 0,00</strong>
             </div>
           </div>
         </div>
@@ -386,13 +395,17 @@ const EstoqueModule = {
     // Total zerado calculado sobre TODOS os itens (não só filtrados)
     const totalZerado = this.state.items.filter((p) => Number(p.estoque || 0) === 0).length;
 
-    const valorEstoque = this.getValorEstoque();
+    const { custo, venda, lucro } = this.getValoresEstoque();
 
     if (this.el.totalProdutos) this.el.totalProdutos.textContent = String(totalProdutos);
     if (this.el.totalBaixo) this.el.totalBaixo.textContent = String(totalBaixo);
     if (this.el.totalZerado) this.el.totalZerado.textContent = String(totalZerado);
-    const elValor = document.getElementById('estoqueValorTotal');
-    if (elValor) elValor.textContent = valorEstoque;
+    const elCusto = document.getElementById('estoqueValorCusto');
+    const elVenda = document.getElementById('estoqueValorVenda');
+    const elLucro = document.getElementById('estoqueValorLucro');
+    if (elCusto) elCusto.textContent = custo;
+    if (elVenda) elVenda.textContent = venda;
+    if (elLucro) elLucro.textContent = lucro;
 
     this.updateFaltaBtn(totalZerado);
   },
@@ -498,11 +511,20 @@ const EstoqueModule = {
     return message || 'Não foi possível concluir a operação.';
   },
 
-  getValorEstoque() {
-    const total = this.state.items.reduce((acc, p) => {
-      return acc + Number(p.estoque || 0) * Number(p.custo || 0);
-    }, 0);
-    return formatCurrency(total);
+  getValoresEstoque() {
+    let totalCusto = 0;
+    let totalVenda = 0;
+    this.state.items.forEach((p) => {
+      const qty = Number(p.estoque || 0);
+      totalCusto += qty * Number(p.custo_medio || p.custo || 0);
+      totalVenda += qty * Number(p.preco || 0);
+    });
+    const lucro = totalVenda - totalCusto;
+    return {
+      custo: formatCurrency(totalCusto),
+      venda: formatCurrency(totalVenda),
+      lucro: formatCurrency(lucro),
+    };
   },
 
   _sortItems() {
