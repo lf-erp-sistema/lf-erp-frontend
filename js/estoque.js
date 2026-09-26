@@ -190,20 +190,18 @@ const EstoqueModule = {
             <option value="sem_estoque" ${this.getCurrentStatusValue() === 'sem_estoque' ? 'selected' : ''}>Sem estoque</option>
           </select>
           <div class="est-top-actions">
-            <div class="est-btn-group">
-              <button class="est-group-btn" id="estoqueFaltaBtn" type="button">
-                <i class="fa-solid fa-circle-exclamation"></i>
-                <span class="est-lbl">Em falta</span>
-                <span id="estoqueFaltaCount" class="badge badge--danger" style="margin-left:4px;display:none">0</span>
-              </button>
-              <button class="est-group-btn" id="estoqueDepositosBtn" type="button">
-                <i class="fa-solid fa-warehouse"></i><span class="est-lbl">Depósitos</span>
-              </button>
-              <button class="est-group-btn" id="estoqueSugestaoBtn" type="button">
-                <i class="fa-solid fa-cart-shopping"></i><span class="est-lbl">Sugestão</span>
-              </button>
-            </div>
-            <button class="est-refresh-btn" id="estoqueAtualizarBtn" type="button" title="Atualizar">
+            <button class="est-action-btn" id="estoqueFaltaBtn" type="button">
+              <i class="fa-solid fa-circle-exclamation"></i>
+              <span class="est-lbl">Em falta</span>
+              <span id="estoqueFaltaCount" class="badge badge--danger" style="margin-left:4px;display:none">0</span>
+            </button>
+            <button class="est-action-btn" id="estoqueDepositosBtn" type="button">
+              <i class="fa-solid fa-warehouse"></i><span class="est-lbl">Depósitos</span>
+            </button>
+            <button class="est-action-btn" id="estoqueSugestaoBtn" type="button">
+              <i class="fa-solid fa-cart-shopping"></i><span class="est-lbl">Sugestão</span>
+            </button>
+            <button class="est-action-btn est-action-btn--icon" id="estoqueAtualizarBtn" type="button" title="Atualizar">
               <i class="fa-solid fa-rotate"></i>
             </button>
           </div>
@@ -416,7 +414,7 @@ const EstoqueModule = {
       this.el.faltaBtn.innerHTML = emFalta
         ? '<i class="fa-solid fa-arrow-left"></i><span class="est-lbl">Ver todos</span>'
         : `<i class="fa-solid fa-circle-exclamation"></i><span class="est-lbl">Em falta</span>${count > 0 ? ` <span class="badge badge--danger" style="margin-left:4px">${count}</span>` : ''}`;
-      this.el.faltaBtn.className = emFalta ? 'est-group-btn active' : 'est-group-btn';
+      this.el.faltaBtn.className = emFalta ? 'est-action-btn active' : 'est-action-btn';
     }
 
     if (this.el.viewTitle) {
@@ -588,30 +586,21 @@ const EstoqueModule = {
         outline: none; cursor: pointer; transition: border-color .15s;
       }
       .est-sel:focus { border-color: var(--primary); }
-      .est-top-actions { display: flex; gap: 8px; flex-shrink: 0; align-items: center; }
-      .est-btn-group {
-        display: flex; align-items: stretch;
-        border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
-        background: var(--surface);
-      }
-      .est-group-btn {
-        border: none; border-left: 1px solid var(--border);
-        background: transparent; color: var(--text-muted);
-        font-size: 13px; font-weight: 500; height: 40px; padding: 0 14px;
-        display: flex; align-items: center; gap: 6px;
-        cursor: pointer; white-space: nowrap; transition: background .15s, color .15s;
-      }
-      .est-group-btn:first-child { border-left: none; }
-      .est-group-btn:hover { background: var(--hover, rgba(0,0,0,.05)); color: var(--text); }
-      .est-group-btn.active { background: rgba(var(--primary-rgb, 59,130,246),.08); color: var(--primary); }
-      .est-refresh-btn {
-        width: 40px; height: 40px; padding: 0; flex-shrink: 0;
-        display: flex; align-items: center; justify-content: center;
+      .est-top-actions { display: flex; gap: 6px; flex-shrink: 0; align-items: center; }
+      .est-action-btn {
+        display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;
+        height: 40px; padding: 0 14px;
         border: 1px solid var(--border); border-radius: 12px;
         background: var(--surface); color: var(--text-muted);
-        cursor: pointer; transition: background .15s, color .15s;
+        font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap;
+        transition: background .15s, color .15s, border-color .15s;
       }
-      .est-refresh-btn:hover { background: var(--hover, rgba(0,0,0,.05)); color: var(--text); }
+      .est-action-btn:hover { background: rgba(0,0,0,.04); color: var(--text); }
+      .est-action-btn.active {
+        background: rgba(59,130,246,.08); color: var(--primary, #3b82f6);
+        border-color: rgba(59,130,246,.3);
+      }
+      .est-action-btn--icon { padding: 0; width: 40px; justify-content: center; }
       @media (max-width: 860px) { .est-lbl { display: none; } }
 
       /* ── KPI strip conectado ────────────────────── */
