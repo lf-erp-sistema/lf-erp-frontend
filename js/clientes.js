@@ -216,6 +216,69 @@ const ClientesModule = {
         .cl-nc-cells-2col { grid-template-columns: 1fr; }
         .cl-nc-cells-2col .cl-nc-cell:first-child { border-right: none; border-bottom: 1px solid var(--border); }
       }
+
+      /* ── Premium toolbar ────────────────── */
+      .cl-tb-kpi-strip {
+        display: flex; align-items: stretch;
+        background: var(--surface); border: 1px solid var(--border);
+        border-radius: 16px; overflow-x: auto; overflow-y: hidden;
+        box-shadow: 0 1px 5px rgba(0,0,0,.04); margin-bottom: 12px;
+      }
+      .cl-tb-kpi-item {
+        flex: 1 1 100px; min-width: 100px; padding: 12px 16px;
+        display: flex; flex-direction: column; gap: 3px;
+      }
+      .cl-tb-kpi-lbl {
+        font-size: .63rem; font-weight: 800; color: var(--text-muted);
+        text-transform: uppercase; letter-spacing: .06em; white-space: nowrap;
+      }
+      .cl-tb-kpi-val {
+        font-size: 1.1rem; font-weight: 900; color: var(--text);
+        letter-spacing: -.02em; font-variant-numeric: tabular-nums; white-space: nowrap;
+      }
+      .cl-tb-kpi-warn   { color: var(--warning, #ca8a04); }
+      .cl-tb-kpi-danger { color: var(--danger, #dc2626); }
+      .cl-tb-kpi-sep { width: 1px; background: var(--border); margin: 10px 0; flex-shrink: 0; }
+      .cl-tb-row {
+        display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+        margin-bottom: 16px;
+      }
+      .cl-tb-search {
+        flex: 1 1 220px; min-width: 180px;
+        display: flex; align-items: center; gap: 8px;
+        background: var(--surface); border: 1px solid var(--border);
+        border-radius: 12px; padding: 0 12px; height: 40px;
+        transition: border-color .15s, box-shadow .15s;
+      }
+      .cl-tb-search:focus-within {
+        border-color: var(--primary, #3b82f6);
+        box-shadow: 0 0 0 3px rgba(59,130,246,.12);
+      }
+      .cl-tb-search i { color: var(--text-muted); font-size: 13px; flex-shrink: 0; }
+      .cl-tb-search input {
+        flex: 1; border: none; outline: none; background: transparent;
+        font-size: 13px; color: var(--text); font-family: inherit;
+      }
+      .cl-tb-search input::placeholder { color: var(--text-muted); }
+      .cl-tb-actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+      .cl-tb-btn {
+        display: inline-flex; align-items: center; gap: 6px;
+        height: 40px; padding: 0 14px;
+        border: 1px solid var(--border); border-radius: 12px;
+        background: var(--surface); color: var(--text-muted);
+        font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap;
+        transition: background .15s, color .15s, border-color .15s;
+      }
+      .cl-tb-btn:hover { background: rgba(0,0,0,.04); color: var(--text); }
+      .cl-tb-btn--primary {
+        background: var(--primary, #3b82f6); color: #fff !important;
+        border-color: var(--primary, #3b82f6);
+      }
+      .cl-tb-btn--primary:hover { filter: brightness(1.08); }
+      @media (max-width: 640px) {
+        .cl-tb-btn-lbl { display: none; }
+        .cl-tb-btn { padding: 0; width: 40px; justify-content: center; }
+      }
     `;
     document.head.appendChild(s);
   },
@@ -228,31 +291,44 @@ const ClientesModule = {
       <section class="module-card">
         <div id="clientesFeedback" class="module-feedback"></div>
 
-        <div class="module-toolbar">
-          <div class="module-toolbar__search">
-            <i class="fa-solid fa-search"></i>
+        <div class="cl-tb-kpi-strip">
+          <div class="cl-tb-kpi-item">
+            <span class="cl-tb-kpi-lbl">Total</span>
+            <span class="cl-tb-kpi-val" id="clKpiTotal">${this.state.filteredItems.length}</span>
+          </div>
+          <div class="cl-tb-kpi-sep"></div>
+          <div class="cl-tb-kpi-item">
+            <span class="cl-tb-kpi-lbl">Com pendências</span>
+            <span class="cl-tb-kpi-val cl-tb-kpi-warn" id="clKpiPend">${this.state.filteredItems.filter(c => Number(c.total_em_aberto || 0) > 0).length}</span>
+          </div>
+          <div class="cl-tb-kpi-sep"></div>
+          <div class="cl-tb-kpi-item">
+            <span class="cl-tb-kpi-lbl">Em aberto</span>
+            <span class="cl-tb-kpi-val cl-tb-kpi-danger" id="clKpiAberto">${this.state.filteredItems.reduce((s, c) => s + Number(c.total_em_aberto || 0), 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+          </div>
+        </div>
+
+        <div class="cl-tb-row">
+          <div class="cl-tb-search">
+            <i class="fa-solid fa-magnifying-glass"></i>
             <input
               id="clientesSearch"
               placeholder="Buscar por nome, CPF ou telefone..."
               value="${escapeHtml(this.getCurrentSearchValue())}"
             />
           </div>
-
-          <div class="module-toolbar__stats">
-            <div class="mini-stat">
-              <span>Total</span>
-              <strong>${this.state.filteredItems.length}</strong>
-            </div>
-          </div>
-          <div class="module-card__actions">
-            <button class="btn btn-light" id="abcClientesBtn" title="Segmentação A/B/C por receita">
-              <i class="fa-solid fa-chart-bar"></i> Curva ABC
+          <div class="cl-tb-actions">
+            <button class="cl-tb-btn" id="abcClientesBtn" title="Segmentação A/B/C por receita">
+              <i class="fa-solid fa-chart-bar"></i>
+              <span class="cl-tb-btn-lbl">Curva ABC</span>
             </button>
-            <button class="btn btn-light" id="exportarClientesBtn">
-              <i class="fa-solid fa-file-csv"></i> Exportar CSV
+            <button class="cl-tb-btn" id="exportarClientesBtn" title="Exportar CSV">
+              <i class="fa-solid fa-file-csv"></i>
+              <span class="cl-tb-btn-lbl">Exportar CSV</span>
             </button>
-            <button class="btn btn-primary" id="novoClienteBtn">
-              <i class="fa-solid fa-plus"></i> Novo Cliente
+            <button class="cl-tb-btn cl-tb-btn--primary" id="novoClienteBtn">
+              <i class="fa-solid fa-plus"></i>
+              <span class="cl-tb-btn-lbl">Novo Cliente</span>
             </button>
           </div>
         </div>
@@ -348,8 +424,25 @@ const ClientesModule = {
     `;
   },
 
+  _updateKpiStrip() {
+    const items = this.state.filteredItems;
+    const total = items.length;
+    const comPend = items.filter(c => Number(c.total_em_aberto || 0) > 0).length;
+    const totalAberto = items.reduce((s, c) => s + Number(c.total_em_aberto || 0), 0);
+    const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+    const elTotal  = document.getElementById('clKpiTotal');
+    const elPend   = document.getElementById('clKpiPend');
+    const elAberto = document.getElementById('clKpiAberto');
+
+    if (elTotal)  elTotal.textContent  = total;
+    if (elPend)   elPend.textContent   = comPend;
+    if (elAberto) elAberto.textContent = fmt(totalAberto);
+  },
+
   renderTable() {
     if (!this.el.table) return;
+    this._updateKpiStrip();
 
     if (!this.state.filteredItems.length) {
       this.el.table.innerHTML = `
