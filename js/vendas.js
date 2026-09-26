@@ -302,6 +302,14 @@ const VendasModule = {
         return;
       }
 
+      if (button.dataset.action === 'vnd-acoes') {
+        event.preventDefault();
+        const venda = this.state.vendas.find(v => String(v.id) === String(button.dataset.id))
+                   || this.state.vendasFiltradas.find(v => String(v.id) === String(button.dataset.id));
+        if (venda) this._abrirAcoesVendaModal(venda);
+        return;
+      }
+
       if (button.dataset.action === 'detalhar-venda') {
         event.preventDefault();
         const id = Number(button.dataset.id);
@@ -756,17 +764,9 @@ const VendasModule = {
           </td>
 
           <td class="text-right">
-            <div class="table-actions">
-              <button type="button" class="btn-inline" data-action="detalhar-venda" data-id="${id}">
-                <i class="fa-solid fa-eye"></i> Detalhes
-              </button>
-              <button type="button" class="btn-inline" data-action="imprimir-recibo-venda" data-id="${id}" title="Imprimir recibo simples">
-                <i class="fa-solid fa-receipt"></i> Recibo
-              </button>
-              <button type="button" class="btn-inline" data-action="emitir-nfce-venda" data-id="${id}" title="Emitir NFC-e para esta venda">
-                <i class="fa-solid fa-file-invoice"></i> NFC-e
-              </button>
-            </div>
+            <button type="button" class="cr-act-toggle" data-action="vnd-acoes" data-id="${id}">
+              <i class="fa-solid fa-ellipsis-vertical"></i>
+            </button>
           </td>
         </tr>
       `;
@@ -841,6 +841,45 @@ const VendasModule = {
     this.salvarFiltros();
     this.render();
     this.applyLocalFilters();
+  },
+
+  _abrirAcoesVendaModal(venda) {
+    document.getElementById('vndAcoesModal')?.remove();
+    const overlay = document.createElement('div');
+    overlay.id = 'vndAcoesModal';
+    overlay.className = 'cr-mai-overlay';
+    const cliente = venda.cliente_nome || 'Consumidor Final';
+    const data = venda.data ? new Date(venda.data + 'T12:00:00').toLocaleDateString('pt-BR') : '';
+    overlay.innerHTML = `
+      <div class="cr-mai-card">
+        <div class="cr-mai-header">
+          <div>
+            <div style="font-weight:900;font-size:.95rem">${escapeHtml(cliente)}</div>
+            ${data ? `<div style="font-size:.78rem;color:var(--text-muted)">${data}</div>` : ''}
+          </div>
+          <button type="button" class="cr-mai-fechar" id="vndAcoesFechar"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="cr-mai-actions">
+          <button type="button" class="cr-mai-item" data-action="detalhar-venda" data-id="${venda.id}">
+            <span class="cr-mai-ico cr-mai-ico--success"><i class="fa-solid fa-eye"></i></span>
+            <span class="cr-mai-texts"><span class="cr-mai-lbl">Detalhes</span><span class="cr-mai-desc">Ver itens e informações da venda</span></span>
+          </button>
+          <button type="button" class="cr-mai-item" data-action="imprimir-recibo-venda" data-id="${venda.id}">
+            <span class="cr-mai-ico cr-mai-ico--pix"><i class="fa-solid fa-receipt"></i></span>
+            <span class="cr-mai-texts"><span class="cr-mai-lbl">Recibo</span><span class="cr-mai-desc">Imprimir recibo simples</span></span>
+          </button>
+          <button type="button" class="cr-mai-item" data-action="emitir-nfce-venda" data-id="${venda.id}">
+            <span class="cr-mai-ico cr-mai-ico--warning"><i class="fa-solid fa-file-invoice"></i></span>
+            <span class="cr-mai-texts"><span class="cr-mai-lbl">NFC-e</span><span class="cr-mai-desc">Emitir nota fiscal de consumidor</span></span>
+          </button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    document.getElementById('vndAcoesFechar').onclick = () => overlay.remove();
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+    overlay.querySelectorAll('[data-action]').forEach(btn => {
+      btn.addEventListener('click', () => overlay.remove());
+    });
   },
 
   async openDetalhe(id) {

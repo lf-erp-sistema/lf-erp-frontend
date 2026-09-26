@@ -483,39 +483,64 @@ function renderLinhas() {
         </td>
 
         <td class="text-right">
-          <div class="table-actions">
-            <button class="btn-inline" type="button" data-action="detalhe-cp" data-id="${conta.id}">
-              <i class="fa-solid fa-eye"></i>
-              Detalhes
-            </button>
-
-            ${
-              conta.compra_id
-                ? `
-                  <button class="btn-inline" type="button" data-action="origem-compra-cp" data-id="${conta.id}">
-                    <i class="fa-solid fa-receipt"></i>
-                    Compra
-                  </button>
-                `
-                : ''
-            }
-
-            ${
-              status !== 'pago'
-                ? `
-                  <button class="btn-inline btn-inline--success" type="button" data-action="pagar-cp" data-id="${conta.id}">
-                    <i class="fa-solid fa-check"></i>
-                    Pagar
-                  </button>
-                `
-                : ''
-            }
-          </div>
+          <button type="button" class="cr-act-toggle" data-action="cp-acoes"
+            data-id="${conta.id}"
+            data-compra-id="${conta.compra_id || ''}"
+            data-status="${conta.status || 'pendente'}"
+            data-forn="${escapeHtml(conta.fornecedor_nome || conta.descricao || 'Conta')}">
+            <i class="fa-solid fa-ellipsis-vertical"></i>
+          </button>
         </td>
       </tr>
     `;
     })
     .join('');
+}
+
+function _abrirAcoesCPModal(btn) {
+  const id       = btn.dataset.id;
+  const compraId = btn.dataset.compraId;
+  const status   = btn.dataset.status || 'pendente';
+  const forn     = btn.dataset.forn   || 'Conta';
+  const pago     = status === 'pago';
+
+  document.getElementById('cpAcoesModal')?.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'cpAcoesModal';
+  overlay.className = 'cr-mai-overlay';
+  overlay.innerHTML = `
+    <div class="cr-mai-card">
+      <div class="cr-mai-header">
+        <div>
+          <div style="font-weight:900;font-size:.95rem">${escapeHtml(forn)}</div>
+          <div style="font-size:.78rem;color:var(--text-muted)">Contas a Pagar #${id}</div>
+        </div>
+        <button type="button" class="cr-mai-fechar" id="cpAcoesFechar"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="cr-mai-actions">
+        <button type="button" class="cr-mai-item" id="cpAcaoDetalhe">
+          <span class="cr-mai-ico cr-mai-ico--success"><i class="fa-solid fa-eye"></i></span>
+          <span class="cr-mai-texts"><span class="cr-mai-lbl">Detalhes</span><span class="cr-mai-desc">Ver informações da conta</span></span>
+        </button>
+        ${compraId ? `
+        <button type="button" class="cr-mai-item" id="cpAcaoCompra">
+          <span class="cr-mai-ico cr-mai-ico--pix"><i class="fa-solid fa-receipt"></i></span>
+          <span class="cr-mai-texts"><span class="cr-mai-lbl">Ver Compra</span><span class="cr-mai-desc">Abrir compra de origem</span></span>
+        </button>` : ''}
+        ${!pago ? `
+        <button type="button" class="cr-mai-item cr-mai-item--success" id="cpAcaoPagar">
+          <span class="cr-mai-ico cr-mai-ico--success"><i class="fa-solid fa-check"></i></span>
+          <span class="cr-mai-texts"><span class="cr-mai-lbl">Registrar Pagamento</span><span class="cr-mai-desc">Marcar conta como paga</span></span>
+        </button>` : ''}
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  const fechar = () => overlay.remove();
+  document.getElementById('cpAcoesFechar').onclick = fechar;
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.getElementById('cpAcaoDetalhe').onclick = async () => { fechar(); await abrirDetalheConta(id); };
+  if (compraId) document.getElementById('cpAcaoCompra').onclick = async () => { fechar(); await abrirOrigemCompra(id); };
+  if (!pago) document.getElementById('cpAcaoPagar').onclick = async () => { fechar(); await pagarConta(id); };
 }
 
 function bindEventos() {
@@ -529,6 +554,11 @@ function bindEventos() {
   document.getElementById('btnNovaContaPagar')?.addEventListener('click', () => {
     abrirModalNovaContaPagar();
   });
+
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-action="cp-acoes"]');
+    if (btn) _abrirAcoesCPModal(btn);
+  }, { capture: false });
 
   btnAtualizar?.addEventListener('click', async () => {
     await recarregar();

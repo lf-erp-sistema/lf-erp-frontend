@@ -558,17 +558,12 @@ function renderLinha(item) {
       <td>${badgeStatus(item.status)}</td>
       <td class="text-right"><strong>${toCurrency(item.valor)}</strong></td>
       <td>
-        <div style="display:flex;gap:6px;flex-wrap:wrap">
-          ${pendente ? `<button class="btn btn-light" style="padding:4px 10px;font-size:12px" data-action="pagar" data-id="${item.id}" title="Marcar como pago">
-            <i class="fa-solid fa-check"></i>
-          </button>` : ''}
-          <button class="btn btn-light" style="padding:4px 10px;font-size:12px" data-action="editar" data-id="${item.id}" title="Editar">
-            <i class="fa-solid fa-pen"></i>
-          </button>
-          <button class="btn btn-light" style="padding:4px 10px;font-size:12px;color:var(--danger)" data-action="excluir" data-id="${item.id}" title="Excluir">
-            <i class="fa-solid fa-trash"></i>
-          </button>
-        </div>
+        <button type="button" class="cr-act-toggle" data-action="lf-acoes"
+          data-id="${item.id}"
+          data-pendente="${pendente ? '1' : '0'}"
+          data-desc="${escapeHtml(item.descricao || 'Lançamento')}">
+          <i class="fa-solid fa-ellipsis-vertical"></i>
+        </button>
       </td>
     </tr>`;
 }
@@ -668,6 +663,49 @@ function renderModal() {
     </div>`;
 }
 
+function _abrirAcoesLFModal(btn) {
+  const id      = Number(btn.dataset.id);
+  const isPend  = btn.dataset.pendente === '1';
+  const desc    = btn.dataset.desc || 'Lançamento';
+
+  document.getElementById('lfAcoesModal')?.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'lfAcoesModal';
+  overlay.className = 'cr-mai-overlay';
+  overlay.innerHTML = `
+    <div class="cr-mai-card">
+      <div class="cr-mai-header">
+        <div>
+          <div style="font-weight:900;font-size:.95rem">${escapeHtml(desc)}</div>
+          <div style="font-size:.78rem;color:var(--text-muted)">Lançamento #${id}</div>
+        </div>
+        <button type="button" class="cr-mai-fechar" id="lfAcoesFechar"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="cr-mai-actions">
+        ${isPend ? `
+        <button type="button" class="cr-mai-item cr-mai-item--success" id="lfAcaoPagar">
+          <span class="cr-mai-ico cr-mai-ico--success"><i class="fa-solid fa-check"></i></span>
+          <span class="cr-mai-texts"><span class="cr-mai-lbl">Marcar como Pago</span><span class="cr-mai-desc">Registrar pagamento do lançamento</span></span>
+        </button>` : ''}
+        <button type="button" class="cr-mai-item" id="lfAcaoEditar">
+          <span class="cr-mai-ico cr-mai-ico--pix"><i class="fa-solid fa-pen"></i></span>
+          <span class="cr-mai-texts"><span class="cr-mai-lbl">Editar</span><span class="cr-mai-desc">Alterar dados do lançamento</span></span>
+        </button>
+        <button type="button" class="cr-mai-item" id="lfAcaoExcluir">
+          <span class="cr-mai-ico cr-mai-ico--danger"><i class="fa-solid fa-trash"></i></span>
+          <span class="cr-mai-texts"><span class="cr-mai-lbl">Excluir</span><span class="cr-mai-desc">Remover lançamento permanentemente</span></span>
+        </button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  const fechar = () => overlay.remove();
+  document.getElementById('lfAcoesFechar').onclick = fechar;
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  if (isPend) document.getElementById('lfAcaoPagar').onclick   = () => { fechar(); pagar(id); };
+  document.getElementById('lfAcaoEditar').onclick  = () => { fechar(); editar(id); };
+  document.getElementById('lfAcaoExcluir').onclick = () => { fechar(); excluir(id); };
+}
+
 // ─── Eventos ──────────────────────────────────────────────────────────────────
 
 function bindEventos() {
@@ -756,23 +794,24 @@ function bindEventos() {
     try { await carregarLancamentos(); render(); } finally { setLoading(false); }
   });
 
-  // Ações da tabela (pagar, editar, excluir)
+  // Ações via modal ⋮
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-action="lf-acoes"]');
+    if (!btn) return;
+    _abrirAcoesLFModal(btn);
+  });
+
+  // Paginação
   const lfContainer = document.getElementById('lancamentosContainer');
   if (!lfContainer) return;
-  lfContainer.querySelectorAll('[data-action]').forEach((btn) => {
+  lfContainer.querySelectorAll('[data-action="lf-pagina"]').forEach((btn) => {
     btn.onclick = () => {
-      const id = Number(btn.dataset.id);
-      if (btn.dataset.action === 'pagar')   pagar(id);
-      if (btn.dataset.action === 'editar')  editar(id);
-      if (btn.dataset.action === 'excluir') excluir(id);
-      if (btn.dataset.action === 'lf-pagina') {
-        if (state.loading) return;
-        const page = btn.dataset.page;
-        if (page === 'prev' && state.pagina > 1) state.pagina--;
-        else if (page === 'next' && state.pagina < state.totalPaginas) state.pagina++;
-        setLoading(true);
-        carregarLancamentos().then(() => render()).catch(err => showMsg(buildFriendlyError(err), 'error')).finally(() => setLoading(false));
-      }
+      if (state.loading) return;
+      const page = btn.dataset.page;
+      if (page === 'prev' && state.pagina > 1) state.pagina--;
+      else if (page === 'next' && state.pagina < state.totalPaginas) state.pagina++;
+      setLoading(true);
+      carregarLancamentos().then(() => render()).catch(err => showMsg(buildFriendlyError(err), 'error')).finally(() => setLoading(false));
     };
   });
 

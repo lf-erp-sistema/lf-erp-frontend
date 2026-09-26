@@ -203,6 +203,12 @@ const FornecedoresModule = {
       if (btn.id === 'novoFornecedorBtn')          { this.openModal(false); return; }
       if (btn.id === 'fornecedoresExportBtn')       { this.exportarCSV(); return; }
       if (btn.id === 'cancelFornecedor' || btn.id === 'cancelFornecedorFooter') { this.closeModal(); return; }
+      if (btn.dataset.action === 'forn-acoes') {
+        const f = this.state.filteredItems.find(x => String(x.id) === String(btn.dataset.id))
+               || this.state.items.find(x => String(x.id) === String(btn.dataset.id));
+        if (f) this._abrirAcoesFornModal(f);
+        return;
+      }
       if (btn.dataset.action === 'edit-fornecedor') { this.edit(btn.dataset.id); return; }
       if (btn.dataset.action === 'delete-fornecedor') { await this.delete(btn.dataset.id); return; }
       if (btn.dataset.action === 'historico-fornecedor') { this.abrirHistoricoCompras(Number(btn.dataset.id)); return; }
@@ -496,14 +502,9 @@ const FornecedoresModule = {
           <td>${escapeHtml(f.email || '-')}</td>
           <td>${escapeHtml(f.endereco || '-')}</td>
           <td class="text-right">
-            <div class="table-actions">
-              <button class="btn-inline" data-action="edit-fornecedor" data-id="${f.id}">
-                <i class="fa-solid fa-pen"></i> Editar
-              </button>
-              <button class="btn-inline btn-inline--danger" data-action="delete-fornecedor" data-id="${f.id}">
-                <i class="fa-solid fa-trash"></i> Excluir
-              </button>
-            </div>
+            <button type="button" class="cr-act-toggle" data-action="forn-acoes" data-id="${f.id}">
+              <i class="fa-solid fa-ellipsis-vertical"></i>
+            </button>
           </td>
         </tr>`;
     }).join('');
@@ -789,6 +790,43 @@ const FornecedoresModule = {
       'Valor Compras':    numCSV(f.valor_total_compras || 0),
       'Observação':       f.observacao || ''
     })), 'fornecedores');
+  },
+
+  _abrirAcoesFornModal(f) {
+    document.getElementById('fornAcoesModal')?.remove();
+    const overlay = document.createElement('div');
+    overlay.id = 'fornAcoesModal';
+    overlay.className = 'cr-mai-overlay';
+    overlay.innerHTML = `
+      <div class="cr-mai-card">
+        <div class="cr-mai-header">
+          <div>
+            <div style="font-weight:900;font-size:.95rem">${escapeHtml(f.nome || 'Fornecedor')}</div>
+            ${f.telefone ? `<div style="font-size:.78rem;color:var(--text-muted)">${escapeHtml(f.telefone)}</div>` : ''}
+          </div>
+          <button type="button" class="cr-mai-fechar" id="fornAcoesFechar"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="cr-mai-actions">
+          <button type="button" class="cr-mai-item" data-action="edit-fornecedor" data-id="${f.id}">
+            <span class="cr-mai-ico cr-mai-ico--pix"><i class="fa-solid fa-pen"></i></span>
+            <span class="cr-mai-texts"><span class="cr-mai-lbl">Editar</span><span class="cr-mai-desc">Alterar dados do fornecedor</span></span>
+          </button>
+          <button type="button" class="cr-mai-item" data-action="historico-fornecedor" data-id="${f.id}">
+            <span class="cr-mai-ico cr-mai-ico--success"><i class="fa-solid fa-clock-rotate-left"></i></span>
+            <span class="cr-mai-texts"><span class="cr-mai-lbl">Histórico</span><span class="cr-mai-desc">Ver compras realizadas</span></span>
+          </button>
+          <button type="button" class="cr-mai-item" data-action="delete-fornecedor" data-id="${f.id}">
+            <span class="cr-mai-ico cr-mai-ico--danger"><i class="fa-solid fa-trash"></i></span>
+            <span class="cr-mai-texts"><span class="cr-mai-lbl">Excluir</span><span class="cr-mai-desc">Remover fornecedor permanentemente</span></span>
+          </button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    document.getElementById('fornAcoesFechar').onclick = () => overlay.remove();
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+    overlay.querySelectorAll('[data-action]').forEach(btn => {
+      btn.addEventListener('click', () => overlay.remove());
+    });
   },
 
   async abrirHistoricoCompras(id) {

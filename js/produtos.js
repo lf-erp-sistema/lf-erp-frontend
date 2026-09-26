@@ -277,6 +277,12 @@ const ProdutosModule = {
       if (action === 'produtoCancelBtn' || action === 'produtoModalCloseBtn') {
         this.closeModal(); return;
       }
+      if (t.dataset.action === 'prod-acoes') {
+        const item = this.state.filteredItems.find(x => String(x.id) === String(t.dataset.id))
+                  || this.state.items.find(x => String(x.id) === String(t.dataset.id));
+        if (item) this._abrirAcoesProdModal(item);
+        return;
+      }
       if (t.dataset.action === 'toggle-actions-menu') { this._toggleActionsMenu(t); return; }
       if (t.dataset.action === 'etiqueta')      { this._closeAllActionsMenus(); this.abrirEtiqueta(Number(t.dataset.id)); return; }
       if (t.dataset.action === 'edit')          { this._closeAllActionsMenus(); this.openEditModal(Number(t.dataset.id)).catch((err) => { console.error('Erro ao abrir modal de edição:', err); showToast('Erro ao abrir produto para edição.', 'error'); }); return; }
@@ -403,6 +409,47 @@ const ProdutosModule = {
       const visible = saved ? (saved[col] !== false) : !DEFAULT_HIDDEN.has(col);
       chk.checked = visible;
       table.classList.toggle(`hide-col-${col}`, !visible);
+    });
+  },
+
+  _abrirAcoesProdModal(item) {
+    document.getElementById('prodAcoesModal')?.remove();
+    const overlay = document.createElement('div');
+    overlay.id = 'prodAcoesModal';
+    overlay.className = 'cr-mai-overlay';
+    overlay.innerHTML = `
+      <div class="cr-mai-card">
+        <div class="cr-mai-header">
+          <div>
+            <div style="font-weight:900;font-size:.95rem">${escapeHtml(item.nome || 'Produto')}</div>
+            ${item.codigo_barras ? `<div style="font-size:.78rem;color:var(--text-muted)">${escapeHtml(item.codigo_barras)}</div>` : ''}
+          </div>
+          <button type="button" class="cr-mai-fechar" id="prodAcoesFechar"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="cr-mai-actions">
+          <button type="button" class="cr-mai-item" data-action="edit" data-id="${item.id}">
+            <span class="cr-mai-ico cr-mai-ico--pix"><i class="fa-solid fa-pen"></i></span>
+            <span class="cr-mai-texts"><span class="cr-mai-lbl">Editar</span><span class="cr-mai-desc">Alterar dados do produto</span></span>
+          </button>
+          <button type="button" class="cr-mai-item" data-action="etiqueta" data-id="${item.id}">
+            <span class="cr-mai-ico cr-mai-ico--success"><i class="fa-solid fa-tag"></i></span>
+            <span class="cr-mai-texts"><span class="cr-mai-lbl">Etiqueta</span><span class="cr-mai-desc">Imprimir etiqueta do produto</span></span>
+          </button>
+          <button type="button" class="cr-mai-item" data-action="duplicate" data-id="${item.id}">
+            <span class="cr-mai-ico cr-mai-ico--warning"><i class="fa-solid fa-copy"></i></span>
+            <span class="cr-mai-texts"><span class="cr-mai-lbl">Duplicar</span><span class="cr-mai-desc">Criar cópia deste produto</span></span>
+          </button>
+          <button type="button" class="cr-mai-item" data-action="delete" data-id="${item.id}">
+            <span class="cr-mai-ico cr-mai-ico--danger"><i class="fa-solid fa-trash"></i></span>
+            <span class="cr-mai-texts"><span class="cr-mai-lbl">Excluir</span><span class="cr-mai-desc">Remover produto permanentemente</span></span>
+          </button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    document.getElementById('prodAcoesFechar').onclick = () => overlay.remove();
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+    overlay.querySelectorAll('[data-action]').forEach(btn => {
+      btn.addEventListener('click', () => overlay.remove());
     });
   },
 
@@ -546,27 +593,9 @@ const ProdutosModule = {
           <td>${Number(item.estoque_minimo || 0)}</td>
           <td><span class="${statusClass}">${alerta ? 'Alerta' : 'Ok'}</span></td>
           <td class="text-right">
-            <div class="prod-act-wrap">
-              <button type="button" class="prod-act-toggle"
-                data-action="toggle-actions-menu" data-id="${item.id}"
-                aria-haspopup="true" aria-expanded="false">
-                Ações <i class="fa-solid fa-chevron-down prod-act-chevron"></i>
-              </button>
-              <div class="prod-act-dropdown" data-menu-id="${item.id}" hidden>
-                <button type="button" class="prod-act-item" data-action="etiqueta" data-id="${item.id}">
-                  <i class="fa-solid fa-tag"></i> Etiqueta
-                </button>
-                <button type="button" class="prod-act-item" data-action="duplicate" data-id="${item.id}">
-                  <i class="fa-solid fa-copy"></i> Duplicar
-                </button>
-                <button type="button" class="prod-act-item" data-action="edit" data-id="${item.id}">
-                  <i class="fa-solid fa-pen"></i> Editar
-                </button>
-                <button type="button" class="prod-act-item prod-act-item--danger" data-action="delete" data-id="${item.id}">
-                  <i class="fa-solid fa-trash"></i> Excluir
-                </button>
-              </div>
-            </div>
+            <button type="button" class="cr-act-toggle" data-action="prod-acoes" data-id="${item.id}">
+              <i class="fa-solid fa-ellipsis-vertical"></i>
+            </button>
           </td>
         </tr>`;
     }).join('');

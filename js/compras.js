@@ -163,6 +163,12 @@ const ComprasModule = {
         return;
       }
 
+      if (btn.dataset.action === 'comp-acoes') {
+        const comp = this.state.items.find(x => String(x.id) === String(btn.dataset.id));
+        if (comp) this._abrirAcoesCompraModal(comp);
+        return;
+      }
+
       if (btn.dataset.action === 'view-compra') {
         await this.showDetails(btn.dataset.id);
         return;
@@ -556,22 +562,9 @@ const ComprasModule = {
           </td>
 
           <td class="text-right">
-            <div class="table-actions">
-              <button class="btn-inline" data-action="view-compra" data-id="${id}" type="button">
-                <i class="fa-solid fa-eye"></i>
-                Detalhes
-              </button>
-
-              <button class="btn-inline" data-action="edit-compra" data-id="${id}" type="button">
-                <i class="fa-solid fa-pen"></i>
-                Editar
-              </button>
-
-              <button class="btn-inline btn-inline--danger" data-action="delete-compra" data-id="${id}" type="button">
-                <i class="fa-solid fa-trash"></i>
-                Excluir
-              </button>
-            </div>
+            <button type="button" class="cr-act-toggle" data-action="comp-acoes" data-id="${id}">
+              <i class="fa-solid fa-ellipsis-vertical"></i>
+            </button>
           </td>
         </tr>
       `;
@@ -941,6 +934,45 @@ const ComprasModule = {
     } finally {
       this.state.loading = false;
     }
+  },
+
+  _abrirAcoesCompraModal(comp) {
+    document.getElementById('compAcoesModal')?.remove();
+    const overlay = document.createElement('div');
+    overlay.id = 'compAcoesModal';
+    overlay.className = 'cr-mai-overlay';
+    const forn = comp.fornecedor_nome || comp.fornecedor || 'Compra';
+    const data  = comp.data ? new Date(comp.data + 'T12:00:00').toLocaleDateString('pt-BR') : '';
+    overlay.innerHTML = `
+      <div class="cr-mai-card">
+        <div class="cr-mai-header">
+          <div>
+            <div style="font-weight:900;font-size:.95rem">${escapeHtml(forn)}</div>
+            ${data ? `<div style="font-size:.78rem;color:var(--text-muted)">${data}</div>` : ''}
+          </div>
+          <button type="button" class="cr-mai-fechar" id="compAcoesFechar"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="cr-mai-actions">
+          <button type="button" class="cr-mai-item" data-action="view-compra" data-id="${comp.id}">
+            <span class="cr-mai-ico cr-mai-ico--success"><i class="fa-solid fa-eye"></i></span>
+            <span class="cr-mai-texts"><span class="cr-mai-lbl">Detalhes</span><span class="cr-mai-desc">Ver itens e informações da compra</span></span>
+          </button>
+          <button type="button" class="cr-mai-item" data-action="edit-compra" data-id="${comp.id}">
+            <span class="cr-mai-ico cr-mai-ico--pix"><i class="fa-solid fa-pen"></i></span>
+            <span class="cr-mai-texts"><span class="cr-mai-lbl">Editar</span><span class="cr-mai-desc">Alterar dados da compra</span></span>
+          </button>
+          <button type="button" class="cr-mai-item" data-action="delete-compra" data-id="${comp.id}">
+            <span class="cr-mai-ico cr-mai-ico--danger"><i class="fa-solid fa-trash"></i></span>
+            <span class="cr-mai-texts"><span class="cr-mai-lbl">Excluir</span><span class="cr-mai-desc">Remover compra permanentemente</span></span>
+          </button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    document.getElementById('compAcoesFechar').onclick = () => overlay.remove();
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+    overlay.querySelectorAll('[data-action]').forEach(btn => {
+      btn.addEventListener('click', () => overlay.remove());
+    });
   },
 
   async showDetails(id) {
