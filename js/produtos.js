@@ -277,10 +277,11 @@ const ProdutosModule = {
       if (action === 'produtoCancelBtn' || action === 'produtoModalCloseBtn') {
         this.closeModal(); return;
       }
-      if (t.dataset.action === 'etiqueta')      { this.abrirEtiqueta(Number(t.dataset.id)); return; }
-      if (t.dataset.action === 'edit')          { this.openEditModal(Number(t.dataset.id)).catch((err) => { console.error('Erro ao abrir modal de edição:', err); showToast('Erro ao abrir produto para edição.', 'error'); }); return; }
-      if (t.dataset.action === 'delete')        { await this.handleDelete(Number(t.dataset.id)); return; }
-      if (t.dataset.action === 'duplicate')     { this.duplicarProduto(Number(t.dataset.id)); return; }
+      if (t.dataset.action === 'toggle-actions-menu') { this._toggleActionsMenu(t); return; }
+      if (t.dataset.action === 'etiqueta')      { this._closeAllActionsMenus(); this.abrirEtiqueta(Number(t.dataset.id)); return; }
+      if (t.dataset.action === 'edit')          { this._closeAllActionsMenus(); this.openEditModal(Number(t.dataset.id)).catch((err) => { console.error('Erro ao abrir modal de edição:', err); showToast('Erro ao abrir produto para edição.', 'error'); }); return; }
+      if (t.dataset.action === 'delete')        { this._closeAllActionsMenus(); await this.handleDelete(Number(t.dataset.id)); return; }
+      if (t.dataset.action === 'duplicate')     { this._closeAllActionsMenus(); this.duplicarProduto(Number(t.dataset.id)); return; }
       if (t.dataset.action === 'adjust-stock')  { this.ajustarEstoqueInline(Number(t.dataset.id)); return; }
       if (action === 'produtosFiltrosToggle') {
         const content = document.getElementById('produtosFiltrosContent');
@@ -343,6 +344,13 @@ const ProdutosModule = {
       if (e.target === document.getElementById('produtoModal')) this.closeModal();
     });
 
+    // ── Fechar dropdowns de ações ao clicar fora
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.prod-act-wrap')) {
+        this._closeAllActionsMenus();
+      }
+    });
+
     // ── "Mais ações" dropdown
     document.addEventListener('click', (e) => {
       const btn = e.target.closest('#produtosActionsBtn');
@@ -396,6 +404,23 @@ const ProdutosModule = {
       chk.checked = visible;
       table.classList.toggle(`hide-col-${col}`, !visible);
     });
+  },
+
+  _toggleActionsMenu(btn) {
+    const id = btn.dataset.id;
+    const dropdown = document.querySelector(`.prod-act-dropdown[data-menu-id="${id}"]`);
+    if (!dropdown) return;
+    const isOpen = !dropdown.hidden;
+    this._closeAllActionsMenus();
+    if (!isOpen) {
+      dropdown.hidden = false;
+      btn.setAttribute('aria-expanded', 'true');
+    }
+  },
+
+  _closeAllActionsMenus() {
+    document.querySelectorAll('.prod-act-dropdown').forEach(d => { d.hidden = true; });
+    document.querySelectorAll('.prod-act-toggle[aria-expanded="true"]').forEach(b => b.setAttribute('aria-expanded', 'false'));
   },
 
   // ── Load & Render ──────────────────────────────────────────────────────────
@@ -521,15 +546,26 @@ const ProdutosModule = {
           <td>${Number(item.estoque_minimo || 0)}</td>
           <td><span class="${statusClass}">${alerta ? 'Alerta' : 'Ok'}</span></td>
           <td class="text-right">
-            <div class="table-actions">
-              <button type="button" class="btn-inline" data-action="etiqueta" data-id="${item.id}">
-                <i class="fa-solid fa-tag"></i> Etiqueta
+            <div class="prod-act-wrap">
+              <button type="button" class="prod-act-toggle"
+                data-action="toggle-actions-menu" data-id="${item.id}"
+                aria-haspopup="true" aria-expanded="false">
+                Ações <i class="fa-solid fa-chevron-down prod-act-chevron"></i>
               </button>
-              <button type="button" class="btn-inline" data-action="duplicate" data-id="${item.id}" title="Duplicar produto">
-                <i class="fa-solid fa-copy"></i>
-              </button>
-              <button type="button" class="btn-inline" data-action="edit" data-id="${item.id}">Editar</button>
-              <button type="button" class="btn-inline btn-inline--danger" data-action="delete" data-id="${item.id}">Excluir</button>
+              <div class="prod-act-dropdown" data-menu-id="${item.id}" hidden>
+                <button type="button" class="prod-act-item" data-action="etiqueta" data-id="${item.id}">
+                  <i class="fa-solid fa-tag"></i> Etiqueta
+                </button>
+                <button type="button" class="prod-act-item" data-action="duplicate" data-id="${item.id}">
+                  <i class="fa-solid fa-copy"></i> Duplicar
+                </button>
+                <button type="button" class="prod-act-item" data-action="edit" data-id="${item.id}">
+                  <i class="fa-solid fa-pen"></i> Editar
+                </button>
+                <button type="button" class="prod-act-item prod-act-item--danger" data-action="delete" data-id="${item.id}">
+                  <i class="fa-solid fa-trash"></i> Excluir
+                </button>
+              </div>
             </div>
           </td>
         </tr>`;
@@ -751,6 +787,35 @@ const ProdutosModule = {
       }
       .prd-nc-toggle input:checked + .prd-nc-toggle-slider { background: #16a34a; }
       .prd-nc-toggle input:checked + .prd-nc-toggle-slider::before { transform: translateX(18px); }
+
+      /* ── Dropdown de ações na tabela ─────────────────────────── */
+      .prod-act-wrap { position: relative; display: inline-block; }
+      .prod-act-toggle {
+        display: inline-flex; align-items: center; gap: 5px;
+        padding: 5px 10px; font-size: 0.8rem; font-weight: 600;
+        border: 1px solid var(--border); border-radius: 8px;
+        background: var(--surface); color: var(--text);
+        cursor: pointer; transition: background .12s, border-color .12s;
+        white-space: nowrap;
+      }
+      .prod-act-toggle:hover { background: var(--surface-2); border-color: var(--primary); }
+      .prod-act-toggle .prod-act-chevron { font-size: .65em; transition: transform .15s; }
+      .prod-act-toggle[aria-expanded="true"] .prod-act-chevron { transform: rotate(180deg); }
+      .prod-act-dropdown {
+        position: absolute; right: 0; top: calc(100% + 4px);
+        background: var(--surface); border: 1px solid var(--border);
+        border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.13);
+        min-width: 148px; z-index: 1050; padding: 4px;
+      }
+      .prod-act-item {
+        display: flex; align-items: center; gap: 9px; width: 100%;
+        padding: 8px 12px; border: none; background: none; cursor: pointer;
+        font-size: 0.82rem; font-weight: 500; color: var(--text);
+        border-radius: 8px; text-align: left; font-family: inherit;
+      }
+      .prod-act-item:hover { background: var(--surface-2); }
+      .prod-act-item--danger { color: var(--danger, #dc2626); }
+      .prod-act-item--danger:hover { background: rgba(220,38,38,.08); }
 
       /* ── Responsivo ───────────────────────────────────────────── */
       @media (max-width: 720px) {
