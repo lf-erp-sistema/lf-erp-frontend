@@ -379,18 +379,20 @@ const ProdutosModule = {
     const checks = document.querySelectorAll('#colPickerDropdown input[data-col]');
     const state = {};
     checks.forEach((chk) => { state[chk.dataset.col] = chk.checked; });
-    try { localStorage.setItem('lf_cols_produtos', JSON.stringify(state)); } catch (_) {}
+    try { localStorage.setItem('lf_cols_produtos_v2', JSON.stringify(state)); } catch (_) {}
   },
 
   _restoreColState() {
     const table = document.querySelector('#produtosSection .data-table');
     if (!table) return;
+    // Colunas ocultas por padrão: Código(4), Custo Médio(6), Lucro(7), Mínimo(10)
+    const DEFAULT_HIDDEN = new Set(['4', '6', '7', '10']);
     let saved;
-    try { saved = JSON.parse(localStorage.getItem('lf_cols_produtos') || 'null'); } catch { saved = null; }
+    try { saved = JSON.parse(localStorage.getItem('lf_cols_produtos_v2') || 'null'); } catch { saved = null; }
     const checks = document.querySelectorAll('#colPickerDropdown input[data-col]');
     checks.forEach((chk) => {
       const col = chk.dataset.col;
-      const visible = saved ? (saved[col] !== false) : true;
+      const visible = saved ? (saved[col] !== false) : !DEFAULT_HIDDEN.has(col);
       chk.checked = visible;
       table.classList.toggle(`hide-col-${col}`, !visible);
     });
