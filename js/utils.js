@@ -99,8 +99,8 @@ export function makeSortable(table) {
       th.setAttribute('data-sort-dir', sortAsc ? 'asc' : 'desc');
       const rows = [...tbody.querySelectorAll('tr')].filter(r => r.cells.length > 1);
       rows.sort((a, b) => {
-        const av = a.cells[i]?.textContent.trim() ?? '';
-        const bv = b.cells[i]?.textContent.trim() ?? '';
+        const av = a.cells[i]?.dataset.sortVal ?? a.cells[i]?.textContent.trim() ?? '';
+        const bv = b.cells[i]?.dataset.sortVal ?? b.cells[i]?.textContent.trim() ?? '';
         const parseBRL = s => parseFloat(s.replace(/[^\d,]/g, '').replace(',', '.'));
         const an = parseBRL(av), bn = parseBRL(bv);
         let cmp;

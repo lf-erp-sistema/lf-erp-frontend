@@ -471,7 +471,7 @@ const ClientesModule = {
           : '';
         return `
       <tr>
-        <td>
+        <td data-sort-val="${escapeHtml(cliente.nome || '')}">
           <div class="table-primary">
             <strong>${escapeHtml(cliente.nome || '-')}</strong>
             <small style="display:block; color: var(--text-muted); margin-top:4px;">
