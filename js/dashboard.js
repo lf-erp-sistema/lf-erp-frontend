@@ -906,7 +906,6 @@ const DASHBOARD_WIDGETS = [
   { id: 'kpi-pagar',             label: 'KPI: A Pagar',                group: 'KPIs',     defaultOn: true },
   { id: 'kpi-estoque',           label: 'KPI: Estoque',                group: 'KPIs',     defaultOn: true },
   { id: 'kpi-clientes',          label: 'KPI: Clientes',               group: 'KPIs',     defaultOn: true },
-  { id: 'panel-resumo',          label: 'Resumo de performance',       group: 'Painéis',  defaultOn: true },
   { id: 'panel-top-produtos',    label: 'Top produtos',                group: 'Painéis',  defaultOn: true },
   { id: 'panel-alertas',         label: 'Alertas financeiros',         group: 'Painéis',  defaultOn: true },
   { id: 'panel-tabela-precos',   label: 'Tabelas de Preço',            group: 'Painéis',  defaultOn: true },
@@ -1059,7 +1058,6 @@ export async function loadDashboard({ filters = {}, state = {} } = {}) {
     bindDashboardConfig();
 
     renderKpis(payload, financeiro, filters);
-    renderResumoExecutivo(payload, financeiro, state, rawEmpresaStatus);
     renderTopProdutos(payload);
     renderAlertas(payload, financeiro);
     renderTabelaPrecos(rawTabelaPrecos);
