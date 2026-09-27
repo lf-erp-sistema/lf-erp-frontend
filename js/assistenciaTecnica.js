@@ -11,6 +11,21 @@ function maskCPF(value) {
     .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
 }
 
+function maskDate(v) {
+  return String(v || '').replace(/\D/g,'')
+    .replace(/(\d{2})(\d)/, '$1/$2')
+    .replace(/(\d{2})(\d)/, '$1/$2')
+    .slice(0, 10);
+}
+function isoToBR(v) {
+  const p = (v || '').slice(0, 10).split('-');
+  return p.length === 3 && p[0].length === 4 ? `${p[2]}/${p[1]}/${p[0]}` : '';
+}
+function brToISO(v) {
+  const p = (v || '').split('/');
+  return p.length === 3 && p[2].length === 4 ? `${p[2]}-${p[1]}-${p[0]}` : '';
+}
+
 // ── Status ─────────────────────────────────────────────────────────────────────
 const STATUS_LABEL = {
   aberta:                 'Aberta',
@@ -208,6 +223,18 @@ function injectAtStyles() {
     .at-cl-form-item:hover { border-color:color-mix(in srgb, var(--primary) 40%, var(--border)); }
     .at-cl-form-item .at-cl-icon { width:22px; height:22px; border-radius:50%; background:var(--bg); display:flex; align-items:center; justify-content:center; font-size:11px; flex-shrink:0; }
     .at-cl-form-item select { margin-left:auto; padding:3px 5px; border-radius:5px; border:1px solid var(--border); background:var(--bg); color:var(--text); font-size:11px; cursor:pointer; }
+
+    /* Custom select dropdown */
+    .at-custom-select { position:relative; }
+    .at-cs-trigger { width:100%; padding:9px 12px; border:1.5px solid var(--border); border-radius:8px; background:var(--bg-secondary,var(--bg)); color:var(--text); font-size:13.5px; cursor:pointer; display:flex; align-items:center; justify-content:space-between; text-align:left; transition:border .15s,box-shadow .15s; font-family:inherit; }
+    .at-cs-trigger:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(37,99,235,.15); }
+    .at-cs-arrow { font-size:10px; color:var(--text-muted); transition:transform .2s; flex-shrink:0; margin-left:8px; }
+    .at-custom-select.open .at-cs-arrow { transform:rotate(180deg); }
+    .at-cs-menu { display:none; position:absolute; top:calc(100% + 5px); left:0; right:0; background:var(--bg); border:1.5px solid var(--border); border-radius:10px; box-shadow:0 8px 28px rgba(0,0,0,.14); z-index:300; overflow:hidden; max-height:220px; overflow-y:auto; }
+    .at-cs-menu.open { display:block; }
+    .at-cs-option { padding:9px 14px; font-size:13.5px; cursor:pointer; color:var(--text); transition:background .1s; }
+    .at-cs-option:hover { background:var(--primary-soft,rgba(37,99,235,.08)); }
+    .at-cs-option.selected { background:var(--primary-soft,rgba(37,99,235,.08)); color:var(--primary); font-weight:600; }
 
     /* Status actions bar */
     .at-status-bar { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
@@ -695,9 +722,16 @@ const AT = {
               <div class="at-form-grid-3" style="margin-bottom:12px">
                 <div>
                   <label class="at-form-label">Tipo</label>
-                  <select class="at-form-select" id="atFTipo">
-                    ${TIPOS_APARELHO.map(t => `<option value="${t}"${val('equipamento_tipo') === t ? ' selected' : ''}>${t}</option>`).join('')}
-                  </select>
+                  <div class="at-custom-select" id="atFTipoWrap">
+                    <button type="button" class="at-cs-trigger" id="atFTipoBtn">
+                      <span id="atFTipoLabel">${val('equipamento_tipo') || TIPOS_APARELHO[0]}</span>
+                      <i class="fa-solid fa-chevron-down at-cs-arrow"></i>
+                    </button>
+                    <div class="at-cs-menu" id="atFTipoMenu">
+                      ${TIPOS_APARELHO.map(t => `<div class="at-cs-option${(val('equipamento_tipo')||TIPOS_APARELHO[0])===t?' selected':''}" data-value="${t}">${t}</div>`).join('')}
+                    </div>
+                    <input type="hidden" id="atFTipo" value="${val('equipamento_tipo') || TIPOS_APARELHO[0]}">
+                  </div>
                 </div>
                 <div>
                   <label class="at-form-label">Marca</label>
@@ -764,7 +798,7 @@ const AT = {
                 </div>
                 <div>
                   <label class="at-form-label">Previsão de entrega</label>
-                  <input class="at-form-input" id="atFPrevista" type="date" value="${val('data_prevista','').slice(0,10)}">
+                  <input class="at-form-input" id="atFPrevista" type="text" placeholder="dd/mm/aaaa" maxlength="10" value="${isoToBR(val('data_prevista'))}">
                 </div>
               </div>
               <div>
@@ -841,6 +875,38 @@ const AT = {
       this.abrirNovoCliente(clienteNomeInput, clienteIdInput);
     });
 
+    // Custom select — Tipo de aparelho
+    const tipoWrap = document.getElementById('atFTipoWrap');
+    const tipoBtn  = document.getElementById('atFTipoBtn');
+    const tipoMenu = document.getElementById('atFTipoMenu');
+    const tipoHid  = document.getElementById('atFTipo');
+    const tipoLbl  = document.getElementById('atFTipoLabel');
+    if (tipoBtn) {
+      tipoBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        const open = tipoMenu.classList.toggle('open');
+        tipoWrap.classList.toggle('open', open);
+      });
+      tipoMenu.addEventListener('click', e => {
+        const opt = e.target.closest('.at-cs-option');
+        if (!opt) return;
+        tipoHid.value = opt.dataset.value;
+        tipoLbl.textContent = opt.dataset.value;
+        tipoMenu.querySelectorAll('.at-cs-option').forEach(o => o.classList.toggle('selected', o === opt));
+        tipoMenu.classList.remove('open');
+        tipoWrap.classList.remove('open');
+      });
+      const outsideClick = e => {
+        if (!document.contains(tipoWrap)) { document.removeEventListener('click', outsideClick); return; }
+        if (!tipoWrap.contains(e.target)) { tipoMenu.classList.remove('open'); tipoWrap.classList.remove('open'); }
+      };
+      document.addEventListener('click', outsideClick);
+    }
+
+    // Máscara de data
+    const prevEl = document.getElementById('atFPrevista');
+    if (prevEl) prevEl.addEventListener('input', () => { prevEl.value = maskDate(prevEl.value); });
+
     document.getElementById('atFormSalvar').addEventListener('click', async () => {
       const btn = document.getElementById('atFormSalvar');
       btn.disabled = true;
@@ -866,7 +932,7 @@ const AT = {
           diagnostico:              document.getElementById('atFDiag')?.value,
           tecnico:                  document.getElementById('atFTecnico')?.value,
           valor_mao_obra:           document.getElementById('atFMaoObra')?.value,
-          data_prevista:            document.getElementById('atFPrevista')?.value,
+          data_prevista:            brToISO(document.getElementById('atFPrevista')?.value) || null,
           observacoes:              document.getElementById('atFObs')?.value,
           checklist,
         };
