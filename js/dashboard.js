@@ -190,12 +190,16 @@ function renderResumoExecutivo(payload, financeiro, state = {}, empresaStatus = 
     if (uso.bloqueado) statusClass = 'danger';
     else if (uso.alerta) statusClass = 'warning';
 
+    const pct = limite > 0 ? percentual : 0;
+    const barColor = statusClass === 'danger' ? 'var(--danger)' : statusClass === 'warning' ? 'var(--warning)' : 'var(--primary)';
+
     return `
-      <div class="dashboard-list__item">
-        <strong>${label}</strong>
-        <span class="alert-list__item ${statusClass}" style="padding:6px 10px;">
-          ${limite > 0 ? `${usado} / ${limite}` : `${usado} / ilimitado`} ${limite > 0 ? `(${percentual}%)` : ''}
-        </span>
+      <div class="dashboard-list__item" style="flex-direction:column;gap:6px;align-items:stretch">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <strong>${label}</strong>
+          <span style="font-size:12px;font-weight:700;color:${barColor}">${limite > 0 ? `${usado} / ${limite}` : usado}</span>
+        </div>
+        ${limite > 0 ? `<div style="height:4px;border-radius:99px;background:var(--border)"><div style="height:4px;border-radius:99px;background:${barColor};width:${Math.min(100,pct).toFixed(1)}%"></div></div>` : ''}
       </div>
     `;
   }
@@ -204,104 +208,85 @@ function renderResumoExecutivo(payload, financeiro, state = {}, empresaStatus = 
     'dashboardResumo',
     `
       <div class="dashboard-grid-executive">
+
+        <!-- ① Plano & Assinatura -->
+        <div class="dex-group-label"><i class="fa-solid fa-building" style="margin-right:5px"></i>Plano & Assinatura</div>
         <div class="dashboard-list__item">
           <strong>Empresa</strong>
           <span>${safeText(empresaNome)}</span>
         </div>
-
         <div class="dashboard-list__item">
           <strong>Plano atual</strong>
           <span>${safeText(planoNome)}</span>
         </div>
-
         <div class="dashboard-list__item">
-          <strong>Status da assinatura</strong>
+          <strong>Status</strong>
           <span>${safeText(assinaturaStatus)}</span>
         </div>
-
         <div class="dashboard-list__item">
           <strong>Trial</strong>
           <span>${
             diasTrial === null || diasTrial === undefined
-              ? 'Sem trial definido'
+              ? 'Sem trial'
               : Number(diasTrial) < 0
                 ? 'Expirado'
-                : `${Number(diasTrial)} dia(s) restante(s)`
+                : `${Number(diasTrial)} dia(s)`
           }</span>
         </div>
 
+        <!-- ② Limites de uso -->
+        <div class="dex-group-label"><i class="fa-solid fa-gauge" style="margin-right:5px"></i>Limites de uso</div>
         ${usoLinha('Usuários', usos.usuarios)}
         ${usoLinha('Produtos', usos.produtos)}
         ${usoLinha('Clientes', usos.clientes)}
         ${usoLinha('Fornecedores', usos.fornecedores)}
         ${usoLinha('Vendas no mês', usos.vendas_mes)}
 
+        <!-- ③ Fluxo financeiro -->
+        <div class="dex-group-label"><i class="fa-solid fa-arrow-right-arrow-left" style="margin-right:5px"></i>Fluxo financeiro</div>
         <div class="dashboard-list__item">
-          <strong>Fluxo de entradas</strong>
-          <span>${toCurrency(financeiro.fluxoEntradas)}</span>
+          <strong>Entradas</strong>
+          <span style="color:var(--success)">${toCurrency(financeiro.fluxoEntradas)}</span>
+        </div>
+        <div class="dashboard-list__item">
+          <strong>Saídas</strong>
+          <span style="color:var(--danger)">${toCurrency(financeiro.fluxoSaidas)}</span>
+        </div>
+        <div class="dashboard-list__item" style="grid-column:1/-1">
+          <strong>Saldo do período</strong>
+          <span style="font-size:1rem;color:${financeiro.fluxoSaldo >= 0 ? 'var(--success)' : 'var(--danger)'}">${toCurrency(financeiro.fluxoSaldo)}</span>
         </div>
 
+        <!-- ④ Estoque & Produtos -->
+        <div class="dex-group-label"><i class="fa-solid fa-boxes-stacked" style="margin-right:5px"></i>Estoque & Produtos</div>
         <div class="dashboard-list__item">
-          <strong>Fluxo de saídas</strong>
-          <span>${toCurrency(financeiro.fluxoSaidas)}</span>
+          <strong>Estoque investido</strong>
+          <span>${toCurrency(payload.estoqueInvestido)}</span>
         </div>
-
         <div class="dashboard-list__item">
-          <strong>Saldo do fluxo</strong>
-          <span>${toCurrency(financeiro.fluxoSaldo)}</span>
+          <strong>Lucro potencial</strong>
+          <span class="${payload.lucroPotencial >= 0 ? 'text-success' : 'text-danger'}">${toCurrency(payload.lucroPotencial)}</span>
         </div>
-
         <div class="dashboard-list__item">
-  <strong>Estoque investido</strong>
-  <span>${toCurrency(payload.estoqueInvestido)}</span>
-</div>
-
-<div class="dashboard-list__item">
-  <strong>Lucro potencial</strong>
-  <span class="${payload.lucroPotencial >= 0 ? 'text-success' : 'text-danger'}">
-    ${toCurrency(payload.lucroPotencial)}
-  </span>
-</div>
-
-<div class="dashboard-list__item">
-  <strong>Margem média</strong>
-  <span>
-    ${Number(payload.margemMedia || 0).toFixed(2)}%
-  </span>
-</div>
-
-<div class="dashboard-list__item">
-  <strong>Produtos em promoção</strong>
-  <span>${payload.produtosPromocao}</span>
-</div>
-
-<div class="dashboard-list__item">
-  <strong>Produtos em prejuízo</strong>
-  <span class="${payload.produtosPrejuizo > 0 ? 'text-danger' : ''}">
-    ${payload.produtosPrejuizo}
-  </span>
-</div>
-
-<div class="dashboard-list__item">
-  <strong>Produtos Classe A</strong>
-  <span class="badge badge--success">
-    ${payload.classeA}
-  </span>
-</div>
-
-<div class="dashboard-list__item">
-  <strong>Produtos Classe B</strong>
-  <span class="badge badge--warning">
-    ${payload.classeB}
-  </span>
-</div>
-
-<div class="dashboard-list__item">
-  <strong>Produtos Classe C</strong>
-  <span class="badge badge--danger">
-    ${payload.classeC}
-  </span>
-</div>
+          <strong>Margem média</strong>
+          <span>${Number(payload.margemMedia || 0).toFixed(2)}%</span>
+        </div>
+        <div class="dashboard-list__item">
+          <strong>Em promoção</strong>
+          <span>${payload.produtosPromocao}</span>
+        </div>
+        <div class="dashboard-list__item">
+          <strong>Em prejuízo</strong>
+          <span class="${payload.produtosPrejuizo > 0 ? 'text-danger' : ''}">${payload.produtosPrejuizo}</span>
+        </div>
+        <div class="dashboard-list__item">
+          <strong>Classe A / B / C</strong>
+          <span style="display:flex;gap:5px">
+            <span class="badge badge--success">${payload.classeA}</span>
+            <span class="badge badge--warning">${payload.classeB}</span>
+            <span class="badge badge--danger">${payload.classeC}</span>
+          </span>
+        </div>
       </div>
 
         <div class="dashboard-abc-card">
@@ -506,13 +491,15 @@ function renderAlertas(payload, financeiro) {
       <div class="alert-list">
         ${alertas
           .slice(0, 5)
-          .map(
-            (alerta) => `
-              <div class="alert-list__item ${normalizeAlertType(alerta.tipo)}">
-                ${safeText(alerta.texto || alerta.mensagem, 'Alerta')}
-              </div>
-            `
-          )
+          .map((alerta) => {
+            const tipo = normalizeAlertType(alerta.tipo);
+            const icon = tipo === 'danger' ? 'circle-exclamation' : tipo === 'warning' ? 'triangle-exclamation' : 'circle-info';
+            return `
+              <div class="alert-list__item ${tipo}">
+                <i class="fa-solid fa-${icon}"></i>
+                <span>${safeText(alerta.texto || alerta.mensagem, 'Alerta')}</span>
+              </div>`;
+          })
           .join('')}
       </div>
     `
