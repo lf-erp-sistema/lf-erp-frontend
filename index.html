@@ -666,24 +666,35 @@
                   <button type="button" class="btn-periodo-rapido" data-quick-period="mesAtual">Mês</button>
                   <button type="button" class="btn-periodo-rapido" data-quick-period="mesAnterior">Mês ant.</button>
                 </div>
-                <div class="dash-toolbar__right">
-                  <span class="dash-atualizacao" id="dashUltimaAtualizacao"></span>
-                  <button class="btn btn-light" type="button" id="dashFiltersToggle" aria-expanded="false">
-                    <i class="fa-solid fa-sliders"></i>
-                    Filtros
-                    <i class="fa-solid fa-chevron-down dash-filters-chevron"></i>
+                <div class="dash-month-nav-group">
+                  <button class="btn-month-nav" type="button" id="dashPrevMonth" title="Mês anterior">
+                    <i class="fa-solid fa-chevron-left"></i>
+                  </button>
+                  <span class="dash-month-label" id="dashMonthLabel">Set 2026</span>
+                  <button class="btn-month-nav" type="button" id="dashNextMonth" title="Próximo mês">
+                    <i class="fa-solid fa-chevron-right"></i>
                   </button>
                 </div>
-              </div>
-              <div class="dash-filters-panel hidden" id="dashFiltersPanel">
-                <button class="btn btn-light" type="button" id="dashboardConfigBtn">
-                  <i class="fa-solid fa-sliders"></i>
-                  Personalizar dashboard
-                </button>
-                <button class="btn btn-light" type="button" id="dashboardExportBtn">
-                  <i class="fa-solid fa-download"></i>
-                  Exportar dados
-                </button>
+                <div class="dash-toolbar__right">
+                  <span class="dash-atualizacao" id="dashUltimaAtualizacao"></span>
+                  <div class="dash-acoes">
+                    <button class="btn btn-light" type="button" id="dashAcoesBtn" aria-expanded="false">
+                      <i class="fa-solid fa-ellipsis-vertical"></i>
+                      Ações
+                      <i class="fa-solid fa-chevron-down dash-filters-chevron"></i>
+                    </button>
+                    <div class="dash-acoes-menu hidden" id="dashAcoesMenu">
+                      <button class="dash-acoes-item" type="button" id="dashboardConfigBtn">
+                        <i class="fa-solid fa-sliders"></i>
+                        Personalizar dashboard
+                      </button>
+                      <button class="dash-acoes-item" type="button" id="dashboardExportBtn">
+                        <i class="fa-solid fa-download"></i>
+                        Exportar dados
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div class="kpi-grid">

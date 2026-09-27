@@ -3476,24 +3476,93 @@ select {
   transition: transform 0.2s;
 }
 
-#dashFiltersToggle[aria-expanded="true"] .dash-filters-chevron {
+#dashAcoesBtn[aria-expanded="true"] .dash-filters-chevron {
   transform: rotate(180deg);
 }
 
-.dash-filters-panel {
+/* ── Navegação de mês do dashboard ──────────────────────────────────────── */
+.dash-month-nav-group {
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  padding: 10px 14px;
-  margin-bottom: 14px;
+  gap: 2px;
   background: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 20px;
+  padding: 3px 8px;
+  flex-shrink: 0;
 }
 
-.dash-filters-panel.hidden {
+.btn-month-nav {
+  width: 22px;
+  height: 22px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 10px;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+
+.btn-month-nav:hover {
+  background: var(--primary);
+  color: #fff;
+}
+
+.dash-month-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text);
+  min-width: 68px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* ── Dropdown "Ações" do dashboard ──────────────────────────────────────── */
+.dash-acoes {
+  position: relative;
+}
+
+.dash-acoes-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 200;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.1);
+  min-width: 200px;
+  padding: 4px;
+}
+
+.dash-acoes-menu.hidden {
   display: none;
+}
+
+.dash-acoes-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 9px 12px;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 0.83rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.12s;
+  text-align: left;
+}
+
+.dash-acoes-item:hover {
+  background: var(--surface-2);
 }
 
 /* ── Botões de período rápido do dashboard ───────────────────────────────── */
@@ -6349,7 +6418,7 @@ body.pdv-active #pdvContainer.module-placeholder {
   #globalFiltersBar,
   .section-header,
   .dash-toolbar,
-  .dash-filters-panel,
+  .dash-acoes-menu,
   .module-feedback,
   .periodo-local,
   .cp-toolbar-grid,

@@ -597,6 +597,27 @@ function bindFilterEvents() {
       applyGlobalFilters();
     });
   });
+
+  // Navegação de mês do dashboard
+  document.getElementById('dashPrevMonth')?.addEventListener('click', () => navDashMonth(-1));
+  document.getElementById('dashNextMonth')?.addEventListener('click', () => navDashMonth(+1));
+
+  // Dropdown "Ações" do dashboard
+  const dashAcoesBtn  = document.getElementById('dashAcoesBtn');
+  const dashAcoesMenu = document.getElementById('dashAcoesMenu');
+  if (dashAcoesBtn && dashAcoesMenu) {
+    dashAcoesBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const open = dashAcoesBtn.getAttribute('aria-expanded') === 'true';
+      dashAcoesBtn.setAttribute('aria-expanded', String(!open));
+      dashAcoesMenu.classList.toggle('hidden', open);
+    });
+    document.addEventListener('click', () => {
+      dashAcoesBtn.setAttribute('aria-expanded', 'false');
+      dashAcoesMenu.classList.add('hidden');
+    });
+    dashAcoesMenu.addEventListener('click', (e) => e.stopPropagation());
+  }
 }
 
 // ── Notificações in-app ─────────────────────────────────────────────────────
@@ -1149,6 +1170,49 @@ function updateFiltersUI() {
   document.querySelectorAll('[data-quick-period]').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.quickPeriod === AppState.filters.periodo);
   });
+
+  // Atualiza label do mês na navegação do dashboard
+  const monthLabel = document.getElementById('dashMonthLabel');
+  if (monthLabel) monthLabel.textContent = getDashMonthLabel();
+}
+
+const _MESES_PT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+function getDashMonthLabel() {
+  const f = AppState.filters;
+  if (f.periodo === 'mesAtual') {
+    const d = new Date(new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Fortaleza' }) + 'T12:00:00');
+    return `${_MESES_PT[d.getMonth()]} ${d.getFullYear()}`;
+  }
+  if (f.periodo === 'mesAnterior') {
+    const today = new Date(new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Fortaleza' }) + 'T12:00:00');
+    const d = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    return `${_MESES_PT[d.getMonth()]} ${d.getFullYear()}`;
+  }
+  if (f.dataInicial) {
+    const d = new Date(f.dataInicial + 'T12:00:00');
+    return `${_MESES_PT[d.getMonth()]} ${d.getFullYear()}`;
+  }
+  const d = new Date(new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Fortaleza' }) + 'T12:00:00');
+  return `${_MESES_PT[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+function navDashMonth(delta) {
+  const label = getDashMonthLabel();
+  const parts = label.split(' ');
+  const baseMonth = _MESES_PT.indexOf(parts[0]);
+  const baseYear  = parseInt(parts[1], 10);
+  const d = new Date(baseYear, baseMonth + delta, 1);
+  const y = d.getFullYear();
+  const m = d.getMonth();
+  const lastDay = new Date(y, m + 1, 0).getDate();
+  AppState.filters.periodo     = 'personalizado';
+  AppState.filters.dataInicial = `${y}-${String(m + 1).padStart(2,'0')}-01`;
+  AppState.filters.dataFinal   = `${y}-${String(m + 1).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
+  const filtroPeriodo = document.getElementById('filtroPeriodo');
+  if (filtroPeriodo) filtroPeriodo.value = 'personalizado';
+  updateFiltersUI();
+  applyGlobalFilters();
 }
 
 const VIEWS_WITH_GLOBAL_FILTER = new Set(['dashboard']);
