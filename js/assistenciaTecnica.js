@@ -1,7 +1,15 @@
 'use strict';
 import api from './api.js';
 import { showToast, confirmarAcao } from './feedback.js';
-import { escapeHtml, buildFriendlyError } from './utils.js';
+import { escapeHtml, buildFriendlyError, maskPhone } from './utils.js';
+
+function maskCPF(value) {
+  return String(value || '')
+    .replace(/\D/g, '')
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+}
 
 // ── Status ─────────────────────────────────────────────────────────────────────
 const STATUS_LABEL = {
@@ -1158,6 +1166,12 @@ const AT = {
 
     document.body.insertAdjacentHTML('beforeend', html);
     document.getElementById('atNcNome')?.focus();
+
+    // Máscaras
+    const telEl = document.getElementById('atNcTelefone');
+    const cpfEl = document.getElementById('atNcCpf');
+    if (telEl) telEl.addEventListener('input', () => { telEl.value = maskPhone(telEl.value); });
+    if (cpfEl) cpfEl.addEventListener('input', () => { cpfEl.value = maskCPF(cpfEl.value); });
 
     const close = () => document.getElementById('atNcModal')?.remove();
     document.getElementById('atNcClose').addEventListener('click', close);
