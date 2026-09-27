@@ -3536,7 +3536,7 @@ select {
   border: 1px solid var(--border);
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0,0,0,.1);
-  min-width: 200px;
+  min-width: 240px;
   padding: 4px;
 }
 
@@ -3563,6 +3563,32 @@ select {
 
 .dash-acoes-item:hover {
   background: var(--surface-2);
+}
+
+.dash-acoes-section {
+  padding: 6px 8px 4px;
+}
+
+.dash-acoes-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--text-muted);
+  padding: 2px 4px 8px;
+}
+
+.dash-acoes-periodo {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  padding-bottom: 2px;
+}
+
+.dash-acoes-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 6px 0;
 }
 
 /* ── Botões de período rápido do dashboard ───────────────────────────────── */

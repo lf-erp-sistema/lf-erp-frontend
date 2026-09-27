@@ -595,6 +595,11 @@ function bindFilterEvents() {
       if (filtroPeriodo) filtroPeriodo.value = periodo;
       updateFiltersUI();
       applyGlobalFilters();
+      // Fecha dropdown Ações após selecionar período
+      const m = document.getElementById('dashAcoesMenu');
+      const b = document.getElementById('dashAcoesBtn');
+      if (m) m.classList.add('hidden');
+      if (b) b.setAttribute('aria-expanded', 'false');
     });
   });
 

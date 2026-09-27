@@ -660,12 +660,6 @@
             <!-- DASHBOARD -->
             <section class="view-section active" data-view="dashboard">
               <div class="dash-toolbar">
-                <div class="dash-periodo-rapido" id="dashPeriodoRapido">
-                  <button type="button" class="btn-periodo-rapido" data-quick-period="hoje">Hoje</button>
-                  <button type="button" class="btn-periodo-rapido" data-quick-period="7dias">7 dias</button>
-                  <button type="button" class="btn-periodo-rapido" data-quick-period="mesAtual">Mês</button>
-                  <button type="button" class="btn-periodo-rapido" data-quick-period="mesAnterior">Mês ant.</button>
-                </div>
                 <div class="dash-month-nav-group">
                   <button class="btn-month-nav" type="button" id="dashPrevMonth" title="Mês anterior">
                     <i class="fa-solid fa-chevron-left"></i>
@@ -679,11 +673,21 @@
                   <span class="dash-atualizacao" id="dashUltimaAtualizacao"></span>
                   <div class="dash-acoes">
                     <button class="btn btn-light" type="button" id="dashAcoesBtn" aria-expanded="false">
-                      <i class="fa-solid fa-ellipsis-vertical"></i>
+                      <i class="fa-solid fa-sliders"></i>
                       Ações
                       <i class="fa-solid fa-chevron-down dash-filters-chevron"></i>
                     </button>
                     <div class="dash-acoes-menu hidden" id="dashAcoesMenu">
+                      <div class="dash-acoes-section">
+                        <div class="dash-acoes-section-label">Filtros de período</div>
+                        <div class="dash-acoes-periodo" id="dashPeriodoRapido">
+                          <button type="button" class="btn-periodo-rapido" data-quick-period="hoje">Hoje</button>
+                          <button type="button" class="btn-periodo-rapido" data-quick-period="7dias">7 dias</button>
+                          <button type="button" class="btn-periodo-rapido" data-quick-period="mesAtual">Mês</button>
+                          <button type="button" class="btn-periodo-rapido" data-quick-period="mesAnterior">Mês ant.</button>
+                        </div>
+                      </div>
+                      <div class="dash-acoes-divider"></div>
                       <button class="dash-acoes-item" type="button" id="dashboardConfigBtn">
                         <i class="fa-solid fa-sliders"></i>
                         Personalizar dashboard
