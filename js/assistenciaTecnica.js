@@ -124,25 +124,81 @@ function injectAtStyles() {
     .badge--ativo   { background:rgba(34,197,94,.12);  color:#16a34a; }
     .badge--vencido { background:rgba(239,68,68,.12);  color:#dc2626; }
 
-    /* Form modal */
-    .at-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:1000; display:flex; align-items:center; justify-content:center; padding:16px; }
-    .at-modal { background:var(--bg); border-radius:12px; box-shadow:0 16px 48px rgba(0,0,0,.22); width:100%; max-width:640px; max-height:90vh; overflow:auto; }
-    .at-modal-header { padding:20px 24px 0; display:flex; align-items:center; justify-content:space-between; }
-    .at-modal-header h2 { font-size:17px; font-weight:700; margin:0; }
-    .at-modal-header button { background:none; border:none; cursor:pointer; font-size:18px; color:var(--text-muted); padding:4px 8px; }
-    .at-modal-body { padding:20px 24px 24px; }
-    .at-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-    @media(max-width:600px){ .at-form-grid{ grid-template-columns:1fr; } }
+    /* ── Modal premium ──────────────────────────────────────────── */
+    .at-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:1000; display:flex; align-items:center; justify-content:center; padding:16px; backdrop-filter:blur(2px); }
+    .at-modal { background:var(--bg); border-radius:16px; box-shadow:0 24px 64px rgba(0,0,0,.28); width:100%; max-width:780px; max-height:92vh; display:flex; flex-direction:column; }
+
+    /* Header premium com stripe colorida */
+    .at-modal-header {
+      padding:0;
+      display:flex; align-items:stretch; justify-content:space-between;
+      background:linear-gradient(135deg, var(--primary) 0%, color-mix(in srgb, var(--primary) 70%, #6366f1) 100%);
+      border-radius:16px 16px 0 0;
+      flex-shrink:0;
+    }
+    .at-modal-header-inner { display:flex; align-items:center; gap:14px; padding:18px 24px; flex:1; }
+    .at-modal-header-icon { width:38px; height:38px; border-radius:10px; background:rgba(255,255,255,.18); display:flex; align-items:center; justify-content:center; color:#fff; font-size:16px; flex-shrink:0; }
+    .at-modal-header-text h2 { font-size:16px; font-weight:700; color:#fff; margin:0; }
+    .at-modal-header-text span { font-size:12px; color:rgba(255,255,255,.72); }
+    .at-modal-header button { background:none; border:none; cursor:pointer; font-size:20px; color:rgba(255,255,255,.7); padding:18px 20px; transition:color .15s; }
+    .at-modal-header button:hover { color:#fff; }
+
+    /* Body scrollável */
+    .at-modal-body { padding:20px 24px; overflow-y:auto; flex:1; }
+
+    /* Seções visuais dentro do modal */
+    .at-fm-section { margin-bottom:18px; }
+    .at-fm-section:last-child { margin-bottom:0; }
+    .at-fm-section-title {
+      display:flex; align-items:center; gap:8px;
+      font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.07em;
+      color:var(--primary);
+      margin-bottom:12px;
+      padding-bottom:8px;
+      border-bottom:2px solid color-mix(in srgb, var(--primary) 20%, transparent);
+    }
+    .at-fm-section-title i { font-size:13px; opacity:.8; }
+
+    /* Grids */
+    .at-form-grid   { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .at-form-grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+    @media(max-width:640px){ .at-form-grid,.at-form-grid-3{ grid-template-columns:1fr; } }
     .at-form-full { grid-column:1/-1; }
-    .at-form-label { display:block; font-size:12px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:.04em; margin-bottom:5px; }
-    .at-form-input,.at-form-select,.at-form-textarea { width:100%; box-sizing:border-box; padding:8px 11px; border:1px solid var(--border); border-radius:7px; background:var(--bg); color:var(--text); font-size:14px; transition:border .15s; }
-    .at-form-input:focus,.at-form-select:focus,.at-form-textarea:focus { outline:none; border-color:var(--primary); }
-    .at-form-textarea { resize:vertical; min-height:72px; }
-    .at-modal-footer { padding:16px 24px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:10px; }
-    .at-btn { padding:9px 18px; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; border:none; transition:opacity .15s; }
+
+    /* Labels e inputs */
+    .at-form-label { display:block; font-size:11px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:5px; }
+    .at-form-input,.at-form-select,.at-form-textarea {
+      width:100%; box-sizing:border-box;
+      padding:9px 12px; border:1.5px solid var(--border);
+      border-radius:8px; background:var(--bg-secondary,var(--bg)); color:var(--text);
+      font-size:13.5px; transition:border .15s, box-shadow .15s;
+    }
+    .at-form-input:focus,.at-form-select:focus,.at-form-textarea:focus {
+      outline:none; border-color:var(--primary);
+      box-shadow:0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent);
+    }
+    .at-form-input::placeholder { color:var(--text-muted); opacity:.6; font-size:13px; }
+    .at-form-textarea { resize:vertical; min-height:70px; }
+
+    /* Hint under cliente */
+    .at-form-hint { font-size:11px; color:var(--text-muted); margin-top:4px; display:flex; align-items:center; gap:4px; }
+
+    /* Footer fixo */
+    .at-modal-footer { padding:14px 24px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:10px; background:var(--bg); border-radius:0 0 16px 16px; flex-shrink:0; }
+
+    /* Botões */
+    .at-btn { padding:9px 20px; border-radius:9px; font-size:13.5px; font-weight:600; cursor:pointer; border:none; transition:opacity .15s, transform .1s; display:inline-flex; align-items:center; gap:7px; }
+    .at-btn:active { transform:scale(.97); }
     .at-btn--primary { background:var(--primary); color:#fff; }
-    .at-btn--secondary { background:var(--bg-secondary); color:var(--text); border:1px solid var(--border); }
+    .at-btn--secondary { background:var(--bg-secondary); color:var(--text); border:1.5px solid var(--border); }
     .at-btn:hover { opacity:.88; }
+
+    /* Checklist premium */
+    .at-cl-form-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:8px; }
+    .at-cl-form-item { display:flex; align-items:center; gap:8px; padding:9px 10px; border:1.5px solid var(--border); border-radius:8px; font-size:13px; background:var(--bg-secondary,var(--bg)); transition:border .15s; }
+    .at-cl-form-item:hover { border-color:color-mix(in srgb, var(--primary) 40%, var(--border)); }
+    .at-cl-form-item .at-cl-icon { width:22px; height:22px; border-radius:50%; background:var(--bg); display:flex; align-items:center; justify-content:center; font-size:11px; flex-shrink:0; }
+    .at-cl-form-item select { margin-left:auto; padding:3px 5px; border-radius:5px; border:1px solid var(--border); background:var(--bg); color:var(--text); font-size:11px; cursor:pointer; }
 
     /* Status actions bar */
     .at-status-bar { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
@@ -594,97 +650,140 @@ const AT = {
     const html = `
       <div class="at-modal-overlay" id="atFormModal">
         <div class="at-modal">
-          <div class="at-modal-header">
-            <h2>${id ? 'Editar OS' : 'Nova Ordem de Serviço'}</h2>
-            <button id="atFormClose">×</button>
-          </div>
-          <div class="at-modal-body">
-            <div class="at-form-grid">
-              <div class="at-form-full">
-                <label class="at-form-label">Cliente</label>
-                <input type="text" class="at-form-input" id="atFClienteNome" placeholder="Digite o nome do cliente…" value="${escapeHtml(val('cliente_nome'))}">
-                <input type="hidden" id="atFClienteId" value="${val('cliente_id')}">
-              </div>
-              <div>
-                <label class="at-form-label">Tipo de aparelho</label>
-                <select class="at-form-select" id="atFTipo">
-                  ${TIPOS_APARELHO.map(t => `<option value="${t}"${val('equipamento_tipo') === t ? ' selected' : ''}>${t}</option>`).join('')}
-                </select>
-              </div>
-              <div>
-                <label class="at-form-label">Marca</label>
-                <input class="at-form-input" id="atFMarca" placeholder="Samsung, Apple…" value="${escapeHtml(val('equipamento_marca'))}">
-              </div>
-              <div>
-                <label class="at-form-label">Modelo</label>
-                <input class="at-form-input" id="atFModelo" placeholder="Galaxy A54, iPhone 14…" value="${escapeHtml(val('equipamento_modelo'))}">
-              </div>
-              <div>
-                <label class="at-form-label">IMEI 1</label>
-                <input class="at-form-input" id="atFImei1" placeholder="000000000000000" value="${escapeHtml(val('equipamento_imei1'))}">
-              </div>
-              <div>
-                <label class="at-form-label">IMEI 2</label>
-                <input class="at-form-input" id="atFImei2" value="${escapeHtml(val('equipamento_imei2'))}">
-              </div>
-              <div>
-                <label class="at-form-label">Cor</label>
-                <input class="at-form-input" id="atFCor" value="${escapeHtml(val('equipamento_cor'))}">
-              </div>
-              <div>
-                <label class="at-form-label">Número de série</label>
-                <input class="at-form-input" id="atFSerie" value="${escapeHtml(val('equipamento_serie'))}">
-              </div>
-              <div class="at-form-full">
-                <label class="at-form-label">Acessórios entregues</label>
-                <input class="at-form-input" id="atFAcessorios" placeholder="Carregador, capa, caixa…" value="${escapeHtml(val('acessorios_entregues'))}">
-              </div>
-              <div class="at-form-full">
-                <label class="at-form-label">Defeito relatado pelo cliente</label>
-                <textarea class="at-form-textarea" id="atFDefeito">${escapeHtml(val('defeito_cliente'))}</textarea>
-              </div>
-              <div class="at-form-full">
-                <label class="at-form-label">Diagnóstico técnico</label>
-                <textarea class="at-form-textarea" id="atFDiag">${escapeHtml(val('diagnostico'))}</textarea>
-              </div>
-              <div>
-                <label class="at-form-label">Técnico responsável</label>
-                <input class="at-form-input" id="atFTecnico" value="${escapeHtml(val('tecnico'))}">
-              </div>
-              <div>
-                <label class="at-form-label">Valor mão de obra (R$)</label>
-                <input class="at-form-input" id="atFMaoObra" type="number" min="0" step="0.01" value="${val('valor_mao_obra', 0)}">
-              </div>
-              <div>
-                <label class="at-form-label">Previsão de entrega</label>
-                <input class="at-form-input" id="atFPrevista" type="date" value="${val('data_prevista','').slice(0,10)}">
-              </div>
-              <div class="at-form-full">
-                <label class="at-form-label">Observações</label>
-                <textarea class="at-form-textarea" id="atFObs">${escapeHtml(val('observacoes'))}</textarea>
-              </div>
 
-              ${!id ? `
-              <div class="at-form-full">
-                <h3 style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:12px">Checklist de entrada</h3>
-                <div class="at-checklist-grid" id="atFChecklist">
-                  ${CHECKLIST_PADRAO.map(item => `
-                    <div class="at-cl-item" id="atCl_${item.key}">
-                      <i class="fa-solid fa-minus" style="font-size:12px;opacity:.5"></i>
-                      <span style="flex:1;font-size:12px">${escapeHtml(item.label)}</span>
-                      <select class="at-form-select" style="width:80px;padding:2px 4px;font-size:11px" data-cl-key="${item.key}">
-                        <option value="nao_testado">N/T</option>
-                        <option value="ok">OK</option>
-                        <option value="problema">Prob.</option>
-                        <option value="nao_aplica">N/A</option>
-                      </select>
-                    </div>`).join('')}
-                </div>
-              </div>` : ''}
+          <!-- Header premium -->
+          <div class="at-modal-header">
+            <div class="at-modal-header-inner">
+              <div class="at-modal-header-icon"><i class="fa-solid fa-mobile-screen-button"></i></div>
+              <div class="at-modal-header-text">
+                <h2>${id ? 'Editar Ordem de Serviço' : 'Nova Ordem de Serviço'}</h2>
+                <span>${id ? `OS em edição` : 'Preencha os dados do equipamento e cliente'}</span>
+              </div>
             </div>
+            <button id="atFormClose" title="Fechar">×</button>
           </div>
+
+          <!-- Body em seções -->
+          <div class="at-modal-body">
+
+            <!-- ① Cliente -->
+            <div class="at-fm-section">
+              <div class="at-fm-section-title"><i class="fa-solid fa-user"></i> Cliente</div>
+              <div>
+                <label class="at-form-label">Nome do cliente</label>
+                <input type="text" class="at-form-input" id="atFClienteNome" placeholder="Digite o nome para buscar…" value="${escapeHtml(val('cliente_nome'))}" autocomplete="off">
+                <input type="hidden" id="atFClienteId" value="${val('cliente_id')}">
+                <p class="at-form-hint"><i class="fa-solid fa-circle-info"></i> Digite pelo menos 2 letras para ver sugestões</p>
+              </div>
+            </div>
+
+            <!-- ② Equipamento -->
+            <div class="at-fm-section">
+              <div class="at-fm-section-title"><i class="fa-solid fa-mobile-screen-button"></i> Equipamento</div>
+              <div class="at-form-grid-3" style="margin-bottom:12px">
+                <div>
+                  <label class="at-form-label">Tipo</label>
+                  <select class="at-form-select" id="atFTipo">
+                    ${TIPOS_APARELHO.map(t => `<option value="${t}"${val('equipamento_tipo') === t ? ' selected' : ''}>${t}</option>`).join('')}
+                  </select>
+                </div>
+                <div>
+                  <label class="at-form-label">Marca</label>
+                  <input class="at-form-input" id="atFMarca" placeholder="Samsung, Apple…" value="${escapeHtml(val('equipamento_marca'))}">
+                </div>
+                <div>
+                  <label class="at-form-label">Modelo</label>
+                  <input class="at-form-input" id="atFModelo" placeholder="Galaxy A54, iPhone 14…" value="${escapeHtml(val('equipamento_modelo'))}">
+                </div>
+              </div>
+              <div class="at-form-grid-3" style="margin-bottom:12px">
+                <div>
+                  <label class="at-form-label">IMEI 1</label>
+                  <input class="at-form-input" id="atFImei1" placeholder="000000000000000" value="${escapeHtml(val('equipamento_imei1'))}" style="font-family:monospace;letter-spacing:.04em">
+                </div>
+                <div>
+                  <label class="at-form-label">IMEI 2</label>
+                  <input class="at-form-input" id="atFImei2" value="${escapeHtml(val('equipamento_imei2'))}" style="font-family:monospace;letter-spacing:.04em">
+                </div>
+                <div>
+                  <label class="at-form-label">Número de série</label>
+                  <input class="at-form-input" id="atFSerie" value="${escapeHtml(val('equipamento_serie'))}" style="font-family:monospace;letter-spacing:.04em">
+                </div>
+              </div>
+              <div class="at-form-grid-3">
+                <div>
+                  <label class="at-form-label">Cor</label>
+                  <input class="at-form-input" id="atFCor" placeholder="Preto, Branco…" value="${escapeHtml(val('equipamento_cor'))}">
+                </div>
+                <div>
+                  <label class="at-form-label">S.O. / Versão</label>
+                  <input class="at-form-input" id="atFSO" placeholder="Android 14, iOS 17…" value="${escapeHtml(val('equipamento_so'))}">
+                </div>
+                <div>
+                  <label class="at-form-label">Capacidade</label>
+                  <input class="at-form-input" id="atFCapacidade" placeholder="128 GB, 256 GB…" value="${escapeHtml(val('equipamento_capacidade'))}">
+                </div>
+              </div>
+              <div style="margin-top:12px">
+                <label class="at-form-label">Acessórios entregues</label>
+                <input class="at-form-input" id="atFAcessorios" placeholder="Carregador, capa, caixa original…" value="${escapeHtml(val('acessorios_entregues'))}">
+              </div>
+            </div>
+
+            <!-- ③ Diagnóstico & Serviço -->
+            <div class="at-fm-section">
+              <div class="at-fm-section-title"><i class="fa-solid fa-screwdriver-wrench"></i> Diagnóstico & Serviço</div>
+              <div style="margin-bottom:12px">
+                <label class="at-form-label">Defeito relatado pelo cliente</label>
+                <textarea class="at-form-textarea" id="atFDefeito" placeholder="Descreva o problema conforme relatado pelo cliente…">${escapeHtml(val('defeito_cliente'))}</textarea>
+              </div>
+              <div style="margin-bottom:12px">
+                <label class="at-form-label">Diagnóstico técnico</label>
+                <textarea class="at-form-textarea" id="atFDiag" placeholder="Análise técnica do problema identificado…">${escapeHtml(val('diagnostico'))}</textarea>
+              </div>
+              <div class="at-form-grid-3" style="margin-bottom:12px">
+                <div>
+                  <label class="at-form-label">Técnico responsável</label>
+                  <input class="at-form-input" id="atFTecnico" placeholder="Nome do técnico" value="${escapeHtml(val('tecnico'))}">
+                </div>
+                <div>
+                  <label class="at-form-label">Mão de obra (R$)</label>
+                  <input class="at-form-input" id="atFMaoObra" type="number" min="0" step="0.01" placeholder="0,00" value="${val('valor_mao_obra', 0)}">
+                </div>
+                <div>
+                  <label class="at-form-label">Previsão de entrega</label>
+                  <input class="at-form-input" id="atFPrevista" type="date" value="${val('data_prevista','').slice(0,10)}">
+                </div>
+              </div>
+              <div>
+                <label class="at-form-label">Observações internas</label>
+                <textarea class="at-form-textarea" id="atFObs" placeholder="Notas internas sobre a OS…" style="min-height:56px">${escapeHtml(val('observacoes'))}</textarea>
+              </div>
+            </div>
+
+            ${!id ? `
+            <!-- ④ Checklist de entrada -->
+            <div class="at-fm-section">
+              <div class="at-fm-section-title"><i class="fa-solid fa-clipboard-check"></i> Checklist de Entrada</div>
+              <div class="at-cl-form-grid" id="atFChecklist">
+                ${CHECKLIST_PADRAO.map(item => `
+                  <div class="at-cl-form-item">
+                    <div class="at-cl-icon"><i class="fa-solid fa-minus" style="opacity:.4;font-size:10px"></i></div>
+                    <span style="flex:1;font-size:12.5px">${escapeHtml(item.label)}</span>
+                    <select data-cl-key="${item.key}">
+                      <option value="nao_testado">N/T</option>
+                      <option value="ok">OK</option>
+                      <option value="problema">Prob.</option>
+                      <option value="nao_aplica">N/A</option>
+                    </select>
+                  </div>`).join('')}
+              </div>
+            </div>` : ''}
+
+          </div><!-- /at-modal-body -->
+
           <div class="at-modal-footer">
-            <button class="at-btn at-btn--secondary" id="atFormCancelar">Cancelar</button>
+            <button class="at-btn at-btn--secondary" id="atFormCancelar"><i class="fa-solid fa-xmark"></i> Cancelar</button>
             <button class="at-btn at-btn--primary" id="atFormSalvar"><i class="fa-solid fa-floppy-disk"></i> ${id ? 'Salvar alterações' : 'Criar OS'}</button>
           </div>
         </div>
@@ -742,6 +841,8 @@ const AT = {
           equipamento_imei1:        document.getElementById('atFImei1')?.value,
           equipamento_imei2:        document.getElementById('atFImei2')?.value,
           equipamento_cor:          document.getElementById('atFCor')?.value,
+          equipamento_so:           document.getElementById('atFSO')?.value,
+          equipamento_capacidade:   document.getElementById('atFCapacidade')?.value,
           equipamento_serie:        document.getElementById('atFSerie')?.value,
           acessorios_entregues:     document.getElementById('atFAcessorios')?.value,
           defeito_cliente:          document.getElementById('atFDefeito')?.value,
