@@ -128,20 +128,21 @@ function injectAtStyles() {
     .at-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:1000; display:flex; align-items:center; justify-content:center; padding:16px; backdrop-filter:blur(2px); }
     .at-modal { background:var(--bg); border-radius:16px; box-shadow:0 24px 64px rgba(0,0,0,.28); width:100%; max-width:780px; max-height:92vh; display:flex; flex-direction:column; }
 
-    /* Header premium com stripe colorida */
+    /* Header alinhado ao padrão do sistema */
     .at-modal-header {
       padding:0;
       display:flex; align-items:stretch; justify-content:space-between;
-      background:linear-gradient(135deg, var(--primary) 0%, color-mix(in srgb, var(--primary) 70%, #6366f1) 100%);
+      background:var(--bg);
+      border-bottom:1px solid var(--border);
       border-radius:16px 16px 0 0;
       flex-shrink:0;
     }
     .at-modal-header-inner { display:flex; align-items:center; gap:14px; padding:18px 24px; flex:1; }
-    .at-modal-header-icon { width:38px; height:38px; border-radius:10px; background:rgba(255,255,255,.18); display:flex; align-items:center; justify-content:center; color:#fff; font-size:16px; flex-shrink:0; }
-    .at-modal-header-text h2 { font-size:16px; font-weight:700; color:#fff; margin:0; }
-    .at-modal-header-text span { font-size:12px; color:rgba(255,255,255,.72); }
-    .at-modal-header button { background:none; border:none; cursor:pointer; font-size:20px; color:rgba(255,255,255,.7); padding:18px 20px; transition:color .15s; }
-    .at-modal-header button:hover { color:#fff; }
+    .at-modal-header-icon { width:38px; height:38px; border-radius:10px; background:var(--primary-soft,rgba(37,99,235,.1)); display:flex; align-items:center; justify-content:center; color:var(--primary); font-size:16px; flex-shrink:0; }
+    .at-modal-header-text h2 { font-size:16px; font-weight:700; color:var(--text); margin:0; }
+    .at-modal-header-text span { font-size:12px; color:var(--text-muted); margin-top:2px; display:block; }
+    .at-modal-header button { background:none; border:none; cursor:pointer; font-size:20px; color:var(--text-muted); padding:18px 20px; transition:color .15s; }
+    .at-modal-header button:hover { color:var(--text); }
 
     /* Body scrollável */
     .at-modal-body { padding:20px 24px; overflow-y:auto; flex:1; }
@@ -673,7 +674,10 @@ const AT = {
                 <label class="at-form-label">Nome do cliente</label>
                 <input type="text" class="at-form-input" id="atFClienteNome" placeholder="Digite o nome para buscar…" value="${escapeHtml(val('cliente_nome'))}" autocomplete="off">
                 <input type="hidden" id="atFClienteId" value="${val('cliente_id')}">
-                <p class="at-form-hint"><i class="fa-solid fa-circle-info"></i> Digite pelo menos 2 letras para ver sugestões</p>
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:5px">
+                  <p class="at-form-hint"><i class="fa-solid fa-circle-info"></i> Digite pelo menos 2 letras para ver sugestões</p>
+                  <button type="button" id="atBtnNovoCliente" class="at-btn at-btn--secondary" style="padding:5px 12px;font-size:12px;white-space:nowrap;flex-shrink:0"><i class="fa-solid fa-user-plus"></i> Novo cliente</button>
+                </div>
               </div>
             </div>
 
@@ -806,7 +810,7 @@ const AT = {
         if (v.length < 2) return;
         try {
           const data = await api.getClientes({ busca: v, limit: 8 });
-          _clienteCache = data.clientes || [];
+          _clienteCache = data.dados || [];
           const old = document.getElementById('atClienteSugestoes');
           if (old) old.remove();
           if (!_clienteCache.length) return;
@@ -823,6 +827,11 @@ const AT = {
         if (match && clienteIdInput) clienteIdInput.value = match.id;
       });
     }
+
+    // Botão novo cliente
+    document.getElementById('atBtnNovoCliente')?.addEventListener('click', () => {
+      this.abrirNovoCliente(clienteNomeInput, clienteIdInput);
+    });
 
     document.getElementById('atFormSalvar').addEventListener('click', async () => {
       const btn = document.getElementById('atFormSalvar');
@@ -1112,6 +1121,70 @@ const AT = {
     } catch (err) {
       showToast(buildFriendlyError?.(err) || 'Erro ao cancelar OS', 'error');
     }
+  },
+
+  // ── Novo cliente rápido ────────────────────────────────────────────────────
+  abrirNovoCliente(nomeInput, idInput) {
+    const html = `
+      <div class="at-modal-overlay" id="atNcModal" style="z-index:1010">
+        <div class="at-modal" style="max-width:420px">
+          <div class="at-modal-header">
+            <div class="at-modal-header-inner">
+              <div class="at-modal-header-icon"><i class="fa-solid fa-user-plus"></i></div>
+              <div class="at-modal-header-text"><h2>Novo Cliente</h2><span>Cadastro rápido</span></div>
+            </div>
+            <button id="atNcClose">×</button>
+          </div>
+          <div class="at-modal-body" style="display:grid;gap:12px">
+            <div>
+              <label class="at-form-label">Nome *</label>
+              <input class="at-form-input" id="atNcNome" placeholder="Nome completo" autofocus>
+            </div>
+            <div>
+              <label class="at-form-label">Telefone</label>
+              <input class="at-form-input" id="atNcTelefone" placeholder="(00) 00000-0000">
+            </div>
+            <div>
+              <label class="at-form-label">CPF</label>
+              <input class="at-form-input" id="atNcCpf" placeholder="000.000.000-00">
+            </div>
+          </div>
+          <div class="at-modal-footer">
+            <button class="at-btn at-btn--secondary" id="atNcCancelar"><i class="fa-solid fa-xmark"></i> Cancelar</button>
+            <button class="at-btn at-btn--primary" id="atNcSalvar"><i class="fa-solid fa-floppy-disk"></i> Cadastrar</button>
+          </div>
+        </div>
+      </div>`;
+
+    document.body.insertAdjacentHTML('beforeend', html);
+    document.getElementById('atNcNome')?.focus();
+
+    const close = () => document.getElementById('atNcModal')?.remove();
+    document.getElementById('atNcClose').addEventListener('click', close);
+    document.getElementById('atNcCancelar').addEventListener('click', close);
+
+    document.getElementById('atNcSalvar').addEventListener('click', async () => {
+      const nome = document.getElementById('atNcNome')?.value.trim();
+      if (!nome) { showToast('Nome é obrigatório.', 'warning'); return; }
+
+      const btn = document.getElementById('atNcSalvar');
+      btn.disabled = true;
+      try {
+        const r = await api.createCliente({
+          nome,
+          telefone: document.getElementById('atNcTelefone')?.value.trim() || null,
+          cpf:      document.getElementById('atNcCpf')?.value.trim()      || null,
+        });
+        const cliente = r.cliente || r;
+        if (nomeInput) nomeInput.value = cliente.nome || nome;
+        if (idInput)   idInput.value   = cliente.id   || '';
+        showToast(`Cliente "${nome}" cadastrado!`, 'success');
+        close();
+      } catch (err) {
+        showToast(buildFriendlyError?.(err) || 'Erro ao cadastrar cliente', 'error');
+        btn.disabled = false;
+      }
+    });
   },
 
   // ── Imprimir OS ────────────────────────────────────────────────────────────
