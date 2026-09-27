@@ -142,6 +142,11 @@ function aplicarFeatureFlags() {
   const atHabilitado = isAdmin || features['assistencia_tecnica'] === true;
   const atGroup = document.querySelector('.nav-group[data-group="assistencia-tecnica"]');
   if (atGroup) atGroup.style.display = atHabilitado ? '' : 'none';
+
+  // Quando AT está habilitado, oculta "Ordens de Serviço" do grupo Comercial
+  // (AT inclui sua própria gestão de OS com fluxo completo)
+  const osNavItem = document.querySelector('.nav-group[data-group="comercial"] [data-view="ordens-servico"]');
+  if (osNavItem) osNavItem.style.display = atHabilitado ? 'none' : '';
 }
 
 function aplicarPermissoesMenu() {

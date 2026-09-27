@@ -305,6 +305,8 @@ const AT = {
       else if (action === 'orcamento') { await this.abrirOrcamento(id); }
       else if (action === 'garantia')  { await this.abrirGarantia(id); }
       else if (action === 'evento')    { await this.abrirEvento(id); }
+      else if (action === 'imprimir')  { await this.imprimirOS(id); }
+      else if (action === 'cancelar')  { await this.cancelarOS(id); }
       else if (action === 'back-lista'){ this.voltarLista(); }
     });
   },
@@ -403,6 +405,8 @@ const AT = {
             <div class="at-actions">
               <button data-action="ver" data-id="${o.id}" title="Ver detalhes"><i class="fa-solid fa-eye"></i></button>
               ${proximo ? `<button data-action="avancar-status" data-id="${o.id}" data-status="${proximo}" title="Avançar: ${STATUS_LABEL[proximo]||proximo}"><i class="fa-solid fa-forward-step"></i></button>` : ''}
+              <button data-action="imprimir" data-id="${o.id}" title="Imprimir OS"><i class="fa-solid fa-print"></i></button>
+              ${!['entregue','cancelada','reprovada'].includes(o.status) ? `<button data-action="cancelar" data-id="${o.id}" title="Cancelar OS" style="color:#dc2626"><i class="fa-solid fa-ban"></i></button>` : ''}
               <button data-action="excluir" data-id="${o.id}" title="Excluir"><i class="fa-solid fa-trash"></i></button>
             </div>
           </td>
@@ -481,6 +485,8 @@ const AT = {
         <button class="at-btn at-btn--secondary" data-action="evento" data-id="${os.id}"><i class="fa-solid fa-comment"></i> Adicionar Observação</button>
         <button class="at-btn at-btn--secondary" data-action="garantia" data-id="${os.id}"><i class="fa-solid fa-shield-halved"></i> Garantia</button>
         <button class="at-btn at-btn--secondary" data-action="editar" data-id="${os.id}"><i class="fa-solid fa-pen"></i> Editar</button>
+        <button class="at-btn at-btn--secondary" data-action="imprimir" data-id="${os.id}"><i class="fa-solid fa-print"></i> Imprimir</button>
+        ${!['entregue','cancelada','reprovada'].includes(os.status) ? `<button class="at-btn at-btn--secondary" data-action="cancelar" data-id="${os.id}" style="color:#dc2626;border-color:#dc2626"><i class="fa-solid fa-ban"></i> Cancelar OS</button>` : ''}
       </div>
 
       <!-- Cliente + Equipamento -->
@@ -595,8 +601,9 @@ const AT = {
           <div class="at-modal-body">
             <div class="at-form-grid">
               <div class="at-form-full">
-                <label class="at-form-label">Cliente (ID ou nome)</label>
-                <input class="at-form-input" id="atFCliente" placeholder="ID do cliente" value="${val('cliente_id')}">
+                <label class="at-form-label">Cliente</label>
+                <input type="text" class="at-form-input" id="atFClienteNome" placeholder="Digite o nome do cliente…" value="${escapeHtml(val('cliente_nome'))}">
+                <input type="hidden" id="atFClienteId" value="${val('cliente_id')}">
               </div>
               <div>
                 <label class="at-form-label">Tipo de aparelho</label>
@@ -689,6 +696,35 @@ const AT = {
     document.getElementById('atFormClose').addEventListener('click', close);
     document.getElementById('atFormCancelar').addEventListener('click', close);
 
+    // Autocomplete de cliente
+    const clienteNomeInput = document.getElementById('atFClienteNome');
+    const clienteIdInput   = document.getElementById('atFClienteId');
+    let _clienteCache = [];
+    if (clienteNomeInput) {
+      clienteNomeInput.addEventListener('input', async () => {
+        const v = clienteNomeInput.value.trim();
+        if (clienteIdInput) clienteIdInput.value = '';
+        if (v.length < 2) return;
+        try {
+          const data = await api.getClientes({ busca: v, limit: 8 });
+          _clienteCache = data.clientes || [];
+          const old = document.getElementById('atClienteSugestoes');
+          if (old) old.remove();
+          if (!_clienteCache.length) return;
+          const dl = document.createElement('datalist');
+          dl.id = 'atClienteSugestoes';
+          _clienteCache.forEach(c => { const opt = document.createElement('option'); opt.value = c.nome; dl.appendChild(opt); });
+          clienteNomeInput.setAttribute('list', 'atClienteSugestoes');
+          clienteNomeInput.parentNode.appendChild(dl);
+        } catch { /* silencia */ }
+      });
+      clienteNomeInput.addEventListener('change', () => {
+        const nome = clienteNomeInput.value.trim();
+        const match = _clienteCache.find(c => c.nome === nome);
+        if (match && clienteIdInput) clienteIdInput.value = match.id;
+      });
+    }
+
     document.getElementById('atFormSalvar').addEventListener('click', async () => {
       const btn = document.getElementById('atFormSalvar');
       btn.disabled = true;
@@ -699,7 +735,7 @@ const AT = {
         });
 
         const payload = {
-          cliente_id:               document.getElementById('atFCliente')?.value || null,
+          cliente_id:               document.getElementById('atFClienteId')?.value || null,
           equipamento_tipo:         document.getElementById('atFTipo')?.value,
           equipamento_marca:        document.getElementById('atFMarca')?.value,
           equipamento_modelo:       document.getElementById('atFModelo')?.value,
@@ -961,6 +997,146 @@ const AT = {
     } catch (err) {
       showToast(buildFriendlyError?.(err) || 'Erro ao excluir OS', 'error');
     }
+  },
+
+  // ── Cancelar OS ────────────────────────────────────────────────────────────
+  async cancelarOS(id) {
+    const ok = await confirmarAcao('Cancelar esta OS?', 'O status será alterado para "Cancelada". Esta ação pode ser revertida editando a OS.', 'Cancelar OS');
+    if (!ok) return;
+    try {
+      await api.atualizarStatusAtOS(id, 'cancelada', 'OS cancelada manualmente.');
+      showToast('OS cancelada.', 'info');
+      if (this.state.view === 'detalhe') await this.mostrarDetalhe(id);
+      else await Promise.all([this.loadDashboard(), this.loadOS()]);
+    } catch (err) {
+      showToast(buildFriendlyError?.(err) || 'Erro ao cancelar OS', 'error');
+    }
+  },
+
+  // ── Imprimir OS ────────────────────────────────────────────────────────────
+  async imprimirOS(id) {
+    let data;
+    try {
+      data = await api.getAtOrdem(id);
+    } catch (err) {
+      showToast(buildFriendlyError?.(err) || 'Erro ao carregar OS para impressão', 'error');
+      return;
+    }
+    const { ordem: os, itens = [], checklist = [] } = data;
+
+    const fmtDate = d => d ? new Date(d).toLocaleDateString('pt-BR') : '—';
+    const fmtVal  = v => v != null ? `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '—';
+    const esc     = s => s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : '';
+
+    const checkResult = { ok: 'OK', problema: 'Problema', nao_testado: 'Não testado', nao_aplica: 'N/A' };
+
+    const itensHtml = itens.length
+      ? itens.map(i => `<tr><td>${esc(i.descricao||i.produto_nome||'—')}</td><td>${i.quantidade}</td><td>${fmtVal(i.valor_unitario)}</td><td>${fmtVal(i.valor_total)}</td></tr>`).join('')
+      : `<tr><td colspan="4" style="text-align:center;color:#999">Sem peças lançadas</td></tr>`;
+
+    const checklistHtml = checklist.length
+      ? checklist.map(c => `<tr><td>${esc(c.item_label)}</td><td>${checkResult[c.resultado]||c.resultado}</td></tr>`).join('')
+      : '';
+
+    const win = window.open('', '_blank', 'width=800,height=900');
+    if (!win) { showToast('Permita pop-ups para imprimir.', 'warning'); return; }
+
+    win.document.write(`<!doctype html><html lang="pt-BR"><head>
+<meta charset="utf-8">
+<title>OS ${esc(os.numero)}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; font-size: 12px; color: #111; padding: 24px; }
+  h1 { font-size: 18px; margin-bottom: 2px; }
+  h2 { font-size: 13px; margin: 14px 0 6px; border-bottom: 1px solid #ccc; padding-bottom: 3px; text-transform: uppercase; letter-spacing: .04em; color: #555; }
+  .row { display: flex; gap: 24px; flex-wrap: wrap; margin-bottom: 8px; }
+  .field { flex: 1; min-width: 160px; }
+  .field label { font-size: 10px; color: #777; display: block; text-transform: uppercase; letter-spacing: .04em; }
+  .field span { font-size: 12px; font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+  th, td { border: 1px solid #ddd; padding: 5px 8px; text-align: left; font-size: 11px; }
+  th { background: #f5f5f5; font-weight: 700; }
+  .totals { text-align: right; margin-top: 8px; font-size: 13px; }
+  .totals strong { font-size: 15px; color: #1d4ed8; }
+  .sig { display: flex; gap: 40px; margin-top: 48px; }
+  .sig-line { flex: 1; border-top: 1px solid #333; padding-top: 4px; font-size: 10px; color: #555; text-align: center; }
+  .header-line { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; background: #e5e7eb; }
+  @media print { button { display: none; } body { padding: 12px; } }
+</style>
+</head><body>
+<div class="header-line">
+  <div>
+    <h1>Ordem de Serviço <span style="color:#1d4ed8">${esc(os.numero)}</span></h1>
+    <div style="color:#555;font-size:11px;margin-top:4px">Abertura: ${fmtDate(os.data_entrada)} &nbsp;|&nbsp; Previsão: ${fmtDate(os.data_prevista)} &nbsp;|&nbsp; Status: <span class="badge">${STATUS_LABEL[os.status]||os.status}</span></div>
+  </div>
+  <button onclick="window.print()" style="padding:6px 14px;cursor:pointer;border:1px solid #ccc;border-radius:4px;background:#fff;font-size:12px">🖨 Imprimir</button>
+</div>
+
+<h2>Cliente</h2>
+<div class="row">
+  <div class="field"><label>Nome</label><span>${esc(os.cliente_nome||'—')}</span></div>
+  <div class="field"><label>Telefone</label><span>${esc(os.cliente_telefone||'—')}</span></div>
+  <div class="field"><label>CPF</label><span>${esc(os.cliente_cpf||'—')}</span></div>
+  <div class="field"><label>E-mail</label><span>${esc(os.cliente_email||'—')}</span></div>
+</div>
+
+<h2>Equipamento</h2>
+<div class="row">
+  <div class="field"><label>Tipo</label><span>${esc(os.equipamento_tipo||'—')}</span></div>
+  <div class="field"><label>Marca</label><span>${esc(os.equipamento_marca||'—')}</span></div>
+  <div class="field"><label>Modelo</label><span>${esc(os.equipamento_modelo||'—')}</span></div>
+  <div class="field"><label>Cor</label><span>${esc(os.equipamento_cor||'—')}</span></div>
+</div>
+<div class="row">
+  <div class="field"><label>IMEI 1</label><span style="font-family:monospace">${esc(os.equipamento_imei1||'—')}</span></div>
+  <div class="field"><label>IMEI 2</label><span style="font-family:monospace">${esc(os.equipamento_imei2||'—')}</span></div>
+  <div class="field"><label>Número de série</label><span style="font-family:monospace">${esc(os.equipamento_serie||'—')}</span></div>
+  <div class="field"><label>S.O. / Versão</label><span>${esc(os.equipamento_so||'—')}</span></div>
+</div>
+<div class="row">
+  <div class="field" style="flex:2"><label>Acessórios entregues</label><span>${esc(os.acessorios_entregues||'—')}</span></div>
+  <div class="field"><label>Técnico</label><span>${esc(os.tecnico||'—')}</span></div>
+</div>
+
+<h2>Defeito & Diagnóstico</h2>
+<div class="row">
+  <div class="field" style="flex:2"><label>Defeito relatado pelo cliente</label><span>${esc(os.defeito_cliente||os.problema_relatado||'—')}</span></div>
+</div>
+<div class="row">
+  <div class="field" style="flex:2"><label>Diagnóstico técnico</label><span>${esc(os.diagnostico||'—')}</span></div>
+</div>
+<div class="row">
+  <div class="field"><label>Causa provável</label><span>${esc(os.causa_provavel||'—')}</span></div>
+  <div class="field"><label>Procedimento recomendado</label><span>${esc(os.procedimento_recomendado||'—')}</span></div>
+</div>
+
+<h2>Peças & Serviço</h2>
+<table>
+  <thead><tr><th>Descrição</th><th>Qtd</th><th>Unit.</th><th>Total</th></tr></thead>
+  <tbody>${itensHtml}</tbody>
+</table>
+<div class="totals">
+  Mão de obra: ${fmtVal(os.valor_mao_obra)} &nbsp;|&nbsp; Peças: ${fmtVal(os.valor_pecas)} &nbsp;|&nbsp; <strong>Total: ${fmtVal(os.valor_total)}</strong>
+</div>
+
+${checklistHtml ? `<h2>Checklist de Entrada</h2>
+<table>
+  <thead><tr><th>Item</th><th>Resultado</th></tr></thead>
+  <tbody>${checklistHtml}</tbody>
+</table>` : ''}
+
+${os.observacoes ? `<h2>Observações</h2><p style="font-size:12px;margin-top:4px">${esc(os.observacoes)}</p>` : ''}
+
+<div class="sig">
+  <div class="sig-line">Assinatura do Cliente</div>
+  <div class="sig-line">Assinatura do Técnico</div>
+  <div class="sig-line">Data de Entrega: ____/____/________</div>
+</div>
+
+<p style="font-size:9px;color:#aaa;text-align:center;margin-top:24px">OS ${esc(os.numero)} · Gerado em ${new Date().toLocaleString('pt-BR')}</p>
+</body></html>`);
+    win.document.close();
   },
 
   // ── Aparelhos ─────────────────────────────────────────────────────────────
