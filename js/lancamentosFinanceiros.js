@@ -387,7 +387,7 @@ function render() {
 
       <div id="lfFeedback" class="module-feedback hidden"></div>
 
-      <!-- Resumo -->
+      <!-- Aviso de resumo parcial -->
       ${r.parcial ? `
         <div class="module-feedback module-feedback--error" style="margin-bottom:10px">
           <i class="fa-solid fa-triangle-exclamation"></i>
@@ -395,23 +395,6 @@ function render() {
           estimativa baseada apenas nos ${state.itens.length} lançamento(s) desta página, não no total do período.
         </div>
       ` : ''}
-      <div class="lf-stats-grid">
-        <article class="mini-stat lf-stat--receita">
-          <span>Receitas${r.parcial ? ' (parcial)' : ''}</span>
-          <strong>${toCurrency(r.receitas)}</strong>
-          <small>${state.itens.filter(i => i.tipo === 'receita').length} lançamento(s)</small>
-        </article>
-        <article class="mini-stat lf-stat--despesa">
-          <span>Despesas${r.parcial ? ' (parcial)' : ''}</span>
-          <strong>${toCurrency(r.despesas)}</strong>
-          <small>${state.itens.filter(i => i.tipo === 'despesa').length} lançamento(s)</small>
-        </article>
-        <article class="mini-stat lf-stat--saldo ${r.saldo >= 0 ? 'lf-stat--positivo' : 'lf-stat--negativo'}">
-          <span>Saldo${r.parcial ? ' (parcial)' : ''}</span>
-          <strong>${toCurrency(r.saldo)}</strong>
-          <small>${r.saldo >= 0 ? 'Superávit' : 'Déficit'}</small>
-        </article>
-      </div>
 
       <div class="periodo-local">
         <span class="periodo-local__label">Período:</span>
@@ -430,41 +413,60 @@ function render() {
         </div>
       </div>
 
+      <!-- KPI Strip -->
+      <div class="cl-tb-kpi-strip">
+        <div class="cl-tb-kpi-item">
+          <span class="cl-tb-kpi-lbl">Receitas${r.parcial ? ' (parcial)' : ''}</span>
+          <span class="cl-tb-kpi-val cl-tb-kpi-ok">${toCurrency(r.receitas)}</span>
+          <span style="font-size:.7rem;color:var(--text-muted)">${state.itens.filter(i => i.tipo === 'receita').length} lançamento(s)</span>
+        </div>
+        <div class="cl-tb-kpi-sep"></div>
+        <div class="cl-tb-kpi-item">
+          <span class="cl-tb-kpi-lbl">Despesas${r.parcial ? ' (parcial)' : ''}</span>
+          <span class="cl-tb-kpi-val cl-tb-kpi-danger">${toCurrency(r.despesas)}</span>
+          <span style="font-size:.7rem;color:var(--text-muted)">${state.itens.filter(i => i.tipo === 'despesa').length} lançamento(s)</span>
+        </div>
+        <div class="cl-tb-kpi-sep"></div>
+        <div class="cl-tb-kpi-item">
+          <span class="cl-tb-kpi-lbl">Saldo${r.parcial ? ' (parcial)' : ''}</span>
+          <span class="cl-tb-kpi-val ${r.saldo >= 0 ? 'cl-tb-kpi-ok' : 'cl-tb-kpi-danger'}">${toCurrency(r.saldo)}</span>
+          <span style="font-size:.7rem;color:var(--text-muted)">${r.saldo >= 0 ? 'Superávit' : 'Déficit'}</span>
+        </div>
+      </div>
+
       <!-- Toolbar -->
-      <div class="lf-toolbar-grid">
-        <div class="lf-search-box">
+      <div class="cl-tb-row">
+        <div class="cl-tb-search">
           <i class="fa-solid fa-magnifying-glass"></i>
           <input type="text" id="lfBusca" placeholder="Buscar descrição, categoria..." value="${esc(state.filtros.busca)}"/>
         </div>
-        <div class="lf-filter-box">
-          <select id="lfTipo">
-            <option value="">Todos os tipos</option>
-            <option value="receita"  ${state.filtros.tipo === 'receita'  ? 'selected' : ''}>Receitas</option>
-            <option value="despesa"  ${state.filtros.tipo === 'despesa'  ? 'selected' : ''}>Despesas</option>
-          </select>
-        </div>
-        <div class="lf-filter-box">
-          <select id="lfStatus">
-            <option value="">Todos os status</option>
-            <option value="pendente"         ${state.filtros.status === 'pendente'         ? 'selected' : ''}>Pendentes</option>
-            <option value="pago"             ${state.filtros.status === 'pago'             ? 'selected' : ''}>Pagos</option>
-            <option value="atrasado"         ${state.filtros.status === 'atrasado'         ? 'selected' : ''}>Atrasados</option>
-            <option value="parcial"          ${state.filtros.status === 'parcial'          ? 'selected' : ''}>Parciais</option>
-            <option value="parcial_atrasado" ${state.filtros.status === 'parcial_atrasado' ? 'selected' : ''}>Parcial em atraso</option>
-          </select>
-        </div>
-        <div class="lf-actions">
-          <button class="btn btn-primary" id="lfBtnFiltrar" type="button">
-            <i class="fa-solid fa-filter"></i> Filtrar
+        <select id="lfTipo" class="cl-tb-select">
+          <option value="">Todos os tipos</option>
+          <option value="receita"  ${state.filtros.tipo === 'receita'  ? 'selected' : ''}>Receitas</option>
+          <option value="despesa"  ${state.filtros.tipo === 'despesa'  ? 'selected' : ''}>Despesas</option>
+        </select>
+        <select id="lfStatus" class="cl-tb-select">
+          <option value="">Todos os status</option>
+          <option value="pendente"         ${state.filtros.status === 'pendente'         ? 'selected' : ''}>Pendentes</option>
+          <option value="pago"             ${state.filtros.status === 'pago'             ? 'selected' : ''}>Pagos</option>
+          <option value="atrasado"         ${state.filtros.status === 'atrasado'         ? 'selected' : ''}>Atrasados</option>
+          <option value="parcial"          ${state.filtros.status === 'parcial'          ? 'selected' : ''}>Parciais</option>
+          <option value="parcial_atrasado" ${state.filtros.status === 'parcial_atrasado' ? 'selected' : ''}>Parcial em atraso</option>
+        </select>
+        <div class="cl-tb-actions">
+          <button class="cl-tb-btn cl-tb-btn--primary" id="lfBtnNovo" type="button">
+            <i class="fa-solid fa-plus"></i>
+            <span class="cl-tb-btn-lbl">Novo Lançamento</span>
           </button>
-          <button class="btn btn-light" id="lfBtnLimpar" type="button">
+          <button class="cl-tb-btn" id="lfBtnFiltrar" type="button" title="Filtrar">
+            <i class="fa-solid fa-filter"></i>
+            <span class="cl-tb-btn-lbl">Filtrar</span>
+          </button>
+          <button class="cl-tb-btn cl-tb-btn--icon" id="lfBtnLimpar" type="button" title="Limpar filtros">
             <i class="fa-solid fa-eraser"></i>
           </button>
-          <button class="btn btn-light" id="lfBtnAtualizar" type="button">
-            <i class="fa-solid fa-rotate"></i> Atualizar
-          </button>
-          <button class="btn btn-primary" id="lfBtnNovo" type="button">
-            <i class="fa-solid fa-plus"></i> Novo Lançamento
+          <button class="cl-tb-btn cl-tb-btn--icon" id="lfBtnAtualizar" type="button" title="Atualizar">
+            <i class="fa-solid fa-rotate"></i>
           </button>
         </div>
       </div>

@@ -874,68 +874,64 @@ const ProdutosModule = {
     this._injectPrdStyles();
     container.innerHTML = `
       <section class="module-card" id="produtosSection">
-        <div class="module-toolbar">
-          <div class="module-toolbar__search">
+        <div class="cl-tb-kpi-strip">
+          <div class="cl-tb-kpi-item">
+            <span class="cl-tb-kpi-lbl">Total de produtos</span>
+            <span class="cl-tb-kpi-val" id="produtosStatsTotal">0</span>
+          </div>
+          <div class="cl-tb-kpi-sep"></div>
+          <div class="cl-tb-kpi-item">
+            <span class="cl-tb-kpi-lbl">Estoque total</span>
+            <span class="cl-tb-kpi-val" id="produtosStatsStock">0</span>
+          </div>
+          <div class="cl-tb-kpi-sep"></div>
+          <div class="cl-tb-kpi-item">
+            <span class="cl-tb-kpi-lbl">Em alerta</span>
+            <span class="cl-tb-kpi-val cl-tb-kpi-warn" id="produtosStatsAlert">0</span>
+          </div>
+        </div>
+
+        <div class="cl-tb-row">
+          <div class="cl-tb-search">
             <i class="fa-solid fa-magnifying-glass"></i>
             <input type="text" id="produtosSearchInput" placeholder="Buscar por nome, categoria ou código" />
           </div>
-          <div>
-            <button type="button" class="btn btn-light btn-sm" id="produtosFiltrosToggle" style="display:none" aria-expanded="false">
-              <i class="fa-solid fa-sliders"></i> Filtros
-              <i id="produtosFiltrosChevron" class="fa-solid fa-chevron-down" style="font-size:10px;margin-left:2px"></i>
-            </button>
-            <div id="produtosFiltrosContent" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-              <div class="prod-filter-box">
-                <select id="produtosFiltroCategoria" style="min-width:150px">
-                  <option value="">Todas as categorias</option>
-                </select>
-              </div>
-              <div class="prod-filter-box">
-                <select id="produtosFiltroAlerta">
-                  <option value="">Todos os status</option>
-                  <option value="alerta">Em alerta</option>
-                  <option value="ok">Estoque ok</option>
-                </select>
-              </div>
-              <div class="prod-filter-box">
-                <select id="produtosFiltroPromocao">
-                  <option value="">Promoção: Todas</option>
-                  <option value="sim">Em promoção</option>
-                  <option value="nao">Sem promoção</option>
-                </select>
-              </div>
-              <div class="prod-filter-box">
-                <select id="produtosFiltroTipo">
-                  <option value="">Tipo: Todos</option>
-                  <option value="normal">Normal</option>
-                  <option value="grade">Com grade</option>
-                  <option value="kit">Kit</option>
-                </select>
-              </div>
-              <div class="prod-filter-box">
-                <select id="produtosFiltroOrdem" style="min-width:155px">
-                  <option value="">Ordenar: Padrão</option>
-                  <option value="nome_az">Nome A→Z</option>
-                  <option value="nome_za">Nome Z→A</option>
-                  <option value="preco_a">Preço ↑</option>
-                  <option value="preco_d">Preço ↓</option>
-                  <option value="estoque_a">Estoque ↑</option>
-                  <option value="estoque_d">Estoque ↓</option>
-                  <option value="margem_a">Margem ↑</option>
-                  <option value="margem_d">Margem ↓</option>
-                </select>
-              </div>
-            </div>
-          </div>
-          <div class="module-toolbar__stats">
-            <div class="mini-stat"><span>Total</span><strong id="produtosStatsTotal">0</strong></div>
-            <div class="mini-stat"><span>Estoque</span><strong id="produtosStatsStock">0</strong></div>
-            <div class="mini-stat"><span>Em alerta</span><strong id="produtosStatsAlert">0</strong></div>
-          </div>
-          <div class="module-card__actions">
+          <select id="produtosFiltroCategoria" class="cl-tb-select" style="min-width:150px">
+            <option value="">Todas as categorias</option>
+          </select>
+          <select id="produtosFiltroAlerta" class="cl-tb-select">
+            <option value="">Todos os status</option>
+            <option value="alerta">Em alerta</option>
+            <option value="ok">Estoque ok</option>
+          </select>
+          <select id="produtosFiltroPromocao" class="cl-tb-select">
+            <option value="">Promoção: Todas</option>
+            <option value="sim">Em promoção</option>
+            <option value="nao">Sem promoção</option>
+          </select>
+          <select id="produtosFiltroTipo" class="cl-tb-select">
+            <option value="">Tipo: Todos</option>
+            <option value="normal">Normal</option>
+            <option value="grade">Com grade</option>
+            <option value="kit">Kit</option>
+          </select>
+          <select id="produtosFiltroOrdem" class="cl-tb-select" style="min-width:155px">
+            <option value="">Ordenar: Padrão</option>
+            <option value="nome_az">Nome A→Z</option>
+            <option value="nome_za">Nome Z→A</option>
+            <option value="preco_a">Preço ↑</option>
+            <option value="preco_d">Preço ↓</option>
+            <option value="estoque_a">Estoque ↑</option>
+            <option value="estoque_d">Estoque ↓</option>
+            <option value="margem_a">Margem ↑</option>
+            <option value="margem_d">Margem ↓</option>
+          </select>
+          <div class="cl-tb-actions">
             <div class="actions-menu-wrapper" id="produtosActionsWrapper">
-              <button type="button" class="btn btn-light" id="produtosActionsBtn">
-                <i class="fa-solid fa-ellipsis"></i> Mais ações <i class="fa-solid fa-chevron-down" style="font-size:10px;margin-left:2px"></i>
+              <button type="button" class="cl-tb-btn" id="produtosActionsBtn" title="Mais ações">
+                <i class="fa-solid fa-ellipsis"></i>
+                <span class="cl-tb-btn-lbl">Mais ações</span>
+                <i class="fa-solid fa-chevron-down" style="font-size:10px"></i>
               </button>
               <div class="actions-menu-dropdown hidden" id="produtosActionsDropdown">
                 <button type="button" class="actions-menu-item" id="produtosMarketplaceBtn">
@@ -954,12 +950,13 @@ const ProdutosModule = {
                 </button>
               </div>
             </div>
-            <button type="button" class="btn btn-light" id="produtosLoteBtn" style="display:none">
+            <button type="button" class="cl-tb-btn" id="produtosLoteBtn" style="display:none" title="Etiquetas em lote">
               <i class="fa-solid fa-tags"></i>
-              Etiquetas <span id="produtosLoteBadge" class="badge badge--primary" style="margin-left:4px;font-size:.75rem">0</span>
+              <span class="cl-tb-btn-lbl">Etiquetas</span>
+              <span id="produtosLoteBadge" class="badge badge--primary" style="font-size:.75rem">0</span>
             </button>
             <div class="col-picker-wrapper" id="colPickerWrapper">
-              <button type="button" class="btn btn-light" id="produtosColsBtn" title="Configurar colunas visíveis">
+              <button type="button" class="cl-tb-btn cl-tb-btn--icon" id="produtosColsBtn" title="Configurar colunas visíveis">
                 <i class="fa-solid fa-table-columns"></i>
               </button>
               <div class="col-picker-dropdown hidden" id="colPickerDropdown">
@@ -976,7 +973,10 @@ const ProdutosModule = {
                 <label class="col-picker-item"><input type="checkbox" data-col="11" /> Status</label>
               </div>
             </div>
-            <button type="button" class="btn btn-primary" id="produtosNewBtn"><i class="fa-solid fa-plus"></i> Novo produto</button>
+            <button type="button" class="cl-tb-btn cl-tb-btn--primary" id="produtosNewBtn">
+              <i class="fa-solid fa-plus"></i>
+              <span class="cl-tb-btn-lbl">Novo produto</span>
+            </button>
           </div>
         </div>
         <div class="module-feedback" id="produtosFeedback"></div>

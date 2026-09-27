@@ -272,59 +272,51 @@ const ComprasModule = {
           </div>
         </div>
 
-        <div class="module-toolbar">
-          <div class="module-toolbar__search">
-            <i class="fa-solid fa-search"></i>
-            <input
-              id="comprasSearch"
-              placeholder="Buscar por fornecedor, data ou número da compra..."
-              value="${escapeHtml(this.getCurrentSearchValue())}"
-            />
+        <div class="cl-tb-kpi-strip">
+          <div class="cl-tb-kpi-item">
+            <span class="cl-tb-kpi-lbl">Total</span>
+            <span class="cl-tb-kpi-val">${this.state.filteredItems.length}</span>
           </div>
-
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <div class="cmp-filter-box">
-              <select id="comprasFiltroStatus">
-                <option value="">Todos os status</option>
-                <option value="finalizada" ${this.state.filtroStatus === 'finalizada' ? 'selected' : ''}>Finalizada</option>
-                <option value="pendente" ${this.state.filtroStatus === 'pendente' ? 'selected' : ''}>Pendente</option>
-              </select>
-            </div>
-            <div class="cmp-filter-box">
-              <select id="comprasFiltroFornecedor" style="min-width:170px">
-                <option value="">Todos os fornecedores</option>
-                ${this.state.fornecedores.map(f => `<option value="${f.id}" ${String(this.state.filtroFornecedor) === String(f.id) ? 'selected' : ''}>${escapeHtml(f.nome)}</option>`).join('')}
-              </select>
-            </div>
+          <div class="cl-tb-kpi-sep"></div>
+          <div class="cl-tb-kpi-item">
+            <span class="cl-tb-kpi-lbl">Valor total</span>
+            <span class="cl-tb-kpi-val">${formatCurrency(this.getTotalCompras())}</span>
           </div>
-
-          <div class="module-toolbar__stats">
-            <div class="mini-stat">
-              <span>Total</span>
-              <strong>${this.state.filteredItems.length}</strong>
-            </div>
-
-            <div class="mini-stat">
-              <span>Valor</span>
-              <strong>${formatCurrency(this.getTotalCompras())}</strong>
-            </div>
-
-            <div class="mini-stat">
-              <span>Fornecedores</span>
-              <strong>${this.getTotalFornecedores()}</strong>
-            </div>
-
-            <div class="mini-stat">
-              <span>Ticket Médio</span>
-              <strong>${this.getTicketMedio()}</strong>
-            </div>
+          <div class="cl-tb-kpi-sep"></div>
+          <div class="cl-tb-kpi-item">
+            <span class="cl-tb-kpi-lbl">Fornecedores</span>
+            <span class="cl-tb-kpi-val cl-tb-kpi-ok">${this.getTotalFornecedores()}</span>
           </div>
-          <div class="module-card__actions">
-            <button class="btn btn-light" id="importarXmlBtn" type="button" title="Importar NF do fornecedor (XML)">
-              <i class="fa-solid fa-file-import"></i> Importar XML
+          <div class="cl-tb-kpi-sep"></div>
+          <div class="cl-tb-kpi-item">
+            <span class="cl-tb-kpi-lbl">Ticket médio</span>
+            <span class="cl-tb-kpi-val">${this.getTicketMedio()}</span>
+          </div>
+        </div>
+
+        <div class="cl-tb-row">
+          <div class="cl-tb-search">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input id="comprasSearch" placeholder="Buscar por fornecedor, data ou número da compra..."
+              value="${escapeHtml(this.getCurrentSearchValue())}" />
+          </div>
+          <select id="comprasFiltroStatus" class="cl-tb-select">
+            <option value="">Todos os status</option>
+            <option value="finalizada" ${this.state.filtroStatus === 'finalizada' ? 'selected' : ''}>Finalizada</option>
+            <option value="pendente" ${this.state.filtroStatus === 'pendente' ? 'selected' : ''}>Pendente</option>
+          </select>
+          <select id="comprasFiltroFornecedor" class="cl-tb-select" style="min-width:160px">
+            <option value="">Todos os fornecedores</option>
+            ${this.state.fornecedores.map(f => `<option value="${f.id}" ${String(this.state.filtroFornecedor) === String(f.id) ? 'selected' : ''}>${escapeHtml(f.nome)}</option>`).join('')}
+          </select>
+          <div class="cl-tb-actions">
+            <button class="cl-tb-btn" id="importarXmlBtn" type="button" title="Importar NF do fornecedor (XML)">
+              <i class="fa-solid fa-file-import"></i>
+              <span class="cl-tb-btn-lbl">Importar XML</span>
             </button>
-            <button class="btn btn-primary" id="novaCompraBtn" type="button">
-              <i class="fa-solid fa-plus"></i> Nova Compra
+            <button class="cl-tb-btn cl-tb-btn--primary" id="novaCompraBtn" type="button">
+              <i class="fa-solid fa-plus"></i>
+              <span class="cl-tb-btn-lbl">Nova Compra</span>
             </button>
           </div>
         </div>

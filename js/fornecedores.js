@@ -267,35 +267,44 @@ const FornecedoresModule = {
       <section class="module-card">
         <div id="fornecedoresFeedback" class="module-feedback"></div>
 
-        <div class="module-toolbar">
-          <div class="module-toolbar__search">
-            <i class="fa-solid fa-search"></i>
+        <div class="cl-tb-kpi-strip">
+          <div class="cl-tb-kpi-item">
+            <span class="cl-tb-kpi-lbl">Total</span>
+            <span class="cl-tb-kpi-val" id="fornecedoresCont">${this.state.filteredItems.length}</span>
+          </div>
+          <div class="cl-tb-kpi-sep"></div>
+          <div class="cl-tb-kpi-item">
+            <span class="cl-tb-kpi-lbl">Com compras</span>
+            <span class="cl-tb-kpi-val cl-tb-kpi-ok">${this.state.filteredItems.filter(f => Number(f.total_compras || 0) > 0).length}</span>
+          </div>
+          <div class="cl-tb-kpi-sep"></div>
+          <div class="cl-tb-kpi-item">
+            <span class="cl-tb-kpi-lbl">Valor total compras</span>
+            <span class="cl-tb-kpi-val">${this.state.filteredItems.reduce((s, f) => s + Number(f.valor_total_compras || 0), 0).toLocaleString('pt-BR', {style:'currency',currency:'BRL'})}</span>
+          </div>
+        </div>
+
+        <div class="cl-tb-row">
+          <div class="cl-tb-search">
+            <i class="fa-solid fa-magnifying-glass"></i>
             <input id="fornecedoresSearch"
               placeholder="Buscar por nome, telefone ou e-mail..."
               value="${escapeHtml(this.getCurrentSearchValue())}" />
           </div>
-
-          <div class="forn-filter-box">
-            <select id="fornecedoresFiltroTipo">
-              <option value="">PF + PJ</option>
-              <option value="pj">CNPJ (PJ)</option>
-              <option value="pf">CPF (PF)</option>
-              <option value="sem">Sem documento</option>
-            </select>
-          </div>
-
-          <div class="module-toolbar__stats">
-            <div class="mini-stat">
-              <span>Total</span>
-              <strong id="fornecedoresCont">${this.state.filteredItems.length}</strong>
-            </div>
-          </div>
-          <div class="module-card__actions">
-            <button class="btn btn-light" id="fornecedoresExportBtn">
-              <i class="fa-solid fa-file-csv"></i> CSV
+          <select id="fornecedoresFiltroTipo" class="cl-tb-select">
+            <option value="">PF + PJ</option>
+            <option value="pj">CNPJ (PJ)</option>
+            <option value="pf">CPF (PF)</option>
+            <option value="sem">Sem documento</option>
+          </select>
+          <div class="cl-tb-actions">
+            <button class="cl-tb-btn" id="fornecedoresExportBtn" title="Exportar CSV">
+              <i class="fa-solid fa-file-csv"></i>
+              <span class="cl-tb-btn-lbl">CSV</span>
             </button>
-            <button class="btn btn-primary" id="novoFornecedorBtn">
-              <i class="fa-solid fa-plus"></i> Novo Fornecedor
+            <button class="cl-tb-btn cl-tb-btn--primary" id="novoFornecedorBtn">
+              <i class="fa-solid fa-plus"></i>
+              <span class="cl-tb-btn-lbl">Novo Fornecedor</span>
             </button>
           </div>
         </div>

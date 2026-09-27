@@ -286,96 +286,71 @@ function render() {
         </div>
       </div>
 
-      <div class="cp-toolbar-grid">
-        <div class="module-toolbar__search cp-search-box">
-          <i class="fa-solid fa-search"></i>
-          <input
-            type="text"
-            id="cpBusca"
-            placeholder="Buscar fornecedor, descrição, observação ou nº da compra..."
-            value="${escapeHtml(state.filtros.busca || '')}"
-          />
+      <div class="cl-tb-kpi-strip">
+        <div class="cl-tb-kpi-item">
+          <span class="cl-tb-kpi-lbl">Total de títulos</span>
+          <span class="cl-tb-kpi-val">${formatCurrency(state.resumo.total)}</span>
+          <span style="font-size:.7rem;color:var(--text-muted)">${state.totalRegistros || state.contas.length} registro(s)</span>
         </div>
-
-        <div class="cp-filter-box">
-          <select id="cpStatus" class="input">
-            <option value="">Todos os status</option>
-            <option value="pendente" ${state.filtros.status === 'pendente' ? 'selected' : ''}>Pendentes</option>
-            <option value="atrasado" ${state.filtros.status === 'atrasado' ? 'selected' : ''}>Atrasadas</option>
-            <option value="pago" ${state.filtros.status === 'pago' ? 'selected' : ''}>Pagas</option>
-            <option value="parcial" ${state.filtros.status === 'parcial' ? 'selected' : ''}>Parciais</option>
-            <option value="parcial_atrasado" ${state.filtros.status === 'parcial_atrasado' ? 'selected' : ''}>Parcial em atraso</option>
-          </select>
+        <div class="cl-tb-kpi-sep"></div>
+        <div class="cl-tb-kpi-item">
+          <span class="cl-tb-kpi-lbl">Pendentes</span>
+          <span class="cl-tb-kpi-val cl-tb-kpi-warn">${formatCurrency(state.resumo.total_pendente)}</span>
+          <span style="font-size:.7rem;color:var(--text-muted)">${Number(state.resumo.qtd_pendente || 0)} título(s)</span>
         </div>
-
-        <div class="cp-filter-box cp-filter-box--fornecedor">
-          <select id="cpFornecedor" class="input">
-            <option value="">Todos os fornecedores</option>
-            ${state.fornecedores
-              .map(
-                (fornecedor) => `
-              <option value="${fornecedor.id}" ${String(state.filtros.fornecedor_id) === String(fornecedor.id) ? 'selected' : ''}>
-                ${escapeHtml(fornecedor.nome)}
-              </option>
-            `
-              )
-              .join('')}
-          </select>
+        <div class="cl-tb-kpi-sep"></div>
+        <div class="cl-tb-kpi-item">
+          <span class="cl-tb-kpi-lbl">Atrasadas</span>
+          <span class="cl-tb-kpi-val cl-tb-kpi-danger">${formatCurrency(state.resumo.total_atrasado)}</span>
+          <span style="font-size:.7rem;color:var(--text-muted)">${Number(state.resumo.qtd_atrasado || 0)} título(s)</span>
         </div>
-
-        <div class="cp-action-box">
-          <button class="btn btn-primary" id="btnNovaContaPagar" type="button">
-            <i class="fa-solid fa-plus"></i>
-            Nova Conta
-          </button>
-
-          <button class="btn btn-secondary" id="btnFiltrarContasPagar" type="button">
-            <i class="fa-solid fa-filter"></i>
-            Filtrar
-          </button>
-
-          <button class="btn btn-light" id="btnLimparFiltrosContasPagar" type="button">
-            <i class="fa-solid fa-eraser"></i>
-            Limpar
-          </button>
-
-          <button class="btn btn-light" id="btnAtualizarContasPagar" type="button">
-            <i class="fa-solid fa-rotate"></i>
-            Atualizar
-          </button>
+        <div class="cl-tb-kpi-sep"></div>
+        <div class="cl-tb-kpi-item">
+          <span class="cl-tb-kpi-lbl">Pagas</span>
+          <span class="cl-tb-kpi-val cl-tb-kpi-ok">${formatCurrency(state.resumo.total_pago)}</span>
+          <span style="font-size:.7rem;color:var(--text-muted)">${Number(state.resumo.qtd_pago || 0)} título(s)</span>
         </div>
       </div>
 
-      <div class="cp-stats-grid">
-        <article class="mini-stat cp-stat-card cp-stat-card--total">
-          <span>Total de títulos</span>
-          <strong>${formatCurrency(state.resumo.total)}</strong>
-          <small>${state.totalRegistros || state.contas.length} registro(s)</small>
-        </article>
-
-        <article class="mini-stat cp-stat-card cp-stat-card--pendente">
-          <span>Pendentes</span>
-          <strong>${formatCurrency(state.resumo.total_pendente)}</strong>
-          <small>${Number(state.resumo.qtd_pendente || 0)} título(s)</small>
-        </article>
-
-        <article class="mini-stat cp-stat-card cp-stat-card--atrasado">
-          <span>Atrasadas</span>
-          <strong>${formatCurrency(state.resumo.total_atrasado)}</strong>
-          <small>${Number(state.resumo.qtd_atrasado || 0)} título(s)</small>
-        </article>
-
-        <article class="mini-stat cp-stat-card cp-stat-card--pago">
-          <span>Pagas</span>
-          <strong>${formatCurrency(state.resumo.total_pago)}</strong>
-          <small>${Number(state.resumo.qtd_pago || 0)} título(s)</small>
-        </article>
-
-        <article class="mini-stat cp-stat-card cp-stat-card--parcial">
-          <span>Parcial</span>
-          <strong>${formatCurrency(state.contas.filter(c => ['parcial','parcial_atrasado'].includes(normalizarStatus(c.status))).reduce((s, c) => s + parseFloat(c.valor || 0), 0))}</strong>
-          <small>${state.contas.filter(c => ['parcial','parcial_atrasado'].includes(normalizarStatus(c.status))).length || 0} título(s)</small>
-        </article>
+      <div class="cl-tb-row">
+        <div class="cl-tb-search">
+          <i class="fa-solid fa-search"></i>
+          <input type="text" id="cpBusca"
+            placeholder="Buscar fornecedor, descrição, observação ou nº da compra..."
+            value="${escapeHtml(state.filtros.busca || '')}" />
+        </div>
+        <select id="cpStatus" class="cl-tb-select">
+          <option value="">Todos os status</option>
+          <option value="pendente" ${state.filtros.status === 'pendente' ? 'selected' : ''}>Pendentes</option>
+          <option value="atrasado" ${state.filtros.status === 'atrasado' ? 'selected' : ''}>Atrasadas</option>
+          <option value="pago" ${state.filtros.status === 'pago' ? 'selected' : ''}>Pagas</option>
+          <option value="parcial" ${state.filtros.status === 'parcial' ? 'selected' : ''}>Parciais</option>
+          <option value="parcial_atrasado" ${state.filtros.status === 'parcial_atrasado' ? 'selected' : ''}>Parcial em atraso</option>
+        </select>
+        <select id="cpFornecedor" class="cl-tb-select">
+          <option value="">Todos os fornecedores</option>
+          ${state.fornecedores.map(fornecedor => `
+            <option value="${fornecedor.id}" ${String(state.filtros.fornecedor_id) === String(fornecedor.id) ? 'selected' : ''}>
+              ${escapeHtml(fornecedor.nome)}
+            </option>
+          `).join('')}
+        </select>
+        <div class="cl-tb-actions">
+          <button class="cl-tb-btn cl-tb-btn--primary" id="btnNovaContaPagar" type="button">
+            <i class="fa-solid fa-plus"></i>
+            <span class="cl-tb-btn-lbl">Nova Conta</span>
+          </button>
+          <button class="cl-tb-btn" id="btnFiltrarContasPagar" type="button" title="Filtrar">
+            <i class="fa-solid fa-filter"></i>
+            <span class="cl-tb-btn-lbl">Filtrar</span>
+          </button>
+          <button class="cl-tb-btn" id="btnLimparFiltrosContasPagar" type="button" title="Limpar filtros">
+            <i class="fa-solid fa-eraser"></i>
+          </button>
+          <button class="cl-tb-btn cl-tb-btn--icon" id="btnAtualizarContasPagar" type="button" title="Atualizar">
+            <i class="fa-solid fa-rotate"></i>
+          </button>
+        </div>
       </div>
 
       <div class="table-wrapper">

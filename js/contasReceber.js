@@ -733,6 +733,32 @@ function render() {
 
       ${renderAlertasVencCR()}
 
+      <div class="cl-tb-kpi-strip">
+        <div class="cl-tb-kpi-item">
+          <span class="cl-tb-kpi-lbl">Total de títulos</span>
+          <span class="cl-tb-kpi-val">${formatCurrency(state.resumo.total)}</span>
+          <span style="font-size:.7rem;color:var(--text-muted)">${state.totalRegistros || state.contas.length} registro(s)</span>
+        </div>
+        <div class="cl-tb-kpi-sep"></div>
+        <div class="cl-tb-kpi-item">
+          <span class="cl-tb-kpi-lbl">Pendentes</span>
+          <span class="cl-tb-kpi-val cl-tb-kpi-warn">${formatCurrency(state.resumo.total_pendente)}</span>
+          <span style="font-size:.7rem;color:var(--text-muted)">${Number(state.resumo.qtd_pendente || 0)} título(s)</span>
+        </div>
+        <div class="cl-tb-kpi-sep"></div>
+        <div class="cl-tb-kpi-item">
+          <span class="cl-tb-kpi-lbl">Atrasados</span>
+          <span class="cl-tb-kpi-val cl-tb-kpi-danger">${formatCurrency(state.resumo.total_atrasado)}</span>
+          <span style="font-size:.7rem;color:var(--text-muted)">${Number(state.resumo.qtd_atrasado || 0)} título(s)</span>
+        </div>
+        <div class="cl-tb-kpi-sep"></div>
+        <div class="cl-tb-kpi-item">
+          <span class="cl-tb-kpi-lbl">Recebidos</span>
+          <span class="cl-tb-kpi-val cl-tb-kpi-ok">${formatCurrency(state.resumo.total_pago)}</span>
+          <span style="font-size:.7rem;color:var(--text-muted)">${Number(state.resumo.qtd_pago || 0)} título(s)</span>
+        </div>
+      </div>
+
       <div class="cr-toolbar-grid">
 
         <!-- Linha 1: busca + combobox cliente + botões de ação -->
@@ -794,37 +820,6 @@ function render() {
 
       </div>
 
-      <div class="cr-stats-grid">
-        <article class="mini-stat cr-stat-card cr-stat-card--total">
-          <span>Total de títulos</span>
-          <strong>${formatCurrency(state.resumo.total)}</strong>
-          <small>${state.totalRegistros || state.contas.length} registro(s)</small>
-        </article>
-
-        <article class="mini-stat cr-stat-card cr-stat-card--pendente">
-          <span>Pendentes</span>
-          <strong>${formatCurrency(state.resumo.total_pendente)}</strong>
-          <small>${Number(state.resumo.qtd_pendente || 0)} título(s)</small>
-        </article>
-
-        <article class="mini-stat cr-stat-card cr-stat-card--atrasado">
-          <span>Atrasados</span>
-          <strong>${formatCurrency(state.resumo.total_atrasado)}</strong>
-          <small>${Number(state.resumo.qtd_atrasado || 0)} título(s)</small>
-        </article>
-
-        <article class="mini-stat cr-stat-card cr-stat-card--pago">
-  <span>Recebidos</span>
-  <strong>${formatCurrency(state.resumo.total_pago)}</strong>
-  <small>${Number(state.resumo.qtd_pago || 0)} título(s)</small>
-</article>
-
-<article class="mini-stat cr-stat-card cr-stat-card--parcial">
-  <span>Recebido parcial</span>
-  <strong>${formatCurrency(state.resumo.total_recebido_parcial || 0)}</strong>
-  <small>${(() => { const n = state.contas.filter(c => ['parcial', 'parcial_atrasado'].includes(normalizarStatus(c.status))).length; return n ? `${n} título(s) parcial` : 'Baixas parciais realizadas'; })()}</small>
-</article>
-      </div>
 
       <div class="table-wrapper">
         <table class="data-table cr-table">

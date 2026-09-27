@@ -491,47 +491,46 @@ const VendasModule = {
       <section class="module-card vendas-module-card">
         <div id="vendasFeedback" class="module-feedback"></div>
 
-        <div class="module-toolbar vendas-toolbar">
-          <div class="module-toolbar__search">
+        <div class="cl-tb-kpi-strip">
+          <div class="cl-tb-kpi-item">
+            <span class="cl-tb-kpi-lbl">Total de vendas</span>
+            <span class="cl-tb-kpi-val" id="vendasStatsTotal">0</span>
+          </div>
+          <div class="cl-tb-kpi-sep"></div>
+          <div class="cl-tb-kpi-item">
+            <span class="cl-tb-kpi-lbl">Valor total</span>
+            <span class="cl-tb-kpi-val cl-tb-kpi-ok" id="vendasStatsValor">R$ 0,00</span>
+          </div>
+          <div class="cl-tb-kpi-sep"></div>
+          <div class="cl-tb-kpi-item">
+            <span class="cl-tb-kpi-lbl">Itens vendidos</span>
+            <span class="cl-tb-kpi-val" id="vendasStatsItens">0</span>
+          </div>
+          <div class="cl-tb-kpi-sep"></div>
+          <div class="cl-tb-kpi-item">
+            <span class="cl-tb-kpi-lbl">Ticket médio</span>
+            <span class="cl-tb-kpi-val" id="vendasStatsTicket">R$ 0,00</span>
+          </div>
+        </div>
+
+        <div class="cl-tb-row">
+          <div class="cl-tb-search">
             <i class="fa-solid fa-magnifying-glass"></i>
-            <input
-              type="text"
-              id="vendasBusca"
+            <input type="text" id="vendasBusca"
               placeholder="Buscar por cliente, pagamento, observação ou número..."
-              value="${escapeHtml(this.state.filtros.busca)}"
-            />
+              value="${escapeHtml(this.state.filtros.busca)}" />
           </div>
-
-          <div class="module-toolbar__stats">
-            <div class="mini-stat">
-              <span>Total de vendas</span>
-              <strong id="vendasStatsTotal">0</strong>
-            </div>
-
-            <div class="mini-stat">
-              <span>Valor total</span>
-              <strong id="vendasStatsValor">R$ 0,00</strong>
-            </div>
-
-            <div class="mini-stat">
-              <span>Itens vendidos</span>
-              <strong id="vendasStatsItens">0</strong>
-            </div>
-
-            <div class="mini-stat">
-              <span>Ticket médio</span>
-              <strong id="vendasStatsTicket">R$ 0,00</strong>
-            </div>
-          </div>
-          <div class="module-card__actions">
-            <button type="button" class="btn btn-light" id="vendasMetasBtn">
-              <i class="fa-solid fa-bullseye"></i> Metas
+          <div class="cl-tb-actions">
+            <button type="button" class="cl-tb-btn" id="vendasMetasBtn" title="Metas de vendas">
+              <i class="fa-solid fa-bullseye"></i>
+              <span class="cl-tb-btn-lbl">Metas</span>
             </button>
-            <button type="button" class="btn btn-light" id="vendasExportarBtn">
-              <i class="fa-solid fa-file-csv"></i> Exportar CSV
+            <button type="button" class="cl-tb-btn" id="vendasExportarBtn" title="Exportar CSV">
+              <i class="fa-solid fa-file-csv"></i>
+              <span class="cl-tb-btn-lbl">Exportar CSV</span>
             </button>
-            <button type="button" class="btn btn-light" id="vendasAtualizarBtn">
-              <i class="fa-solid fa-rotate"></i> Atualizar
+            <button type="button" class="cl-tb-btn cl-tb-btn--icon" id="vendasAtualizarBtn" title="Atualizar">
+              <i class="fa-solid fa-rotate"></i>
             </button>
           </div>
         </div>
