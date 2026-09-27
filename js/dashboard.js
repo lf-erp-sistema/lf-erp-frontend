@@ -1002,6 +1002,16 @@ export function bindDashboardConfig() {
     overlay?.classList.add('hidden');
     showMessage('Configuração do dashboard salva.', 'success');
   });
+
+  const filtersToggle = document.getElementById('dashFiltersToggle');
+  const filtersPanel = document.getElementById('dashFiltersPanel');
+  if (filtersToggle && filtersPanel) {
+    filtersToggle.addEventListener('click', () => {
+      const expanded = filtersToggle.getAttribute('aria-expanded') === 'true';
+      filtersToggle.setAttribute('aria-expanded', String(!expanded));
+      filtersPanel.classList.toggle('hidden', expanded);
+    });
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

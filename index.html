@@ -659,24 +659,31 @@
           <main id="viewContainer" class="view-container">
             <!-- DASHBOARD -->
             <section class="view-section active" data-view="dashboard">
-              <div class="section-header">
-                <div class="section-header__actions" style="margin-left:auto">
-                  <div class="dash-periodo-rapido" id="dashPeriodoRapido">
-                    <button type="button" class="btn-periodo-rapido" data-quick-period="hoje">Hoje</button>
-                    <button type="button" class="btn-periodo-rapido" data-quick-period="7dias">7 dias</button>
-                    <button type="button" class="btn-periodo-rapido" data-quick-period="mesAtual">Mês</button>
-                    <button type="button" class="btn-periodo-rapido" data-quick-period="mesAnterior">Mês ant.</button>
-                  </div>
+              <div class="dash-toolbar">
+                <div class="dash-periodo-rapido" id="dashPeriodoRapido">
+                  <button type="button" class="btn-periodo-rapido" data-quick-period="hoje">Hoje</button>
+                  <button type="button" class="btn-periodo-rapido" data-quick-period="7dias">7 dias</button>
+                  <button type="button" class="btn-periodo-rapido" data-quick-period="mesAtual">Mês</button>
+                  <button type="button" class="btn-periodo-rapido" data-quick-period="mesAnterior">Mês ant.</button>
+                </div>
+                <div class="dash-toolbar__right">
                   <span class="dash-atualizacao" id="dashUltimaAtualizacao"></span>
-                  <button class="btn btn-light" type="button" id="dashboardConfigBtn">
+                  <button class="btn btn-light" type="button" id="dashFiltersToggle" aria-expanded="false">
                     <i class="fa-solid fa-sliders"></i>
-                    Personalizar
-                  </button>
-                  <button class="btn btn-light" type="button" id="dashboardExportBtn">
-                    <i class="fa-solid fa-download"></i>
-                    Exportar
+                    Filtros
+                    <i class="fa-solid fa-chevron-down dash-filters-chevron"></i>
                   </button>
                 </div>
+              </div>
+              <div class="dash-filters-panel hidden" id="dashFiltersPanel">
+                <button class="btn btn-light" type="button" id="dashboardConfigBtn">
+                  <i class="fa-solid fa-sliders"></i>
+                  Personalizar dashboard
+                </button>
+                <button class="btn btn-light" type="button" id="dashboardExportBtn">
+                  <i class="fa-solid fa-download"></i>
+                  Exportar dados
+                </button>
               </div>
 
               <div class="kpi-grid">

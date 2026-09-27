@@ -1145,6 +1145,10 @@ function updateFiltersUI() {
   if (globalFilterSummary) {
     globalFilterSummary.textContent = `Período: ${getPeriodLabel()}`;
   }
+
+  document.querySelectorAll('[data-quick-period]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.quickPeriod === AppState.filters.periodo);
+  });
 }
 
 const VIEWS_WITH_GLOBAL_FILTER = new Set(['dashboard']);
