@@ -17,6 +17,7 @@ const AppState = {
   rememberSession: false,
   loadingCount: 0,
   permissoes: null,
+  empresaFeatures: {},
   filters: {
     periodo: '7dias',
     dataInicial: '',
@@ -50,6 +51,7 @@ const VIEW_CONFIG = {
   conciliacao:          { icon: 'building-columns',      title: 'Conciliação Bancária',  subtitle: 'Reconciliação de extratos OFX e CSV' },
   relatorios:           { icon: 'file-lines',            title: 'Relatórios',            subtitle: 'Relatórios gerenciais e operacionais' },
   'ordens-servico':     { icon: 'screwdriver-wrench',     title: 'Ordens de Serviço',     subtitle: 'Manutenção de celulares e computadores — abertura, acompanhamento e entrega' },
+  'assistencia':        { icon: 'mobile-screen-button',  title: 'Assistência Técnica',   subtitle: 'OS completas: diagnóstico, orçamento, checklist, garantia e entrega' },
   orcamentos:           { icon: 'file-lines',            title: 'Orçamentos',            subtitle: 'Cotações emitidas — gerencie aprovações e converta em pedidos' },
   pedidos:              { icon: 'clipboard-list',        title: 'Pedidos',               subtitle: 'Pedidos em andamento — confirme, separe e converta em venda' },
   comissoes:            { icon: 'percent',               title: 'Comissões',             subtitle: 'Comissões de vendedores por venda realizada' },
@@ -91,6 +93,7 @@ const VIEW_MODULO = {
   'auditoria-financeira':'financeiro',
   nfe:                   'nfe',
   'ordens-servico':      'ordens_servico',
+  'assistencia':         'assistencia_tecnica',
   orcamentos:            'orcamentos',
   pedidos:               'pedidos',
   relatorios:            'relatorios',
@@ -119,6 +122,33 @@ async function carregarPermissoes() {
     AppState.permissoes = { isAdmin: isAdminFallback };
   }
   aplicarPermissoesMenu();
+}
+
+async function carregarEmpresaFeatures() {
+  try {
+    const data = await api.get('/minha-empresa/features');
+    AppState.empresaFeatures = data.features || {};
+  } catch {
+    AppState.empresaFeatures = {};
+  }
+  aplicarFeatureFlags();
+}
+
+function aplicarFeatureFlags() {
+  const features = AppState.empresaFeatures;
+  const isAdmin  = AppState.user?.tipo === 'admin' || AppState.user?.is_saas_owner;
+
+  // Itens de menu controlados por feature flag
+  const featureMenuMap = {
+    'assistencia_tecnica': '[data-view="assistencia"]',
+  };
+
+  Object.entries(featureMenuMap).forEach(([feature, selector]) => {
+    const habilitado = isAdmin || features[feature] === true;
+    document.querySelectorAll(selector).forEach(el => {
+      el.style.display = habilitado ? '' : 'none';
+    });
+  });
 }
 
 function aplicarPermissoesMenu() {
@@ -304,7 +334,7 @@ function bindLoginEvents() {
       applyAuthData(authPayload);
       renderAuthenticatedUser();
       renderTrialBanner();
-      await carregarPermissoes();
+      await Promise.all([carregarPermissoes(), carregarEmpresaFeatures()]);
       showMainScreen();
       await setActiveView('dashboard');
       showToast(`Bem-vindo! Seu trial de 14 dias começou.`, 'success');
@@ -843,7 +873,7 @@ async function handleLoginSubmit(event) {
     }
 
     renderAuthenticatedUser();
-    await carregarPermissoes();
+    await Promise.all([carregarPermissoes(), carregarEmpresaFeatures()]);
     showMainScreen();
     scheduleTokenRefresh();
     await setActiveView('dashboard');
@@ -1000,6 +1030,7 @@ const VIEW_LOADERS = {
   'caixa':               loadCaixaReal,
   'comissoes':           loadComissoesReal,
   'ordens-servico':      loadOrdensServicoReal,
+  'assistencia':         loadAssistenciaReal,
   'orcamentos':          loadOrcamentosReal,
   'pedidos':             loadPedidosReal,
   'nfe':                 loadNfeReal,
@@ -1304,7 +1335,7 @@ async function restoreAuthSession() {
 
     renderAuthenticatedUser();
     renderTrialBanner();
-    await carregarPermissoes();
+    await Promise.all([carregarPermissoes(), carregarEmpresaFeatures()]);
     showMainScreen();
     scheduleTokenRefresh();
     await setActiveView(AppState.currentView || 'dashboard');
@@ -2013,6 +2044,20 @@ async function loadOrdensServicoReal() {
     console.error('Erro ao carregar ordens de serviço:', error);
     showToast('Falha ao carregar ordens de serviço.', 'error');
     renderModuleError('ordensServicoContainer', 'Ordens de Serviço', 'Não foi possível carregar o módulo.');
+  } finally {
+    hideGlobalLoader();
+  }
+}
+
+async function loadAssistenciaReal() {
+  showGlobalLoader('Carregando Assistência Técnica...');
+  try {
+    const { initAssistenciaModule } = await import('./assistenciaTecnica.js');
+    await initAssistenciaModule();
+  } catch (error) {
+    console.error('Erro ao carregar assistência técnica:', error);
+    showToast('Falha ao carregar Assistência Técnica.', 'error');
+    renderModuleError('assistenciaContainer', 'Assistência Técnica', 'Não foi possível carregar o módulo.');
   } finally {
     hideGlobalLoader();
   }

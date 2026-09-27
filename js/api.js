@@ -1310,6 +1310,68 @@ async function getCategoriasServicos() {
   });
 }
 
+// ── Assistência Técnica ────────────────────────────────────────────────────────
+
+async function getAtDashboard() {
+  return request('/assistencia/dashboard', { method: 'GET', query: { empresa: getEmpresaNome(), empresa_id: getEmpresaId() } });
+}
+
+async function getAtOS(params = {}) {
+  return request('/assistencia/os', { method: 'GET', query: { ...params, empresa: getEmpresaNome(), empresa_id: getEmpresaId() } });
+}
+
+async function getAtOrdem(id) {
+  return request(`/assistencia/os/${id}`, { method: 'GET', query: { empresa: getEmpresaNome(), empresa_id: getEmpresaId() } });
+}
+
+async function criarAtOS(payload) {
+  return request('/assistencia/os', { method: 'POST', body: { ...payload, empresa: getEmpresaNome(), empresa_id: getEmpresaId() } });
+}
+
+async function atualizarAtOS(id, payload) {
+  return request(`/assistencia/os/${id}`, { method: 'PUT', body: { ...payload, empresa: getEmpresaNome(), empresa_id: getEmpresaId() } });
+}
+
+async function atualizarStatusAtOS(id, status, observacao = '') {
+  return request(`/assistencia/os/${id}/status`, { method: 'PATCH', body: { status, observacao, empresa: getEmpresaNome(), empresa_id: getEmpresaId() } });
+}
+
+async function aprovarOrcamentoAt(id, aprovado, observacao = '') {
+  return request(`/assistencia/os/${id}/orcamento/aprovar`, { method: 'POST', body: { aprovado, observacao, empresa: getEmpresaNome(), empresa_id: getEmpresaId() } });
+}
+
+async function entregarAtOS(id, payload) {
+  return request(`/assistencia/os/${id}/entregar`, { method: 'POST', body: { ...payload, empresa: getEmpresaNome(), empresa_id: getEmpresaId() } });
+}
+
+async function registrarGarantiaAt(id, payload) {
+  return request(`/assistencia/os/${id}/garantia`, { method: 'POST', body: { ...payload, empresa: getEmpresaNome(), empresa_id: getEmpresaId() } });
+}
+
+async function registrarEventoAt(id, descricao) {
+  return request(`/assistencia/os/${id}/eventos`, { method: 'POST', body: { descricao, empresa: getEmpresaNome(), empresa_id: getEmpresaId() } });
+}
+
+async function excluirAtOS(id) {
+  return request(`/assistencia/os/${id}`, { method: 'DELETE', query: { empresa: getEmpresaNome(), empresa_id: getEmpresaId() } });
+}
+
+async function getAtAparelhos(params = {}) {
+  return request('/assistencia/aparelhos', { method: 'GET', query: { ...params, empresa: getEmpresaNome(), empresa_id: getEmpresaId() } });
+}
+
+async function criarAtAparelho(payload) {
+  return request('/assistencia/aparelhos', { method: 'POST', body: { ...payload, empresa: getEmpresaNome(), empresa_id: getEmpresaId() } });
+}
+
+async function getAtGarantias(params = {}) {
+  return request('/assistencia/garantias', { method: 'GET', query: { ...params, empresa: getEmpresaNome(), empresa_id: getEmpresaId() } });
+}
+
+async function getAtRelatorioResumo(params = {}) {
+  return request('/assistencia/relatorios/resumo', { method: 'GET', query: { ...params, empresa: getEmpresaNome(), empresa_id: getEmpresaId() } });
+}
+
 // ── COMISSÕES ─────────────────────────────────────────────────────────────────
 
 async function getComissoesConfig() {
@@ -1598,6 +1660,22 @@ const api = {
   excluirOrdemServico,
   getCatalogoServicos,
   getCategoriasServicos,
+
+  getAtDashboard,
+  getAtOS,
+  getAtOrdem,
+  criarAtOS,
+  atualizarAtOS,
+  atualizarStatusAtOS,
+  aprovarOrcamentoAt,
+  entregarAtOS,
+  registrarGarantiaAt,
+  registrarEventoAt,
+  excluirAtOS,
+  getAtAparelhos,
+  criarAtAparelho,
+  getAtGarantias,
+  getAtRelatorioResumo,
 
   getComissoesConfig,
   salvarComissaoConfig,
