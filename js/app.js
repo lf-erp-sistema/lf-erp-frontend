@@ -138,17 +138,10 @@ function aplicarFeatureFlags() {
   const features = AppState.empresaFeatures;
   const isAdmin  = AppState.user?.tipo === 'admin' || AppState.user?.is_saas_owner;
 
-  // Itens de menu controlados por feature flag
-  const featureMenuMap = {
-    'assistencia_tecnica': '[data-view="assistencia"]',
-  };
-
-  Object.entries(featureMenuMap).forEach(([feature, selector]) => {
-    const habilitado = isAdmin || features[feature] === true;
-    document.querySelectorAll(selector).forEach(el => {
-      el.style.display = habilitado ? '' : 'none';
-    });
-  });
+  // Grupo de AT: mostra/oculta o nav-group inteiro
+  const atHabilitado = isAdmin || features['assistencia_tecnica'] === true;
+  const atGroup = document.querySelector('.nav-group[data-group="assistencia-tecnica"]');
+  if (atGroup) atGroup.style.display = atHabilitado ? '' : 'none';
 }
 
 function aplicarPermissoesMenu() {
@@ -163,8 +156,10 @@ function aplicarPermissoesMenu() {
       if (el.id === 'lixeiraNavBtn' || el.id === 'adminNavLink') return;
       el.style.removeProperty('display');
     });
-    document.querySelectorAll('.nav-group').forEach(g => g.style.removeProperty('display'));
+    // AT group: controlado exclusivamente por feature flag, não por permissão de admin
+    document.querySelectorAll('.nav-group:not([data-group="assistencia-tecnica"])').forEach(g => g.style.removeProperty('display'));
     document.getElementById('navAdvancedToggle')?.style.removeProperty('display');
+    aplicarFeatureFlags();
     return;
   }
 
@@ -178,8 +173,8 @@ function aplicarPermissoesMenu() {
     el.style.display = podeVer ? '' : 'none';
   });
 
-  // Esconde grupos sem nenhum subitem visível
-  document.querySelectorAll('.nav-group').forEach(group => {
+  // Esconde grupos sem nenhum subitem visível (AT group: excluído — controlado por feature flag)
+  document.querySelectorAll('.nav-group:not([data-group="assistencia-tecnica"])').forEach(group => {
     const algumVisivel = [...group.querySelectorAll('.nav-subitem[data-view]')]
       .some(s => s.style.display !== 'none');
     group.style.display = algumVisivel ? '' : 'none';
@@ -194,6 +189,9 @@ function aplicarPermissoesMenu() {
     advToggle.style.display  = algumVisivel ? '' : 'none';
     advSection.style.display = algumVisivel ? '' : 'none';
   }
+
+  // AT group: aplicar feature flags ao final (garante que a ordem de Promise.all não importe)
+  aplicarFeatureFlags();
 }
 
 // ── Tema (dark / light) ────────────────────────────────────────────────────────
@@ -508,6 +506,13 @@ function bindNavigationEvents() {
 
       document.querySelectorAll('.nav-group.open').forEach((g) => g.classList.remove('open'));
       await setActiveView(view);
+
+      // Sub-navegação interna do módulo de Assistência Técnica
+      const atView = item.getAttribute('data-at-view');
+      if (atView && window.AT) {
+        if (atView === 'aparelhos') window.AT.mostrarAparelhos();
+        else if (atView === 'garantias') window.AT.mostrarGarantias();
+      }
     });
   });
 }

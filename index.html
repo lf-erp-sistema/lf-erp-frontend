@@ -414,11 +414,26 @@
               </button>
               <div class="nav-group__menu">
                 <button class="nav-subitem" data-view="ordens-servico"><i class="fa-solid fa-screwdriver-wrench"></i><span>Ordens de Serviço</span></button>
-                <button class="nav-subitem" data-view="assistencia" style="display:none"><i class="fa-solid fa-mobile-screen-button"></i><span>Assistência Técnica</span></button>
                 <button class="nav-subitem" data-view="crm"><i class="fa-solid fa-chart-gantt"></i><span>CRM</span></button>
                 <button class="nav-subitem" data-view="comissoes"><i class="fa-solid fa-percent"></i><span>Comissões</span></button>
                 <button class="nav-subitem" data-view="fidelidade"><i class="fa-solid fa-star"></i><span>Fidelidade</span></button>
                 <button class="nav-subitem" data-view="alertas"><i class="fa-solid fa-bell"></i><span>Alertas</span></button>
+              </div>
+            </div>
+
+            <!-- Assistência Técnica — visível apenas para empresas com o feature habilitado -->
+            <div class="nav-group" data-group="assistencia-tecnica" style="display:none">
+              <button class="nav-group__toggle" type="button" title="Assistência Técnica">
+                <span class="nav-group__left">
+                  <span class="nav-item__icon"><i class="fa-solid fa-mobile-screen-button"></i></span>
+                  <span class="nav-item__label">Assistência Técnica</span>
+                </span>
+                <span class="nav-group__arrow"><i class="fa-solid fa-chevron-right"></i></span>
+              </button>
+              <div class="nav-group__menu">
+                <button class="nav-subitem" data-view="assistencia"><i class="fa-solid fa-list-check"></i><span>Ordens de Serviço</span></button>
+                <button class="nav-subitem" data-view="assistencia" data-at-view="aparelhos"><i class="fa-solid fa-mobile-screen-button"></i><span>Aparelhos</span></button>
+                <button class="nav-subitem" data-view="assistencia" data-at-view="garantias"><i class="fa-solid fa-shield-halved"></i><span>Garantias</span></button>
               </div>
             </div>
 
