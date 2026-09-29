@@ -2702,7 +2702,7 @@ function injectContasReceberStyles() {
     .cr-toolbar-row1 {
       display: flex;
       gap: 8px;
-      align-items: stretch;
+      align-items: center;
       flex-wrap: wrap;
     }
 
@@ -2779,9 +2779,10 @@ function injectContasReceberStyles() {
       border-radius: 14px;
       padding: 0 14px;
       background: var(--surface);
-      min-height: 44px;
-      flex: 1;
-      min-width: 200px;
+      height: 44px;
+      flex: 2;
+      min-width: 160px;
+      max-width: 320px;
     }
 
     .cr-search-box input {
@@ -2811,8 +2812,10 @@ function injectContasReceberStyles() {
       border-radius: 14px;
       padding: 0 14px;
       background: var(--surface);
-      min-height: 44px;
-      min-width: 220px;
+      height: 44px;
+      flex: 1;
+      min-width: 160px;
+      max-width: 240px;
     }
 
     .cr-combobox__icon {
@@ -2835,15 +2838,18 @@ function injectContasReceberStyles() {
     .cr-primary-actions {
       display: flex;
       gap: 6px;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
       align-items: center;
+      margin-left: auto;
+      flex-shrink: 0;
     }
 
     /* ── Kebab menu ⋮ ── */
     .cr-more-menu { position: relative; flex-shrink: 0; }
     .cr-more-btn {
-      height: 36px; min-width: 36px; width: 36px; padding: 0;
-      border-radius: 10px; display: flex; align-items: center; justify-content: center;
+      height: 44px; min-width: 44px; width: 44px; padding: 0;
+      border-radius: 14px; display: flex; align-items: center; justify-content: center;
+      position: relative;
     }
     .cr-more-dropdown {
       position: absolute; right: 0; top: calc(100% + 6px);
