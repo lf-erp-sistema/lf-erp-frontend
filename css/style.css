@@ -1375,7 +1375,7 @@ img {
 
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 18px;
 }
 
@@ -2685,18 +2685,12 @@ img {
     grid-template-columns: 1fr;
   }
 
-  .topbar,
   .section-header,
   .dash-toolbar,
   .module-card__header,
   .module-toolbar {
     flex-direction: column;
     align-items: stretch;
-  }
-
-  .topbar__right {
-    width: 100%;
-    justify-content: space-between;
   }
 
   .topbar-company {
@@ -2786,7 +2780,7 @@ img {
   }
 
   .data-table {
-    min-width: 720px;
+    min-width: 580px;
   }
 
   .modal-overlay {
@@ -3860,6 +3854,9 @@ select {
   padding: 18px 24px 22px;
   border-top: 1px solid var(--border);
   background: var(--surface);
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
 }
 
 /* DETALHES DE COMPRA/VENDA */
@@ -6907,3 +6904,328 @@ body.pdv-active #pdvContainer.module-placeholder {
 #produtosSection .data-table.hide-col-9 th:nth-child(9), #produtosSection .data-table.hide-col-9 td:nth-child(9) { display: none; }
 #produtosSection .data-table.hide-col-10 th:nth-child(10), #produtosSection .data-table.hide-col-10 td:nth-child(10) { display: none; }
 #produtosSection .data-table.hide-col-11 th:nth-child(11), #produtosSection .data-table.hide-col-11 td:nth-child(11) { display: none; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESPONSIVIDADE SISTÊMICA — LF ERP
+   Desktop-first na experiência gerencial, mobile-first na acessibilidade.
+   Portrait 360-430px como target principal mobile.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Proteção global contra scroll horizontal ───────────────────────────── */
+html {
+  overflow-x: hidden;
+}
+body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+/* ── Desktop grande 1920px+ ─────────────────────────────────────────────── */
+@media (min-width: 1920px) {
+  :root {
+    --sidebar-width: 292px;
+  }
+  .view-container {
+    padding: 28px 40px;
+  }
+  .topbar {
+    padding: 10px 40px;
+  }
+  .module-card,
+  .panel-card {
+    border-radius: 26px;
+  }
+  .kpi-card {
+    padding: 24px;
+  }
+  .module-card__header h3,
+  .card-header h3 {
+    font-size: 1.75rem;
+  }
+}
+
+/* ── Desktop QHD/4K 2560px+ ─────────────────────────────────────────────── */
+@media (min-width: 2560px) {
+  :root {
+    --sidebar-width: 310px;
+  }
+  .view-container {
+    padding: 32px 56px;
+  }
+  .topbar {
+    padding: 10px 56px;
+  }
+}
+
+/* ── Topbar mobile — permanecer horizontal, não empilhar ────────────────── */
+@media (max-width: 980px) {
+  .topbar {
+    padding: 0 16px;
+    min-height: var(--topbar-height);
+    height: var(--topbar-height);
+  }
+  .page-title h1 {
+    font-size: clamp(0.95rem, 3vw, 1.4rem);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+  }
+  .page-title p {
+    display: none;
+  }
+  .topbar-user__info,
+  .topbar-user__chevron {
+    display: none;
+  }
+}
+
+/* ── Topbar compacto em portrait ≤540px ─────────────────────────────────── */
+@media (max-width: 540px) {
+  .topbar {
+    padding: 0 12px;
+    gap: 6px;
+  }
+  .topbar__left,
+  .topbar__right {
+    gap: 6px;
+  }
+  .page-title h1 {
+    max-width: 120px;
+    font-size: 0.9rem;
+  }
+  #shortcutsHelpBtn,
+  #themeToggleBtn,
+  #refreshDataBtn {
+    display: none;
+  }
+  .topbar-user__btn {
+    padding: 0;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    overflow: hidden;
+  }
+}
+
+/* ── Login mobile — painel esquerdo minimizado em portrait ──────────────── */
+@media (max-width: 640px) {
+  .login-screen {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+  .login-screen__left {
+    min-height: 0;
+    padding: 20px 20px 16px;
+    justify-content: flex-start;
+    gap: 0;
+  }
+  .login-brand {
+    margin-bottom: 0;
+  }
+  .login-brand h1 {
+    font-size: 1.4rem;
+  }
+  .login-brand p {
+    font-size: 0.8rem;
+  }
+  .login-highlight,
+  .login-features {
+    display: none;
+  }
+  .login-screen__right {
+    padding: 16px 16px 24px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+  }
+  .login-card {
+    padding: 20px 18px;
+    width: 100%;
+    max-width: 420px;
+    border-radius: 18px;
+  }
+  .login-card__header h3 {
+    font-size: 1.35rem;
+  }
+  .login-trust {
+    gap: 8px;
+  }
+}
+
+/* ── Modal mobile — max-height e scrollable ─────────────────────────────── */
+@media (max-width: 767px) {
+  .modal-overlay {
+    padding: 10px;
+    align-items: flex-end;
+  }
+  .modal-card,
+  .modal-card--large {
+    width: 100%;
+    max-height: 92dvh;
+    max-height: 92vh;
+    display: flex;
+    flex-direction: column;
+    border-radius: 22px 22px 14px 14px;
+    overflow: hidden;
+  }
+  .modal-card__header {
+    flex-shrink: 0;
+    padding: 16px 18px 14px;
+  }
+  .modal-card__footer {
+    flex-shrink: 0;
+    padding: 14px 18px 18px;
+  }
+  .modal-card > *:not(.modal-card__header):not(.modal-card__footer) {
+    overflow-y: auto;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+}
+
+/* ── Formulários — sempre 1 coluna em portrait pequeno ──────────────────── */
+@media (max-width: 540px) {
+  .form-grid,
+  .form-row {
+    grid-template-columns: 1fr !important;
+  }
+  .form-field--span-2,
+  .form-field--span-3 {
+    grid-column: span 1 !important;
+  }
+  .form-field input,
+  .form-field select,
+  .form-field textarea {
+    font-size: 16px; /* evita zoom automático do iOS */
+  }
+}
+
+/* ── Touch targets mínimos ─────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .btn {
+    min-height: 44px;
+  }
+  .icon-btn,
+  .icon-button {
+    min-width: 42px;
+    min-height: 42px;
+  }
+  .data-table td,
+  .data-table th {
+    padding: 10px 10px;
+  }
+  .data-table .btn {
+    min-height: 36px;
+    height: 36px;
+    padding: 0 10px;
+    font-size: 0.8rem;
+  }
+}
+
+/* ── Table wrapper — scroll horizontal controlado ───────────────────────── */
+@media (max-width: 767px) {
+  .table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+  }
+  .table-wrapper .data-table {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
+
+/* ── Módulos — toolbar simplificado em mobile ───────────────────────────── */
+@media (max-width: 540px) {
+  .module-card {
+    padding: 16px 14px;
+  }
+  .module-card__actions {
+    gap: 6px;
+  }
+  .view-container {
+    padding: 14px 12px;
+    gap: 16px;
+  }
+  .cl-tb-row {
+    gap: 6px;
+  }
+  .cl-tb-search {
+    min-width: 0;
+  }
+  .cl-tb-select {
+    min-width: 100px;
+  }
+}
+
+/* ── KPI cards em portrait: 2 colunas de 480-719px ──────────────────────── */
+@media (min-width: 480px) and (max-width: 719px) {
+  .kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .kpi-card {
+    padding: 14px;
+    gap: 10px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .kpi-card__icon {
+    width: 34px;
+    height: 34px;
+    font-size: 0.9rem;
+    border-radius: 10px;
+  }
+}
+
+/* ── Dashboard grid mobile ─────────────────────────────────────────────── */
+@media (max-width: 540px) {
+  .dashboard-charts-grid {
+    grid-template-columns: 1fr;
+  }
+  .panel-card {
+    padding: 16px 14px;
+  }
+  .panel-card__header {
+    margin-bottom: 12px;
+  }
+}
+
+/* ── Sidebar overlay — fechar ao clicar ─────────────────────────────────── */
+.sidebar-overlay {
+  cursor: pointer;
+}
+
+/* ── Tabelas de detalhe (compra/venda) em mobile ─────────────────────────── */
+@media (max-width: 640px) {
+  .compra-detalhe-grid,
+  .venda-detalhe-body {
+    grid-template-columns: 1fr 1fr;
+  }
+  .compra-detalhe-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .fluxo-formas-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 420px) {
+  .compra-detalhe-grid,
+  .fluxo-formas-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Botões de ação em tabelas — menu agrupado no mobile ─────────────────── */
+@media (max-width: 540px) {
+  .dash-toolbar {
+    gap: 8px;
+  }
+  .dash-month-nav-group {
+    flex: 1;
+    justify-content: center;
+  }
+}
