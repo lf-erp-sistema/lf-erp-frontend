@@ -1375,7 +1375,7 @@ img {
 
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 18px;
 }
 
@@ -6913,7 +6913,7 @@ body.pdv-active #pdvContainer.module-placeholder {
 
 /* ── Proteção global contra scroll horizontal ───────────────────────────── */
 html {
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 body {
   overflow-x: hidden;
