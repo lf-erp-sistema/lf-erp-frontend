@@ -823,6 +823,7 @@ function render() {
 
       </div>
 
+      <div class="cr-filtros-inline hidden" id="crFiltrosInline"></div>
 
       <div class="table-wrapper">
         <table class="data-table cr-table">
@@ -1271,40 +1272,32 @@ function bindEventos() {
     await recarregar();
   });
 
-  // ── Filter panel ─────────────────────────────────────────────────────────
+  // ── Filter panel (inline, sem modal) ────────────────────────────────────
   {
-    document.getElementById('crFiltrosPanel')?.remove();
-    const STATUS_OPTS = [
-      { val: '',                 lbl: 'Todos' },
-      { val: 'pendente',         lbl: 'Pendentes' },
-      { val: 'atrasado',         lbl: 'Atrasados' },
-      { val: 'pago',             lbl: 'Recebidos' },
-      { val: 'parcial_atrasado', lbl: 'Parcial atraso' },
-    ];
-    const panel = document.createElement('div');
-    panel.className = 'cr-filtros-panel';
-    panel.id = 'crFiltrosPanel';
-    const PERIOD_OPTS = [
-      { val: 'hoje',         lbl: 'Hoje' },
-      { val: '7dias',        lbl: '7 dias' },
-      { val: '30dias',       lbl: 'Últ. 30 dias' },
-      { val: 'proximos30',   lbl: 'Próx. 30 dias' },
-      { val: 'mesAtual',     lbl: 'Este mês' },
-      { val: 'mesAnterior',  lbl: 'Mês ant.' },
-      { val: 'personalizado',lbl: 'Personalizado' },
-    ];
+    const inline = document.getElementById('crFiltrosInline');
+    if (inline) {
+      const STATUS_OPTS = [
+        { val: '',                 lbl: 'Todos' },
+        { val: 'pendente',         lbl: 'Pendentes' },
+        { val: 'atrasado',         lbl: 'Atrasados' },
+        { val: 'pago',             lbl: 'Recebidos' },
+        { val: 'parcial_atrasado', lbl: 'Parcial atraso' },
+      ];
+      const PERIOD_OPTS = [
+        { val: 'hoje',         lbl: 'Hoje' },
+        { val: '7dias',        lbl: '7 dias' },
+        { val: '30dias',       lbl: 'Últ. 30 dias' },
+        { val: 'proximos30',   lbl: 'Próx. 30 dias' },
+        { val: 'mesAtual',     lbl: 'Este mês' },
+        { val: 'mesAnterior',  lbl: 'Mês ant.' },
+        { val: 'personalizado',lbl: 'Personalizado' },
+      ];
 
-    const _renderPanel = () => {
-      const isCustom = state.periodo.preset === 'personalizado';
-      panel.innerHTML = `
-        <div class="cr-filtros-modal-card" id="crFiltrosCard">
-          <div class="cr-filtros-modal-hdr">
-            <button class="cr-filtros-close" id="crFiltrosCancelar" title="Fechar"><i class="fa-solid fa-xmark"></i></button>
-            <span class="cr-filtros-modal-title">Filtrar</span>
-            <button class="btn btn-primary btn-sm" id="crAplicarFiltros">Aplicar</button>
-          </div>
-          <div class="cr-filtros-modal-body">
-            <div class="cr-filtros-section">
+      const _renderPanel = () => {
+        const isCustom = state.periodo.preset === 'personalizado';
+        inline.innerHTML = `
+          <div class="cr-fi-sections">
+            <div class="cr-fi-section">
               <div class="cr-filtros-lbl">Período</div>
               <div class="cr-fpills">
                 ${PERIOD_OPTS.map(o => `<button class="cr-fpill${state.periodo.preset === o.val ? ' cr-fpill--active' : ''}" data-fp-period="${o.val}">${o.lbl}</button>`).join('')}
@@ -1315,13 +1308,13 @@ function bindEventos() {
                 <input type="date" id="crFpDataFim" class="input" value="${state.periodo.dataFinal}">
               </div>
             </div>
-            <div class="cr-filtros-section">
+            <div class="cr-fi-section">
               <div class="cr-filtros-lbl">Status</div>
               <div class="cr-fpills">
                 ${STATUS_OPTS.map(o => `<button class="cr-fpill${state.filtros.status === o.val ? ' cr-fpill--active' : ''}" data-fp-status="${o.val}">${o.lbl}</button>`).join('')}
               </div>
             </div>
-            <div class="cr-filtros-section">
+            <div class="cr-fi-section">
               <div class="cr-filtros-lbl">Ordenar por vencimento</div>
               <div class="cr-fpills">
                 <button class="cr-fpill${state.ordemDir === 'asc' && state.ordem === 'data_vencimento' ? ' cr-fpill--active' : ''}" data-fp-ordem="asc">↑ Mais antigo</button>
@@ -1329,82 +1322,78 @@ function bindEventos() {
               </div>
             </div>
           </div>
-          <div class="cr-filtros-modal-footer">
+          <div class="cr-fi-footer">
             <button class="btn btn-light btn-sm" id="crLimparFiltrosModal">
               <i class="fa-solid fa-rotate-left"></i> Limpar filtros
             </button>
-          </div>
-        </div>`;
-    };
-    _renderPanel();
-    document.body.appendChild(panel);
+            <button class="btn btn-primary btn-sm" id="crAplicarFiltros">
+              Aplicar
+            </button>
+          </div>`;
+      };
+      _renderPanel();
 
-    const _openPanel  = () => { _renderPanel(); panel.classList.add('cr-filtros-open'); };
-    const _closePanel = () => { panel.classList.remove('cr-filtros-open'); };
+      const _openPanel  = () => { _renderPanel(); inline.classList.remove('hidden'); };
+      const _closePanel = () => { inline.classList.add('hidden'); };
 
-    const _applyFiltros = async () => {
-      const selPeriod = panel.querySelector('[data-fp-period].cr-fpill--active');
-      const selStatus = panel.querySelector('[data-fp-status].cr-fpill--active');
-      const selOrdem  = panel.querySelector('[data-fp-ordem].cr-fpill--active');
-      if (selPeriod) {
-        const preset = selPeriod.dataset.fpPeriod;
-        state.periodo.preset = preset;
-        if (preset === 'personalizado') {
-          state.periodo.dataInicial = panel.querySelector('#crFpDataIni')?.value || '';
-          state.periodo.dataFinal   = panel.querySelector('#crFpDataFim')?.value || '';
-        } else {
-          const { dataInicial, dataFinal } = calcPeriodoLocal(preset);
-          state.periodo.dataInicial = dataInicial;
-          state.periodo.dataFinal   = dataFinal;
+      const _applyFiltros = async () => {
+        const selPeriod = inline.querySelector('[data-fp-period].cr-fpill--active');
+        const selStatus = inline.querySelector('[data-fp-status].cr-fpill--active');
+        const selOrdem  = inline.querySelector('[data-fp-ordem].cr-fpill--active');
+        if (selPeriod) {
+          const preset = selPeriod.dataset.fpPeriod;
+          state.periodo.preset = preset;
+          if (preset === 'personalizado') {
+            state.periodo.dataInicial = inline.querySelector('#crFpDataIni')?.value || '';
+            state.periodo.dataFinal   = inline.querySelector('#crFpDataFim')?.value || '';
+          } else {
+            const { dataInicial, dataFinal } = calcPeriodoLocal(preset);
+            state.periodo.dataInicial = dataInicial;
+            state.periodo.dataFinal   = dataFinal;
+          }
         }
-      }
-      if (selStatus) state.filtros.status = selStatus.dataset.fpStatus;
-      if (selOrdem)  { state.ordem = 'data_vencimento'; state.ordemDir = selOrdem.dataset.fpOrdem; }
-      state.pagina = 1;
-      salvarFiltrosCR();
-      _closePanel();
-      await recarregar();
-    };
+        if (selStatus) state.filtros.status = selStatus.dataset.fpStatus;
+        if (selOrdem)  { state.ordem = 'data_vencimento'; state.ordemDir = selOrdem.dataset.fpOrdem; }
+        state.pagina = 1;
+        salvarFiltrosCR();
+        _closePanel();
+        await recarregar();
+      };
 
-    // Event delegation (pill toggles + ações)
-    panel.addEventListener('click', e => {
-      // Fechar ao clicar no overlay (fora do card)
-      if (e.target === panel) { _closePanel(); return; }
-      const fpPeriod = e.target.closest('[data-fp-period]');
-      const fpStatus = e.target.closest('[data-fp-status]');
-      const fpOrdem  = e.target.closest('[data-fp-ordem]');
-      if (fpPeriod) {
-        panel.querySelectorAll('[data-fp-period]').forEach(b => b.classList.remove('cr-fpill--active'));
-        fpPeriod.classList.add('cr-fpill--active');
-        const cd = panel.querySelector('#crFpCustomDates');
-        if (cd) cd.classList.toggle('hidden', fpPeriod.dataset.fpPeriod !== 'personalizado');
-      }
-      if (fpStatus) {
-        panel.querySelectorAll('[data-fp-status]').forEach(b => b.classList.remove('cr-fpill--active'));
-        fpStatus.classList.add('cr-fpill--active');
-      }
-      if (fpOrdem) {
-        panel.querySelectorAll('[data-fp-ordem]').forEach(b => b.classList.remove('cr-fpill--active'));
-        fpOrdem.classList.add('cr-fpill--active');
-      }
-      if (e.target.closest('#crFiltrosCancelar')) _closePanel();
-      if (e.target.closest('#crAplicarFiltros'))  _applyFiltros();
-      if (e.target.closest('#crLimparFiltrosModal')) {
-        state.filtros = { status: '', cliente_id: '', busca: '' };
-        state.ordem = 'data_vencimento'; state.ordemDir = 'desc';
-        state.periodo.preset = '30dias';
-        const { dataInicial, dataFinal } = calcPeriodoLocal('30dias');
-        state.periodo.dataInicial = dataInicial; state.periodo.dataFinal = dataFinal;
-        salvarFiltrosCR(); _closePanel(); recarregar();
-      }
-    });
+      inline.addEventListener('click', e => {
+        const fpPeriod = e.target.closest('[data-fp-period]');
+        const fpStatus = e.target.closest('[data-fp-status]');
+        const fpOrdem  = e.target.closest('[data-fp-ordem]');
+        if (fpPeriod) {
+          inline.querySelectorAll('[data-fp-period]').forEach(b => b.classList.remove('cr-fpill--active'));
+          fpPeriod.classList.add('cr-fpill--active');
+          const cd = inline.querySelector('#crFpCustomDates');
+          if (cd) cd.classList.toggle('hidden', fpPeriod.dataset.fpPeriod !== 'personalizado');
+        }
+        if (fpStatus) {
+          inline.querySelectorAll('[data-fp-status]').forEach(b => b.classList.remove('cr-fpill--active'));
+          fpStatus.classList.add('cr-fpill--active');
+        }
+        if (fpOrdem) {
+          inline.querySelectorAll('[data-fp-ordem]').forEach(b => b.classList.remove('cr-fpill--active'));
+          fpOrdem.classList.add('cr-fpill--active');
+        }
+        if (e.target.closest('#crAplicarFiltros'))  _applyFiltros();
+        if (e.target.closest('#crLimparFiltrosModal')) {
+          state.filtros = { status: '', cliente_id: '', busca: '' };
+          state.ordem = 'data_vencimento'; state.ordemDir = 'desc';
+          state.periodo.preset = '30dias';
+          const { dataInicial, dataFinal } = calcPeriodoLocal('30dias');
+          state.periodo.dataInicial = dataInicial; state.periodo.dataFinal = dataFinal;
+          salvarFiltrosCR(); _closePanel(); recarregar();
+        }
+      });
 
-    document.getElementById('btnFiltrosPanel')?.addEventListener('click', _openPanel);
-
-    // Cleanup quando o módulo é desmontado
-    new MutationObserver(() => {
-      if (!document.getElementById('btnFiltrosPanel')) { panel.remove(); }
-    }).observe(document.body, { childList: true, subtree: true });
+      document.getElementById('btnFiltrosPanel')?.addEventListener('click', () => {
+        if (inline.classList.contains('hidden')) _openPanel();
+        else _closePanel();
+      });
+    }
   }
 
   // Exportar CSV
@@ -2739,29 +2728,33 @@ function injectContasReceberStyles() {
       align-items: center;
     }
 
-    .cr-filtros-panel { display: none; position: fixed; inset: 0; z-index: 10002; background: rgba(0,0,0,.45); backdrop-filter: blur(3px); align-items: center; justify-content: center; }
-    .cr-filtros-panel.cr-filtros-open { display: flex; }
-    .cr-filtros-modal-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; box-shadow: 0 24px 64px rgba(0,0,0,.18); width: min(96vw, 460px); max-height: 88vh; overflow-y: auto; display: flex; flex-direction: column; }
-    .cr-filtros-modal-hdr { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--surface); z-index: 1; border-radius: 20px 20px 0 0; }
-    .cr-filtros-modal-title { font-size: 1rem; font-weight: 700; color: var(--text); }
-    .cr-filtros-close { background: var(--surface-2); border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); font-size: .9rem; flex-shrink: 0; }
-    .cr-filtros-close:hover { background: var(--border); }
-    .cr-filtros-modal-body { padding: 20px; display: flex; flex-direction: column; gap: 20px; }
-    .cr-filtros-section { display: flex; flex-direction: column; gap: 10px; }
+    /* ── Painel de filtros inline (substitui o modal overlay) ── */
+    .cr-filtros-inline {
+      background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: 16px; padding: 18px 20px 14px;
+      display: flex; flex-direction: column; gap: 16px;
+    }
+    .cr-filtros-inline.hidden { display: none; }
+    .cr-fi-sections {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+    }
+    @media (max-width: 720px) { .cr-fi-sections { grid-template-columns: 1fr; } }
+    .cr-fi-section { display: flex; flex-direction: column; gap: 10px; }
+    .cr-fi-footer {
+      display: flex; align-items: center; justify-content: flex-end;
+      gap: 8px; border-top: 1px solid var(--border); padding-top: 14px;
+    }
     .cr-filtros-lbl { font-size: .72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; }
     .cr-fpills { display: flex; flex-wrap: wrap; gap: 6px; }
-    .cr-fpill { background: var(--surface-2); border: 1px solid var(--border); border-radius: 20px; padding: 6px 14px; font-size: .83rem; font-weight: 600; color: var(--text); cursor: pointer; transition: all .12s; }
+    .cr-fpill { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 6px 14px; font-size: .83rem; font-weight: 600; color: var(--text); cursor: pointer; transition: all .12s; }
     .cr-fpill:hover { border-color: var(--primary, #2563eb); color: var(--primary, #2563eb); }
     .cr-fpill--active { background: var(--primary, #2563eb) !important; color: #fff !important; border-color: var(--primary, #2563eb) !important; }
-    .cr-filtros-modal-footer { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-top: 1px solid var(--border); gap: 10px; }
     .cr-filtros-badge { background: #fff; color: var(--primary, #2563eb); font-size: .7rem; font-weight: 800; border-radius: 99px; padding: 1px 6px; margin-left: 4px; display: inline-block; }
     .cr-filtros-trigger .cr-filtros-badge { background: rgba(255,255,255,.25); color: #fff; }
     .cr-fp-custom-dates { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .cr-fp-custom-dates .input { height: 36px; font-size: .82rem; padding: 0 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); flex: 1; min-width: 120px; }
+    .cr-fp-custom-dates .input { height: 36px; font-size: .82rem; padding: 0 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); flex: 1; min-width: 120px; }
     .cr-fp-custom-dates span { color: var(--text-muted); font-size: .82rem; flex-shrink: 0; }
     .cr-fp-custom-dates.hidden { display: none; }
-    @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cr-filtros-modal-card { box-shadow: 0 24px 80px rgba(0,0,0,.6); } }
-    :root[data-theme="dark"] .cr-filtros-modal-card { box-shadow: 0 24px 80px rgba(0,0,0,.6); }
 
     .cr-util-btn {
       height: 34px;
