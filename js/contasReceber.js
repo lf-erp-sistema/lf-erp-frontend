@@ -799,7 +799,7 @@ function render() {
               return `
               <div class="cr-more-menu" id="crMoreMenu">
                 <button class="btn btn-light cr-more-btn${fpCount ? ' cr-more-btn--active' : ''}" id="crMoreBtn" type="button" title="Mais ações">
-                  <i class="fa-solid fa-ellipsis-vertical"></i>${fpCount ? `<span class="cr-more-badge">${fpCount}</span>` : ''}
+                  <i class="fa-solid fa-ellipsis-vertical"></i>
                 </button>
                 <div class="cr-more-dropdown hidden" id="crMoreDropdown">
                   <button class="cr-more-item cr-more-item--filtros" id="btnFiltrosPanel" type="button">
