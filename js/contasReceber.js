@@ -801,26 +801,28 @@ function render() {
                 state.periodo.preset !== 'mesAtual' ? 'period' : '',
                 (state.ordemDir !== 'desc' || state.ordem !== 'data_vencimento') ? 'sort' : ''
               ].filter(Boolean).length;
-              return `<button class="btn ${fpCount ? 'btn-primary cr-filtros-trigger' : 'btn-light'}" id="btnFiltrosPanel" type="button">
-                <i class="fa-solid fa-sliders"></i> Filtros${fpCount ? `<span class="cr-filtros-badge">${fpCount}</span>` : ''}
-              </button>`;
+              return `
+              <div class="cr-more-menu" id="crMoreMenu">
+                <button class="btn btn-light cr-more-btn${fpCount ? ' cr-more-btn--active' : ''}" id="crMoreBtn" type="button" title="Mais ações">
+                  <i class="fa-solid fa-ellipsis-vertical"></i>${fpCount ? `<span class="cr-more-badge">${fpCount}</span>` : ''}
+                </button>
+                <div class="cr-more-dropdown hidden" id="crMoreDropdown">
+                  <button class="cr-more-item cr-more-item--filtros" id="btnFiltrosPanel" type="button">
+                    <i class="fa-solid fa-sliders"></i> Filtros${fpCount ? `<span class="cr-filtros-badge cr-filtros-badge--inline">${fpCount}</span>` : ''}
+                  </button>
+                  <div class="cr-more-divider"></div>
+                  <button class="cr-more-item" id="btnLimparFiltrosContasReceber" type="button">
+                    <i class="fa-solid fa-eraser"></i> Limpar filtros
+                  </button>
+                  <button class="cr-more-item" id="btnExportarCSV" type="button">
+                    <i class="fa-solid fa-file-csv"></i> Exportar CSV
+                  </button>
+                  <button class="cr-more-item" id="btnAtualizarContasReceber" type="button">
+                    <i class="fa-solid fa-rotate"></i> Atualizar
+                  </button>
+                </div>
+              </div>`;
             })()}
-            <div class="cr-more-menu" id="crMoreMenu">
-              <button class="btn btn-light cr-more-btn" id="crMoreBtn" type="button" title="Mais ações">
-                <i class="fa-solid fa-ellipsis-vertical"></i>
-              </button>
-              <div class="cr-more-dropdown hidden" id="crMoreDropdown">
-                <button class="cr-more-item" id="btnLimparFiltrosContasReceber" type="button">
-                  <i class="fa-solid fa-eraser"></i> Limpar filtros
-                </button>
-                <button class="cr-more-item" id="btnExportarCSV" type="button">
-                  <i class="fa-solid fa-file-csv"></i> Exportar CSV
-                </button>
-                <button class="cr-more-item" id="btnAtualizarContasReceber" type="button">
-                  <i class="fa-solid fa-rotate"></i> Atualizar
-                </button>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -2866,6 +2868,19 @@ function injectContasReceberStyles() {
     }
     .cr-more-item:hover { background: var(--surface-2, rgba(0,0,0,.04)); }
     .cr-more-item i { color: var(--text-muted); width: 16px; text-align: center; }
+    .cr-more-item--filtros { font-weight: 700; }
+    .cr-more-divider { height: 1px; background: var(--border); margin: 4px 0; }
+    .cr-more-btn--active { border-color: var(--primary); color: var(--primary); }
+    .cr-more-badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 16px; height: 16px; border-radius: 99px; padding: 0 4px;
+      background: var(--primary); color: #fff; font-size: .68rem; font-weight: 800;
+      margin-left: 4px; line-height: 1;
+    }
+    .cr-filtros-badge--inline {
+      background: var(--primary); color: #fff; font-size: .7rem; font-weight: 800;
+      border-radius: 99px; padding: 1px 7px; margin-left: auto;
+    }
 
     /* ── Chips de alertas de vencimento (cp-alerta-chip não vem do CP) ── */
     .cp-alerta-chip {
