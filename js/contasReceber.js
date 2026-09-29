@@ -3725,13 +3725,13 @@ function injectContasReceberStyles() {
     /* ── Tfoot ── */
     .cr-tfoot-row td { background: var(--surface-2); border-top: 1px solid var(--border); }
 
-    /* ── Barra de resumo (rodapé do card) ── */
+    /* ── Barra sticky de totais — sempre visível no rodapé da tela ── */
     .cr-sticky-bar {
-      background: var(--surface-2); border-top: 1px solid var(--border);
-      border-radius: 0 0 22px 22px; margin: 0 -22px -22px;
+      position: sticky; bottom: 0; z-index: 20;
+      background: var(--surface); border-top: 1px solid var(--border);
       padding: 10px 22px; display: flex; align-items: center;
       gap: 10px; flex-wrap: wrap; font-size: .84rem; font-weight: 600;
-      color: var(--text-muted);
+      color: var(--text-muted); box-shadow: 0 -3px 14px rgba(0,0,0,.07);
     }
     .cr-sticky-bar strong { color: var(--text); font-weight: 800; margin-left: 4px; }
     .cr-sticky-bar__sep { opacity: .28; }
