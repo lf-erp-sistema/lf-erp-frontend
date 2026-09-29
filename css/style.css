@@ -1012,10 +1012,10 @@ img {
   overflow: visible;
 }
 
-/* Sidebar expandido: permite scroll vertical quando itens excedem 100vh */
+/* Sidebar expandido: scroll vertical sem clipar submenus absolutos */
 .sidebar.expanded .sidebar__nav {
   overflow-y: auto;
-  overflow-x: hidden;
+  overflow-x: clip;
   min-height: 0;
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
