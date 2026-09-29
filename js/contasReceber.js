@@ -797,15 +797,14 @@ function render() {
                 (state.ordemDir !== 'desc' || state.ordem !== 'data_vencimento') ? 'sort' : ''
               ].filter(Boolean).length;
               return `
+              <button class="btn ${fpCount ? 'btn-primary cr-filtros-trigger' : 'btn-light'}" id="btnFiltrosPanel" type="button">
+                <i class="fa-solid fa-sliders"></i> Filtros${fpCount ? `<span class="cr-filtros-badge">${fpCount}</span>` : ''}
+              </button>
               <div class="cr-more-menu" id="crMoreMenu">
-                <button class="btn btn-light cr-more-btn${fpCount ? ' cr-more-btn--active' : ''}" id="crMoreBtn" type="button" title="Mais ações">
-                  <i class="fa-solid fa-ellipsis-vertical"></i>${fpCount ? `<span class="cr-more-badge">${fpCount}</span>` : ''}
+                <button class="btn btn-light cr-more-btn" id="crMoreBtn" type="button" title="Mais ações">
+                  <i class="fa-solid fa-ellipsis-vertical"></i>
                 </button>
                 <div class="cr-more-dropdown hidden" id="crMoreDropdown">
-                  <button class="cr-more-item cr-more-item--filtros" id="btnFiltrosPanel" type="button">
-                    <i class="fa-solid fa-sliders"></i> Filtros${fpCount ? `<span class="cr-filtros-badge cr-filtros-badge--inline">${fpCount}</span>` : ''}
-                  </button>
-                  <div class="cr-more-divider"></div>
                   <button class="cr-more-item" id="btnLimparFiltrosContasReceber" type="button">
                     <i class="fa-solid fa-eraser"></i> Limpar filtros
                   </button>
