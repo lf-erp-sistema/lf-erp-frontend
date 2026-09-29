@@ -1012,17 +1012,6 @@ img {
   overflow: visible;
 }
 
-/* Sidebar expandido: scroll vertical sem clipar submenus absolutos */
-.sidebar.expanded .sidebar__nav {
-  overflow-y: auto;
-  overflow-x: clip;
-  min-height: 0;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
-}
-.sidebar.expanded .sidebar__nav::-webkit-scrollbar { width: 4px; }
-.sidebar.expanded .sidebar__nav::-webkit-scrollbar-track { background: transparent; }
-.sidebar.expanded .sidebar__nav::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
 .nav-item,
 .nav-group__toggle,
