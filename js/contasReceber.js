@@ -880,11 +880,10 @@ function render() {
       <span class="cr-sticky-bar--verde"><i class="fa-solid fa-circle-check" style="font-size:.85rem"></i> Recebidos <strong>${formatCurrency(state.resumo.total_pago)}</strong></span>
       <span class="cr-sticky-bar__sep">|</span>
       <span>Total <strong>${formatCurrency(state.resumo.total)}</strong></span>
-    </div>
-
-    <div class="cr-explain-card" style="margin-top:10px">
-      <i class="fa-solid fa-circle-info cr-explain-ico"></i>
-      <span><strong>Importante:</strong> Esta tela mostra títulos. Valores recebidos só entram no Fluxo de Caixa após baixa/pagamento.</span>
+      <span class="cr-sticky-bar__note">
+        <i class="fa-solid fa-circle-info"></i>
+        Valores recebidos só entram no Fluxo de Caixa após baixa/pagamento.
+      </span>
     </div>
 
     <div class="cr-lote-bar" id="crLoteBar" style="display:${state.selecionadas.size > 0 ? 'flex' : 'none'}">
@@ -3736,6 +3735,10 @@ function injectContasReceberStyles() {
     }
     .cr-sticky-bar strong { color: var(--text); font-weight: 800; margin-left: 4px; }
     .cr-sticky-bar__sep { opacity: .28; }
+    .cr-sticky-bar__note {
+      margin-left: auto; display: flex; align-items: center; gap: 5px;
+      font-size: .78rem; font-weight: 500; opacity: .55;
+    }
     .cr-sticky-bar--vermelho { color: #dc2626; }
     .cr-sticky-bar--verde    { color: #16a34a; }
 
