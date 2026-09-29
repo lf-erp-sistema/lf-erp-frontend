@@ -2958,6 +2958,7 @@ function injectContasReceberStyles() {
 
     .cr-module-card {
       position: relative;
+      padding-bottom: 54px;
     }
 
     .cr-explain-card {
@@ -3725,14 +3726,17 @@ function injectContasReceberStyles() {
     /* ── Tfoot ── */
     .cr-tfoot-row td { background: var(--surface-2); border-top: 1px solid var(--border); }
 
-    /* ── Barra sticky de totais — sempre visível no rodapé da tela ── */
+    /* ── Barra fixa de totais — sempre visível no rodapé da tela ── */
     .cr-sticky-bar {
-      position: sticky; bottom: 0; z-index: 20;
+      position: fixed; bottom: 0; left: var(--sidebar-width); right: 0; z-index: 19;
       background: var(--surface); border-top: 1px solid var(--border);
       padding: 10px 22px; display: flex; align-items: center;
       gap: 10px; flex-wrap: wrap; font-size: .84rem; font-weight: 600;
       color: var(--text-muted); box-shadow: 0 -3px 14px rgba(0,0,0,.07);
+      transition: left var(--transition, .2s ease);
     }
+    .main-screen.sidebar-collapsed .cr-sticky-bar { left: var(--sidebar-collapsed-width); }
+    @media (max-width: 980px) { .cr-sticky-bar { left: 0 !important; } }
     .cr-sticky-bar strong { color: var(--text); font-weight: 800; margin-left: 4px; }
     .cr-sticky-bar__sep { opacity: .28; }
     .cr-sticky-bar__note {
