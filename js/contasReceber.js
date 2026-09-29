@@ -805,15 +805,22 @@ function render() {
                 <i class="fa-solid fa-sliders"></i> Filtros${fpCount ? `<span class="cr-filtros-badge">${fpCount}</span>` : ''}
               </button>`;
             })()}
-            <button class="btn${(state.filtros.status || state.filtros.cliente_id || state.filtros.busca || state.periodo.preset !== 'mesAtual') ? ' btn-warning' : ' btn-light'}" id="btnLimparFiltrosContasReceber" type="button">
-              <i class="fa-solid fa-eraser"></i> Limpar
-            </button>
-            <button class="btn btn-light cr-util-btn" id="btnExportarCSV" type="button" title="Exportar CSV">
-              <i class="fa-solid fa-file-csv"></i>
-            </button>
-            <button class="btn btn-light cr-util-btn" id="btnAtualizarContasReceber" type="button" title="Atualizar">
-              <i class="fa-solid fa-rotate"></i>
-            </button>
+            <div class="cr-more-menu" id="crMoreMenu">
+              <button class="btn btn-light cr-more-btn" id="crMoreBtn" type="button" title="Mais ações">
+                <i class="fa-solid fa-ellipsis-vertical"></i>
+              </button>
+              <div class="cr-more-dropdown hidden" id="crMoreDropdown">
+                <button class="cr-more-item" id="btnLimparFiltrosContasReceber" type="button">
+                  <i class="fa-solid fa-eraser"></i> Limpar filtros
+                </button>
+                <button class="cr-more-item" id="btnExportarCSV" type="button">
+                  <i class="fa-solid fa-file-csv"></i> Exportar CSV
+                </button>
+                <button class="cr-more-item" id="btnAtualizarContasReceber" type="button">
+                  <i class="fa-solid fa-rotate"></i> Atualizar
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -1225,7 +1232,23 @@ function bindEventos() {
   const busca = document.getElementById('crBusca');
 
   btnAtualizar?.addEventListener('click', async () => {
+    document.getElementById('crMoreDropdown')?.classList.add('hidden');
     await recarregar();
+  });
+
+  // ── Kebab menu ⋮ ───────────────────────────────────────────────────────────
+  document.getElementById('crMoreBtn')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    document.getElementById('crMoreDropdown')?.classList.toggle('hidden');
+  });
+  document.getElementById('crMoreDropdown')?.addEventListener('click', () => {
+    setTimeout(() => document.getElementById('crMoreDropdown')?.classList.add('hidden'), 80);
+  });
+  document.addEventListener('click', (e) => {
+    const drop = document.getElementById('crMoreDropdown');
+    if (drop && !drop.classList.contains('hidden') && !e.target.closest('#crMoreMenu')) {
+      drop.classList.add('hidden');
+    }
   });
 
   document.getElementById('crMesAnterior')?.addEventListener('click', () => _navegarMes(-1));
@@ -2820,6 +2843,42 @@ function injectContasReceberStyles() {
       flex-wrap: wrap;
       align-items: center;
     }
+
+    /* ── Kebab menu ⋮ ── */
+    .cr-more-menu { position: relative; flex-shrink: 0; }
+    .cr-more-btn {
+      height: 36px; min-width: 36px; width: 36px; padding: 0;
+      border-radius: 10px; display: flex; align-items: center; justify-content: center;
+    }
+    .cr-more-dropdown {
+      position: absolute; right: 0; top: calc(100% + 6px);
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; box-shadow: 0 8px 28px rgba(0,0,0,.12);
+      min-width: 185px; z-index: 150; overflow: hidden;
+    }
+    .cr-more-dropdown.hidden { display: none; }
+    .cr-more-item {
+      display: flex; align-items: center; gap: 10px; width: 100%;
+      padding: 10px 14px; border: none; background: transparent;
+      cursor: pointer; font-size: .87rem; font-weight: 600;
+      color: var(--text); text-align: left; font-family: inherit;
+      transition: background .1s;
+    }
+    .cr-more-item:hover { background: var(--surface-2, rgba(0,0,0,.04)); }
+    .cr-more-item i { color: var(--text-muted); width: 16px; text-align: center; }
+
+    /* ── Chips de alertas de vencimento (cp-alerta-chip não vem do CP) ── */
+    .cp-alerta-chip {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 14px; border-radius: 10px; border: 1px solid transparent;
+      font-size: .84rem; font-weight: 700;
+    }
+    .cp-alerta-chip--danger  { background: var(--danger-soft, rgba(220,38,38,.08)); border-color: rgba(220,38,38,.18); color: #b91c1c; }
+    .cp-alerta-chip--warning { background: var(--warning-soft, rgba(217,119,6,.08)); border-color: rgba(217,119,6,.18); color: #92400e; }
+    .cp-alerta-chip--info    { background: var(--info-soft, rgba(8,145,178,.08)); border-color: rgba(8,145,178,.18); color: #0e7490; }
+    .cp-alerta-chip__num   { font-size: 1.1em; font-weight: 900; }
+    .cp-alerta-chip__label { opacity: .85; }
+    .cp-alerta-chip__val   { font-variant-numeric: tabular-nums; font-weight: 800; }
 
     .sort-icon {
       font-size: 0.72rem;
