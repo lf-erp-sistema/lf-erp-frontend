@@ -726,11 +726,6 @@ function render() {
     <section class="module-card cr-module-card">
       <div id="contasReceberFeedback" class="module-feedback"></div>
 
-      <div class="cr-explain-card">
-        <i class="fa-solid fa-circle-info cr-explain-ico"></i>
-        <span><strong>Importante:</strong> Esta tela mostra títulos. Valores recebidos só entram no Fluxo de Caixa após baixa/pagamento.</span>
-      </div>
-
       ${renderAlertasVencCR()}
 
       <div class="cl-tb-kpi-strip">
@@ -757,6 +752,11 @@ function render() {
           <span class="cl-tb-kpi-val cl-tb-kpi-ok">${formatCurrency(state.resumo.total_pago)}</span>
           <span style="font-size:.7rem;color:var(--text-muted)">${Number(state.resumo.qtd_pago || 0)} título(s)</span>
         </div>
+      </div>
+
+      <div class="cr-explain-card">
+        <i class="fa-solid fa-circle-info cr-explain-ico"></i>
+        <span><strong>Importante:</strong> Esta tela mostra títulos. Valores recebidos só entram no Fluxo de Caixa após baixa/pagamento.</span>
       </div>
 
       <div class="cr-toolbar-grid">
@@ -3727,13 +3727,13 @@ function injectContasReceberStyles() {
     /* ── Tfoot ── */
     .cr-tfoot-row td { background: var(--surface-2); border-top: 1px solid var(--border); }
 
-    /* ── Barra sticky de resumo ── */
+    /* ── Barra de resumo (rodapé do card) ── */
     .cr-sticky-bar {
-      position: sticky; bottom: 0; z-index: 10;
-      background: var(--surface); border-top: 1px solid var(--border);
-      padding: 9px 20px; display: flex; align-items: center;
+      background: var(--surface-2); border-top: 1px solid var(--border);
+      border-radius: 0 0 22px 22px; margin: 0 -22px -22px;
+      padding: 10px 22px; display: flex; align-items: center;
       gap: 10px; flex-wrap: wrap; font-size: .84rem; font-weight: 600;
-      color: var(--text-muted); box-shadow: 0 -2px 12px rgba(0,0,0,.07);
+      color: var(--text-muted);
     }
     .cr-sticky-bar strong { color: var(--text); font-weight: 800; margin-left: 4px; }
     .cr-sticky-bar__sep { opacity: .28; }
