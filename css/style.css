@@ -840,7 +840,7 @@ img {
   border-right: 1px solid var(--sidebar-border);
   display: flex;
   flex-direction: column;
-  padding: 18px 14px 16px;
+  padding: 10px 14px 10px;
   transition:
     width var(--transition),
     transform var(--transition);
@@ -899,9 +899,9 @@ img {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 6px 6px 18px;
+  padding: 2px 6px 10px;
   border-bottom: 1px solid var(--sidebar-border);
-  margin-bottom: 12px;
+  margin-bottom: 6px;
 }
 
 .sidebar__collapse-btn {
@@ -1037,12 +1037,12 @@ img {
 
 .nav-item,
 .nav-group__toggle {
-  min-height: 40px;
+  min-height: 38px;
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 0 14px;
-  margin-bottom: 2px;
+  margin-bottom: 1px;
 }
 
 .nav-item:hover,
@@ -3216,7 +3216,7 @@ select {
 .nav-divider {
   height: 1px;
   background: var(--sidebar-border);
-  margin: 8px 6px 10px;
+  margin: 4px 6px 5px;
 }
 
 /* ─── Seção Avançado ─────────────────────────────────────────────── */
@@ -3227,7 +3227,7 @@ select {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 10px;
+  padding: 3px 10px;
   cursor: pointer;
   color: var(--sidebar-text-soft);
   font-size: 0.68rem;
