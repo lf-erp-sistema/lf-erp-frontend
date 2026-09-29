@@ -754,11 +754,6 @@ function render() {
         </div>
       </div>
 
-      <div class="cr-explain-card">
-        <i class="fa-solid fa-circle-info cr-explain-ico"></i>
-        <span><strong>Importante:</strong> Esta tela mostra títulos. Valores recebidos só entram no Fluxo de Caixa após baixa/pagamento.</span>
-      </div>
-
       <div class="cr-toolbar-grid">
 
         <!-- Linha 1: busca + combobox cliente + botões de ação -->
@@ -886,6 +881,11 @@ function render() {
       <span class="cr-sticky-bar--verde"><i class="fa-solid fa-circle-check" style="font-size:.85rem"></i> Recebidos <strong>${formatCurrency(state.resumo.total_pago)}</strong></span>
       <span class="cr-sticky-bar__sep">|</span>
       <span>Total <strong>${formatCurrency(state.resumo.total)}</strong></span>
+    </div>
+
+    <div class="cr-explain-card" style="margin-top:10px">
+      <i class="fa-solid fa-circle-info cr-explain-ico"></i>
+      <span><strong>Importante:</strong> Esta tela mostra títulos. Valores recebidos só entram no Fluxo de Caixa após baixa/pagamento.</span>
     </div>
 
     <div class="cr-lote-bar" id="crLoteBar" style="display:${state.selecionadas.size > 0 ? 'flex' : 'none'}">
