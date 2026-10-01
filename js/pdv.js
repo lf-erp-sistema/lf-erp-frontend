@@ -159,6 +159,23 @@ const PDVModule = {
       this.removePagamento(idx);
     });
 
+    // Resumo rápido no rodapé: cliente e forma de pagamento sem trocar de aba
+    document.getElementById('pdvResumoCliente')?.addEventListener('click', () => {
+      this.switchTab('cliente');
+      this.cache();
+      this.el.clienteBusca?.focus();
+    });
+
+    document.getElementById('pdvResumoPag')?.addEventListener('click', (e) => {
+      const chip = e.target.closest('[data-forma]');
+      if (chip && this.state.pagamentos.length === 1) {
+        this.state.pagamentos[0] = { ...this.state.pagamentos[0], forma: chip.dataset.forma, parcelas: 1, vencimento: '' };
+        this.renderPagamentos();
+        return;
+      }
+      if (e.target.closest('[data-goto-pagamento]')) this.switchTab('pagamento');
+    });
+
     // â”€â”€ Eventos do modal de grade â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     if (!this._gradeModalBound) {
       this._gradeModalBound = true;
@@ -681,6 +698,12 @@ const PDVModule = {
           <button type="button" class="btn btn-primary pdv-v2__btn-finalizar" id="pdvFinalizarBtn">
             <i class="fa-solid fa-check"></i> Finalizar venda
           </button>
+          <div class="pdv-v2__resumo">
+            <button type="button" class="pdv-resumo-cliente" id="pdvResumoCliente" title="Alterar cliente (Alt+C)">
+              <i class="fa-solid fa-user"></i><span id="pdvResumoClienteNome">Consumidor final</span>
+            </button>
+            <div class="pdv-resumo-pag" id="pdvResumoPag" role="group" aria-label="Forma de pagamento"></div>
+          </div>
           <div class="pdv-v2__total">
             <span id="pdvFooterItens" style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:1px;min-height:14px"></span>
             <span>Total</span>
@@ -1079,6 +1102,36 @@ const PDVModule = {
     }).join('');
 
     this.renderSplitRestante();
+    this.renderResumoRapido();
+  },
+
+  RESUMO_FORMAS: [
+    ['Dinheiro', 'Dinheiro'],
+    ['Pix', 'Pix'],
+    ['Cartão de Débito', 'Débito'],
+    ['Cartão de Crédito', 'Crédito']
+  ],
+
+  renderResumoRapido() {
+    const nomeEl = document.getElementById('pdvResumoClienteNome');
+    if (nomeEl) nomeEl.textContent = this.state.clienteId ? (this.state.clienteNome || 'Cliente') : 'Consumidor final';
+
+    const pagEl = document.getElementById('pdvResumoPag');
+    if (!pagEl) return;
+
+    const pags = this.state.pagamentos;
+    if (pags.length > 1) {
+      pagEl.innerHTML = `<button type="button" class="pdv-resumo-chip pdv-resumo-chip--active" data-goto-pagamento title="Ver formas de pagamento (Alt+B)">
+        <i class="fa-solid fa-layer-group"></i> Dividido em ${pags.length} formas</button>`;
+      return;
+    }
+
+    const atual = pags[0]?.forma || 'Dinheiro';
+    const ehRapida = this.RESUMO_FORMAS.some(([f]) => f === atual);
+    pagEl.innerHTML = this.RESUMO_FORMAS.map(([forma, label]) =>
+      `<button type="button" class="pdv-resumo-chip${forma === atual ? ' pdv-resumo-chip--active' : ''}" data-forma="${forma}" aria-pressed="${forma === atual}">${label}</button>`
+    ).join('') +
+      `<button type="button" class="pdv-resumo-chip pdv-resumo-chip--mais${ehRapida ? '' : ' pdv-resumo-chip--active'}" data-goto-pagamento title="Promissória ou dividir pagamento (Alt+B)">${ehRapida ? 'Mais…' : this.escapeHtml(atual)}</button>`;
   },
 
   renderSplitRestante() {
@@ -1115,6 +1168,8 @@ const PDVModule = {
   updateClienteInfo() {
     this.cache();
     if (!this.el.clienteNomeInfo) return;
+
+    this.renderResumoRapido();
 
     if (!this.state.clienteId) {
       this.el.clienteNomeInfo.textContent = 'Nenhum cliente selecionado.';
