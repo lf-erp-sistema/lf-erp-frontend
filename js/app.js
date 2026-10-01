@@ -1817,7 +1817,6 @@ async function loadPDVReal() {
   try {
     const { initPDVModule } = await import('./pdv.js');
     await initPDVModule();
-    showToast('PDV carregado com sucesso.', 'success');
   } catch (error) {
     console.error('Erro ao carregar PDV:', error);
     showToast('Falha ao carregar módulo de PDV.', 'error');
@@ -1909,7 +1908,6 @@ async function loadFluxoCaixaReal() {
   try {
     const { initFluxoCaixaModule } = await import('./fluxoCaixa.js');
     await initFluxoCaixaModule();
-    showToast('Fluxo de caixa carregado com sucesso.', 'success');
   } catch (error) {
     console.error('Erro ao carregar fluxo de caixa:', error);
     showToast('Falha ao carregar módulo de fluxo de caixa.', 'error');
@@ -2039,7 +2037,6 @@ async function loadEstoqueReal() {
   try {
     const { initEstoqueModule } = await import('./estoque.js');
     await initEstoqueModule();
-    showToast('Estoque carregado com sucesso.', 'success');
   } catch (error) {
     console.error('Erro ao carregar estoque:', error);
     showToast('Falha ao carregar módulo de estoque.', 'error');

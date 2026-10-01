@@ -5829,7 +5829,7 @@ body.pdv-active #pdvContainer.module-placeholder {
 .pdv-v2__left {
   display: flex;
   flex-direction: column;
-  width: 420px;
+  width: clamp(420px, 45%, 640px);
   flex-shrink: 0;
   border-right: 1px solid var(--border);
   background: var(--surface);
