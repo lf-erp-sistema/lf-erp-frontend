@@ -14,7 +14,7 @@ Tratar sempre como ambiente de produção — qualquer alteração afeta dados e
 - PostgreSQL via **Neon Database** (`db.js`)
 - Autenticação JWT
 - Deploy: **Render**
-- Arquivo principal: `backend/server.js` | Backup: `backend/server.backup.js`
+- Arquivo principal: `backend/server.js` (modular — monta as rotas de `backend/routes/`)
 
 ### Frontend
 - HTML + CSS + JavaScript modular (sem framework)
