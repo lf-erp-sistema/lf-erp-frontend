@@ -574,8 +574,7 @@ const PDVModule = {
             <!-- Tabs -->
             <div class="pdv-v2__tabs" id="pdvTabs">
               <button type="button" class="pdv-v2__tab pdv-v2__tab--active" data-tab="produtos">Produto</button>
-              <button type="button" class="pdv-v2__tab" data-tab="cliente">Cliente</button>
-              <button type="button" class="pdv-v2__tab" data-tab="pagamento">Pagamento</button>
+              <button type="button" class="pdv-v2__tab" data-tab="cliente">Cliente e pagamento</button>
             </div>
 
             <!-- Painel: Produto -->
@@ -590,8 +589,8 @@ const PDVModule = {
                   <div class="pdv-v2__shortcuts-tooltip">
                     <span><kbd>Enter</kbd> Adicionar produto</span>
                     <span><kbd>Alt+Z</kbd> Aba Produto</span>
-                    <span><kbd>Alt+C</kbd> Aba Cliente</span>
-                    <span><kbd>Alt+B</kbd> Aba Pagamento</span>
+                    <span><kbd>Alt+C</kbd> Cliente</span>
+                    <span><kbd>Alt+B</kbd> Pagamento</span>
                     <span><kbd>Alt+N</kbd> Nova venda</span>
                     <span><kbd>Alt+S</kbd> Finalizar venda</span>
                     <span><kbd>Alt+Q</kbd> Excluir venda</span>
@@ -635,10 +634,9 @@ const PDVModule = {
                 <textarea id="pdvObservacao" rows="3"
                   placeholder="Informações adicionais da venda"></textarea>
               </div>
-            </div>
 
-            <!-- Painel: Pagamento -->
-            <div class="pdv-v2__panel" data-pdv-panel="pagamento">
+              <!-- Seção: Pagamento (mesma aba do cliente) -->
+              <div id="pdvSecaoPagamento" class="pdv-v2__secao-pagamento">
               <div class="form-field">
                 <label>Formas de pagamento</label>
                 <div id="pdvPagamentosLista" class="pdv-split-lista"></div>
@@ -656,6 +654,7 @@ const PDVModule = {
                 <div class="pdv-summary__row">
                   <span>Itens</span><strong id="pdvTotalItens">0</strong>
                 </div>
+              </div>
               </div>
             </div>
           </div>
@@ -1016,6 +1015,9 @@ const PDVModule = {
   // â”€â”€ Abas mobile â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   switchTab(tab) {
+    // Cliente e Pagamento ficam na mesma aba; 'pagamento' abre essa aba já na seção de pagamento
+    const irParaPagamento = tab === 'pagamento';
+    if (irParaPagamento) tab = 'cliente';
     this.state.activeTab = tab;
 
     document.querySelectorAll('[data-pdv-panel]').forEach((panel) => {
@@ -1030,6 +1032,10 @@ const PDVModule = {
       btn.classList.toggle('pdv-v2__tab--active', active);
       btn.classList.toggle('pdv-tab--active', active);
     });
+
+    if (irParaPagamento) {
+      document.getElementById('pdvSecaoPagamento')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    }
   },
 
   // â”€â”€ Split de pagamento â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

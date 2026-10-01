@@ -5876,6 +5876,12 @@ body.pdv-active #pdvContainer.module-placeholder {
   padding: 16px;
 }
 .pdv-v2__panel--active { display: flex; }
+.pdv-v2__secao-pagamento {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  scroll-margin-top: 8px;
+}
 
 /* Search within Produto tab */
 .pdv-v2__search-wrap {
