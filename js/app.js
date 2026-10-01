@@ -1363,6 +1363,20 @@ function restoreSavedFilters() {
       ...AppState.filters,
       ...parsed
     };
+
+    // Não restaurar um mês/intervalo que já terminou: se o período salvo é
+    // 'personalizado' e sua data final está antes do mês atual, o sistema abre
+    // no mês corrente (evita iniciar em Set quando já estamos em Out, por ex.).
+    const f = AppState.filters;
+    if (f.periodo === 'personalizado' && f.dataFinal) {
+      const hojeStr = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Fortaleza' });
+      const inicioMesAtual = `${hojeStr.slice(0, 7)}-01`;
+      if (f.dataFinal < inicioMesAtual) {
+        AppState.filters.periodo     = 'mesAtual';
+        AppState.filters.dataInicial = '';
+        AppState.filters.dataFinal   = '';
+      }
+    }
   } catch (error) {
     console.warn('Não foi possível restaurar filtros salvos.', error);
   }
