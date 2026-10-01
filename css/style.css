@@ -2690,6 +2690,7 @@ img {
   .dash-toolbar,
   .module-card__header,
   .module-toolbar {
+    display: flex;
     flex-direction: column;
     align-items: stretch;
   }
@@ -3451,15 +3452,16 @@ select {
 
 /* ── Toolbar compacta do dashboard ──────────────────────────────────────── */
 .dash-toolbar {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   gap: 10px;
   margin-bottom: 14px;
-  flex-wrap: wrap;
 }
 
 .dash-toolbar__right {
+  grid-column: 3;
+  justify-self: end;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -3477,19 +3479,21 @@ select {
 
 /* ── Navegação de mês do dashboard ──────────────────────────────────────── */
 .dash-month-nav-group {
+  grid-column: 2;
+  justify-self: center;
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 6px;
   background: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 3px 8px;
+  border-radius: 26px;
+  padding: 7px 16px;
   flex-shrink: 0;
 }
 
 .btn-month-nav {
-  width: 22px;
-  height: 22px;
+  width: 34px;
+  height: 34px;
   border: none;
   background: transparent;
   color: var(--text-muted);
@@ -3498,7 +3502,7 @@ select {
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  font-size: 10px;
+  font-size: 14px;
   transition: background 0.15s, color 0.15s;
   flex-shrink: 0;
 }
@@ -3509,10 +3513,10 @@ select {
 }
 
 .dash-month-label {
-  font-size: 0.78rem;
+  font-size: 1.05rem;
   font-weight: 700;
   color: var(--text);
-  min-width: 68px;
+  min-width: 104px;
   text-align: center;
   white-space: nowrap;
 }
