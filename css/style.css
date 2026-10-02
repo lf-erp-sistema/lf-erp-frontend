@@ -5673,11 +5673,29 @@ select {
 }
 
 /* Vendas em espera: indicador no header + dropdown de itens guardados */
+/* Menu "Mais" do cabeçalho: agrupa ações ocasionais (Devolução, Cobrar OS, Orçamento) */
+.pdv-mais-wrap { position: relative; }
+.pdv-mais-dropdown {
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 200;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.14); min-width: 180px; padding: 6px;
+}
+.pdv-mais-item {
+  display: flex; align-items: center; gap: 9px; width: 100%;
+  padding: 9px 12px; border: none; background: transparent; color: var(--text);
+  font-size: .83rem; font-weight: 500; cursor: pointer; border-radius: 8px;
+  transition: background .12s; text-align: left;
+}
+.pdv-mais-item:hover { background: var(--surface-2); }
+.pdv-mais-item i { width: 16px; text-align: center; color: var(--text-muted); }
+
 .pdv-espera-wrap { position: relative; }
+.pdv-espera-wrap .btn-icon { position: relative; }
 .pdv-espera-badge {
-  display:inline-flex; align-items:center; justify-content:center; min-width:18px; height:18px;
-  padding:0 5px; margin-left:4px; border-radius:999px; background:var(--danger,#e53e3e); color:#fff;
-  font-size:.68rem; font-weight:800; line-height:1;
+  position:absolute; top:-5px; right:-5px;
+  display:inline-flex; align-items:center; justify-content:center; min-width:17px; height:17px;
+  padding:0 4px; border-radius:999px; background:var(--danger,#e53e3e); color:#fff;
+  font-size:.65rem; font-weight:800; line-height:1; border:2px solid var(--surface);
 }
 .pdv-espera-dropdown {
   position:absolute; top:calc(100% + 6px); left:0; z-index:200;

@@ -244,6 +244,23 @@ const PDVModule = {
       }
     });
 
+    document.getElementById('pdvMaisBtn')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const dd = document.getElementById('pdvMaisDropdown');
+      const btn = document.getElementById('pdvMaisBtn');
+      if (!dd) return;
+      const abrir = dd.classList.contains('hidden');
+      dd.classList.toggle('hidden', !abrir);
+      btn?.setAttribute('aria-expanded', String(abrir));
+    });
+
+    // Fecha o menu "Mais" ao clicar em qualquer item dentro dele
+    document.getElementById('pdvMaisDropdown')?.addEventListener('click', () => {
+      document.getElementById('pdvMaisDropdown')?.classList.add('hidden');
+      document.getElementById('pdvMaisBtn')?.setAttribute('aria-expanded', 'false');
+    });
+
     document.getElementById('pdvEsperaDropdown')?.addEventListener('click', (e) => {
       const retomarBtn = e.target.closest('[data-retomar-id]');
       if (retomarBtn) {
@@ -257,16 +274,25 @@ const PDVModule = {
       }
     });
 
-    // Fecha o dropdown de vendas em espera ao clicar fora dele. Anexado ao
-    // document (não recriado pelo render), por isso precisa de guarda própria
-    // — mesma necessidade do listener de teclado logo abaixo (_keyboardBound).
+    // Fecha os dropdowns do header (Em espera, Mais) ao clicar fora deles.
+    // Anexado ao document (não recriado pelo render), por isso precisa de
+    // guarda própria — mesma necessidade do listener de teclado logo abaixo
+    // (_keyboardBound).
     if (!this._esperaClickBound) {
       this._esperaClickBound = true;
       document.addEventListener('click', (e) => {
-        const wrap = document.getElementById('pdvEsperaWrap');
-        const dd = document.getElementById('pdvEsperaDropdown');
-        if (!wrap || !dd || dd.classList.contains('hidden')) return;
-        if (!wrap.contains(e.target)) dd.classList.add('hidden');
+        const esperaWrap = document.getElementById('pdvEsperaWrap');
+        const esperaDd = document.getElementById('pdvEsperaDropdown');
+        if (esperaWrap && esperaDd && !esperaDd.classList.contains('hidden') && !esperaWrap.contains(e.target)) {
+          esperaDd.classList.add('hidden');
+        }
+
+        const maisWrap = document.getElementById('pdvMaisWrap');
+        const maisDd = document.getElementById('pdvMaisDropdown');
+        if (maisWrap && maisDd && !maisDd.classList.contains('hidden') && !maisWrap.contains(e.target)) {
+          maisDd.classList.add('hidden');
+          document.getElementById('pdvMaisBtn')?.setAttribute('aria-expanded', 'false');
+        }
       });
     }
 
@@ -649,22 +675,29 @@ const PDVModule = {
             </button>
           </div>
           <div class="pdv-v2__header-right">
+            <div class="pdv-mais-wrap" id="pdvMaisWrap">
+              <button type="button" class="btn btn-light btn-sm" id="pdvMaisBtn" aria-expanded="false">
+                <i class="fa-solid fa-ellipsis"></i> Mais
+              </button>
+              <div class="pdv-mais-dropdown hidden" id="pdvMaisDropdown">
+                <button type="button" class="pdv-mais-item" id="pdvDevolucaoBtn">
+                  <i class="fa-solid fa-rotate-left"></i> Devolução
+                </button>
+                <button type="button" class="pdv-mais-item" id="pdvCobrarOSBtn">
+                  <i class="fa-solid fa-screwdriver-wrench"></i> Cobrar OS
+                </button>
+                <button type="button" class="pdv-mais-item" id="pdvSalvarOrcamentoBtn">
+                  <i class="fa-solid fa-file-lines"></i> Orçamento
+                </button>
+              </div>
+            </div>
             <div class="pdv-espera-wrap" id="pdvEsperaWrap">
-              <button type="button" class="btn btn-light btn-sm" id="pdvEsperaBtn" title="Vendas em espera">
-                <i class="fa-solid fa-clock-rotate-left"></i> Em espera
+              <button type="button" class="btn btn-light btn-icon" id="pdvEsperaBtn" title="Vendas em espera">
+                <i class="fa-solid fa-clock-rotate-left"></i>
                 <span class="pdv-espera-badge hidden" id="pdvEsperaBadge">0</span>
               </button>
               <div class="pdv-espera-dropdown hidden" id="pdvEsperaDropdown"></div>
             </div>
-            <button type="button" class="btn btn-light btn-sm" id="pdvDevolucaoBtn">
-              <i class="fa-solid fa-rotate-left"></i> Devolução
-            </button>
-            <button type="button" class="btn btn-light btn-sm" id="pdvCobrarOSBtn">
-              <i class="fa-solid fa-screwdriver-wrench"></i> Cobrar OS
-            </button>
-            <button type="button" class="btn btn-light btn-sm" id="pdvSalvarOrcamentoBtn">
-              <i class="fa-solid fa-file-lines"></i> Orçamento
-            </button>
             <button type="button" class="btn btn-primary" id="pdvNovaVendaBtn">
               <i class="fa-solid fa-plus"></i> Nova venda
             </button>
