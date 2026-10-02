@@ -202,6 +202,7 @@ const ProdutosModule = {
         this.state.filtroTipo      = document.getElementById('produtosFiltroTipo')?.value || '';
         this.state.pagina = 1;
         this.applySearch(document.getElementById('produtosSearchInput')?.value || '');
+        this._atualizarBadgeFiltros();
       }
     });
 
@@ -364,6 +365,17 @@ const ProdutosModule = {
       if (!dropdown) return;
       if (btn) { dropdown.classList.toggle('hidden'); return; }
       if (!e.target.closest('#produtosActionsWrapper')) {
+        dropdown.classList.add('hidden');
+      }
+    });
+
+    // ── "Filtros" dropdown (Promoção, Tipo, Ordenar — usados com menos frequência)
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('#produtosFiltrosBtn');
+      const dropdown = document.getElementById('produtosFiltrosDropdown');
+      if (!dropdown) return;
+      if (btn) { dropdown.classList.toggle('hidden'); return; }
+      if (!e.target.closest('#produtosFiltrosWrapper')) {
         dropdown.classList.add('hidden');
       }
     });
@@ -907,28 +919,41 @@ const ProdutosModule = {
             <option value="alerta">Em alerta</option>
             <option value="ok">Estoque ok</option>
           </select>
-          <select id="produtosFiltroPromocao" class="cl-tb-select">
-            <option value="">Promoção: Todas</option>
-            <option value="sim">Em promoção</option>
-            <option value="nao">Sem promoção</option>
-          </select>
-          <select id="produtosFiltroTipo" class="cl-tb-select">
-            <option value="">Tipo: Todos</option>
-            <option value="normal">Normal</option>
-            <option value="grade">Com grade</option>
-            <option value="kit">Kit</option>
-          </select>
-          <select id="produtosFiltroOrdem" class="cl-tb-select" style="min-width:155px">
-            <option value="">Ordenar: Padrão</option>
-            <option value="nome_az">Nome A→Z</option>
-            <option value="nome_za">Nome Z→A</option>
-            <option value="preco_a">Preço ↑</option>
-            <option value="preco_d">Preço ↓</option>
-            <option value="estoque_a">Estoque ↑</option>
-            <option value="estoque_d">Estoque ↓</option>
-            <option value="margem_a">Margem ↑</option>
-            <option value="margem_d">Margem ↓</option>
-          </select>
+          <div class="actions-menu-wrapper" id="produtosFiltrosWrapper">
+            <button type="button" class="cl-tb-btn" id="produtosFiltrosBtn" title="Mais filtros">
+              <i class="fa-solid fa-sliders"></i>
+              <span class="cl-tb-btn-lbl">Filtros</span>
+              <span id="produtosFiltrosBadge" class="badge badge--primary hidden" style="font-size:.7rem">0</span>
+              <i class="fa-solid fa-chevron-down" style="font-size:10px"></i>
+            </button>
+            <div class="actions-menu-dropdown hidden" id="produtosFiltrosDropdown" style="min-width:230px;padding:14px">
+              <label class="prd-filtro-lbl" for="produtosFiltroPromocao">Promoção</label>
+              <select id="produtosFiltroPromocao" class="cl-tb-select" style="width:100%;margin-bottom:12px">
+                <option value="">Todas</option>
+                <option value="sim">Em promoção</option>
+                <option value="nao">Sem promoção</option>
+              </select>
+              <label class="prd-filtro-lbl" for="produtosFiltroTipo">Tipo</label>
+              <select id="produtosFiltroTipo" class="cl-tb-select" style="width:100%;margin-bottom:12px">
+                <option value="">Todos</option>
+                <option value="normal">Normal</option>
+                <option value="grade">Com grade</option>
+                <option value="kit">Kit</option>
+              </select>
+              <label class="prd-filtro-lbl" for="produtosFiltroOrdem">Ordenar por</label>
+              <select id="produtosFiltroOrdem" class="cl-tb-select" style="width:100%">
+                <option value="">Padrão</option>
+                <option value="nome_az">Nome A→Z</option>
+                <option value="nome_za">Nome Z→A</option>
+                <option value="preco_a">Preço ↑</option>
+                <option value="preco_d">Preço ↓</option>
+                <option value="estoque_a">Estoque ↑</option>
+                <option value="estoque_d">Estoque ↓</option>
+                <option value="margem_a">Margem ↑</option>
+                <option value="margem_d">Margem ↓</option>
+              </select>
+            </div>
+          </div>
           <div class="cl-tb-actions">
             <div class="actions-menu-wrapper" id="produtosActionsWrapper">
               <button type="button" class="cl-tb-btn" id="produtosActionsBtn" title="Mais ações">
@@ -2281,6 +2306,17 @@ const ProdutosModule = {
       localStorage.setItem('lf_erp_etiquetas', JSON.stringify(dados));
       window.open('./etiquetas.html', '_blank');
     });
+  },
+
+  // Conta quantos dos 3 filtros do dropdown "Filtros" estão ativos (fora do padrão)
+  // e mostra como badge no botão — mesma ideia do "N" em Contas a Receber.
+  _atualizarBadgeFiltros() {
+    const badge = document.getElementById('produtosFiltrosBadge');
+    if (!badge) return;
+    const n = [this.state.filtroPromocao, this.state.filtroTipo, this.state.filtroOrdem]
+      .filter(Boolean).length;
+    badge.textContent = String(n);
+    badge.classList.toggle('hidden', n === 0);
   },
 
   // ── Miniatura do produto (imagem_thumb vem via JOIN em GET /produtos) ──────
