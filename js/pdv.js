@@ -10,6 +10,7 @@ const PDVModule = {
     clientes: [],
     produtos: [],
     produtosFiltrados: [],
+    _categoriaAtiva: '',
     carrinho: [],
     clienteId: '',
     clienteNome: '',
@@ -243,6 +244,14 @@ const PDVModule = {
     });
 
     this.el.listaProdutos?.addEventListener('click', (event) => {
+      const chip = event.target.closest('[data-categoria]');
+      if (chip) {
+        event.preventDefault();
+        this.state._categoriaAtiva = chip.dataset.categoria;
+        this.filterProdutos('');
+        return;
+      }
+
       const button = event.target.closest("[data-action='pdv-add-produto']");
       if (!button) return;
 
@@ -834,27 +843,55 @@ const PDVModule = {
     this.updateClienteInfo();
   },
 
+  _renderChipsCategorias() {
+    const categorias = this._getCategorias();
+    if (!categorias.length) return '';
+    const ativa = this.state._categoriaAtiva;
+    const chip = (valor, label) => `
+      <button type="button" class="pdv-cat-chip${ativa === valor ? ' pdv-cat-chip--active' : ''}" data-categoria="${this.escapeHtml(valor)}">${this.escapeHtml(label)}</button>
+    `;
+    return `<div class="pdv-cat-chips">${chip('', 'Favoritos')}${categorias.map((c) => chip(c, c)).join('')}</div>`;
+  },
+
   renderProdutos() {
     this.cache();
     if (!this.el.listaProdutos) return;
 
+    const semBusca = !this.state._buscaAtiva;
+    const chips = semBusca ? this._renderChipsCategorias() : '';
+
     if (!this.state.produtosFiltrados.length) {
-      this.el.listaProdutos.innerHTML = `
+      this.el.listaProdutos.innerHTML = chips + `
         <div class="pdv-v2__prod-hint">
           <i class="fa-solid fa-magnifying-glass"></i>
-          <span>${this.state._buscaAtiva ? 'Nenhum produto encontrado.' : 'Pesquise para ver produtos.'}</span>
-          ${!this.state._buscaAtiva ? '<small style="display:block;margin-top:6px;color:var(--text-muted);font-size:11px">Dica: pressione <kbd style="border:1px solid var(--border);border-radius:4px;padding:0 4px;font-size:10px">F2</kbd> para focar a busca</small>' : ''}
+          <span>${this.state._buscaAtiva ? 'Nenhum produto encontrado.' : 'Nenhum produto nesta categoria.'}</span>
+          ${semBusca ? '<small style="display:block;margin-top:6px;color:var(--text-muted);font-size:11px">Dica: pressione <kbd style="border:1px solid var(--border);border-radius:4px;padding:0 4px;font-size:10px">F2</kbd> para focar a busca</small>' : ''}
         </div>
       `;
       return;
     }
 
-    const isTop3 = !this.state._buscaAtiva;
-    const hint = isTop3
-      ? `<div class="pdv-v2__prod-label">Mais vendidos — pesquise para ver todos</div>`
-      : '';
+    if (semBusca) {
+      // Grade tocável: o card inteiro é o botão de adicionar (mais rápido em touch)
+      this.el.listaProdutos.innerHTML = chips + `<div class="pdv-grid">${
+        this.state.produtosFiltrados.map((produto) => {
+          const estoque = Number(produto.estoque || 0);
+          const semEstoque = estoque <= 0;
+          return `
+            <button type="button" class="pdv-grid-card${semEstoque ? ' pdv-grid-card--off' : ''}"
+              data-action="pdv-add-produto" data-id="${produto.id}" ${semEstoque ? 'disabled' : ''}>
+              <span class="pdv-grid-card__nome">${this.escapeHtml(produto.nome || 'Produto')}</span>
+              <span class="pdv-grid-card__preco">${this.toCurrency(produto.preco)}</span>
+              <span class="pdv-grid-card__estoque">${semEstoque ? 'Sem estoque' : `${estoque} un.`}</span>
+            </button>
+          `;
+        }).join('')
+      }</div>`;
+      return;
+    }
 
-    this.el.listaProdutos.innerHTML = hint + this.state.produtosFiltrados
+    // Busca ativa: lista com mais detalhe por item
+    this.el.listaProdutos.innerHTML = this.state.produtosFiltrados
       .map((produto) => {
         const estoque = Number(produto.estoque || 0);
         const semEstoque = estoque <= 0;
@@ -1224,12 +1261,32 @@ const PDVModule = {
       .slice(0, n);
   },
 
+  // Categorias distintas com pelo menos 1 produto em estoque, para os chips da grade rápida
+  _getCategorias() {
+    const vistos = new Set();
+    const lista = [];
+    for (const p of this.state.produtos) {
+      const cat = String(p.categoria || '').trim();
+      if (!cat || Number(p.estoque || 0) <= 0 || vistos.has(cat)) continue;
+      vistos.add(cat);
+      lista.push(cat);
+    }
+    return lista.sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  },
+
   filterProdutos(term) {
     const normalized = String(term || '').trim().toLowerCase();
 
     if (!normalized) {
-      this.state.produtosFiltrados = this._getTopProdutos(3);
       this.state._buscaAtiva = false;
+      const cat = this.state._categoriaAtiva;
+      if (cat) {
+        this.state.produtosFiltrados = this.state.produtos
+          .filter((p) => Number(p.estoque || 0) > 0 && String(p.categoria || '').trim() === cat)
+          .sort((a, b) => String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR'));
+      } else {
+        this.state.produtosFiltrados = this._getTopProdutos(12);
+      }
     } else {
       this.state._buscaAtiva = true;
       this.state.produtosFiltrados = this.state.produtos.filter((produto) => {

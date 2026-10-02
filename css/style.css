@@ -5625,6 +5625,39 @@ select {
 .pdv-product-card__sub { font-size:0.78rem; color:var(--text-muted); }
 .pdv-product-card__right { display:flex; flex-direction:column; align-items:flex-end; gap:6px; flex-shrink:0; }
 .pdv-product-card__price { font-size:1rem; font-weight:800; color:var(--primary); white-space:nowrap; }
+
+/* Chips de categoria + grade tocável de favoritos (tela inicial do PDV, sem busca) */
+.pdv-cat-chips { display:flex; gap:7px; flex-wrap:wrap; margin-bottom:12px; }
+.pdv-cat-chip {
+  border:1px solid var(--border); background:var(--surface-2); color:var(--text-muted);
+  font-size:.8rem; font-weight:600; padding:7px 14px; border-radius:999px; cursor:pointer;
+  transition: background .15s, color .15s, border-color .15s; white-space:nowrap;
+}
+.pdv-cat-chip:hover { color:var(--text); border-color:var(--primary); }
+.pdv-cat-chip--active { background:var(--primary); color:#fff; border-color:var(--primary); }
+
+.pdv-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(130px, 1fr)); gap:10px; }
+.pdv-grid-card {
+  display:flex; flex-direction:column; align-items:flex-start; gap:4px;
+  border:1px solid var(--border); border-radius:14px; padding:12px 14px; min-height:92px;
+  background:var(--surface-2); cursor:pointer; text-align:left;
+  transition: background .15s, border-color .15s, transform .08s;
+}
+.pdv-grid-card:hover { border-color:var(--primary); }
+.pdv-grid-card:active { transform: scale(.97); }
+.pdv-grid-card--off { opacity:.5; cursor:not-allowed; }
+.pdv-grid-card--off:active { transform:none; }
+.pdv-grid-card__nome {
+  font-weight:700; font-size:.86rem; color:var(--text); line-height:1.25;
+  display:-webkit-box; -webkit-line-clamp:2; line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+}
+.pdv-grid-card__preco { font-weight:800; font-size:.95rem; color:var(--primary); margin-top:auto; }
+.pdv-grid-card__estoque { font-size:.72rem; color:var(--text-muted); }
+@media (max-width: 860px) {
+  .pdv-grid { grid-template-columns:repeat(auto-fill, minmax(110px, 1fr)); }
+  .pdv-grid-card { min-height:80px; padding:10px 12px; }
+}
+
 .pdv-table { min-width:420px; }
 .pdv-row-added { animation: pdv-row-flash 900ms ease-out; }
 @keyframes pdv-row-flash {
