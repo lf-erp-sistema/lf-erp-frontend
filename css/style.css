@@ -6135,6 +6135,9 @@ body.pdv-active #pdvContainer.module-placeholder {
 
 /* Payment summary in Pagamento tab */
 .pdv-v2__pay-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   margin-top: 18px;
   padding: 14px;
   background: var(--background);

@@ -766,24 +766,9 @@ const PDVModule = {
                 <small class="pdv-helper" id="pdvClienteNomeInfo">Nenhum cliente selecionado.</small>
                 <div id="pdvFidelidadeBox" class="pdv-fidelidade-box hidden"></div>
               </div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
-                <div class="form-field">
-                  <label for="pdvDesconto">Desconto (R$)</label>
-                  <input type="number" min="0" step="0.01" id="pdvDesconto" value="0" inputmode="decimal" />
-                </div>
-                <div class="form-field">
-                  <label for="pdvAcrescimo">Acréscimo (R$)</label>
-                  <input type="number" min="0" step="0.01" id="pdvAcrescimo" value="0" inputmode="decimal" />
-                </div>
-              </div>
-              <div class="form-field">
-                <label for="pdvObservacao">Observação</label>
-                <textarea id="pdvObservacao" rows="3"
-                  placeholder="Informações adicionais da venda"></textarea>
-              </div>
 
-              <!-- Seção: Pagamento (mesma aba do cliente) -->
-              <div id="pdvSecaoPagamento" class="pdv-v2__secao-pagamento">
+              <!-- Seção: Pagamento — logo após o cliente, é o que mais se usa nesta aba -->
+              <div id="pdvSecaoPagamento" class="pdv-v2__secao-pagamento" style="margin-top:0">
               <div class="form-field">
                 <label>Formas de pagamento</label>
                 <div id="pdvPagamentosLista" class="pdv-split-lista"></div>
@@ -802,6 +787,23 @@ const PDVModule = {
                   <span>Itens</span><strong id="pdvTotalItens">0</strong>
                 </div>
               </div>
+              </div>
+
+              <!-- Desconto/acréscimo/observação: usados ocasionalmente, ficam por último -->
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;margin-bottom:14px">
+                <div class="form-field">
+                  <label for="pdvDesconto">Desconto (R$)</label>
+                  <input type="number" min="0" step="0.01" id="pdvDesconto" value="0" inputmode="decimal" />
+                </div>
+                <div class="form-field">
+                  <label for="pdvAcrescimo">Acréscimo (R$)</label>
+                  <input type="number" min="0" step="0.01" id="pdvAcrescimo" value="0" inputmode="decimal" />
+                </div>
+              </div>
+              <div class="form-field">
+                <label for="pdvObservacao">Observação</label>
+                <textarea id="pdvObservacao" rows="2"
+                  placeholder="Informações adicionais da venda"></textarea>
               </div>
             </div>
           </div>
