@@ -5756,10 +5756,6 @@ select {
 .pdv-mini-btn:hover { background:var(--surface-3); color:var(--text); }
 .pdv-checkout { margin-top:18px; border-top:1px solid var(--border); padding-top:18px; }
 .pdv-summary { margin-top:12px; border:1px solid var(--border); border-radius:18px; background:var(--surface-2); padding:16px; display:grid; gap:10px; }
-.pdv-summary__row { display:flex; align-items:center; justify-content:space-between; gap:12px; color:var(--text-soft); }
-.pdv-summary__row strong { color:var(--text); font-weight:800; }
-.pdv-summary__row--total { padding-top:10px; border-top:1px solid var(--border); }
-.pdv-summary__row--total span, .pdv-summary__row--total strong { font-size:1.05rem; }
 .pdv-actions { margin-top:16px; display:flex; justify-content:flex-end; }
 .pdv-tabs { display:none; gap:0; border:1px solid var(--border); border-radius:16px; overflow:hidden; margin-bottom:16px; }
 .pdv-tab { flex:1; display:flex; align-items:center; justify-content:center; gap:6px; padding:12px 8px; border:none; background:var(--surface-2); color:var(--text-muted); font-size:0.9rem; font-weight:700; cursor:pointer; position:relative; }
@@ -6136,13 +6132,18 @@ body.pdv-active #pdvContainer.module-placeholder {
 /* Payment summary in Pagamento tab */
 .pdv-v2__pay-summary {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
   margin-top: 18px;
-  padding: 14px;
+  padding: 12px 14px;
   background: var(--background);
   border-radius: 10px;
+  font-size: .85rem;
+  color: var(--text-soft);
 }
+.pdv-v2__pay-summary strong { color: var(--text); font-size: .95rem; }
+.pdv-v2__pay-summary-sep { color: var(--border); }
 
 /* Right panel: Cart */
 .pdv-v2__right {

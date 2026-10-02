@@ -780,12 +780,9 @@ const PDVModule = {
                 </div>
               </div>
               <div class="pdv-v2__pay-summary">
-                <div class="pdv-summary__row">
-                  <span>Subtotal</span><strong id="pdvSubtotal">R$ 0,00</strong>
-                </div>
-                <div class="pdv-summary__row">
-                  <span>Itens</span><strong id="pdvTotalItens">0</strong>
-                </div>
+                <span>Subtotal <strong id="pdvSubtotal">R$ 0,00</strong></span>
+                <span class="pdv-v2__pay-summary-sep">·</span>
+                <span><strong id="pdvTotalItens">0</strong> item(ns)</span>
               </div>
               </div>
 
