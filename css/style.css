@@ -5700,6 +5700,29 @@ select {
 }
 .pdv-espera-item__del:hover { background:var(--danger-soft,rgba(229,62,62,.12)); color:var(--danger,#e53e3e); }
 
+/* Fidelidade no checkout: saldo de pontos do cliente + resgate como desconto */
+.pdv-fidelidade-box { margin-top:10px; }
+.pdv-fidelidade-box.hidden { display:none; }
+.pdv-fidelidade-disponivel, .pdv-fidelidade-ativo {
+  display:flex; align-items:center; gap:8px; padding:9px 12px; border-radius:10px;
+  font-size:.82rem; font-weight:600;
+}
+.pdv-fidelidade-disponivel {
+  background:var(--warning-soft,rgba(214,158,46,.12)); color:var(--warning,#d69e2e);
+  border:1px solid var(--warning,#d69e2e);
+}
+.pdv-fidelidade-ativo {
+  background:var(--success-soft,rgba(56,161,105,.12)); color:var(--success,#38a169);
+  border:1px solid var(--success,#38a169);
+}
+.pdv-fidelidade-disponivel i, .pdv-fidelidade-ativo i { font-size:.9rem; }
+.pdv-fidelidade-disponivel span, .pdv-fidelidade-ativo span { flex:1; min-width:0; }
+.pdv-fidelidade-usar, .pdv-fidelidade-remover {
+  flex-shrink:0; border:none; border-radius:7px; padding:5px 11px; font-size:.78rem; font-weight:700; cursor:pointer;
+}
+.pdv-fidelidade-usar { background:var(--warning,#d69e2e); color:#fff; }
+.pdv-fidelidade-remover { background:transparent; color:inherit; text-decoration:underline; }
+
 .pdv-table { min-width:420px; }
 .pdv-row-added { animation: pdv-row-flash 900ms ease-out; }
 @keyframes pdv-row-flash {

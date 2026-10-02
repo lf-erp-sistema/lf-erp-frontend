@@ -26,7 +26,8 @@ const PDVModule = {
     _recalcReqId: 0,
     _pixCleanup: null,
     _salOrc: false,
-    _vendasEmEspera: []
+    _vendasEmEspera: [],
+    _fidelidade: { pontosDisponiveis: 0, valorPorPonto: 0, minimoResgate: 0, pontosAplicados: 0, _reqId: 0 }
   },
 
   init() {
@@ -100,6 +101,12 @@ const PDVModule = {
 
     this.el.desconto?.addEventListener('input', (event) => {
       this.state.desconto = this.parseMoneyInput(event.target.value);
+      // Edição manual do desconto invalida um resgate de pontos já aplicado
+      // (o valor não corresponde mais à quantidade de pontos reservada).
+      if (this.state._fidelidade.pontosAplicados > 0) {
+        this.state._fidelidade.pontosAplicados = 0;
+        this.renderFidelidadeBox();
+      }
       this.renderResumo();
     });
 
@@ -263,6 +270,14 @@ const PDVModule = {
 
     document.getElementById('pdvNovoClienteBtn')?.addEventListener('click', () => {
       this.abrirNovoClienteModal();
+    });
+
+    document.getElementById('pdvFidelidadeBox')?.addEventListener('click', (e) => {
+      if (e.target.closest('[data-action="pdv-fidelidade-usar"]')) {
+        this.aplicarPontosFidelidade();
+      } else if (e.target.closest('[data-action="pdv-fidelidade-remover"]')) {
+        this.removerPontosFidelidade();
+      }
     });
 
     document.getElementById('pdvCobrarOSBtn')?.addEventListener('click', () => {
@@ -689,6 +704,7 @@ const PDVModule = {
                   </button>
                 </div>
                 <small class="pdv-helper" id="pdvClienteNomeInfo">Nenhum cliente selecionado.</small>
+                <div id="pdvFidelidadeBox" class="pdv-fidelidade-box hidden"></div>
               </div>
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
                 <div class="form-field">
@@ -1297,6 +1313,7 @@ const PDVModule = {
     this.state.clienteNome = cliente?.nome || '';
 
     this.updateClienteInfo();
+    this.carregarFidelidadeCliente(this.state.clienteId);
 
     // Recalcula preÃ§os do carrinho pela tabela de preÃ§os do cliente
     if (this.state.carrinho.length) {
@@ -1304,11 +1321,122 @@ const PDVModule = {
     }
   },
 
+  // ── Fidelidade no checkout ───────────────────────────────────────────────
+  // O acúmulo de pontos já acontece sozinho no backend ao criar a venda
+  // (vendas.routes.js). Aqui só mostramos o saldo do cliente e permitimos
+  // resgatar como desconto.
+
+  async carregarFidelidadeCliente(clienteId) {
+    // Troca de cliente com pontos já aplicados: remove o desconto que estava
+    // reservado para o cliente anterior (senão ele fica "esquecido" na venda,
+    // sem nenhum resgate de pontos correspondente para debitar depois).
+    if (this.state._fidelidade.pontosAplicados > 0) {
+      this.removerPontosFidelidade();
+    }
+
+    const reqId = ++this.state._fidelidade._reqId;
+    this.state._fidelidade.pontosDisponiveis = 0;
+    this.state._fidelidade.valorPorPonto = 0;
+    this.state._fidelidade.minimoResgate = 0;
+    this.state._fidelidade.pontosAplicados = 0;
+    this.renderFidelidadeBox();
+
+    if (!clienteId) return;
+
+    try {
+      const data = await api.fetchAPI(`/fidelidade/clientes/${clienteId}/extrato`, 'GET', null, { empresa_id: api.getEmpresaId() });
+      if (reqId !== this.state._fidelidade._reqId) return; // cliente trocou enquanto a chamada estava em andamento
+      const cfg = await api.fetchAPI('/fidelidade/config', 'GET', null, { empresa_id: api.getEmpresaId() }).catch(() => null);
+      if (reqId !== this.state._fidelidade._reqId) return;
+
+      if (!cfg?.config?.ativo) return; // programa desativado: não mostra nada
+      this.state._fidelidade.pontosDisponiveis = Number(data?.cliente?.pontos_fidelidade || 0);
+      this.state._fidelidade.valorPorPonto = Number(cfg.config.reais_por_ponto || 0);
+      this.state._fidelidade.minimoResgate = Number(cfg.config.minimo_resgate || 0);
+      this.renderFidelidadeBox();
+    } catch {
+      // Fidelidade é um extra opcional: falha silenciosa não deve travar a venda
+    }
+  },
+
+  renderFidelidadeBox() {
+    const box = document.getElementById('pdvFidelidadeBox');
+    if (!box) return;
+
+    const f = this.state._fidelidade;
+
+    if (f.pontosAplicados > 0) {
+      const valor = Number((f.pontosAplicados * f.valorPorPonto).toFixed(2));
+      box.classList.remove('hidden');
+      box.innerHTML = `
+        <div class="pdv-fidelidade-ativo">
+          <i class="fa-solid fa-star" aria-hidden="true"></i>
+          <span>${f.pontosAplicados} pontos aplicados = ${this.toCurrency(valor)} de desconto</span>
+          <button type="button" class="pdv-fidelidade-remover" data-action="pdv-fidelidade-remover">Remover</button>
+        </div>
+      `;
+      return;
+    }
+
+    if (f.pontosDisponiveis >= f.minimoResgate && f.pontosDisponiveis > 0 && f.valorPorPonto > 0) {
+      const valorTotal = Number((f.pontosDisponiveis * f.valorPorPonto).toFixed(2));
+      box.classList.remove('hidden');
+      box.innerHTML = `
+        <div class="pdv-fidelidade-disponivel">
+          <i class="fa-solid fa-star" aria-hidden="true"></i>
+          <span>${f.pontosDisponiveis} pontos disponíveis = ${this.toCurrency(valorTotal)}</span>
+          <button type="button" class="pdv-fidelidade-usar" data-action="pdv-fidelidade-usar">Usar</button>
+        </div>
+      `;
+      return;
+    }
+
+    box.classList.add('hidden');
+    box.innerHTML = '';
+  },
+
+  aplicarPontosFidelidade() {
+    const f = this.state._fidelidade;
+    if (!f.pontosDisponiveis || !f.valorPorPonto) return;
+
+    const subtotal = this.getSubtotal();
+    // Não deixa o desconto de fidelidade sozinho zerar a venda: no máximo o subtotal
+    const valorMax = Number(subtotal.toFixed(2));
+    let pontos = f.pontosDisponiveis;
+    let valor = Number((pontos * f.valorPorPonto).toFixed(2));
+    if (valor > valorMax && f.valorPorPonto > 0) {
+      pontos = Math.floor(valorMax / f.valorPorPonto);
+      valor = Number((pontos * f.valorPorPonto).toFixed(2));
+    }
+    if (pontos <= 0) {
+      this.showMessage('Valor da venda muito baixo para resgatar pontos.', 'error');
+      return;
+    }
+
+    f.pontosAplicados = pontos;
+    this.state.desconto = valor;
+    if (this.el.desconto) this.el.desconto.value = valor.toFixed(2);
+    this.renderFidelidadeBox();
+    this.renderResumo();
+  },
+
+  removerPontosFidelidade() {
+    const f = this.state._fidelidade;
+    if (f.pontosAplicados > 0) {
+      this.state.desconto = 0;
+      if (this.el.desconto) this.el.desconto.value = '0';
+    }
+    f.pontosAplicados = 0;
+    this.renderFidelidadeBox();
+    this.renderResumo();
+  },
+
   updateClienteInfo() {
     this.cache();
     if (!this.el.clienteNomeInfo) return;
 
     this.renderResumoRapido();
+    this.renderFidelidadeBox();
 
     if (!this.state.clienteId) {
       this.el.clienteNomeInfo.textContent = 'Nenhum cliente selecionado.';
@@ -1863,6 +1991,18 @@ const PDVModule = {
         showToast(message, 'success');
       }
 
+      // Resgata os pontos de fidelidade reservados nesta venda (desconto já
+      // aplicado no total). Best-effort: a venda já foi criada, não é desfeita
+      // se o resgate falhar (ex: saldo mudou por concorrência).
+      if (this.state._fidelidade.pontosAplicados > 0 && this.state.clienteId) {
+        api.fetchAPI('/fidelidade/resgatar', 'POST', {
+          cliente_id: Number(this.state.clienteId),
+          pontos: this.state._fidelidade.pontosAplicados,
+          venda_id: vendaId || null,
+          empresa_id: api.getEmpresaId()
+        }).catch((e) => console.error('[fidelidade] resgate pós-venda falhou:', e.message));
+      }
+
       this.resetVenda();
       await this.load();
     } catch (error) {
@@ -1900,6 +2040,7 @@ const PDVModule = {
     this.state.desconto = 0;
     this.state.acrescimo = 0;
     this.state.observacao = '';
+    this.state._fidelidade = { pontosDisponiveis: 0, valorPorPonto: 0, minimoResgate: 0, pontosAplicados: 0, _reqId: this.state._fidelidade._reqId };
 
     this.cache();
 
@@ -1957,7 +2098,9 @@ const PDVModule = {
         pagamentos: JSON.parse(JSON.stringify(this.state.pagamentos)),
         desconto: this.state.desconto,
         acrescimo: this.state.acrescimo,
-        observacao: this.state.observacao
+        observacao: this.state.observacao,
+        fidelidadePontosAplicados: this.state._fidelidade.pontosAplicados,
+        fidelidadeValorPorPonto: this.state._fidelidade.valorPorPonto
       }
     });
     this._persistirVendasEmEspera();
@@ -1989,6 +2132,11 @@ const PDVModule = {
     this.state.desconto = d.desconto;
     this.state.acrescimo = d.acrescimo;
     this.state.observacao = d.observacao;
+    // Restaura o resgate de fidelidade reservado (se houver) para continuar
+    // consistente com o desconto já salvo — sem isso o desconto volta mas o
+    // resgate dos pontos correspondentes nunca seria disparado ao finalizar.
+    this.state._fidelidade.pontosAplicados = d.fidelidadePontosAplicados || 0;
+    this.state._fidelidade.valorPorPonto = d.fidelidadeValorPorPonto || this.state._fidelidade.valorPorPonto;
 
     this.cache();
     if (this.el.desconto) this.el.desconto.value = String(d.desconto || 0);
