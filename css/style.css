@@ -5917,6 +5917,22 @@ body.pdv-active #pdvContainer.module-placeholder {
 .pdv-v2__header-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
 .pdv-v2__header-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .pdv-v2__feedback { margin: 0; flex: 1; }
+.pdv-resumo-dia {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: .78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 13px;
+  white-space: nowrap;
+}
+.pdv-resumo-dia i { color: var(--primary); }
+@media (max-width: 1100px) { .pdv-resumo-dia { display: none; } }
 .pdv-v2__kbd {
   display: inline-block;
   font-size: 0.65rem;

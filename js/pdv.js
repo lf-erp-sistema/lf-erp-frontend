@@ -572,6 +572,7 @@ const PDVModule = {
         this.state.produtos = Array.isArray(produtos) ? produtos : [];
         PdvOffline.salvarProdutos(this.state.produtos).catch(() => {});
         PdvOffline.salvarClientes(this.state.clientes).catch(() => {});
+        this.carregarResumoDoDia(); // fire-and-forget: não deve atrasar a carga do PDV
       } else {
         const [produtos, clientes] = await Promise.all([PdvOffline.getProdutos(), PdvOffline.getClientes()]);
         this.state.produtos = produtos;
@@ -641,6 +642,7 @@ const PDVModule = {
             <span id="pdvOfflineIndicator" class="pdv-offline-badge hidden">
               <i class="fa-solid fa-wifi-slash"></i> Offline
             </span>
+            <div class="pdv-resumo-dia hidden" id="pdvResumoDia" title="Vendas de hoje"></div>
             <div class="module-feedback pdv-v2__feedback" id="pdvFormFeedback"></div>
             <button type="button" class="btn btn-light btn-sm hidden" id="pdvImprimirReciboBtn">
               <i class="fa-solid fa-print"></i> Imprimir recibo
@@ -1220,6 +1222,35 @@ const PDVModule = {
       return;
     }
     window.open('./pdv-cliente.html', 'lf_pdv_cliente_display', 'width=900,height=650');
+  },
+
+  // ── Resumo do dia ao vivo (faturamento, vendas, ticket médio) ────────────
+  // Soma as vendas de hoje a cada carga do PDV e após cada venda finalizada.
+  // Usa a mesma listagem de vendas já existente (sem endpoint novo); para o
+  // volume desta loja (piloto, balcão único) buscar até 500 vendas do dia e
+  // somar no frontend é suficiente — não há agregação para volumes maiores.
+
+  async carregarResumoDoDia() {
+    try {
+      const hojeISO = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Fortaleza' });
+      const result = await api.getVendas({ data_inicial: hojeISO, data_final: hojeISO, limit: 500 });
+      const vendas = result?.dados || [];
+      const qtd = Number(result?.total || vendas.length || 0);
+      const faturamento = vendas.reduce((acc, v) => acc + Number(v.total || 0), 0);
+      this.renderResumoDoDia({ qtd, faturamento });
+    } catch {
+      // Painel informativo: se falhar, simplesmente não mostra — não é motivo para interromper o PDV
+    }
+  },
+
+  renderResumoDoDia({ qtd, faturamento }) {
+    const el = document.getElementById('pdvResumoDia');
+    if (!el) return;
+    if (!qtd) { el.classList.add('hidden'); el.textContent = ''; return; }
+
+    const ticketMedio = qtd > 0 ? faturamento / qtd : 0;
+    el.classList.remove('hidden');
+    el.innerHTML = `<i class="fa-solid fa-chart-line" aria-hidden="true"></i> ${this.toCurrency(faturamento)} hoje · ${qtd} venda${qtd > 1 ? 's' : ''} · ticket médio ${this.toCurrency(ticketMedio)}`;
   },
 
   publicarCarrinhoCliente(subtotal, desconto, acrescimo, total) {
@@ -2122,6 +2153,7 @@ const PDVModule = {
       };
       document.getElementById('pdvImprimirReciboBtn')?.classList.remove('hidden');
       this._clienteChannel?.postMessage({ tipo: 'venda_finalizada', total, troco });
+      this.carregarResumoDoDia();
 
       this.resetVenda();
       await this.load();
