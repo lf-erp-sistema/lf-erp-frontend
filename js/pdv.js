@@ -284,6 +284,10 @@ const PDVModule = {
       this.abrirCobrarOS();
     });
 
+    document.getElementById('pdvDevolucaoBtn')?.addEventListener('click', () => {
+      this.abrirDevolucao();
+    });
+
     this.el.atualizarBtn?.addEventListener('click', async (event) => {
       event.preventDefault();
       await this.load();
@@ -635,6 +639,9 @@ const PDVModule = {
               </button>
               <div class="pdv-espera-dropdown hidden" id="pdvEsperaDropdown"></div>
             </div>
+            <button type="button" class="btn btn-light btn-sm" id="pdvDevolucaoBtn">
+              <i class="fa-solid fa-rotate-left"></i> Devolução
+            </button>
             <button type="button" class="btn btn-light btn-sm" id="pdvCobrarOSBtn">
               <i class="fa-solid fa-screwdriver-wrench"></i> Cobrar OS
             </button>
@@ -872,6 +879,28 @@ const PDVModule = {
               <button type="button" class="btn btn-primary btn-sm" id="pdvCobrarOSBuscarBtn"><i class="fa-solid fa-magnifying-glass"></i> Buscar</button>
             </div>
             <div id="pdvCobrarOSResultados" style="max-height:320px;overflow-y:auto"></div>
+          </div>
+        </div>`;
+      document.body.appendChild(m);
+    }
+
+    // Modal: devolução
+    if (!document.getElementById('pdvDevolucaoModal')) {
+      const m = document.createElement('div');
+      m.className = 'modal-overlay hidden';
+      m.id = 'pdvDevolucaoModal';
+      m.innerHTML = `
+        <div class="modal-card" style="max-width:600px">
+          <div class="modal-card__header">
+            <div><h3>Devolução</h3><p style="margin:0;font-size:13px;color:var(--text-muted)">Busque a venda pelo número ou nome do cliente</p></div>
+            <button type="button" class="icon-button" id="pdvDevolucaoFechar"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <div style="padding:20px 24px 24px">
+            <div style="display:flex;gap:8px;margin-bottom:14px">
+              <input type="text" id="pdvDevolucaoBusca" class="input" style="flex:1" placeholder="Nº da venda ou nome do cliente...">
+              <button type="button" class="btn btn-primary btn-sm" id="pdvDevolucaoBuscarBtn"><i class="fa-solid fa-magnifying-glass"></i> Buscar</button>
+            </div>
+            <div id="pdvDevolucaoConteudo" style="max-height:420px;overflow-y:auto"></div>
           </div>
         </div>`;
       document.body.appendChild(m);
@@ -2647,6 +2676,191 @@ const PDVModule = {
     this.renderResumo();
     this.switchTab('pagamento');
     showToast(`${nome} adicionado ao carrinho.`, 'success');
+  },
+
+  // ── Devolução direto do PDV ───────────────────────────────────────────────
+  // Backend já faz tudo com segurança (transação, restaura estoque, reduz
+  // contas a receber pendentes, estorna comissão e pontos de fidelidade) —
+  // aqui é só a tela de buscar a venda, escolher os itens e confirmar.
+
+  abrirDevolucao() {
+    const m = document.getElementById('pdvDevolucaoModal');
+    if (!m) return;
+    const busca = document.getElementById('pdvDevolucaoBusca');
+    const cont  = document.getElementById('pdvDevolucaoConteudo');
+    if (busca) busca.value = '';
+    if (cont)  cont.innerHTML = '<p style="color:var(--text-muted);font-size:13px;text-align:center;padding:24px 0">Digite o número da venda ou o nome do cliente.</p>';
+    m.classList.remove('hidden');
+
+    if (!this._devolucaoBound) {
+      this._devolucaoBound = true;
+      document.getElementById('pdvDevolucaoFechar')?.addEventListener('click', () => {
+        document.getElementById('pdvDevolucaoModal')?.classList.add('hidden');
+      });
+      document.getElementById('pdvDevolucaoModal')?.addEventListener('click', (e) => {
+        if (e.target === document.getElementById('pdvDevolucaoModal')) {
+          document.getElementById('pdvDevolucaoModal').classList.add('hidden');
+        }
+      });
+      document.getElementById('pdvDevolucaoBuscarBtn')?.addEventListener('click', () => {
+        const t = document.getElementById('pdvDevolucaoBusca')?.value.trim();
+        if (t) this.buscarVendasDevolucao(t);
+      });
+      document.getElementById('pdvDevolucaoBusca')?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          const t = e.target.value.trim();
+          if (t) this.buscarVendasDevolucao(t);
+        }
+      });
+    }
+
+    setTimeout(() => document.getElementById('pdvDevolucaoBusca')?.focus(), 50);
+  },
+
+  async buscarVendasDevolucao(termo) {
+    const cont = document.getElementById('pdvDevolucaoConteudo');
+    if (!cont) return;
+    cont.innerHTML = '<p style="color:var(--text-muted);font-size:13px;text-align:center;padding:16px"><i class="fa-solid fa-spinner fa-spin"></i> Buscando...</p>';
+    try {
+      const result = await api.getVendas({ busca: termo, limit: 20 });
+      const vendas = result?.dados || [];
+
+      if (!vendas.length) {
+        cont.innerHTML = '<p style="color:var(--text-muted);font-size:13px;text-align:center;padding:16px">Nenhuma venda encontrada.</p>';
+        return;
+      }
+
+      cont.innerHTML = vendas.map((v) => {
+        const data = v.data ? new Date(`${String(v.data).slice(0, 10)}T12:00:00`).toLocaleDateString('pt-BR') : '';
+        return `
+          <div style="padding:10px 12px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px">
+            <div style="min-width:0">
+              <strong style="font-size:13px">Venda #${v.id}</strong>
+              <p style="margin:2px 0 0;font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${this.escapeHtml(v.cliente_nome || 'Consumidor final')} · ${data}</p>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+              <strong style="font-size:13px;font-variant-numeric:tabular-nums">${this.toCurrency(v.total)}</strong>
+              <button class="btn btn-primary btn-sm pdv-dev-selecionar-btn" data-venda-id="${v.id}" style="font-size:12px;padding:4px 10px">Selecionar</button>
+            </div>
+          </div>`;
+      }).join('');
+
+      cont.querySelectorAll('.pdv-dev-selecionar-btn').forEach((btn) => {
+        btn.addEventListener('click', () => this.selecionarVendaDevolucao(Number(btn.dataset.vendaId)));
+      });
+    } catch (err) {
+      cont.innerHTML = `<p style="color:var(--danger,#ef4444);font-size:13px;text-align:center;padding:16px">${this.escapeHtml(err.message || 'Erro ao buscar vendas.')}</p>`;
+    }
+  },
+
+  async selecionarVendaDevolucao(vendaId) {
+    const cont = document.getElementById('pdvDevolucaoConteudo');
+    if (!cont) return;
+    cont.innerHTML = '<p style="color:var(--text-muted);font-size:13px;text-align:center;padding:16px"><i class="fa-solid fa-spinner fa-spin"></i> Carregando itens da venda...</p>';
+    try {
+      const venda = await api.getVendaDetalheParaDevolucao(vendaId);
+      const itens = venda?.itens || [];
+
+      if (!itens.length) {
+        cont.innerHTML = '<p style="color:var(--text-muted);font-size:13px;text-align:center;padding:16px">Esta venda não tem itens devolvíveis.</p>';
+        return;
+      }
+
+      cont.innerHTML = `
+        <button type="button" class="btn-inline" id="pdvDevolucaoVoltar" style="margin-bottom:10px"><i class="fa-solid fa-arrow-left"></i> Buscar outra venda</button>
+        <p style="font-size:12px;color:var(--text-muted);margin:0 0 10px">Informe a quantidade a devolver de cada item. O sistema impede devolver mais do que já foi devolvido antes.</p>
+        <div id="pdvDevolucaoItens">
+          ${itens.map((item, i) => {
+            // Itens sem produto_id (ex: OS/serviço cobrado junto na venda) não têm
+            // estoque para restaurar — o backend os ignora, então nem deixa marcar.
+            const devolvivel = !!item.produto_id;
+            return `
+            <div class="pdv-dev-item" style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);${devolvivel ? '' : 'opacity:.55'}">
+              <label style="flex:1;min-width:0;font-size:13px;display:flex;align-items:center;gap:8px">
+                <input type="checkbox" class="pdv-dev-item-check" data-index="${i}" ${devolvivel ? '' : 'disabled'}>
+                <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${this.escapeHtml(item.produto_nome || item.descricao || 'Item')}</span>
+              </label>
+              <span style="font-size:12px;color:var(--text-muted);flex-shrink:0">${devolvivel ? `vendido: ${Number(item.quantidade || 0)}` : 'serviço — não devolvível'}</span>
+              <input type="number" class="pdv-dev-item-qtd" data-index="${i}" min="0" max="${Number(item.quantidade || 0)}"
+                step="1" value="0" disabled style="width:64px;text-align:center;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:.88rem;background:var(--surface);color:var(--text);flex-shrink:0">
+            </div>
+          `;
+          }).join('')}
+        </div>
+        <div class="form-field" style="margin-top:14px">
+          <label for="pdvDevolucaoMotivo">Motivo (opcional)</label>
+          <input type="text" id="pdvDevolucaoMotivo" class="input" placeholder="Ex: produto com defeito, cliente desistiu...">
+        </div>
+        <div id="pdvDevolucaoFeedback" style="margin-top:8px"></div>
+        <button type="button" class="btn btn-primary" id="pdvDevolucaoConfirmarBtn" style="width:100%;margin-top:10px">
+          <i class="fa-solid fa-rotate-left"></i> Confirmar devolução
+        </button>
+      `;
+
+      cont.querySelectorAll('.pdv-dev-item-check').forEach((chk) => {
+        chk.addEventListener('change', (e) => {
+          const idx = e.target.dataset.index;
+          const qtdInput = cont.querySelector(`.pdv-dev-item-qtd[data-index="${idx}"]`);
+          if (!qtdInput) return;
+          qtdInput.disabled = !e.target.checked;
+          qtdInput.value = e.target.checked ? qtdInput.max : '0';
+        });
+      });
+
+      document.getElementById('pdvDevolucaoVoltar')?.addEventListener('click', () => {
+        const t = document.getElementById('pdvDevolucaoBusca')?.value.trim();
+        if (t) this.buscarVendasDevolucao(t);
+      });
+
+      document.getElementById('pdvDevolucaoConfirmarBtn')?.addEventListener('click', () => {
+        this.confirmarDevolucao(vendaId, itens);
+      });
+    } catch (err) {
+      cont.innerHTML = `<p style="color:var(--danger,#ef4444);font-size:13px;text-align:center;padding:16px">${this.escapeHtml(err.message || 'Erro ao carregar venda.')}</p>`;
+    }
+  },
+
+  async confirmarDevolucao(vendaId, itensOriginais) {
+    const cont = document.getElementById('pdvDevolucaoConteudo');
+    const feedback = document.getElementById('pdvDevolucaoFeedback');
+    const btn = document.getElementById('pdvDevolucaoConfirmarBtn');
+    const motivo = document.getElementById('pdvDevolucaoMotivo')?.value?.trim() || '';
+
+    const itensParaDevolver = [];
+    cont?.querySelectorAll('.pdv-dev-item-check:checked').forEach((chk) => {
+      const idx = Number(chk.dataset.index);
+      const item = itensOriginais[idx];
+      const qtdInput = cont.querySelector(`.pdv-dev-item-qtd[data-index="${idx}"]`);
+      const qtd = Number(qtdInput?.value || 0);
+      if (item && qtd > 0) {
+        itensParaDevolver.push({ produto_id: item.produto_id, grade_id: item.grade_id || null, quantidade: qtd });
+      }
+    });
+
+    if (!itensParaDevolver.length) {
+      if (feedback) feedback.innerHTML = '<p style="color:var(--danger,#ef4444);font-size:12px;margin:0">Selecione ao menos um item e uma quantidade maior que zero.</p>';
+      return;
+    }
+
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processando...'; }
+    if (feedback) feedback.innerHTML = '';
+
+    try {
+      const result = await api.registrarDevolucao({ venda_id: vendaId, motivo, itens: itensParaDevolver });
+      document.getElementById('pdvDevolucaoModal')?.classList.add('hidden');
+      showToast(result?.mensagem || 'Devolução registrada. Estoque restaurado.', 'success');
+      // Produtos devolvidos voltam ao estoque: atualiza a lista do PDV
+      this.fetchProdutos().then((produtos) => {
+        if (Array.isArray(produtos)) {
+          this.state.produtos = produtos;
+          this.filterProdutos(this.el.buscaProduto?.value || '');
+        }
+      }).catch(() => {});
+    } catch (err) {
+      if (feedback) feedback.innerHTML = `<p style="color:var(--danger,#ef4444);font-size:12px;margin:0">${this.escapeHtml(err.message || 'Erro ao registrar devolução.')}</p>`;
+    } finally {
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-rotate-left"></i> Confirmar devolução'; }
+    }
   },
 
   setLoading(value) {
