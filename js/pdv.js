@@ -27,7 +27,8 @@ const PDVModule = {
     _pixCleanup: null,
     _salOrc: false,
     _vendasEmEspera: [],
-    _fidelidade: { pontosDisponiveis: 0, valorPorPonto: 0, minimoResgate: 0, pontosAplicados: 0, _reqId: 0 }
+    _fidelidade: { pontosDisponiveis: 0, valorPorPonto: 0, minimoResgate: 0, pontosAplicados: 0, _reqId: 0 },
+    _ultimoRecibo: null
   },
 
   init() {
@@ -291,6 +292,11 @@ const PDVModule = {
     this.el.atualizarBtn?.addEventListener('click', async (event) => {
       event.preventDefault();
       await this.load();
+    });
+
+    document.getElementById('pdvImprimirReciboBtn')?.addEventListener('click', (event) => {
+      event.preventDefault();
+      if (this.state._ultimoRecibo) this.imprimirRecibo(this.state._ultimoRecibo);
     });
 
     this.el.limparBtn?.addEventListener('click', (event) => {
@@ -630,6 +636,9 @@ const PDVModule = {
               <i class="fa-solid fa-wifi-slash"></i> Offline
             </span>
             <div class="module-feedback pdv-v2__feedback" id="pdvFormFeedback"></div>
+            <button type="button" class="btn btn-light btn-sm hidden" id="pdvImprimirReciboBtn">
+              <i class="fa-solid fa-print"></i> Imprimir recibo
+            </button>
           </div>
           <div class="pdv-v2__header-right">
             <div class="pdv-espera-wrap" id="pdvEsperaWrap">
@@ -2032,6 +2041,32 @@ const PDVModule = {
         }).catch((e) => console.error('[fidelidade] resgate pós-venda falhou:', e.message));
       }
 
+      // Snapshot para o recibo não-fiscal (impressão via navegador, estilo cupom).
+      // Usa os dados que já estão em memória — sem round-trip extra à API.
+      this.state._ultimoRecibo = {
+        id: vendaId,
+        data: new Date().toLocaleDateString('pt-BR'),
+        clienteNome: this.state.clienteId ? this.state.clienteNome : '',
+        itens: this.state.carrinho.map((item) => {
+          const descPct = Number(item.desconto_pct || 0);
+          const precoComDesconto = Number(item.preco_unitario || 0) * (1 - descPct / 100);
+          return {
+            nome: item.produto_nome || 'Produto',
+            quantidade: Number(item.quantidade || 0),
+            precoUnitario: precoComDesconto,
+            total: Number(item.quantidade || 0) * precoComDesconto
+          };
+        }),
+        subtotal,
+        desconto,
+        acrescimo,
+        total,
+        pagamentos: this.state.pagamentos.map((p) => ({ forma: p.forma, valor: Number(p.valor || 0) })),
+        troco,
+        observacao: this.state.observacao || ''
+      };
+      document.getElementById('pdvImprimirReciboBtn')?.classList.remove('hidden');
+
       this.resetVenda();
       await this.load();
     } catch (error) {
@@ -2085,6 +2120,85 @@ const PDVModule = {
     this.renderCarrinho();
     this.renderResumo();
     this.setFeedback('', 'info');
+  },
+
+  // ── Recibo não-fiscal (impressão via navegador) ──────────────────────────
+  // Funciona com qualquer impressora instalada no Windows, incluindo térmicas
+  // (que o SO trata como impressora comum via driver) — sem precisar de SDK ou
+  // integração ESC/POS direta. Layout em formato cupom (largura ~380px),
+  // adaptado do recibo já usado no módulo de Vendas (vendas.js).
+
+  imprimirRecibo(r) {
+    const cur = (v) => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const esc = (v) => this.escapeHtml(v);
+    const empresa = this.state.empresa || '';
+
+    const itensHtml = r.itens.map((i) => `
+      <tr>
+        <td>${esc(i.nome)}</td>
+        <td class="center">${i.quantidade}</td>
+        <td class="right">${cur(i.precoUnitario)}</td>
+        <td class="right">${cur(i.total)}</td>
+      </tr>`).join('');
+
+    const pagamentosHtml = r.pagamentos.length > 1
+      ? r.pagamentos.map((p) => `<div style="display:flex;justify-content:space-between"><span>${esc(p.forma)}</span><span>${cur(p.valor)}</span></div>`).join('')
+      : '';
+
+    const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+      <title>Recibo #${r.id || ''}</title>
+      <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; font-size: 12px; color: #222; padding: 20px; max-width: 380px; margin: 0 auto; }
+        h1 { font-size: 16px; text-align: center; margin-bottom: 2px; }
+        .empresa { text-align: center; font-size: 13px; font-weight: bold; margin-bottom: 12px; }
+        .sep { border: none; border-top: 1px dashed #aaa; margin: 10px 0; }
+        .info { margin-bottom: 10px; }
+        .info div { display: flex; justify-content: space-between; margin-bottom: 3px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+        th { text-align: left; border-bottom: 1px solid #ccc; padding: 4px 0; font-size: 11px; }
+        td { padding: 4px 0; vertical-align: top; font-size: 11px; }
+        td.right, th.right { text-align: right; }
+        td.center { text-align: center; }
+        .totais { border-top: 1px dashed #aaa; padding-top: 8px; margin-top: 4px; }
+        .totais div { display: flex; justify-content: space-between; margin-bottom: 4px; }
+        .totais .total-final { font-size: 14px; font-weight: bold; border-top: 1px solid #ccc; padding-top: 6px; margin-top: 4px; }
+        .rodape { text-align: center; margin-top: 16px; font-size: 10px; color: #666; }
+        @media print { body { padding: 0; } }
+      </style></head><body>
+      <div class="empresa">${esc(empresa)}</div>
+      <h1>RECIBO DE VENDA</h1>
+      <hr class="sep">
+      <div class="info">
+        ${r.id ? `<div><span>Nº da venda:</span><span>#${r.id}</span></div>` : ''}
+        <div><span>Data:</span><span>${esc(r.data)}</span></div>
+        ${r.clienteNome ? `<div><span>Cliente:</span><span>${esc(r.clienteNome)}</span></div>` : ''}
+      </div>
+      <hr class="sep">
+      <table>
+        <thead><tr>
+          <th>Produto</th><th class="center">Qtd</th>
+          <th class="right">Unit.</th><th class="right">Total</th>
+        </tr></thead>
+        <tbody>${itensHtml}</tbody>
+      </table>
+      <div class="totais">
+        ${r.desconto > 0 ? `<div><span>Subtotal</span><span>${cur(r.subtotal)}</span></div><div><span>Desconto</span><span>- ${cur(r.desconto)}</span></div>` : ''}
+        ${r.acrescimo > 0 ? `<div><span>Acréscimo</span><span>+ ${cur(r.acrescimo)}</span></div>` : ''}
+        <div class="total-final"><span>TOTAL</span><span>${cur(r.total)}</span></div>
+        ${pagamentosHtml ? `<div style="margin-top:6px;font-size:11px;color:#555">${pagamentosHtml}</div>` : `<div style="margin-top:4px;font-size:11px;color:#555"><span>Pagamento:</span><span>${esc(r.pagamentos[0]?.forma || '-')}</span></div>`}
+        ${r.troco > 0 ? `<div style="margin-top:4px;font-size:11px;color:#555"><span>Troco</span><span>${cur(r.troco)}</span></div>` : ''}
+      </div>
+      ${r.observacao ? `<hr class="sep"><div style="font-size:11px;color:#666">Obs: ${esc(r.observacao)}</div>` : ''}
+      <div class="rodape">
+        Documento sem valor fiscal · Gerado em ${new Date().toLocaleDateString('pt-BR')}
+      </div>
+      <script>window.onload = () => { window.print(); }<\/script>
+      </body></html>`;
+
+    const win = window.open('', '_blank', 'width=420,height=600');
+    if (win) { win.document.write(html); win.document.close(); }
+    else showToast('Permita pop-ups para imprimir o recibo.', 'warning');
   },
 
   // ── Vendas em espera ──────────────────────────────────────────────────────
