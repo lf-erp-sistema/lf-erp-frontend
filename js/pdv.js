@@ -898,6 +898,11 @@ const PDVModule = {
     this.el.emptyCarrinho.classList.add('hidden');
     cartWrap?.classList.add('pdv-v2__cart-wrap--visible');
 
+    // Linha recém-adicionada/incrementada ganha um flash visual uma única vez;
+    // consumido aqui para não repetir em renders seguintes (ex: editar desconto).
+    const flashIndex = this.state._flashIndex;
+    this.state._flashIndex = null;
+
     this.el.carrinhoBody.innerHTML = this.state.carrinho
       .map((item, index) => {
         const descPct = Number(item.desconto_pct || 0);
@@ -905,7 +910,7 @@ const PDVModule = {
         const totalItem = Number(item.quantidade || 0) * precoComDesconto;
 
         return `
-          <tr>
+          <tr${index === flashIndex ? ' class="pdv-row-added"' : ''}>
             <td data-label="Produto">
               <div class="table-primary">
                 <strong>${this.escapeHtml(item.produto_nome || 'Produto')}</strong>
@@ -1145,6 +1150,7 @@ const PDVModule = {
     const el = this.el.splitRestante;
     if (!el) return;
     const restante = this.getPagamentoRestante();
+
     if (Math.abs(restante) < 0.01) {
       el.textContent = '';
       el.className = 'pdv-split-restante pdv-split-restante--ok';
@@ -1152,8 +1158,18 @@ const PDVModule = {
       el.textContent = `Restante: ${this.toCurrency(restante)}`;
       el.className = 'pdv-split-restante pdv-split-restante--pendente';
     } else {
-      el.textContent = `Excesso: ${this.toCurrency(Math.abs(restante))}`;
-      el.className = 'pdv-split-restante pdv-split-restante--excesso';
+      // Valor pago acima do total: se todas as formas são Dinheiro isso é troco
+      // de verdade (permitido ao finalizar); só é "Excesso" (erro) quando há
+      // alguma forma não-dinheiro no meio — mesma regra usada em finalizarVenda().
+      const todosDinheiro = this.state.pagamentos.every((p) => p.forma === 'Dinheiro');
+      const valor = this.toCurrency(Math.abs(restante));
+      if (todosDinheiro) {
+        el.innerHTML = `<i class="fa-solid fa-coins" aria-hidden="true"></i> Troco: ${valor}`;
+        el.className = 'pdv-split-restante pdv-split-restante--troco';
+      } else {
+        el.textContent = `Excesso: ${valor}`;
+        el.className = 'pdv-split-restante pdv-split-restante--excesso';
+      }
     }
   },
 
@@ -1264,6 +1280,7 @@ const PDVModule = {
       }
       this.state.carrinho[existenteIndex].quantidade += 1;
       if (precoResolvido !== null) this.state.carrinho[existenteIndex].preco_unitario = preco;
+      this.state._flashIndex = existenteIndex;
     } else {
       this.state.carrinho.push({
         produto_id: Number(produto.id),
@@ -1277,6 +1294,7 @@ const PDVModule = {
         estoque_disponivel: estoqueDisponivel,
         desconto_pct: 0
       });
+      this.state._flashIndex = this.state.carrinho.length - 1;
     }
 
     this._recordProdutoAdded(produto.id);
@@ -1347,6 +1365,7 @@ const PDVModule = {
       }
       this.state.carrinho[existenteIndex].quantidade += 1;
       if (precoResolvido !== null) this.state.carrinho[existenteIndex].preco_unitario = preco;
+      this.state._flashIndex = existenteIndex;
     } else {
       this.state.carrinho.push({
         produto_id: Number(produto.id),
@@ -1360,6 +1379,7 @@ const PDVModule = {
         estoque_disponivel: estoque,
         desconto_pct: 0
       });
+      this.state._flashIndex = this.state.carrinho.length - 1;
     }
 
     this._recordProdutoAdded(produto.id);
@@ -2205,6 +2225,7 @@ const PDVModule = {
       _is_os: true,
       _os_id: Number(os.id) || null
     });
+    this.state._flashIndex = this.state.carrinho.length - 1;
     this.renderCarrinho();
     this.renderResumo();
     this.switchTab('pagamento');
