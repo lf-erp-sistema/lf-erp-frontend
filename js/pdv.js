@@ -853,6 +853,16 @@ const PDVModule = {
     return `<div class="pdv-cat-chips">${chip('', 'Favoritos')}${categorias.map((c) => chip(c, c)).join('')}</div>`;
   },
 
+  // Miniatura do produto (produto_imagens.url_thumbnail, via JOIN no backend). O
+  // ícone fica sempre no DOM atrás da imagem; se a imagem falhar ao carregar ela
+  // só se esconde (onerror), revelando o ícone — sem recriar elementos via JS.
+  _thumbHtml(produto, cssClass) {
+    const img = produto.imagem_thumb
+      ? `<img src="${this.escapeHtml(produto.imagem_thumb)}" alt="" loading="lazy" onerror="this.style.display='none'">`
+      : '';
+    return `<span class="${cssClass}"><i class="fa-solid fa-box" aria-hidden="true"></i>${img}</span>`;
+  },
+
   renderProdutos() {
     this.cache();
     if (!this.el.listaProdutos) return;
@@ -880,6 +890,7 @@ const PDVModule = {
           return `
             <button type="button" class="pdv-grid-card${semEstoque ? ' pdv-grid-card--off' : ''}"
               data-action="pdv-add-produto" data-id="${produto.id}" ${semEstoque ? 'disabled' : ''}>
+              ${this._thumbHtml(produto, 'pdv-grid-card__thumb')}
               <span class="pdv-grid-card__nome">${this.escapeHtml(produto.nome || 'Produto')}</span>
               <span class="pdv-grid-card__preco">${this.toCurrency(produto.preco)}</span>
               <span class="pdv-grid-card__estoque">${semEstoque ? 'Sem estoque' : `${estoque} un.`}</span>
@@ -898,6 +909,7 @@ const PDVModule = {
 
         return `
           <div class="pdv-product-card">
+            ${this._thumbHtml(produto, 'pdv-product-card__thumb')}
             <div class="pdv-product-card__info">
               <strong>${this.escapeHtml(produto.nome || 'Produto')}</strong>
               <span class="pdv-product-card__sub">${this.escapeHtml(produto.categoria || '-')}  ·  ${estoque} un.</span>
@@ -949,9 +961,12 @@ const PDVModule = {
         return `
           <tr${index === flashIndex ? ' class="pdv-row-added"' : ''}>
             <td data-label="Produto">
-              <div class="table-primary">
-                <strong>${this.escapeHtml(item.produto_nome || 'Produto')}</strong>
-                ${item.grade_label ? `<small style="display:block;color:var(--text-muted);margin-top:2px">${this.escapeHtml(item.grade_label)}</small>` : ''}
+              <div class="table-primary pdv-cart-row-prod">
+                ${this._thumbHtml(item, 'pdv-cart-row-prod__thumb')}
+                <div>
+                  <strong>${this.escapeHtml(item.produto_nome || 'Produto')}</strong>
+                  ${item.grade_label ? `<small style="display:block;color:var(--text-muted);margin-top:2px">${this.escapeHtml(item.grade_label)}</small>` : ''}
+                </div>
               </div>
             </td>
 
@@ -1342,6 +1357,7 @@ const PDVModule = {
       this.state.carrinho.push({
         produto_id: Number(produto.id),
         produto_nome: produto.nome,
+        imagem_thumb: produto.imagem_thumb || null,
         grade_id: null,
         grade_label: '',
         quantidade: 1,
@@ -1427,6 +1443,7 @@ const PDVModule = {
       this.state.carrinho.push({
         produto_id: Number(produto.id),
         produto_nome: produto.nome,
+        imagem_thumb: produto.imagem_thumb || null,
         grade_id: Number(gradeId),
         grade_label: gradeLabel,
         quantidade: 1,

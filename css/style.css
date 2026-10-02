@@ -5653,6 +5653,20 @@ select {
 }
 .pdv-grid-card__preco { font-weight:800; font-size:.95rem; color:var(--primary); margin-top:auto; }
 .pdv-grid-card__estoque { font-size:.72rem; color:var(--text-muted); }
+
+/* Miniatura do produto: ícone de fundo + <img> opcional por cima (card touch, card de busca, linha do carrinho) */
+.pdv-grid-card__thumb, .pdv-product-card__thumb, .pdv-cart-row-prod__thumb {
+  position:relative; display:flex; align-items:center; justify-content:center;
+  background:var(--surface); border:1px solid var(--border); border-radius:10px;
+  overflow:hidden; flex-shrink:0; color:var(--text-muted);
+}
+.pdv-grid-card__thumb img, .pdv-product-card__thumb img, .pdv-cart-row-prod__thumb img {
+  position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+}
+.pdv-grid-card__thumb { width:100%; height:54px; font-size:1.3rem; }
+.pdv-product-card__thumb { width:44px; height:44px; font-size:1.1rem; }
+.pdv-cart-row-prod { display:flex; align-items:center; gap:10px; }
+.pdv-cart-row-prod__thumb { width:34px; height:34px; font-size:.95rem; }
 @media (max-width: 860px) {
   .pdv-grid { grid-template-columns:repeat(auto-fill, minmax(110px, 1fr)); }
   .pdv-grid-card { min-height:80px; padding:10px 12px; }
