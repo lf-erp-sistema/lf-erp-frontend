@@ -25,7 +25,8 @@ const PDVModule = {
     _gradeReqId: 0,
     _recalcReqId: 0,
     _pixCleanup: null,
-    _salOrc: false
+    _salOrc: false,
+    _vendasEmEspera: []
   },
 
   init() {
@@ -46,8 +47,10 @@ const PDVModule = {
     this.state.acrescimo = 0;
     this.state.observacao = '';
     this.resolveEmpresa();
+    this._carregarVendasEmEspera();
     this.render();
     this.cache();
+    this.renderEsperaBadge();
     this.bindLocalEvents();
     this.bindOfflineEvents();
   },
@@ -214,6 +217,50 @@ const PDVModule = {
       this.resetVenda();
     });
 
+    document.getElementById('pdvPausarBtn')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      this.pausarVenda();
+    });
+
+    document.getElementById('pdvEsperaBtn')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const dd = document.getElementById('pdvEsperaDropdown');
+      if (!dd) return;
+      if (dd.classList.contains('hidden')) {
+        this.renderEsperaDropdown();
+        dd.classList.remove('hidden');
+      } else {
+        dd.classList.add('hidden');
+      }
+    });
+
+    document.getElementById('pdvEsperaDropdown')?.addEventListener('click', (e) => {
+      const retomarBtn = e.target.closest('[data-retomar-id]');
+      if (retomarBtn) {
+        this.retomarVendaEmEspera(Number(retomarBtn.dataset.retomarId));
+        return;
+      }
+      const descartarBtn = e.target.closest('[data-descartar-id]');
+      if (descartarBtn) {
+        e.stopPropagation();
+        this.descartarVendaEmEspera(Number(descartarBtn.dataset.descartarId));
+      }
+    });
+
+    // Fecha o dropdown de vendas em espera ao clicar fora dele. Anexado ao
+    // document (não recriado pelo render), por isso precisa de guarda própria
+    // — mesma necessidade do listener de teclado logo abaixo (_keyboardBound).
+    if (!this._esperaClickBound) {
+      this._esperaClickBound = true;
+      document.addEventListener('click', (e) => {
+        const wrap = document.getElementById('pdvEsperaWrap');
+        const dd = document.getElementById('pdvEsperaDropdown');
+        if (!wrap || !dd || dd.classList.contains('hidden')) return;
+        if (!wrap.contains(e.target)) dd.classList.add('hidden');
+      });
+    }
+
     document.getElementById('pdvNovoClienteBtn')?.addEventListener('click', () => {
       this.abrirNovoClienteModal();
     });
@@ -369,6 +416,13 @@ const PDVModule = {
       if (e.altKey && e.key.toLowerCase() === 'q') {
         e.preventDefault();
         if (this.state.carrinho.length > 0) this.resetVenda();
+        return;
+      }
+
+      // Alt+P — colocar venda atual em espera
+      if (e.altKey && e.key.toLowerCase() === 'p') {
+        e.preventDefault();
+        this.pausarVenda();
         return;
       }
 
@@ -559,6 +613,13 @@ const PDVModule = {
             <div class="module-feedback pdv-v2__feedback" id="pdvFormFeedback"></div>
           </div>
           <div class="pdv-v2__header-right">
+            <div class="pdv-espera-wrap" id="pdvEsperaWrap">
+              <button type="button" class="btn btn-light btn-sm" id="pdvEsperaBtn" title="Vendas em espera">
+                <i class="fa-solid fa-clock-rotate-left"></i> Em espera
+                <span class="pdv-espera-badge hidden" id="pdvEsperaBadge">0</span>
+              </button>
+              <div class="pdv-espera-dropdown hidden" id="pdvEsperaDropdown"></div>
+            </div>
             <button type="button" class="btn btn-light btn-sm" id="pdvCobrarOSBtn">
               <i class="fa-solid fa-screwdriver-wrench"></i> Cobrar OS
             </button>
@@ -603,6 +664,7 @@ const PDVModule = {
                     <span><kbd>Alt+N</kbd> Nova venda</span>
                     <span><kbd>Alt+S</kbd> Finalizar venda</span>
                     <span><kbd>Alt+Q</kbd> Excluir venda</span>
+                    <span><kbd>Alt+P</kbd> Em espera</span>
                     <span><kbd>F2</kbd> Focar busca</span>
                     <span><kbd>Esc</kbd> Limpar busca</span>
                   </div>
@@ -700,6 +762,9 @@ const PDVModule = {
 
         <!-- ── Rodapé fixo ────────────────────────────────────────────────── -->
         <footer class="pdv-v2__footer">
+          <button type="button" class="btn btn-light" id="pdvPausarBtn" title="Guardar esta venda e atender outro cliente (Alt+P)">
+            <i class="fa-solid fa-pause"></i> Em espera
+          </button>
           <button type="button" class="btn pdv-v2__btn-excluir" id="pdvLimparBtn">
             <i class="fa-solid fa-trash"></i> Excluir venda
           </button>
@@ -1850,6 +1915,136 @@ const PDVModule = {
     this.renderCarrinho();
     this.renderResumo();
     this.setFeedback('', 'info');
+  },
+
+  // ── Vendas em espera ──────────────────────────────────────────────────────
+  // Guarda o carrinho atual (localStorage, por empresa) para atender outro
+  // cliente sem perder a venda em andamento, e permite retomar depois.
+
+  _esperaKey() {
+    return `pdv_espera_${api.getEmpresaId() || this.state.empresa || 'default'}`;
+  },
+
+  _carregarVendasEmEspera() {
+    try {
+      const lista = JSON.parse(localStorage.getItem(this._esperaKey()) || '[]');
+      this.state._vendasEmEspera = Array.isArray(lista) ? lista : [];
+    } catch {
+      this.state._vendasEmEspera = [];
+    }
+  },
+
+  _persistirVendasEmEspera() {
+    try { localStorage.setItem(this._esperaKey(), JSON.stringify(this.state._vendasEmEspera)); } catch { /* quota */ }
+  },
+
+  pausarVenda() {
+    if (!this.state.carrinho.length) {
+      this.showMessage('Não há itens no carrinho para colocar em espera.', 'error');
+      return;
+    }
+
+    this.state._vendasEmEspera.unshift({
+      id: Date.now(),
+      label: this.state.clienteId ? (this.state.clienteNome || 'Cliente') : 'Consumidor final',
+      total: this.getPagamentoTotal(),
+      itens: this.state.carrinho.reduce((acc, i) => acc + Number(i.quantidade || 0), 0),
+      criadoEm: Date.now(),
+      dados: {
+        carrinho: JSON.parse(JSON.stringify(this.state.carrinho)),
+        clienteId: this.state.clienteId,
+        clienteNome: this.state.clienteNome,
+        pagamentos: JSON.parse(JSON.stringify(this.state.pagamentos)),
+        desconto: this.state.desconto,
+        acrescimo: this.state.acrescimo,
+        observacao: this.state.observacao
+      }
+    });
+    this._persistirVendasEmEspera();
+    this.resetVenda();
+    this.renderEsperaBadge();
+    showToast(`Venda guardada — ${this.state._vendasEmEspera.length} em espera.`, 'success');
+  },
+
+  retomarVendaEmEspera(id) {
+    if (!this.state._vendasEmEspera.some((v) => v.id === id)) return;
+
+    if (this.state.carrinho.length > 0) {
+      if (!confirm('Há uma venda em andamento no carrinho. Guardar ela em espera antes de retomar a outra?')) return;
+      // pausarVenda() faz unshift na lista — o índice do item buscado acima
+      // fica inválido depois disso, por isso procura de novo pelo id.
+      this.pausarVenda();
+    }
+
+    const idx = this.state._vendasEmEspera.findIndex((v) => v.id === id);
+    if (idx === -1) return;
+    const [item] = this.state._vendasEmEspera.splice(idx, 1);
+    this._persistirVendasEmEspera();
+
+    const d = item.dados;
+    this.state.carrinho = d.carrinho;
+    this.state.clienteId = d.clienteId;
+    this.state.clienteNome = d.clienteNome;
+    this.state.pagamentos = d.pagamentos;
+    this.state.desconto = d.desconto;
+    this.state.acrescimo = d.acrescimo;
+    this.state.observacao = d.observacao;
+
+    this.cache();
+    if (this.el.desconto) this.el.desconto.value = String(d.desconto || 0);
+    if (this.el.acrescimo) this.el.acrescimo.value = String(d.acrescimo || 0);
+    if (this.el.observacao) this.el.observacao.value = d.observacao || '';
+
+    this.updateClienteInfo();
+    this.renderCarrinho();
+    this.renderResumo();
+    this.renderPagamentos();
+    document.getElementById('pdvEsperaDropdown')?.classList.add('hidden');
+    this.renderEsperaBadge();
+    this.switchTab('produtos');
+    showToast('Venda retomada.', 'success');
+  },
+
+  descartarVendaEmEspera(id) {
+    if (!confirm('Descartar esta venda em espera? Esta ação não pode ser desfeita.')) return;
+    this.state._vendasEmEspera = this.state._vendasEmEspera.filter((v) => v.id !== id);
+    this._persistirVendasEmEspera();
+    this.renderEsperaDropdown();
+    this.renderEsperaBadge();
+  },
+
+  renderEsperaBadge() {
+    const badge = document.getElementById('pdvEsperaBadge');
+    if (!badge) return;
+    const n = this.state._vendasEmEspera.length;
+    badge.textContent = String(n);
+    badge.classList.toggle('hidden', n === 0);
+  },
+
+  renderEsperaDropdown() {
+    const dd = document.getElementById('pdvEsperaDropdown');
+    if (!dd) return;
+
+    if (!this.state._vendasEmEspera.length) {
+      dd.innerHTML = `<div class="pdv-espera-empty">Nenhuma venda em espera.</div>`;
+      return;
+    }
+
+    dd.innerHTML = this.state._vendasEmEspera.map((v) => {
+      const minutos = Math.max(0, Math.round((Date.now() - v.criadoEm) / 60000));
+      const tempo = minutos < 1 ? 'agora' : `há ${minutos} min`;
+      return `
+        <div class="pdv-espera-item">
+          <button type="button" class="pdv-espera-item__main" data-retomar-id="${v.id}">
+            <strong>${this.escapeHtml(v.label || 'Consumidor final')}</strong>
+            <small>${v.itens} ${v.itens === 1 ? 'item' : 'itens'} · ${this.toCurrency(v.total)} · ${tempo}</small>
+          </button>
+          <button type="button" class="pdv-espera-item__del" data-descartar-id="${v.id}" title="Descartar">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
+      `;
+    }).join('');
   },
 
   async abrirModalPix(vendaId, valor, clienteNome) {

@@ -5672,6 +5672,34 @@ select {
   .pdv-grid-card { min-height:80px; padding:10px 12px; }
 }
 
+/* Vendas em espera: indicador no header + dropdown de itens guardados */
+.pdv-espera-wrap { position: relative; }
+.pdv-espera-badge {
+  display:inline-flex; align-items:center; justify-content:center; min-width:18px; height:18px;
+  padding:0 5px; margin-left:4px; border-radius:999px; background:var(--danger,#e53e3e); color:#fff;
+  font-size:.68rem; font-weight:800; line-height:1;
+}
+.pdv-espera-dropdown {
+  position:absolute; top:calc(100% + 6px); left:0; z-index:200;
+  background:var(--surface); border:1px solid var(--border); border-radius:12px;
+  box-shadow:0 8px 24px rgba(0,0,0,.14); min-width:260px; max-width:320px;
+  max-height:360px; overflow-y:auto; padding:6px;
+}
+.pdv-espera-empty { padding:16px 12px; text-align:center; color:var(--text-muted); font-size:.85rem; }
+.pdv-espera-item { display:flex; align-items:stretch; gap:4px; }
+.pdv-espera-item__main {
+  flex:1; min-width:0; text-align:left; border:none; background:transparent; cursor:pointer;
+  padding:9px 10px; border-radius:9px; display:flex; flex-direction:column; gap:2px;
+}
+.pdv-espera-item__main:hover { background:var(--surface-2); }
+.pdv-espera-item__main strong { font-size:.86rem; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.pdv-espera-item__main small { font-size:.74rem; color:var(--text-muted); }
+.pdv-espera-item__del {
+  flex-shrink:0; width:34px; border:none; background:transparent; color:var(--text-muted);
+  border-radius:9px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+}
+.pdv-espera-item__del:hover { background:var(--danger-soft,rgba(229,62,62,.12)); color:var(--danger,#e53e3e); }
+
 .pdv-table { min-width:420px; }
 .pdv-row-added { animation: pdv-row-flash 900ms ease-out; }
 @keyframes pdv-row-flash {
