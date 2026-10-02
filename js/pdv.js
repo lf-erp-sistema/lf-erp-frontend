@@ -50,6 +50,7 @@ const PDVModule = {
     this.state.observacao = '';
     this.resolveEmpresa();
     this._carregarVendasEmEspera();
+    this.initClienteChannel();
     this.render();
     this.cache();
     this.renderEsperaBadge();
@@ -292,6 +293,11 @@ const PDVModule = {
     this.el.atualizarBtn?.addEventListener('click', async (event) => {
       event.preventDefault();
       await this.load();
+    });
+
+    document.getElementById('pdvTelaClienteBtn')?.addEventListener('click', (event) => {
+      event.preventDefault();
+      this.abrirTelaCliente();
     });
 
     document.getElementById('pdvImprimirReciboBtn')?.addEventListener('click', (event) => {
@@ -659,6 +665,9 @@ const PDVModule = {
             </button>
             <button type="button" class="btn btn-primary" id="pdvNovaVendaBtn">
               <i class="fa-solid fa-plus"></i> Nova venda
+            </button>
+            <button type="button" class="btn btn-light btn-icon" id="pdvTelaClienteBtn" title="Abrir tela do cliente (2ª janela/monitor)">
+              <i class="fa-solid fa-tv"></i>
             </button>
             <button type="button" class="btn btn-light btn-icon" id="pdvAtualizarBtn" title="Atualizar dados">
               <i class="fa-solid fa-rotate"></i>
@@ -1186,6 +1195,52 @@ const PDVModule = {
       this.state.pagamentos[0].valor = total;
     }
     this.renderPagamentos();
+    this.publicarCarrinhoCliente(subtotal, desconto, acrescimo, total);
+  },
+
+  // ── Tela do cliente (2ª janela/monitor) ──────────────────────────────────
+  // Sincronização em tempo real via BroadcastChannel — sem servidor, sem
+  // polling. Só funciona entre abas/janelas da mesma origem no mesmo
+  // navegador (é exatamente o caso de uso: PDV + monitor voltado ao cliente
+  // na mesma máquina do caixa).
+
+  initClienteChannel() {
+    if (this._clienteChannel || !('BroadcastChannel' in window)) return;
+    this._clienteChannel = new BroadcastChannel('lf_pdv_cliente');
+    this._clienteChannel.onmessage = (event) => {
+      // A tela do cliente avisa quando abre/recarrega, para receber o estado
+      // atual mesmo se tiver sido aberta no meio de uma venda já em andamento.
+      if (event.data?.tipo === 'pronto') this.renderResumo();
+    };
+  },
+
+  abrirTelaCliente() {
+    if (!('BroadcastChannel' in window)) {
+      this.showMessage('Seu navegador não suporta a tela do cliente.', 'error');
+      return;
+    }
+    window.open('./pdv-cliente.html', 'lf_pdv_cliente_display', 'width=900,height=650');
+  },
+
+  publicarCarrinhoCliente(subtotal, desconto, acrescimo, total) {
+    if (!this._clienteChannel) return;
+    this._clienteChannel.postMessage({
+      tipo: 'carrinho',
+      empresa: this.state.empresa || '',
+      itens: this.state.carrinho.map((item) => {
+        const descPct = Number(item.desconto_pct || 0);
+        const precoComDesconto = Number(item.preco_unitario || 0) * (1 - descPct / 100);
+        return {
+          nome: item.produto_nome || 'Produto',
+          quantidade: Number(item.quantidade || 0),
+          total: Number(item.quantidade || 0) * precoComDesconto
+        };
+      }),
+      subtotal,
+      desconto,
+      acrescimo,
+      total
+    });
   },
 
   // â”€â”€ Abas mobile â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -2066,6 +2121,7 @@ const PDVModule = {
         observacao: this.state.observacao || ''
       };
       document.getElementById('pdvImprimirReciboBtn')?.classList.remove('hidden');
+      this._clienteChannel?.postMessage({ tipo: 'venda_finalizada', total, troco });
 
       this.resetVenda();
       await this.load();

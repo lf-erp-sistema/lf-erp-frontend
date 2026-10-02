@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tela do Cliente — LF ERP</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary: #6366f1;
+      --text:    #0f172a;
+      --muted:   #64748b;
+      --border:  #e2e8f0;
+      --surface: #ffffff;
+      --bg:      #f8fafc;
+      --success: #16a34a;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 20px 32px;
+      text-align: center;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    header h1 { font-size: 22px; font-weight: 900; color: var(--primary); }
+    header p { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+    main {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      max-width: 720px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 24px 32px;
+    }
+
+    /* ── Estado vazio / boas-vindas ──────────────────────────── */
+    #vazio {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 12px;
+    }
+    #vazio .icone { font-size: 56px; }
+    #vazio h2 { font-size: 26px; font-weight: 800; }
+    #vazio p { font-size: 15px; color: var(--muted); }
+
+    /* ── Lista de itens ───────────────────────────────────────── */
+    #itens {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 4px;
+      border-bottom: 1px solid var(--border);
+    }
+    .item__qtd {
+      flex-shrink: 0;
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 14px;
+    }
+    .item__nome {
+      flex: 1;
+      min-width: 0;
+      font-size: 17px;
+      font-weight: 700;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .item__total {
+      flex-shrink: 0;
+      font-size: 18px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ── Totais ───────────────────────────────────────────────── */
+    #totais {
+      border-top: 2px solid var(--primary);
+      padding-top: 16px;
+      margin-top: 12px;
+    }
+    .linha-total {
+      display: flex;
+      justify-content: space-between;
+      font-size: 15px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .linha-total--final {
+      font-size: 32px;
+      font-weight: 900;
+      color: var(--text);
+      margin-top: 8px;
+    }
+
+    /* ── Tela de "obrigado" após finalizar ────────────────────── */
+    #obrigado {
+      flex: 1;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 16px;
+    }
+    #obrigado.ativo { display: flex; }
+    #obrigado .check {
+      width: 88px;
+      height: 88px;
+      border-radius: 50%;
+      background: var(--success);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 44px;
+    }
+    #obrigado h2 { font-size: 30px; font-weight: 900; }
+    #obrigado .valor { font-size: 40px; font-weight: 900; color: var(--success); }
+    #obrigado p { font-size: 15px; color: var(--muted); }
+
+    #conteudo.escondido { display: none; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1 id="nomeEmpresa">LF ERP</h1>
+    <p>Confira os itens da sua compra</p>
+  </header>
+
+  <main>
+    <div id="obrigado">
+      <div class="check">✓</div>
+      <h2>Obrigado pela preferência!</h2>
+      <div class="valor" id="obrigadoValor">R$ 0,00</div>
+      <p id="obrigadoTroco"></p>
+    </div>
+
+    <div id="conteudo">
+      <div id="vazio">
+        <div class="icone">🛍️</div>
+        <h2>Seja bem-vindo(a)!</h2>
+        <p>Os itens aparecerão aqui conforme forem registrados.</p>
+      </div>
+      <div id="itens" class="hidden"></div>
+      <div id="totais" class="hidden">
+        <div class="linha-total" id="linhaDesconto" style="display:none"><span>Desconto</span><span id="valorDesconto"></span></div>
+        <div class="linha-total" id="linhaAcrescimo" style="display:none"><span>Acréscimo</span><span id="valorAcrescimo"></span></div>
+        <div class="linha-total linha-total--final"><span>Total</span><span id="valorTotal">R$ 0,00</span></div>
+      </div>
+    </div>
+  </main>
+
+  <script src="./js/pdv-cliente.js"></script>
+</body>
+</html>
