@@ -1777,7 +1777,6 @@ async function loadProdutosReal() {
   try {
     const { initProdutosModule } = await import('./produtos.js');
     await initProdutosModule();
-    showToast('Produtos carregados com sucesso.', 'success');
   } catch (error) {
     console.error('Erro ao carregar produtos:', error);
     showToast('Falha ao carregar módulo de produtos.', 'error');
@@ -1797,7 +1796,6 @@ async function loadClientesReal() {
   try {
     const { initClientesModule } = await import('./clientes.js');
     await initClientesModule();
-    showToast('Clientes carregados com sucesso.', 'success');
   } catch (error) {
     console.error('Erro ao carregar clientes:', error);
     showToast('Falha ao carregar módulo de clientes.', 'error');
@@ -1832,7 +1830,6 @@ async function loadVendasReal() {
   try {
     const { initVendasModule } = await import('./vendas.js');
     await initVendasModule();
-    showToast('Vendas carregadas com sucesso.', 'success');
   } catch (error) {
     console.error('Erro ao carregar vendas:', error);
     showToast('Falha ao carregar módulo de vendas.', 'error');
@@ -1848,7 +1845,6 @@ async function loadComprasReal() {
   try {
     const { initComprasModule } = await import('./compras.js');
     await initComprasModule();
-    showToast('Compras carregadas com sucesso.', 'success');
   } catch (error) {
     console.error('Erro ao carregar compras:', error);
     showToast('Falha ao carregar módulo de compras.', 'error');
@@ -1888,7 +1884,6 @@ async function loadContasPagarReal() {
   try {
     const { initContasPagarModule } = await import('./contasPagar.js');
     await initContasPagarModule();
-    showToast('Contas a pagar carregadas com sucesso.', 'success');
   } catch (error) {
     console.error('Erro ao carregar contas a pagar:', error);
     showToast('Falha ao carregar módulo de contas a pagar.', 'error');
@@ -1997,7 +1992,6 @@ async function loadRelatoriosFinanceirosReal() {
   try {
     const { initRelatoriosFinanceirosModule } = await import('./relatoriosFinanceiros.js');
     await initRelatoriosFinanceirosModule();
-    showToast('Relatórios financeiros carregados com sucesso.', 'success');
   } catch (error) {
     console.error('Erro ao carregar relatórios financeiros:', error);
     showToast('Falha ao carregar relatórios financeiros.', 'error');
@@ -2017,7 +2011,6 @@ async function loadFornecedoresReal() {
   try {
     const { initFornecedoresModule } = await import('./fornecedores.js');
     await initFornecedoresModule();
-    showToast('Fornecedores carregados com sucesso.', 'success');
   } catch (error) {
     console.error('Erro ao carregar fornecedores:', error);
     showToast('Falha ao carregar módulo de fornecedores.', 'error');
@@ -2058,7 +2051,6 @@ async function loadUsuariosReal() {
   try {
     const { initUsuariosModule } = await import('./usuarios.js');
     await initUsuariosModule();
-    showToast('Usuários carregados com sucesso.', 'success');
   } catch (error) {
     console.error('Erro ao carregar usuários:', error);
     showToast('Falha ao carregar módulo de usuários.', 'error');

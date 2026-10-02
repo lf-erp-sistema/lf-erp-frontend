@@ -573,9 +573,12 @@ const ProdutosModule = {
               style="width:16px;height:16px;cursor:pointer" />
           </td>
           <td>
-            <div class="table-primary">
-              <strong>${this._highlight(item.nome || '-', q)}</strong>
-              ${badges ? `<div style="margin-top:4px">${badges}</div>` : ''}
+            <div class="table-primary" style="display:flex;align-items:center;gap:10px">
+              ${this._thumbHtml(item)}
+              <div style="min-width:0">
+                <strong>${this._highlight(item.nome || '-', q)}</strong>
+                ${badges ? `<div style="margin-top:4px">${badges}</div>` : ''}
+              </div>
             </div>
           </td>
           <td>${escapeHtml(item.categoria || '-')}</td>
@@ -2278,6 +2281,18 @@ const ProdutosModule = {
       localStorage.setItem('lf_erp_etiquetas', JSON.stringify(dados));
       window.open('./etiquetas.html', '_blank');
     });
+  },
+
+  // ── Miniatura do produto (imagem_thumb vem via JOIN em GET /produtos) ──────
+  // Ícone de fallback sempre no DOM atrás da imagem; se a imagem falhar ao
+  // carregar ela só se esconde (onerror), revelando o ícone — sem recriar
+  // elementos via JS. Mesmo padrão já usado no PDV.
+
+  _thumbHtml(item) {
+    const img = item.imagem_thumb
+      ? `<img src="${escapeHtml(item.imagem_thumb)}" alt="" loading="lazy" onerror="this.style.display='none'">`
+      : '';
+    return `<span class="prd-thumb"><i class="fa-solid fa-box" aria-hidden="true"></i>${img}</span>`;
   },
 
   // ── Helpers de destaque de busca ──────────────────────────────────────────
