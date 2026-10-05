@@ -54,7 +54,14 @@ export function calcPeriodoLocal(preset) {
   let ini = today, fim = today;
   if (preset === '7dias') { const s = new Date(nowBR); s.setDate(s.getDate()-6); ini = fmt(s); }
   else if (preset === '30dias') { const s = new Date(nowBR); s.setDate(s.getDate()-29); ini = fmt(s); }
-  else if (preset === 'mesAtual') { ini = `${nowBR.getFullYear()}-${pad(nowBR.getMonth()+1)}-01`; }
+  else if (preset === 'mesAtual') {
+    ini = `${nowBR.getFullYear()}-${pad(nowBR.getMonth()+1)}-01`;
+    // fim começava em "today" (hoje) e nunca era corrigido: contas com vencimento
+    // entre amanhã e o fim do mês ficavam invisíveis até o dia chegar. Precisa ser
+    // o último dia do mês atual — mesmo truque (dia 0 do mês seguinte) já usado
+    // logo abaixo para 'mesAnterior'.
+    fim = fmt(new Date(nowBR.getFullYear(), nowBR.getMonth() + 1, 0));
+  }
   else if (preset === 'mesAnterior') {
     const m = nowBR.getMonth(), y = nowBR.getFullYear();
     const pm = m === 0 ? 11 : m-1, py = m === 0 ? y-1 : y;

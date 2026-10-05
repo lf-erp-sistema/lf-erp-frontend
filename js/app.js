@@ -1268,6 +1268,12 @@ function applyDefaultPeriodDates() {
     case 'mesAtual': {
       const [y, m] = todayStr.split('-').map(Number);
       start = `${y}-${String(m).padStart(2, '0')}-01`;
+      // end ficava preso em "hoje" (valor padrão) e nunca era corrigido: dias do mês
+      // atual após hoje ficavam fora do filtro. Precisa ser o último dia do mês —
+      // primeiro dia do mês seguinte menos 1 dia.
+      const proxMesY = m === 12 ? y + 1 : y;
+      const proxMesM = m === 12 ? 1 : m + 1;
+      end = shiftDays(`${proxMesY}-${String(proxMesM).padStart(2, '0')}-01`, -1);
       break;
     }
     case 'mesAnterior': {
