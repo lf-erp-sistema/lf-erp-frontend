@@ -93,8 +93,9 @@ const FornecedoresModule = {
     const s = document.createElement('style');
     s.id = 'fo-nc-styles';
     s.textContent = `
-      .fo-nc-card { width: min(96vw, 600px) !important; max-height: 92vh; }
-      .fo-nc-body { overflow-y: auto; }
+      .fo-nc-card { width: min(96vw, 600px) !important; max-height: 92vh; display: flex; flex-direction: column; overflow: hidden; }
+      .fo-nc-card > form { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+      .fo-nc-body { overflow-y: auto; flex: 1 1 auto; min-height: 0; }
       .fo-nc-section { padding: 16px 20px 0; }
       .fo-nc-section:last-child { padding-bottom: 20px; }
       .fo-nc-section-title { font-size: 0.7rem; font-weight: 900; color: var(--text-muted); text-transform: uppercase; letter-spacing: .08em; margin: 0 0 8px; }
