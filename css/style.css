@@ -7141,6 +7141,9 @@ body.pdv-active #pdvContainer.module-placeholder {
 }
 .actions-menu-item:hover { background: var(--surface-2); }
 .actions-menu-item i { color: var(--text-muted); width: 16px; text-align: center; }
+.actions-menu-item .actions-menu-item__check { margin-left: auto; visibility: hidden; color: var(--primary); }
+.actions-menu-item--active { color: var(--primary); font-weight: 700; }
+.actions-menu-item--active .actions-menu-item__check { visibility: visible; }
 .actions-menu-divider { height: 1px; background: var(--border); margin: 4px 0; }
 
 /* Produto table — column hiding by nth-child */

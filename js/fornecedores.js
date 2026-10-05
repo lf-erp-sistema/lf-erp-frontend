@@ -128,6 +128,20 @@ const FornecedoresModule = {
     document.head.appendChild(s);
   },
 
+  _TIPO_LABELS: { '': 'PF + PJ', pj: 'CNPJ (PJ)', pf: 'CPF (PF)', sem: 'Sem documento' },
+
+  _lblFiltroTipo() {
+    return this._TIPO_LABELS[this.state.filtroTipo] ?? 'PF + PJ';
+  },
+
+  _atualizarFiltroTipoUI() {
+    const lbl = document.getElementById('fornecedoresFiltroTipoLbl');
+    if (lbl) lbl.textContent = this._lblFiltroTipo();
+    document.querySelectorAll('#fornecedoresFiltroTipoDropdown [data-tipo-filtro]').forEach((el) => {
+      el.classList.toggle('actions-menu-item--active', el.dataset.tipoFiltro === this.state.filtroTipo);
+    });
+  },
+
   bind() {
     if (this.state.eventsBound) return;
     this.state.eventsBound = true;
@@ -160,11 +174,23 @@ const FornecedoresModule = {
       }
     });
 
-    document.addEventListener('change', (e) => {
-      if (e.target.id === 'fornecedoresFiltroTipo') {
-        this.state.filtroTipo = e.target.value;
+    // ── Dropdown "Tipo de documento" (PF/PJ) — substitui o <select> nativo
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('#fornecedoresFiltroTipoBtn');
+      const dropdown = document.getElementById('fornecedoresFiltroTipoDropdown');
+      if (!dropdown) return;
+      if (btn) { dropdown.classList.toggle('hidden'); return; }
+      const item = e.target.closest('[data-tipo-filtro]');
+      if (item) {
+        this.state.filtroTipo = item.dataset.tipoFiltro;
         this.state.pagina = 1;
+        this._atualizarFiltroTipoUI();
+        dropdown.classList.add('hidden');
         this.search(document.getElementById('fornecedoresSearch')?.value || '');
+        return;
+      }
+      if (!e.target.closest('#fornecedoresFiltroTipoWrapper')) {
+        dropdown.classList.add('hidden');
       }
     });
 
@@ -238,8 +264,7 @@ const FornecedoresModule = {
       this.render();
       this.cache();
       // Restaura filtros visuais
-      const selTipo = document.getElementById('fornecedoresFiltroTipo');
-      if (selTipo) selTipo.value = this.state.filtroTipo;
+      this._atualizarFiltroTipoUI();
       const searchEl = document.getElementById('fornecedoresSearch');
       if (searchEl && searchEl.value) this.search(searchEl.value);
       this.renderTable();
@@ -292,12 +317,27 @@ const FornecedoresModule = {
               placeholder="Buscar por nome, telefone ou e-mail..."
               value="${escapeHtml(this.getCurrentSearchValue())}" />
           </div>
-          <select id="fornecedoresFiltroTipo" class="cl-tb-select">
-            <option value="">PF + PJ</option>
-            <option value="pj">CNPJ (PJ)</option>
-            <option value="pf">CPF (PF)</option>
-            <option value="sem">Sem documento</option>
-          </select>
+          <div class="actions-menu-wrapper" id="fornecedoresFiltroTipoWrapper">
+            <button type="button" class="cl-tb-btn" id="fornecedoresFiltroTipoBtn" title="Filtrar por tipo de documento">
+              <i class="fa-solid fa-id-card"></i>
+              <span class="cl-tb-btn-lbl" id="fornecedoresFiltroTipoLbl">${this._lblFiltroTipo()}</span>
+              <i class="fa-solid fa-chevron-down" style="font-size:10px"></i>
+            </button>
+            <div class="actions-menu-dropdown hidden" id="fornecedoresFiltroTipoDropdown">
+              <button type="button" class="actions-menu-item${this.state.filtroTipo === '' ? ' actions-menu-item--active' : ''}" data-tipo-filtro="">
+                PF + PJ <i class="fa-solid fa-check actions-menu-item__check"></i>
+              </button>
+              <button type="button" class="actions-menu-item${this.state.filtroTipo === 'pj' ? ' actions-menu-item--active' : ''}" data-tipo-filtro="pj">
+                CNPJ (PJ) <i class="fa-solid fa-check actions-menu-item__check"></i>
+              </button>
+              <button type="button" class="actions-menu-item${this.state.filtroTipo === 'pf' ? ' actions-menu-item--active' : ''}" data-tipo-filtro="pf">
+                CPF (PF) <i class="fa-solid fa-check actions-menu-item__check"></i>
+              </button>
+              <button type="button" class="actions-menu-item${this.state.filtroTipo === 'sem' ? ' actions-menu-item--active' : ''}" data-tipo-filtro="sem">
+                Sem documento <i class="fa-solid fa-check actions-menu-item__check"></i>
+              </button>
+            </div>
+          </div>
           <div class="cl-tb-actions">
             <button class="cl-tb-btn" id="fornecedoresExportBtn" title="Exportar CSV">
               <i class="fa-solid fa-file-csv"></i>
