@@ -1750,8 +1750,8 @@ const VendasModule = {
 
     if (this.el.btnAtualizar) {
       this.el.btnAtualizar.innerHTML = value
-        ? '<i class="fa-solid fa-spinner fa-spin"></i> Atualizando...'
-        : '<i class="fa-solid fa-rotate"></i> Atualizar';
+        ? '<i class="fa-solid fa-spinner fa-spin"></i>'
+        : '<i class="fa-solid fa-rotate"></i>';
     }
   },
 
