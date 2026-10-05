@@ -1530,6 +1530,18 @@ function aplicarLogoSidebar(url) {
 
 window.aplicarLogoSidebar = aplicarLogoSidebar;
 
+function aplicarNomeEmpresaSidebar(nome) {
+  if (!nome) return;
+  AppState.empresa = AppState.empresa || {};
+  AppState.empresa.nome = nome;
+  const sidebarCompanyName = document.getElementById('sidebarCompanyName');
+  const topbarCompanyName = document.getElementById('topbarCompanyName');
+  if (sidebarCompanyName) sidebarCompanyName.textContent = nome;
+  if (topbarCompanyName) topbarCompanyName.textContent = nome;
+}
+
+window.aplicarNomeEmpresaSidebar = aplicarNomeEmpresaSidebar;
+
 function hexToHsl(hex) {
   const r = parseInt(hex.slice(1,3),16)/255, g = parseInt(hex.slice(3,5),16)/255, b = parseInt(hex.slice(5,7),16)/255;
   const max = Math.max(r,g,b), min = Math.min(r,g,b);

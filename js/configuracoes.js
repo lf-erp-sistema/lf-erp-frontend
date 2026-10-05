@@ -219,6 +219,7 @@ const ConfigModule = {
       const chave = `lf_cor_${this.state.dados?.empresa_id || this.state.dados?.empresa || this.state.empresa || ''}`;
       try { cor ? localStorage.setItem(chave, cor) : localStorage.removeItem(chave); } catch(_) {}
       if (typeof window.aplicarCorPrimaria === 'function') window.aplicarCorPrimaria(cor);
+      if (nome && typeof window.aplicarNomeEmpresaSidebar === 'function') window.aplicarNomeEmpresaSidebar(nome);
 
       showToast('Configurações salvas com sucesso', 'success');
     } catch (err) {
