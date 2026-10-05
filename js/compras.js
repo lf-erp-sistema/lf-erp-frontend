@@ -68,11 +68,34 @@ const ComprasModule = {
     };
   },
 
+  _filtrosCompraAtivos() {
+    return [this.state.filtroStatus, this.state.filtroFornecedor].filter(Boolean).length;
+  },
+
+  _atualizarBadgeFiltrosCompras() {
+    const badge = document.getElementById('comprasFiltrosBadge');
+    if (!badge) return;
+    const n = this._filtrosCompraAtivos();
+    badge.textContent = String(n);
+    badge.classList.toggle('hidden', n === 0);
+  },
+
   bind() {
     if (this.state.eventsBound) return;
     this.state.eventsBound = true;
     this._injectStyles();
     this._injectCmpStyles();
+
+    // ── "Ações" dropdown (status, fornecedor, Importar XML)
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('#comprasActionsBtn');
+      const dropdown = document.getElementById('comprasActionsDropdown');
+      if (!dropdown) return;
+      if (btn) { dropdown.classList.toggle('hidden'); return; }
+      if (!e.target.closest('#comprasActionsWrapper')) {
+        dropdown.classList.add('hidden');
+      }
+    });
 
     const debouncedSearch = debounce((v) => this.search(v), 350);
 
@@ -94,6 +117,7 @@ const ComprasModule = {
       if (e.target.id === 'comprasFiltroStatus' || e.target.id === 'comprasFiltroFornecedor') {
         this.state.filtroStatus = document.getElementById('comprasFiltroStatus')?.value || '';
         this.state.filtroFornecedor = document.getElementById('comprasFiltroFornecedor')?.value || '';
+        this._atualizarBadgeFiltrosCompras();
         this.search(this.el.search?.value || '');
       }
       if (e.target.id === 'compDataIni' || e.target.id === 'compDataFim') {
@@ -300,20 +324,34 @@ const ComprasModule = {
             <input id="comprasSearch" placeholder="Buscar por fornecedor, data ou número da compra..."
               value="${escapeHtml(this.getCurrentSearchValue())}" />
           </div>
-          <select id="comprasFiltroStatus" class="cl-tb-select">
-            <option value="">Todos os status</option>
-            <option value="finalizada" ${this.state.filtroStatus === 'finalizada' ? 'selected' : ''}>Finalizada</option>
-            <option value="pendente" ${this.state.filtroStatus === 'pendente' ? 'selected' : ''}>Pendente</option>
-          </select>
-          <select id="comprasFiltroFornecedor" class="cl-tb-select" style="min-width:160px">
-            <option value="">Todos os fornecedores</option>
-            ${this.state.fornecedores.map(f => `<option value="${f.id}" ${String(this.state.filtroFornecedor) === String(f.id) ? 'selected' : ''}>${escapeHtml(f.nome)}</option>`).join('')}
-          </select>
           <div class="cl-tb-actions">
-            <button class="cl-tb-btn" id="importarXmlBtn" type="button" title="Importar NF do fornecedor (XML)">
-              <i class="fa-solid fa-file-import"></i>
-              <span class="cl-tb-btn-lbl">Importar XML</span>
-            </button>
+            <div class="actions-menu-wrapper" id="comprasActionsWrapper">
+              <button type="button" class="cl-tb-btn" id="comprasActionsBtn" title="Ações">
+                <i class="fa-solid fa-ellipsis"></i>
+                <span class="cl-tb-btn-lbl">Ações</span>
+                <span id="comprasFiltrosBadge" class="badge badge--primary${this._filtrosCompraAtivos() ? '' : ' hidden'}" style="font-size:.7rem">${this._filtrosCompraAtivos()}</span>
+                <i class="fa-solid fa-chevron-down" style="font-size:10px"></i>
+              </button>
+              <div class="actions-menu-dropdown hidden" id="comprasActionsDropdown" style="min-width:230px;padding:10px 0 4px;max-height:min(560px,80vh);overflow-y:auto">
+                <div style="padding:0 14px">
+                  <label class="prd-filtro-lbl" for="comprasFiltroStatus">Status</label>
+                  <select id="comprasFiltroStatus" class="cl-tb-select" style="width:100%;margin-bottom:12px">
+                    <option value="">Todos os status</option>
+                    <option value="finalizada" ${this.state.filtroStatus === 'finalizada' ? 'selected' : ''}>Finalizada</option>
+                    <option value="pendente" ${this.state.filtroStatus === 'pendente' ? 'selected' : ''}>Pendente</option>
+                  </select>
+                  <label class="prd-filtro-lbl" for="comprasFiltroFornecedor">Fornecedor</label>
+                  <select id="comprasFiltroFornecedor" class="cl-tb-select" style="width:100%">
+                    <option value="">Todos os fornecedores</option>
+                    ${this.state.fornecedores.map(f => `<option value="${f.id}" ${String(this.state.filtroFornecedor) === String(f.id) ? 'selected' : ''}>${escapeHtml(f.nome)}</option>`).join('')}
+                  </select>
+                </div>
+                <div class="actions-menu-divider" style="margin:10px 0 4px"></div>
+                <button class="actions-menu-item" id="importarXmlBtn" type="button">
+                  <i class="fa-solid fa-file-import"></i> Importar XML
+                </button>
+              </div>
+            </div>
             <button class="cl-tb-btn cl-tb-btn--primary" id="novaCompraBtn" type="button">
               <i class="fa-solid fa-plus"></i>
               <span class="cl-tb-btn-lbl">Nova Compra</span>
@@ -1287,8 +1325,9 @@ const ComprasModule = {
     const s = document.createElement('style');
     s.id = 'cmp-nc-styles';
     s.textContent = `
-      .cmp-nc-card { width: min(96vw, 600px) !important; max-height: 92vh; }
-      .cmp-nc-body { overflow-y: auto; }
+      .cmp-nc-card { width: min(96vw, 600px) !important; max-height: 92vh; display: flex; flex-direction: column; overflow: hidden; }
+      .cmp-nc-card > form { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+      .cmp-nc-body { overflow-y: auto; flex: 1 1 auto; min-height: 0; }
       .cmp-nc-section { padding: 16px 20px 0; }
       .cmp-nc-section:last-child { padding-bottom: 20px; }
       .cmp-nc-section-title { font-size: 0.7rem; font-weight: 900; color: var(--text-muted); text-transform: uppercase; letter-spacing: .08em; margin: 0 0 8px; }

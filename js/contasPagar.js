@@ -28,6 +28,8 @@ const state = {
   ordemDir: 'desc'
 };
 
+let _cpDropdownCloseBound = false;
+
 function salvarFiltrosCP() {
   try { sessionStorage.setItem('lf_filtros_cp', JSON.stringify(state.filtros)); } catch {}
 }
@@ -71,8 +73,8 @@ function setLoading(value) {
 
   if (btnAtualizar) {
     btnAtualizar.innerHTML = value
-      ? '<i class="fa-solid fa-spinner fa-spin"></i> Atualizando...'
-      : '<i class="fa-solid fa-rotate"></i> Atualizar';
+      ? '<i class="fa-solid fa-spinner fa-spin"></i>'
+      : '<i class="fa-solid fa-rotate"></i>';
   }
 }
 
@@ -319,33 +321,48 @@ function render() {
             placeholder="Buscar fornecedor, descrição, observação ou nº da compra..."
             value="${escapeHtml(state.filtros.busca || '')}" />
         </div>
-        <select id="cpStatus" class="cl-tb-select">
-          <option value="">Todos os status</option>
-          <option value="pendente" ${state.filtros.status === 'pendente' ? 'selected' : ''}>Pendentes</option>
-          <option value="atrasado" ${state.filtros.status === 'atrasado' ? 'selected' : ''}>Atrasadas</option>
-          <option value="pago" ${state.filtros.status === 'pago' ? 'selected' : ''}>Pagas</option>
-          <option value="parcial" ${state.filtros.status === 'parcial' ? 'selected' : ''}>Parciais</option>
-          <option value="parcial_atrasado" ${state.filtros.status === 'parcial_atrasado' ? 'selected' : ''}>Parcial em atraso</option>
-        </select>
-        <select id="cpFornecedor" class="cl-tb-select">
-          <option value="">Todos os fornecedores</option>
-          ${state.fornecedores.map(fornecedor => `
-            <option value="${fornecedor.id}" ${String(state.filtros.fornecedor_id) === String(fornecedor.id) ? 'selected' : ''}>
-              ${escapeHtml(fornecedor.nome)}
-            </option>
-          `).join('')}
-        </select>
         <div class="cl-tb-actions">
+          <div class="actions-menu-wrapper" id="cpActionsWrapper">
+            <button type="button" class="cl-tb-btn" id="cpActionsBtn" title="Ações">
+              <i class="fa-solid fa-ellipsis"></i>
+              <span class="cl-tb-btn-lbl">Ações</span>
+              <span id="cpFiltrosBadge" class="badge badge--primary${[state.filtros.status, state.filtros.fornecedor_id].filter(Boolean).length ? '' : ' hidden'}" style="font-size:.7rem">${[state.filtros.status, state.filtros.fornecedor_id].filter(Boolean).length}</span>
+              <i class="fa-solid fa-chevron-down" style="font-size:10px"></i>
+            </button>
+            <div class="actions-menu-dropdown hidden" id="cpActionsDropdown" style="min-width:230px;padding:10px 0 4px;max-height:min(560px,80vh);overflow-y:auto">
+              <div style="padding:0 14px">
+                <label class="prd-filtro-lbl" for="cpStatus">Status</label>
+                <select id="cpStatus" class="cl-tb-select" style="width:100%;margin-bottom:12px">
+                  <option value="">Todos os status</option>
+                  <option value="pendente" ${state.filtros.status === 'pendente' ? 'selected' : ''}>Pendentes</option>
+                  <option value="atrasado" ${state.filtros.status === 'atrasado' ? 'selected' : ''}>Atrasadas</option>
+                  <option value="pago" ${state.filtros.status === 'pago' ? 'selected' : ''}>Pagas</option>
+                  <option value="parcial" ${state.filtros.status === 'parcial' ? 'selected' : ''}>Parciais</option>
+                  <option value="parcial_atrasado" ${state.filtros.status === 'parcial_atrasado' ? 'selected' : ''}>Parcial em atraso</option>
+                </select>
+                <label class="prd-filtro-lbl" for="cpFornecedor">Fornecedor</label>
+                <select id="cpFornecedor" class="cl-tb-select" style="width:100%;margin-bottom:12px">
+                  <option value="">Todos os fornecedores</option>
+                  ${state.fornecedores.map(fornecedor => `
+                    <option value="${fornecedor.id}" ${String(state.filtros.fornecedor_id) === String(fornecedor.id) ? 'selected' : ''}>
+                      ${escapeHtml(fornecedor.nome)}
+                    </option>
+                  `).join('')}
+                </select>
+                <div style="display:flex;gap:8px">
+                  <button type="button" class="btn btn-primary" id="btnFiltrarContasPagar" style="flex:1;justify-content:center">
+                    <i class="fa-solid fa-filter"></i> Filtrar
+                  </button>
+                  <button type="button" class="btn btn-light" id="btnLimparFiltrosContasPagar" style="flex:1;justify-content:center">
+                    <i class="fa-solid fa-eraser"></i> Limpar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
           <button class="cl-tb-btn cl-tb-btn--primary" id="btnNovaContaPagar" type="button">
             <i class="fa-solid fa-plus"></i>
             <span class="cl-tb-btn-lbl">Nova Conta</span>
-          </button>
-          <button class="cl-tb-btn" id="btnFiltrarContasPagar" type="button" title="Filtrar">
-            <i class="fa-solid fa-filter"></i>
-            <span class="cl-tb-btn-lbl">Filtrar</span>
-          </button>
-          <button class="cl-tb-btn" id="btnLimparFiltrosContasPagar" type="button" title="Limpar filtros">
-            <i class="fa-solid fa-eraser"></i>
           </button>
           <button class="cl-tb-btn cl-tb-btn--icon" id="btnAtualizarContasPagar" type="button" title="Atualizar">
             <i class="fa-solid fa-rotate"></i>
@@ -525,6 +542,21 @@ function bindEventos() {
   const busca = document.getElementById('cpBusca');
   const status = document.getElementById('cpStatus');
   const fornecedor = document.getElementById('cpFornecedor');
+
+  // ── "Ações" dropdown — elemento é recriado a cada render(), então o toggle
+  // é ligado direto nele (sem acumular); o fechar-ao-clicar-fora usa um
+  // listener único no document, registrado apenas na primeira vez.
+  document.getElementById('cpActionsBtn')?.addEventListener('click', () => {
+    document.getElementById('cpActionsDropdown')?.classList.toggle('hidden');
+  });
+  if (!_cpDropdownCloseBound) {
+    _cpDropdownCloseBound = true;
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#cpActionsWrapper')) {
+        document.getElementById('cpActionsDropdown')?.classList.add('hidden');
+      }
+    });
+  }
 
   document.getElementById('btnNovaContaPagar')?.addEventListener('click', () => {
     abrirModalNovaContaPagar();
