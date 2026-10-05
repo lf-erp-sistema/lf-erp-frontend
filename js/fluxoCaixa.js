@@ -56,8 +56,8 @@ function setLoading(value) {
 
   if (btnAtualizar) {
     btnAtualizar.innerHTML = value
-      ? '<i class="fa-solid fa-spinner fa-spin"></i> Atualizando...'
-      : '<i class="fa-solid fa-rotate"></i> Atualizar';
+      ? '<i class="fa-solid fa-spinner fa-spin"></i>'
+      : '<i class="fa-solid fa-rotate"></i>';
   }
 }
 
@@ -254,9 +254,9 @@ function render() {
         </div>
       </div>
 
-      <div class="fluxo-toolbar-grid">
-        <div class="module-toolbar__search fluxo-search-box">
-          <i class="fa-solid fa-search"></i>
+      <div class="cl-tb-row">
+        <div class="cl-tb-search">
+          <i class="fa-solid fa-magnifying-glass"></i>
           <input
             type="text"
             id="fluxoBusca"
@@ -264,39 +264,43 @@ function render() {
             value="${escapeHtml(state.filtros.busca)}"
           />
         </div>
-
-        <div class="fluxo-filter-box">
-          <select id="fluxoTipo" class="input">
-            <option value="">Entradas e saídas</option>
-            <option value="entrada" ${state.filtros.tipo === 'entrada' ? 'selected' : ''}>Somente entradas</option>
-            <option value="saida" ${state.filtros.tipo === 'saida' ? 'selected' : ''}>Somente saídas</option>
-          </select>
-        </div>
-
-        <div class="fluxo-filter-box">
-          <select id="fluxoOrigem" class="input">
-            <option value="">Todas as origens</option>
-            <option value="conta_receber" ${state.filtros.origem === 'conta_receber' ? 'selected' : ''}>Contas a Receber</option>
-            <option value="conta_pagar" ${state.filtros.origem === 'conta_pagar' ? 'selected' : ''}>Contas a Pagar</option>
-            <option value="lancamento_financeiro" ${state.filtros.origem === 'lancamento_financeiro' ? 'selected' : ''}>Lançamentos</option>
-            <option value="investimento" ${state.filtros.origem === 'investimento' ? 'selected' : ''}>Investimentos</option>
-          </select>
-        </div>
-
-        <div class="fluxo-action-box">
-          <button class="btn btn-primary" id="btnFiltrarFluxoCaixa" type="button">
-            <i class="fa-solid fa-filter"></i>
-            Filtrar
-          </button>
-
-          <button class="btn btn-light" id="btnLimparFluxoCaixa" type="button">
-            <i class="fa-solid fa-eraser"></i>
-            Limpar
-          </button>
-
-          <button class="btn btn-light" id="btnAtualizarFluxoCaixa" type="button">
+        <div class="cl-tb-actions">
+          <div class="actions-menu-wrapper" id="fluxoActionsWrapper">
+            <button type="button" class="cl-tb-btn" id="fluxoActionsBtn" title="Ações">
+              <i class="fa-solid fa-ellipsis"></i>
+              <span class="cl-tb-btn-lbl">Ações</span>
+              <span id="fluxoFiltrosBadge" class="badge badge--primary${[state.filtros.tipo, state.filtros.origem].filter(Boolean).length ? '' : ' hidden'}" style="font-size:.7rem">${[state.filtros.tipo, state.filtros.origem].filter(Boolean).length}</span>
+              <i class="fa-solid fa-chevron-down" style="font-size:10px"></i>
+            </button>
+            <div class="actions-menu-dropdown hidden" id="fluxoActionsDropdown" style="min-width:230px;padding:10px 0 4px;max-height:min(560px,80vh);overflow-y:auto">
+              <div style="padding:0 14px">
+                <label class="prd-filtro-lbl" for="fluxoTipo">Tipo</label>
+                <select id="fluxoTipo" class="cl-tb-select" style="width:100%;margin-bottom:12px">
+                  <option value="">Entradas e saídas</option>
+                  <option value="entrada" ${state.filtros.tipo === 'entrada' ? 'selected' : ''}>Somente entradas</option>
+                  <option value="saida" ${state.filtros.tipo === 'saida' ? 'selected' : ''}>Somente saídas</option>
+                </select>
+                <label class="prd-filtro-lbl" for="fluxoOrigem">Origem</label>
+                <select id="fluxoOrigem" class="cl-tb-select" style="width:100%;margin-bottom:12px">
+                  <option value="">Todas as origens</option>
+                  <option value="conta_receber" ${state.filtros.origem === 'conta_receber' ? 'selected' : ''}>Contas a Receber</option>
+                  <option value="conta_pagar" ${state.filtros.origem === 'conta_pagar' ? 'selected' : ''}>Contas a Pagar</option>
+                  <option value="lancamento_financeiro" ${state.filtros.origem === 'lancamento_financeiro' ? 'selected' : ''}>Lançamentos</option>
+                  <option value="investimento" ${state.filtros.origem === 'investimento' ? 'selected' : ''}>Investimentos</option>
+                </select>
+                <div style="display:flex;gap:8px">
+                  <button type="button" class="btn btn-primary" id="btnFiltrarFluxoCaixa" style="flex:1;justify-content:center">
+                    <i class="fa-solid fa-filter"></i> Filtrar
+                  </button>
+                  <button type="button" class="btn btn-light" id="btnLimparFluxoCaixa" style="flex:1;justify-content:center">
+                    <i class="fa-solid fa-eraser"></i> Limpar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <button class="cl-tb-btn cl-tb-btn--icon" id="btnAtualizarFluxoCaixa" type="button" title="Atualizar">
             <i class="fa-solid fa-rotate"></i>
-            Atualizar
           </button>
         </div>
       </div>
@@ -639,7 +643,22 @@ function renderCashflowFuturo() {
   });
 }
 
+let _fluxoDropdownCloseBound = false;
+
 function bindEventos() {
+  // ── "Ações" dropdown
+  document.getElementById('fluxoActionsBtn')?.addEventListener('click', () => {
+    document.getElementById('fluxoActionsDropdown')?.classList.toggle('hidden');
+  });
+  if (!_fluxoDropdownCloseBound) {
+    _fluxoDropdownCloseBound = true;
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#fluxoActionsWrapper')) {
+        document.getElementById('fluxoActionsDropdown')?.classList.add('hidden');
+      }
+    });
+  }
+
   const btnAtualizar = document.getElementById('btnAtualizarFluxoCaixa');
   const btnFiltrar = document.getElementById('btnFiltrarFluxoCaixa');
   const btnLimpar = document.getElementById('btnLimparFluxoCaixa');
