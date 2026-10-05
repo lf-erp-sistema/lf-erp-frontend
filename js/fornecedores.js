@@ -346,7 +346,7 @@ const FornecedoresModule = {
             </button>
           </div>
 
-          <form id="fornecedorForm">
+          <form id="fornecedorForm" autocomplete="off">
             <div class="fo-nc-body">
 
               <div class="fo-nc-section">
