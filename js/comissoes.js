@@ -117,21 +117,34 @@ const ComissoesModule = {
             <button class="btn-inline" data-com-aba="detalhes">Detalhes</button>
             <button class="btn-inline" data-com-aba="config">Configuração</button>
           </div>
-          <select id="comFiltroPeriodo" class="filter-input">
-            ${[
-              ['mes_atual',   'Este mês'],
-              ['mes_passado', 'Mês passado'],
-              ['trimestre',   'Últimos 3 meses'],
-              ['ano_atual',   'Este ano'],
-              ['todos',       'Todos']
-            ].map(([v, l]) => `<option value="${v}"${this.state.filtroPeriodo === v ? ' selected' : ''}>${l}</option>`).join('')}
-          </select>
           <div class="module-card__actions">
-            <button class="btn btn-light" id="comExportarBtn">
-              <i class="fa-solid fa-file-csv"></i> Exportar CSV
-            </button>
-            <button class="btn btn-light" id="comAtualizarBtn">
-              <i class="fa-solid fa-rotate"></i> Atualizar
+            <div class="actions-menu-wrapper" id="comActionsWrapper">
+              <button type="button" class="cl-tb-btn" id="comActionsBtn" title="Ações">
+                <i class="fa-solid fa-ellipsis"></i>
+                <span class="cl-tb-btn-lbl">Ações</span>
+                <i class="fa-solid fa-chevron-down" style="font-size:10px"></i>
+              </button>
+              <div class="actions-menu-dropdown hidden" id="comActionsDropdown">
+                <div style="padding:0 14px 10px">
+                  <label class="prd-filtro-lbl" for="comFiltroPeriodo">Período</label>
+                  <select id="comFiltroPeriodo" class="cl-tb-select" style="width:100%">
+                    ${[
+                      ['mes_atual',   'Este mês'],
+                      ['mes_passado', 'Mês passado'],
+                      ['trimestre',   'Últimos 3 meses'],
+                      ['ano_atual',   'Este ano'],
+                      ['todos',       'Todos']
+                    ].map(([v, l]) => `<option value="${v}"${this.state.filtroPeriodo === v ? ' selected' : ''}>${l}</option>`).join('')}
+                  </select>
+                </div>
+                <div class="actions-menu-divider"></div>
+                <button type="button" class="actions-menu-item" id="comExportarBtn">
+                  <i class="fa-solid fa-file-csv"></i> Exportar CSV
+                </button>
+              </div>
+            </div>
+            <button class="cl-tb-btn cl-tb-btn--icon" id="comAtualizarBtn" title="Atualizar">
+              <i class="fa-solid fa-rotate"></i>
             </button>
           </div>
         </div>
@@ -144,6 +157,18 @@ const ComissoesModule = {
   bindShellEvents() {
     const c = document.getElementById('comissoesContainer');
     if (!c) return;
+
+    document.getElementById('comActionsBtn')?.addEventListener('click', () => {
+      document.getElementById('comActionsDropdown')?.classList.toggle('hidden');
+    });
+    if (!this._comDropdownCloseBound) {
+      this._comDropdownCloseBound = true;
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('#comActionsWrapper')) {
+          document.getElementById('comActionsDropdown')?.classList.add('hidden');
+        }
+      });
+    }
 
     document.getElementById('comAtualizarBtn')?.addEventListener('click', () => { if (this.state.carregando) return; this.load(); });
     document.getElementById('comExportarBtn')?.addEventListener('click', () => this.exportar());
