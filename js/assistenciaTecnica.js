@@ -301,17 +301,31 @@ const AT = {
             <i class="fa-solid fa-magnifying-glass"></i>
             <input type="text" id="atBusca" placeholder="Buscar por número, IMEI, cliente, modelo…" autocomplete="off">
           </div>
-          <select id="atFiltroStatus" class="cl-tb-select">
-            <option value="">Todos os status</option>
-            ${Object.entries(STATUS_LABEL).map(([v,l]) => `<option value="${v}">${l}</option>`).join('')}
-          </select>
           <div class="cl-tb-actions">
-            <button class="cl-tb-btn" id="atBtnAparelhos" title="Aparelhos">
-              <i class="fa-solid fa-mobile-screen-button"></i><span class="cl-tb-btn-lbl">Aparelhos</span>
-            </button>
-            <button class="cl-tb-btn" id="atBtnGarantias" title="Garantias">
-              <i class="fa-solid fa-shield-halved"></i><span class="cl-tb-btn-lbl">Garantias</span>
-            </button>
+            <div class="actions-menu-wrapper" id="atActionsWrapper">
+              <button type="button" class="cl-tb-btn" id="atActionsBtn" title="Ações">
+                <i class="fa-solid fa-ellipsis"></i>
+                <span class="cl-tb-btn-lbl">Ações</span>
+                <span id="atFiltrosBadge" class="badge badge--primary${this.state.filtroStatus ? '' : ' hidden'}" style="font-size:.7rem">${this.state.filtroStatus ? 1 : 0}</span>
+                <i class="fa-solid fa-chevron-down" style="font-size:10px"></i>
+              </button>
+              <div class="actions-menu-dropdown hidden" id="atActionsDropdown">
+                <div style="padding:0 14px 10px">
+                  <label class="prd-filtro-lbl" for="atFiltroStatus">Status</label>
+                  <select id="atFiltroStatus" class="cl-tb-select" style="width:100%">
+                    <option value="">Todos os status</option>
+                    ${Object.entries(STATUS_LABEL).map(([v,l]) => `<option value="${v}">${l}</option>`).join('')}
+                  </select>
+                </div>
+                <div class="actions-menu-divider"></div>
+                <button type="button" class="actions-menu-item" id="atBtnAparelhos">
+                  <i class="fa-solid fa-mobile-screen-button"></i> Aparelhos
+                </button>
+                <button type="button" class="actions-menu-item" id="atBtnGarantias">
+                  <i class="fa-solid fa-shield-halved"></i> Garantias
+                </button>
+              </div>
+            </div>
             <button class="cl-tb-btn cl-tb-btn--primary" id="atBtnNova">
               <i class="fa-solid fa-plus"></i><span class="cl-tb-btn-lbl">Nova OS</span>
             </button>
@@ -370,9 +384,27 @@ const AT = {
       if (e.target.id === 'atFiltroStatus') {
         this.state.filtroStatus = e.target.value;
         this.state.paginaAtual = 0;
+        const badge = document.getElementById('atFiltrosBadge');
+        if (badge) {
+          badge.textContent = this.state.filtroStatus ? '1' : '0';
+          badge.classList.toggle('hidden', !this.state.filtroStatus);
+        }
         this.loadOS();
       }
     });
+
+    // ── "Ações" dropdown
+    document.getElementById('atActionsBtn')?.addEventListener('click', () => {
+      document.getElementById('atActionsDropdown')?.classList.toggle('hidden');
+    });
+    if (!this._atDropdownCloseBound) {
+      this._atDropdownCloseBound = true;
+      document.addEventListener('click', e => {
+        if (!e.target.closest('#atActionsWrapper')) {
+          document.getElementById('atActionsDropdown')?.classList.add('hidden');
+        }
+      });
+    }
 
     c.addEventListener('click', async e => {
       const btn = e.target.closest('button[data-action]');
