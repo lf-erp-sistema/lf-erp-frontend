@@ -54,8 +54,8 @@ function setLoading(v) {
   if (btn) {
     btn.disabled = v;
     btn.innerHTML = v
-      ? '<i class="fa-solid fa-spinner fa-spin"></i> Atualizando...'
-      : '<i class="fa-solid fa-rotate"></i> Atualizar';
+      ? '<i class="fa-solid fa-spinner fa-spin"></i>'
+      : '<i class="fa-solid fa-rotate"></i>';
   }
 }
 
@@ -259,8 +259,9 @@ function _injectLfStyles() {
   const s = document.createElement('style');
   s.id = 'lf-nc-styles';
   s.textContent = `
-    .lf-nc-card { width: min(96vw, 560px) !important; max-height: 92vh; }
-    .lf-nc-body { overflow-y: auto; }
+    .lf-nc-card { width: min(96vw, 560px) !important; max-height: 92vh; display: flex; flex-direction: column; overflow: hidden; }
+    .lf-nc-card > form { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+    .lf-nc-body { overflow-y: auto; flex: 1 1 auto; min-height: 0; }
     .lf-nc-section { padding: 16px 20px 0; }
     .lf-nc-section:last-child { padding-bottom: 20px; }
     .lf-nc-section-title { font-size: 0.7rem; font-weight: 900; color: var(--text-muted); text-transform: uppercase; letter-spacing: .08em; margin: 0 0 8px; }
@@ -440,30 +441,45 @@ function render() {
           <i class="fa-solid fa-magnifying-glass"></i>
           <input type="text" id="lfBusca" placeholder="Buscar descrição, categoria..." value="${esc(state.filtros.busca)}"/>
         </div>
-        <select id="lfTipo" class="cl-tb-select">
-          <option value="">Todos os tipos</option>
-          <option value="receita"  ${state.filtros.tipo === 'receita'  ? 'selected' : ''}>Receitas</option>
-          <option value="despesa"  ${state.filtros.tipo === 'despesa'  ? 'selected' : ''}>Despesas</option>
-        </select>
-        <select id="lfStatus" class="cl-tb-select">
-          <option value="">Todos os status</option>
-          <option value="pendente"         ${state.filtros.status === 'pendente'         ? 'selected' : ''}>Pendentes</option>
-          <option value="pago"             ${state.filtros.status === 'pago'             ? 'selected' : ''}>Pagos</option>
-          <option value="atrasado"         ${state.filtros.status === 'atrasado'         ? 'selected' : ''}>Atrasados</option>
-          <option value="parcial"          ${state.filtros.status === 'parcial'          ? 'selected' : ''}>Parciais</option>
-          <option value="parcial_atrasado" ${state.filtros.status === 'parcial_atrasado' ? 'selected' : ''}>Parcial em atraso</option>
-        </select>
         <div class="cl-tb-actions">
+          <div class="actions-menu-wrapper" id="lfActionsWrapper">
+            <button type="button" class="cl-tb-btn" id="lfActionsBtn" title="Ações">
+              <i class="fa-solid fa-ellipsis"></i>
+              <span class="cl-tb-btn-lbl">Ações</span>
+              <span id="lfFiltrosBadge" class="badge badge--primary${[state.filtros.tipo, state.filtros.status].filter(Boolean).length ? '' : ' hidden'}" style="font-size:.7rem">${[state.filtros.tipo, state.filtros.status].filter(Boolean).length}</span>
+              <i class="fa-solid fa-chevron-down" style="font-size:10px"></i>
+            </button>
+            <div class="actions-menu-dropdown hidden" id="lfActionsDropdown" style="min-width:230px;padding:10px 0 4px;max-height:min(560px,80vh);overflow-y:auto">
+              <div style="padding:0 14px">
+                <label class="prd-filtro-lbl" for="lfTipo">Tipo</label>
+                <select id="lfTipo" class="cl-tb-select" style="width:100%;margin-bottom:12px">
+                  <option value="">Todos os tipos</option>
+                  <option value="receita"  ${state.filtros.tipo === 'receita'  ? 'selected' : ''}>Receitas</option>
+                  <option value="despesa"  ${state.filtros.tipo === 'despesa'  ? 'selected' : ''}>Despesas</option>
+                </select>
+                <label class="prd-filtro-lbl" for="lfStatus">Status</label>
+                <select id="lfStatus" class="cl-tb-select" style="width:100%;margin-bottom:12px">
+                  <option value="">Todos os status</option>
+                  <option value="pendente"         ${state.filtros.status === 'pendente'         ? 'selected' : ''}>Pendentes</option>
+                  <option value="pago"             ${state.filtros.status === 'pago'             ? 'selected' : ''}>Pagos</option>
+                  <option value="atrasado"         ${state.filtros.status === 'atrasado'         ? 'selected' : ''}>Atrasados</option>
+                  <option value="parcial"          ${state.filtros.status === 'parcial'          ? 'selected' : ''}>Parciais</option>
+                  <option value="parcial_atrasado" ${state.filtros.status === 'parcial_atrasado' ? 'selected' : ''}>Parcial em atraso</option>
+                </select>
+                <div style="display:flex;gap:8px">
+                  <button type="button" class="btn btn-primary" id="lfBtnFiltrar" style="flex:1;justify-content:center">
+                    <i class="fa-solid fa-filter"></i> Filtrar
+                  </button>
+                  <button type="button" class="btn btn-light" id="lfBtnLimpar" style="flex:1;justify-content:center">
+                    <i class="fa-solid fa-eraser"></i> Limpar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
           <button class="cl-tb-btn cl-tb-btn--primary" id="lfBtnNovo" type="button">
             <i class="fa-solid fa-plus"></i>
             <span class="cl-tb-btn-lbl">Novo Lançamento</span>
-          </button>
-          <button class="cl-tb-btn" id="lfBtnFiltrar" type="button" title="Filtrar">
-            <i class="fa-solid fa-filter"></i>
-            <span class="cl-tb-btn-lbl">Filtrar</span>
-          </button>
-          <button class="cl-tb-btn cl-tb-btn--icon" id="lfBtnLimpar" type="button" title="Limpar filtros">
-            <i class="fa-solid fa-eraser"></i>
           </button>
           <button class="cl-tb-btn cl-tb-btn--icon" id="lfBtnAtualizar" type="button" title="Atualizar">
             <i class="fa-solid fa-rotate"></i>
@@ -710,7 +726,22 @@ function _abrirAcoesLFModal(btn) {
 
 // ─── Eventos ──────────────────────────────────────────────────────────────────
 
+let _lfDropdownCloseBound = false;
+
 function bindEventos() {
+  // ── "Ações" dropdown
+  document.getElementById('lfActionsBtn')?.addEventListener('click', () => {
+    document.getElementById('lfActionsDropdown')?.classList.toggle('hidden');
+  });
+  if (!_lfDropdownCloseBound) {
+    _lfDropdownCloseBound = true;
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#lfActionsWrapper')) {
+        document.getElementById('lfActionsDropdown')?.classList.add('hidden');
+      }
+    });
+  }
+
   // Abrir modal para novo lançamento
   document.getElementById('lfBtnNovo').onclick = () => abrirModal(null);
 
