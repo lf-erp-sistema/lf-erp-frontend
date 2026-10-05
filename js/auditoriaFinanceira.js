@@ -220,30 +220,52 @@ function renderUI() {
       </div>`;
 
   return `
-    <div class="aud-toolbar-grid">
-      <select id="audFiltroTipo" class="input">
-        <option value="">Todos os tipos</option>
-        ${Object.entries(TIPO_LABEL).map(([k,v]) => `<option value="${k}" ${state.filtros.tipo===k?'selected':''}>${v}</option>`).join('')}
-      </select>
-      <select id="audFiltroEntidade" class="input">
-        <option value="">Todas as entidades</option>
-        ${Object.entries(ENTIDADE_LABEL).map(([k,v]) => `<option value="${k}" ${state.filtros.entidade===k?'selected':''}>${v}</option>`).join('')}
-      </select>
-      <select id="audFiltroPeriodo" class="input">
-        <option value="hoje"     ${state.filtros.periodo==='hoje'     ?'selected':''}>Hoje</option>
-        <option value="7dias"    ${state.filtros.periodo==='7dias'    ?'selected':''}>Últimos 7 dias</option>
-        <option value="mesAtual" ${state.filtros.periodo==='mesAtual' ?'selected':''}>Este mês</option>
-        <option value="30dias"   ${state.filtros.periodo==='30dias'   ?'selected':''}>30 dias</option>
-        <option value="90dias"   ${state.filtros.periodo==='90dias'   ?'selected':''}>90 dias</option>
-        <option value="anoAtual" ${state.filtros.periodo==='anoAtual' ?'selected':''}>Este ano</option>
-      </select>
-      <input id="audFiltroBusca" type="text" class="input" placeholder="Buscar descrição…" value="${esc(state.filtros.busca)}">
-      <button id="audBtnLimpar" class="btn btn-light" title="Limpar filtros" type="button">
-        <i class="fa-solid fa-eraser"></i>
-      </button>
-      <button id="audBtnFiltrar" class="btn btn-primary" type="button">
-        <i class="fa-solid fa-magnifying-glass"></i> Filtrar
-      </button>
+    <div class="cl-tb-row">
+      <div class="cl-tb-search">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input id="audFiltroBusca" type="text" placeholder="Buscar descrição…" value="${esc(state.filtros.busca)}">
+      </div>
+      <div class="cl-tb-actions">
+        <div class="actions-menu-wrapper" id="audActionsWrapper">
+          <button type="button" class="cl-tb-btn" id="audActionsBtn" title="Ações">
+            <i class="fa-solid fa-ellipsis"></i>
+            <span class="cl-tb-btn-lbl">Ações</span>
+            <span id="audFiltrosBadge" class="badge badge--primary${[state.filtros.tipo, state.filtros.entidade].filter(Boolean).length ? '' : ' hidden'}" style="font-size:.7rem">${[state.filtros.tipo, state.filtros.entidade].filter(Boolean).length}</span>
+            <i class="fa-solid fa-chevron-down" style="font-size:10px"></i>
+          </button>
+          <div class="actions-menu-dropdown hidden" id="audActionsDropdown" style="min-width:230px;padding:10px 0 4px;max-height:min(560px,80vh);overflow-y:auto">
+            <div style="padding:0 14px">
+              <label class="prd-filtro-lbl" for="audFiltroTipo">Tipo</label>
+              <select id="audFiltroTipo" class="cl-tb-select" style="width:100%;margin-bottom:12px">
+                <option value="">Todos os tipos</option>
+                ${Object.entries(TIPO_LABEL).map(([k,v]) => `<option value="${k}" ${state.filtros.tipo===k?'selected':''}>${v}</option>`).join('')}
+              </select>
+              <label class="prd-filtro-lbl" for="audFiltroEntidade">Entidade</label>
+              <select id="audFiltroEntidade" class="cl-tb-select" style="width:100%;margin-bottom:12px">
+                <option value="">Todas as entidades</option>
+                ${Object.entries(ENTIDADE_LABEL).map(([k,v]) => `<option value="${k}" ${state.filtros.entidade===k?'selected':''}>${v}</option>`).join('')}
+              </select>
+              <label class="prd-filtro-lbl" for="audFiltroPeriodo">Período</label>
+              <select id="audFiltroPeriodo" class="cl-tb-select" style="width:100%;margin-bottom:12px">
+                <option value="hoje"     ${state.filtros.periodo==='hoje'     ?'selected':''}>Hoje</option>
+                <option value="7dias"    ${state.filtros.periodo==='7dias'    ?'selected':''}>Últimos 7 dias</option>
+                <option value="mesAtual" ${state.filtros.periodo==='mesAtual' ?'selected':''}>Este mês</option>
+                <option value="30dias"   ${state.filtros.periodo==='30dias'   ?'selected':''}>30 dias</option>
+                <option value="90dias"   ${state.filtros.periodo==='90dias'   ?'selected':''}>90 dias</option>
+                <option value="anoAtual" ${state.filtros.periodo==='anoAtual' ?'selected':''}>Este ano</option>
+              </select>
+              <div style="display:flex;gap:8px">
+                <button id="audBtnFiltrar" class="btn btn-primary" type="button" style="flex:1;justify-content:center">
+                  <i class="fa-solid fa-filter"></i> Filtrar
+                </button>
+                <button id="audBtnLimpar" class="btn btn-light" type="button" style="flex:1;justify-content:center">
+                  <i class="fa-solid fa-eraser"></i> Limpar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
     ${truncadoAviso}
     <div class="module-count" style="margin-bottom:10px;font-size:.82rem;color:var(--text-muted)">
@@ -267,7 +289,22 @@ function renderLinha(log) {
   </tr>`;
 }
 
+let _audDropdownCloseBound = false;
+
 function bind() {
+  // ── "Ações" dropdown
+  document.getElementById('audActionsBtn')?.addEventListener('click', () => {
+    document.getElementById('audActionsDropdown')?.classList.toggle('hidden');
+  });
+  if (!_audDropdownCloseBound) {
+    _audDropdownCloseBound = true;
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#audActionsWrapper')) {
+        document.getElementById('audActionsDropdown')?.classList.add('hidden');
+      }
+    });
+  }
+
   document.getElementById('audBtnFiltrar')?.addEventListener('click', aplicarFiltros);
   document.getElementById('audBtnLimpar')?.addEventListener('click', limparFiltros);
   document.getElementById('audFiltroBusca')?.addEventListener('keydown', (e) => {
