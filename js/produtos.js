@@ -103,7 +103,6 @@ const ProdutosModule = {
       tabImagens:     document.getElementById('produtoTabImagens'),
       tabGrade:       document.getElementById('produtoTabGrade'),
       tabKit:         document.getElementById('produtoTabKit'),
-      colsBtn:        document.getElementById('produtosColsBtn'),
       colsDropdown:   document.getElementById('colPickerDropdown'),
       produtosTable:  document.querySelector('#produtosSection .data-table'),
     };
@@ -358,35 +357,13 @@ const ProdutosModule = {
       }
     });
 
-    // ── "Mais ações" dropdown
+    // ── "Ações" dropdown (filtros, colunas e ações — tudo consolidado em um único botão)
     document.addEventListener('click', (e) => {
       const btn = e.target.closest('#produtosActionsBtn');
       const dropdown = document.getElementById('produtosActionsDropdown');
       if (!dropdown) return;
       if (btn) { dropdown.classList.toggle('hidden'); return; }
       if (!e.target.closest('#produtosActionsWrapper')) {
-        dropdown.classList.add('hidden');
-      }
-    });
-
-    // ── "Filtros" dropdown (Promoção, Tipo, Ordenar — usados com menos frequência)
-    document.addEventListener('click', (e) => {
-      const btn = e.target.closest('#produtosFiltrosBtn');
-      const dropdown = document.getElementById('produtosFiltrosDropdown');
-      if (!dropdown) return;
-      if (btn) { dropdown.classList.toggle('hidden'); return; }
-      if (!e.target.closest('#produtosFiltrosWrapper')) {
-        dropdown.classList.add('hidden');
-      }
-    });
-
-    // ── Col-picker (colunas configuráveis)
-    document.addEventListener('click', (e) => {
-      const btn = e.target.closest('#produtosColsBtn');
-      const dropdown = document.getElementById('colPickerDropdown');
-      if (!dropdown) return;
-      if (btn) { dropdown.classList.toggle('hidden'); return; }
-      if (!e.target.closest('#colPickerDropdown') && !e.target.closest('#colPickerWrapper')) {
         dropdown.classList.add('hidden');
       }
     });
@@ -511,6 +488,7 @@ const ProdutosModule = {
       if (selPromo) selPromo.value = this.state.filtroPromocao || '';
       const selTipo = document.getElementById('produtosFiltroTipo');
       if (selTipo) selTipo.value = this.state.filtroTipo || '';
+      this._atualizarBadgeFiltros();
       this.applySearch(this.state.searchTerm || '');
       this.toggleEmptyState();
       this.showModuleMessage('', 'info');
@@ -911,57 +889,67 @@ const ProdutosModule = {
             <i class="fa-solid fa-magnifying-glass"></i>
             <input type="text" id="produtosSearchInput" placeholder="Buscar por nome, categoria ou código" />
           </div>
-          <select id="produtosFiltroCategoria" class="cl-tb-select" style="min-width:150px">
-            <option value="">Todas as categorias</option>
-          </select>
-          <select id="produtosFiltroAlerta" class="cl-tb-select">
-            <option value="">Todos os status</option>
-            <option value="alerta">Em alerta</option>
-            <option value="ok">Estoque ok</option>
-          </select>
-          <div class="actions-menu-wrapper" id="produtosFiltrosWrapper">
-            <button type="button" class="cl-tb-btn" id="produtosFiltrosBtn" title="Mais filtros">
-              <i class="fa-solid fa-sliders"></i>
-              <span class="cl-tb-btn-lbl">Filtros</span>
-              <span id="produtosFiltrosBadge" class="badge badge--primary hidden" style="font-size:.7rem">0</span>
-              <i class="fa-solid fa-chevron-down" style="font-size:10px"></i>
-            </button>
-            <div class="actions-menu-dropdown hidden" id="produtosFiltrosDropdown" style="min-width:230px;padding:14px">
-              <label class="prd-filtro-lbl" for="produtosFiltroPromocao">Promoção</label>
-              <select id="produtosFiltroPromocao" class="cl-tb-select" style="width:100%;margin-bottom:12px">
-                <option value="">Todas</option>
-                <option value="sim">Em promoção</option>
-                <option value="nao">Sem promoção</option>
-              </select>
-              <label class="prd-filtro-lbl" for="produtosFiltroTipo">Tipo</label>
-              <select id="produtosFiltroTipo" class="cl-tb-select" style="width:100%;margin-bottom:12px">
-                <option value="">Todos</option>
-                <option value="normal">Normal</option>
-                <option value="grade">Com grade</option>
-                <option value="kit">Kit</option>
-              </select>
-              <label class="prd-filtro-lbl" for="produtosFiltroOrdem">Ordenar por</label>
-              <select id="produtosFiltroOrdem" class="cl-tb-select" style="width:100%">
-                <option value="">Padrão</option>
-                <option value="nome_az">Nome A→Z</option>
-                <option value="nome_za">Nome Z→A</option>
-                <option value="preco_a">Preço ↑</option>
-                <option value="preco_d">Preço ↓</option>
-                <option value="estoque_a">Estoque ↑</option>
-                <option value="estoque_d">Estoque ↓</option>
-                <option value="margem_a">Margem ↑</option>
-                <option value="margem_d">Margem ↓</option>
-              </select>
-            </div>
-          </div>
           <div class="cl-tb-actions">
             <div class="actions-menu-wrapper" id="produtosActionsWrapper">
-              <button type="button" class="cl-tb-btn" id="produtosActionsBtn" title="Mais ações">
+              <button type="button" class="cl-tb-btn" id="produtosActionsBtn" title="Ações">
                 <i class="fa-solid fa-ellipsis"></i>
-                <span class="cl-tb-btn-lbl">Mais ações</span>
+                <span class="cl-tb-btn-lbl">Ações</span>
+                <span id="produtosFiltrosBadge" class="badge badge--primary hidden" style="font-size:.7rem">0</span>
                 <i class="fa-solid fa-chevron-down" style="font-size:10px"></i>
               </button>
-              <div class="actions-menu-dropdown hidden" id="produtosActionsDropdown">
+              <div class="actions-menu-dropdown hidden" id="produtosActionsDropdown" style="min-width:230px;padding:10px 0 4px;max-height:min(560px,80vh);overflow-y:auto">
+                <div style="padding:0 14px">
+                  <label class="prd-filtro-lbl" for="produtosFiltroCategoria">Categoria</label>
+                  <select id="produtosFiltroCategoria" class="cl-tb-select" style="width:100%;margin-bottom:12px">
+                    <option value="">Todas as categorias</option>
+                  </select>
+                  <label class="prd-filtro-lbl" for="produtosFiltroAlerta">Status</label>
+                  <select id="produtosFiltroAlerta" class="cl-tb-select" style="width:100%;margin-bottom:12px">
+                    <option value="">Todos os status</option>
+                    <option value="alerta">Em alerta</option>
+                    <option value="ok">Estoque ok</option>
+                  </select>
+                  <label class="prd-filtro-lbl" for="produtosFiltroPromocao">Promoção</label>
+                  <select id="produtosFiltroPromocao" class="cl-tb-select" style="width:100%;margin-bottom:12px">
+                    <option value="">Todas</option>
+                    <option value="sim">Em promoção</option>
+                    <option value="nao">Sem promoção</option>
+                  </select>
+                  <label class="prd-filtro-lbl" for="produtosFiltroTipo">Tipo</label>
+                  <select id="produtosFiltroTipo" class="cl-tb-select" style="width:100%;margin-bottom:12px">
+                    <option value="">Todos</option>
+                    <option value="normal">Normal</option>
+                    <option value="grade">Com grade</option>
+                    <option value="kit">Kit</option>
+                  </select>
+                  <label class="prd-filtro-lbl" for="produtosFiltroOrdem">Ordenar por</label>
+                  <select id="produtosFiltroOrdem" class="cl-tb-select" style="width:100%">
+                    <option value="">Padrão</option>
+                    <option value="nome_az">Nome A→Z</option>
+                    <option value="nome_za">Nome Z→A</option>
+                    <option value="preco_a">Preço ↑</option>
+                    <option value="preco_d">Preço ↓</option>
+                    <option value="estoque_a">Estoque ↑</option>
+                    <option value="estoque_d">Estoque ↓</option>
+                    <option value="margem_a">Margem ↑</option>
+                    <option value="margem_d">Margem ↓</option>
+                  </select>
+                </div>
+                <div class="actions-menu-divider" style="margin:10px 0 4px"></div>
+                <div class="col-picker-dropdown" id="colPickerDropdown" style="position:static;border:none;box-shadow:none;min-width:0;padding:0">
+                  <div class="col-picker-dropdown__title">Colunas visíveis</div>
+                  <label class="col-picker-item"><input type="checkbox" data-col="2" /> Produto</label>
+                  <label class="col-picker-item"><input type="checkbox" data-col="3" /> Categoria</label>
+                  <label class="col-picker-item"><input type="checkbox" data-col="4" /> Código</label>
+                  <label class="col-picker-item"><input type="checkbox" data-col="5" /> Preço</label>
+                  <label class="col-picker-item"><input type="checkbox" data-col="6" /> Custo Médio</label>
+                  <label class="col-picker-item"><input type="checkbox" data-col="7" /> Lucro</label>
+                  <label class="col-picker-item"><input type="checkbox" data-col="8" /> Margem</label>
+                  <label class="col-picker-item"><input type="checkbox" data-col="9" /> Estoque</label>
+                  <label class="col-picker-item"><input type="checkbox" data-col="10" /> Mínimo</label>
+                  <label class="col-picker-item"><input type="checkbox" data-col="11" /> Status</label>
+                </div>
+                <div class="actions-menu-divider"></div>
                 <button type="button" class="actions-menu-item" id="produtosMarketplaceBtn">
                   <i class="fa-solid fa-store"></i> Marketplace
                 </button>
@@ -983,24 +971,6 @@ const ProdutosModule = {
               <span class="cl-tb-btn-lbl">Etiquetas</span>
               <span id="produtosLoteBadge" class="badge badge--primary" style="font-size:.75rem">0</span>
             </button>
-            <div class="col-picker-wrapper" id="colPickerWrapper">
-              <button type="button" class="cl-tb-btn cl-tb-btn--icon" id="produtosColsBtn" title="Configurar colunas visíveis">
-                <i class="fa-solid fa-table-columns"></i>
-              </button>
-              <div class="col-picker-dropdown hidden" id="colPickerDropdown">
-                <div class="col-picker-dropdown__title">Colunas visíveis</div>
-                <label class="col-picker-item"><input type="checkbox" data-col="2" /> Produto</label>
-                <label class="col-picker-item"><input type="checkbox" data-col="3" /> Categoria</label>
-                <label class="col-picker-item"><input type="checkbox" data-col="4" /> Código</label>
-                <label class="col-picker-item"><input type="checkbox" data-col="5" /> Preço</label>
-                <label class="col-picker-item"><input type="checkbox" data-col="6" /> Custo Médio</label>
-                <label class="col-picker-item"><input type="checkbox" data-col="7" /> Lucro</label>
-                <label class="col-picker-item"><input type="checkbox" data-col="8" /> Margem</label>
-                <label class="col-picker-item"><input type="checkbox" data-col="9" /> Estoque</label>
-                <label class="col-picker-item"><input type="checkbox" data-col="10" /> Mínimo</label>
-                <label class="col-picker-item"><input type="checkbox" data-col="11" /> Status</label>
-              </div>
-            </div>
             <button type="button" class="cl-tb-btn cl-tb-btn--primary" id="produtosNewBtn">
               <i class="fa-solid fa-plus"></i>
               <span class="cl-tb-btn-lbl">Novo produto</span>
@@ -2308,12 +2278,13 @@ const ProdutosModule = {
     });
   },
 
-  // Conta quantos dos 3 filtros do dropdown "Filtros" estão ativos (fora do padrão)
+  // Conta quantos filtros estão ativos (fora do padrão) dentro do dropdown "Ações"
   // e mostra como badge no botão — mesma ideia do "N" em Contas a Receber.
   _atualizarBadgeFiltros() {
     const badge = document.getElementById('produtosFiltrosBadge');
     if (!badge) return;
-    const n = [this.state.filtroPromocao, this.state.filtroTipo, this.state.filtroOrdem]
+    const n = [this.state.filtroCategoria, this.state.filtroAlerta,
+               this.state.filtroPromocao, this.state.filtroTipo, this.state.filtroOrdem]
       .filter(Boolean).length;
     badge.textContent = String(n);
     badge.classList.toggle('hidden', n === 0);
