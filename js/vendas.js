@@ -46,6 +46,7 @@ const VendasModule = {
       if (iniEl) iniEl.value = '';
       if (fimEl) fimEl.value = '';
       this.cache();
+      this._atualizarBadgeFiltrosVendas();
     }
   },
 
@@ -79,6 +80,19 @@ const VendasModule = {
     };
   },
 
+  _filtrosVendasAtivos() {
+    const f = this.state.filtros;
+    return [f.pagamento, f.status, f.dataInicial, f.dataFinal].filter(Boolean).length;
+  },
+
+  _atualizarBadgeFiltrosVendas() {
+    const badge = document.getElementById('vendasFiltrosBadge');
+    if (!badge) return;
+    const n = this._filtrosVendasAtivos();
+    badge.textContent = String(n);
+    badge.classList.toggle('hidden', n === 0);
+  },
+
   bindEvents() {
     if (this.state.eventsBound) return;
     this.state.eventsBound = true;
@@ -100,22 +114,26 @@ const VendasModule = {
         this.state.filtros.pagamento = event.target.value || '';
         this.applyLocalFilters();
         this.salvarFiltros();
+        this._atualizarBadgeFiltrosVendas();
       }
 
       if (event.target.id === 'vendasStatus') {
         this.state.filtros.status = event.target.value || '';
         this.applyLocalFilters();
         this.salvarFiltros();
+        this._atualizarBadgeFiltrosVendas();
       }
 
       if (event.target.id === 'vendasDataInicial') {
         this.state.filtros.dataInicial = event.target.value || '';
         this.salvarFiltros();
+        this._atualizarBadgeFiltrosVendas();
       }
 
       if (event.target.id === 'vendasDataFinal') {
         this.state.filtros.dataFinal = event.target.value || '';
         this.salvarFiltros();
+        this._atualizarBadgeFiltrosVendas();
       }
 
       if (event.target.dataset.action === 'editar-qtd-item-venda') {
@@ -139,6 +157,17 @@ const VendasModule = {
         this.renderDetalheModal(venda);
 
         showToast('Quantidade atualizada', 'info');
+      }
+    });
+
+    // ── "Ações" dropdown (filtros, Metas, Exportar CSV)
+    document.addEventListener('click', (event) => {
+      const btn = event.target.closest('#vendasActionsBtn');
+      const dropdown = document.getElementById('vendasActionsDropdown');
+      if (!dropdown) return;
+      if (btn) { dropdown.classList.toggle('hidden'); return; }
+      if (!event.target.closest('#vendasActionsWrapper')) {
+        dropdown.classList.add('hidden');
       }
     });
 
@@ -245,6 +274,7 @@ const VendasModule = {
         if (iniEl) iniEl.value = ini;
         if (fimEl) fimEl.value = today;
         this.salvarFiltros();
+        this._atualizarBadgeFiltrosVendas();
         await this.load();
         return;
       }
@@ -520,82 +550,66 @@ const VendasModule = {
               placeholder="Buscar por cliente, pagamento, observação ou número..."
               value="${escapeHtml(this.state.filtros.busca)}" />
           </div>
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+            <button type="button" class="btn btn-light" style="font-size:12px;padding:4px 10px;height:30px" data-preset="hoje">Hoje</button>
+            <button type="button" class="btn btn-light" style="font-size:12px;padding:4px 10px;height:30px" data-preset="semana">Esta semana</button>
+            <button type="button" class="btn btn-light" style="font-size:12px;padding:4px 10px;height:30px" data-preset="mes">Este mês</button>
+            <button type="button" class="btn btn-light" style="font-size:12px;padding:4px 10px;height:30px" data-preset="trimestre">3 meses</button>
+          </div>
           <div class="cl-tb-actions">
-            <button type="button" class="cl-tb-btn" id="vendasMetasBtn" title="Metas de vendas">
-              <i class="fa-solid fa-bullseye"></i>
-              <span class="cl-tb-btn-lbl">Metas</span>
-            </button>
-            <button type="button" class="cl-tb-btn" id="vendasExportarBtn" title="Exportar CSV">
-              <i class="fa-solid fa-file-csv"></i>
-              <span class="cl-tb-btn-lbl">Exportar CSV</span>
-            </button>
+            <div class="actions-menu-wrapper" id="vendasActionsWrapper">
+              <button type="button" class="cl-tb-btn" id="vendasActionsBtn" title="Ações">
+                <i class="fa-solid fa-ellipsis"></i>
+                <span class="cl-tb-btn-lbl">Ações</span>
+                <span id="vendasFiltrosBadge" class="badge badge--primary${this._filtrosVendasAtivos() ? '' : ' hidden'}" style="font-size:.7rem">${this._filtrosVendasAtivos()}</span>
+                <i class="fa-solid fa-chevron-down" style="font-size:10px"></i>
+              </button>
+              <div class="actions-menu-dropdown hidden" id="vendasActionsDropdown" style="min-width:230px;padding:10px 0 4px;max-height:min(560px,80vh);overflow-y:auto">
+                <div style="padding:0 14px">
+                  <label class="prd-filtro-lbl" for="vendasPagamento">Pagamento</label>
+                  <select id="vendasPagamento" class="cl-tb-select" style="width:100%;margin-bottom:12px">
+                    <option value="">Todos</option>
+                    <option value="Dinheiro" ${this.state.filtros.pagamento === 'Dinheiro' ? 'selected' : ''}>Dinheiro</option>
+                    <option value="Pix" ${this.state.filtros.pagamento === 'Pix' ? 'selected' : ''}>Pix</option>
+                    <option value="Cartão de Débito" ${this.state.filtros.pagamento === 'Cartão de Débito' ? 'selected' : ''}>Cartão de Débito</option>
+                    <option value="Cartão de Crédito" ${this.state.filtros.pagamento === 'Cartão de Crédito' ? 'selected' : ''}>Cartão de Crédito</option>
+                    <option value="Promissória" ${this.state.filtros.pagamento === 'Promissória' ? 'selected' : ''}>Promissória</option>
+                  </select>
+                  <label class="prd-filtro-lbl" for="vendasStatus">Status</label>
+                  <select id="vendasStatus" class="cl-tb-select" style="width:100%;margin-bottom:12px">
+                    <option value="">Todos</option>
+                    <option value="pago" ${this.state.filtros.status === 'pago' ? 'selected' : ''}>Pago</option>
+                    <option value="pendente" ${this.state.filtros.status === 'pendente' ? 'selected' : ''}>Pendente</option>
+                    <option value="parcial" ${this.state.filtros.status === 'parcial' ? 'selected' : ''}>Parcial</option>
+                    <option value="atrasado" ${this.state.filtros.status === 'atrasado' ? 'selected' : ''}>Atrasado</option>
+                    <option value="parcial_atrasado" ${this.state.filtros.status === 'parcial_atrasado' ? 'selected' : ''}>Parcial em atraso</option>
+                    <option value="cancelado" ${this.state.filtros.status === 'cancelado' ? 'selected' : ''}>Cancelado</option>
+                  </select>
+                  <label class="prd-filtro-lbl" for="vendasDataInicial">Data inicial</label>
+                  <input type="date" id="vendasDataInicial" class="cl-tb-select" style="width:100%;margin-bottom:12px" value="${escapeHtml(this.state.filtros.dataInicial)}" />
+                  <label class="prd-filtro-lbl" for="vendasDataFinal">Data final</label>
+                  <input type="date" id="vendasDataFinal" class="cl-tb-select" style="width:100%;margin-bottom:12px" value="${escapeHtml(this.state.filtros.dataFinal)}" />
+                  <div style="display:flex;gap:8px">
+                    <button type="button" class="btn btn-primary" id="vendasFiltrarBtn" style="flex:1;justify-content:center">
+                      <i class="fa-solid fa-filter"></i> Filtrar
+                    </button>
+                    <button type="button" class="btn btn-light" id="vendasLimparBtn" style="flex:1;justify-content:center">
+                      <i class="fa-solid fa-eraser"></i> Limpar
+                    </button>
+                  </div>
+                </div>
+                <div class="actions-menu-divider" style="margin:10px 0 4px"></div>
+                <button type="button" class="actions-menu-item" id="vendasMetasBtn">
+                  <i class="fa-solid fa-bullseye"></i> Metas
+                </button>
+                <div class="actions-menu-divider"></div>
+                <button type="button" class="actions-menu-item" id="vendasExportarBtn">
+                  <i class="fa-solid fa-file-csv"></i> Exportar CSV
+                </button>
+              </div>
+            </div>
             <button type="button" class="cl-tb-btn cl-tb-btn--icon" id="vendasAtualizarBtn" title="Atualizar">
               <i class="fa-solid fa-rotate"></i>
-            </button>
-          </div>
-        </div>
-
-        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:10px 0 2px">
-          <span style="font-size:12px;color:var(--text-muted);font-weight:700;white-space:nowrap">Período rápido:</span>
-          <button type="button" class="btn btn-light" style="font-size:12px;padding:4px 10px;height:30px" data-preset="hoje">Hoje</button>
-          <button type="button" class="btn btn-light" style="font-size:12px;padding:4px 10px;height:30px" data-preset="semana">Esta semana</button>
-          <button type="button" class="btn btn-light" style="font-size:12px;padding:4px 10px;height:30px" data-preset="mes">Este mês</button>
-          <button type="button" class="btn btn-light" style="font-size:12px;padding:4px 10px;height:30px" data-preset="trimestre">3 meses</button>
-        </div>
-
-        <div class="vendas-filters-grid">
-          <div class="form-field">
-            <label for="vendasPagamento">Pagamento</label>
-            <select id="vendasPagamento">
-              <option value="">Todos</option>
-              <option value="Dinheiro" ${this.state.filtros.pagamento === 'Dinheiro' ? 'selected' : ''}>Dinheiro</option>
-              <option value="Pix" ${this.state.filtros.pagamento === 'Pix' ? 'selected' : ''}>Pix</option>
-              <option value="Cartão de Débito" ${this.state.filtros.pagamento === 'Cartão de Débito' ? 'selected' : ''}>Cartão de Débito</option>
-              <option value="Cartão de Crédito" ${this.state.filtros.pagamento === 'Cartão de Crédito' ? 'selected' : ''}>Cartão de Crédito</option>
-              <option value="Promissória" ${this.state.filtros.pagamento === 'Promissória' ? 'selected' : ''}>Promissória</option>
-            </select>
-          </div>
-
-          <div class="form-field">
-            <label for="vendasStatus">Status</label>
-            <select id="vendasStatus">
-              <option value="">Todos</option>
-              <option value="pago" ${this.state.filtros.status === 'pago' ? 'selected' : ''}>Pago</option>
-              <option value="pendente" ${this.state.filtros.status === 'pendente' ? 'selected' : ''}>Pendente</option>
-              <option value="parcial" ${this.state.filtros.status === 'parcial' ? 'selected' : ''}>Parcial</option>
-              <option value="atrasado" ${this.state.filtros.status === 'atrasado' ? 'selected' : ''}>Atrasado</option>
-              <option value="parcial_atrasado" ${this.state.filtros.status === 'parcial_atrasado' ? 'selected' : ''}>Parcial em atraso</option>
-              <option value="cancelado" ${this.state.filtros.status === 'cancelado' ? 'selected' : ''}>Cancelado</option>
-            </select>
-          </div>
-
-          <div class="form-field">
-            <label for="vendasDataInicial">Data inicial</label>
-            <input
-              type="date"
-              id="vendasDataInicial"
-              value="${escapeHtml(this.state.filtros.dataInicial)}"
-            />
-          </div>
-
-          <div class="form-field">
-            <label for="vendasDataFinal">Data final</label>
-            <input
-              type="date"
-              id="vendasDataFinal"
-              value="${escapeHtml(this.state.filtros.dataFinal)}"
-            />
-          </div>
-
-          <div class="vendas-filter-actions">
-            <button type="button" class="btn btn-primary" id="vendasFiltrarBtn">
-              <i class="fa-solid fa-filter"></i>
-              Filtrar
-            </button>
-
-            <button type="button" class="btn btn-light" id="vendasLimparBtn">
-              <i class="fa-solid fa-eraser"></i>
-              Limpar
             </button>
           </div>
         </div>
