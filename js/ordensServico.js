@@ -259,7 +259,7 @@ const OrdensServicoModule = {
     body.innerHTML = `
       <div id="osFormWrap" autocomplete="off">
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+        <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
           <div class="form-field">
             <label class="form-label">Cliente</label>
             <input type="text" id="osClienteNome" class="input" placeholder="Nome do cliente" value="${os?.cliente_nome || ''}">
@@ -273,7 +273,7 @@ const OrdensServicoModule = {
 
         <div style="background:var(--bg-subtle,#f8fafc);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:16px">
           <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 10px">Equipamento</p>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px">
+          <div class="form-grid" style="grid-template-columns:1fr 1fr 1fr 1fr;gap:10px">
             <div class="form-field">
               <label class="form-label">Tipo *</label>
               <select id="osEquipTipo" class="input">
@@ -296,7 +296,7 @@ const OrdensServicoModule = {
           </div>
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+        <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
           <div class="form-field">
             <label class="form-label">Problema Relatado *</label>
             <textarea id="osProblema" class="input" rows="3" placeholder="Descreva o defeito informado pelo cliente">${os?.problema_relatado || ''}</textarea>
@@ -335,7 +335,7 @@ const OrdensServicoModule = {
           <p id="osItensVazio" style="font-size:12px;color:var(--text-muted);margin:0;${itens.length ? 'display:none' : ''}">Nenhum item adicionado. Use "Do Catálogo" para buscar serviços ou "Item livre" para digitar manualmente.</p>
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+        <div class="form-grid" style="grid-template-columns:1fr 1fr 1fr;gap:12px">
           <div class="form-field">
             <label class="form-label">Mão de Obra (R$)</label>
             <input type="text" id="osMaoObra" class="input" placeholder="0,00" value="${os ? fmtVal(os.valor_mao_obra) : ''}">
