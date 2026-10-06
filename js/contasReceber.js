@@ -4143,6 +4143,7 @@ function abrirNovoClienteRapidoModal(onCriado) {
     modal = document.createElement('div');
     modal.id = 'crNovoClienteRapidoModal';
     modal.className = 'modal-overlay hidden';
+    modal.style.zIndex = '400'; // acima do modal.overlay padrão (120) — abre por cima da Conta Manual
     modal.innerHTML = `
       <div class="modal-card" style="width:min(96vw,480px)">
         <div class="modal-card__header">
@@ -4227,6 +4228,11 @@ function abrirNovoClienteRapidoModal(onCriado) {
       }
     });
   }
+
+  // Reanexa ao final do body: o modal de Conta Manual é destruído e recriado a
+  // cada abertura (vai parar depois deste no DOM), e dois .modal-overlay têm o
+  // mesmo z-index — sem isso, este modal passa a renderizar por baixo do outro.
+  document.body.appendChild(modal);
 
   // Reseta os campos a cada abertura e registra quem deve ser avisado do cadastro
   document.getElementById('crNCRNome').value = '';
