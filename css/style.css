@@ -1884,6 +1884,68 @@ img {
   .cl-tb-btn:not(.cl-tb-btn--primary):not([title]) { padding: 0; width: 40px; justify-content: center; }
 }
 
+/* ── Estoque (est-*) — mesma linguagem visual do cl-tb-*, classes próprias
+   porque o toolbar tem um dropdown com atributo hidden nativo (não .hidden) ── */
+.est-top-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.est-view-title { font-size: 13px; font-weight: 700; color: var(--text); white-space: nowrap; }
+.est-filter-dd { position: relative; }
+.est-filter-dd-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 40px; padding: 0 14px;
+  border: 1px solid var(--border); border-radius: 12px;
+  background: var(--surface); color: var(--text-muted);
+  font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.est-filter-dd-btn:hover { background: rgba(0,0,0,.04); color: var(--text); }
+.est-dd-chevron { font-size: 10px; }
+.est-filter-dd-menu {
+  position: absolute; top: calc(100% + 6px); left: 0;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; box-shadow: var(--shadow-lg);
+  min-width: 190px; z-index: 300; padding: 4px 0;
+}
+.est-filter-dd-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 16px; cursor: pointer; font-size: 13px;
+  color: var(--text); background: none; border: none; width: 100%; text-align: left;
+}
+.est-filter-dd-item:hover { background: var(--surface-2); }
+.est-filter-dd-item--sel { color: var(--primary, #2563eb); font-weight: 700; }
+.est-top-actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; flex-wrap: wrap; }
+.est-action-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 40px; padding: 0 14px;
+  border: 1px solid var(--border); border-radius: 12px;
+  background: var(--surface); color: var(--text-muted);
+  font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.est-action-btn:hover { background: rgba(0,0,0,.04); color: var(--text); }
+.est-action-btn--icon { padding: 0; width: 40px; justify-content: center; }
+@media (max-width: 640px) {
+  .est-lbl { display: none; }
+  .est-action-btn:not([title]) { padding: 0; width: 40px; justify-content: center; }
+}
+
+.est-kpi-strip {
+  display: flex; align-items: stretch;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; overflow-x: auto; overflow-y: hidden;
+  box-shadow: 0 1px 5px rgba(0,0,0,.04); margin-bottom: 16px;
+}
+.est-kpi-item { flex: 1 1 100px; min-width: 100px; padding: 12px 16px; display: flex; flex-direction: column; gap: 3px; }
+.est-kpi-lbl { font-size: .63rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; white-space: nowrap; }
+.est-kpi-val { font-size: 1.1rem; font-weight: 900; color: var(--text); letter-spacing: -.02em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.est-kpi-warn   { color: var(--warning, #ca8a04); }
+.est-kpi-danger { color: var(--danger, #dc2626); }
+.est-kpi-sep { width: 1px; background: var(--border); margin: 10px 0; flex-shrink: 0; }
+@media (max-width: 900px) {
+  .est-kpi-strip { flex-wrap: wrap; }
+  .est-kpi-sep { display: none; }
+  .est-kpi-item { flex: 0 0 33.33%; border-bottom: 1px solid var(--border); padding: 10px 12px; }
+}
+
 /* =========================
    SCROLL
 ========================= */
