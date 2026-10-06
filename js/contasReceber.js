@@ -4143,7 +4143,7 @@ function abrirNovoClienteRapidoModal(onCriado) {
     modal = document.createElement('div');
     modal.id = 'crNovoClienteRapidoModal';
     modal.className = 'modal-overlay hidden';
-    modal.style.zIndex = '400'; // acima do modal.overlay padrão (120) — abre por cima da Conta Manual
+    modal.style.zIndex = '10050'; // acima de .cr-detail-overlay (9999) e dos dropdowns do form (10001/10002)
     modal.innerHTML = `
       <div class="modal-card" style="width:min(96vw,480px)">
         <div class="modal-card__header">
