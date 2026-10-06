@@ -4133,6 +4133,111 @@ function _injectCrNcStyles() {
   document.head.appendChild(s);
 }
 
+// ── Cadastro rápido de cliente (mesmo padrão visual/fluxo do PDV) ───────────
+// onCriado(cliente) é chamado com { id, nome } após o cadastro ser salvo.
+function abrirNovoClienteRapidoModal(onCriado) {
+  _injectCrNcStyles();
+
+  let modal = document.getElementById('crNovoClienteRapidoModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'crNovoClienteRapidoModal';
+    modal.className = 'modal-overlay hidden';
+    modal.innerHTML = `
+      <div class="modal-card" style="width:min(96vw,480px)">
+        <div class="modal-card__header">
+          <div><h3>Novo Cliente</h3><p style="margin:0;font-size:13px;color:var(--text-muted)">Cadastro rápido</p></div>
+          <button type="button" class="icon-button" id="crNCRFechar"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div style="padding:16px 0">
+          <div class="cr-nc-section">
+            <p class="cr-nc-section-title">Novo Cliente</p>
+            <div class="cr-nc-card-group">
+              <div class="cr-nc-cell">
+                <span class="cr-nc-cell-ico cr-nc-cell-ico--green"><i class="fa-solid fa-user"></i></span>
+                <div class="cr-nc-cell-content">
+                  <label class="cr-nc-lbl" for="crNCRNome">Nome <span class="cr-nc-req">*</span></label>
+                  <input type="text" id="crNCRNome" class="cr-nc-cell-input" placeholder="Nome completo" autocomplete="off">
+                </div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr">
+                <div class="cr-nc-cell" style="border-bottom:none;border-right:1px solid var(--border)">
+                  <span class="cr-nc-cell-ico"><i class="fa-solid fa-phone"></i></span>
+                  <div class="cr-nc-cell-content">
+                    <label class="cr-nc-lbl" for="crNCRTelefone">Telefone</label>
+                    <input type="text" id="crNCRTelefone" class="cr-nc-cell-input" placeholder="(00) 00000-0000">
+                  </div>
+                </div>
+                <div class="cr-nc-cell" style="border-bottom:none">
+                  <span class="cr-nc-cell-ico"><i class="fa-solid fa-id-card"></i></span>
+                  <div class="cr-nc-cell-content">
+                    <label class="cr-nc-lbl" for="crNCRCpf">CPF</label>
+                    <input type="text" id="crNCRCpf" class="cr-nc-cell-input" placeholder="000.000.000-00">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="crNCRFeedback" style="padding:0 20px 4px"></div>
+          <div style="display:flex;gap:8px;justify-content:flex-end;padding:8px 20px 4px">
+            <button type="button" class="btn btn-light" id="crNCRCancelarBtn">Cancelar</button>
+            <button type="button" class="btn btn-primary" id="crNCRSalvarBtn"><i class="fa-solid fa-floppy-disk"></i> Salvar e selecionar</button>
+          </div>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+
+    const fechar = () => modal.classList.add('hidden');
+    document.getElementById('crNCRFechar')?.addEventListener('click', fechar);
+    document.getElementById('crNCRCancelarBtn')?.addEventListener('click', fechar);
+    modal.addEventListener('click', (e) => { if (e.target === modal) fechar(); });
+
+    document.getElementById('crNCRSalvarBtn')?.addEventListener('click', async () => {
+      const nomeEl = document.getElementById('crNCRNome');
+      const telEl  = document.getElementById('crNCRTelefone');
+      const cpfEl  = document.getElementById('crNCRCpf');
+      const fb     = document.getElementById('crNCRFeedback');
+      const btn    = document.getElementById('crNCRSalvarBtn');
+
+      const nome = nomeEl?.value?.trim() || '';
+      if (!nome) {
+        if (fb) fb.innerHTML = '<p style="color:var(--danger,#ef4444);font-size:12px;margin:0">Informe o nome do cliente.</p>';
+        nomeEl?.focus();
+        return;
+      }
+
+      if (fb) fb.innerHTML = '';
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Salvando...';
+      try {
+        const resp = await api.createCliente({
+          nome,
+          telefone: telEl?.value?.trim() || '',
+          cpf: cpfEl?.value?.trim() || ''
+        });
+        const cliente = { id: resp?.id ?? resp?.dados?.id, nome };
+        modal._onCriado?.(cliente);
+        fechar();
+        showToast(`Cliente "${nome}" cadastrado e selecionado.`, 'success');
+      } catch (error) {
+        if (fb) fb.innerHTML = `<p style="color:var(--danger,#ef4444);font-size:12px;margin:0">${escapeHtml(buildFriendlyError(error))}</p>`;
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Salvar e selecionar';
+      }
+    });
+  }
+
+  // Reseta os campos a cada abertura e registra quem deve ser avisado do cadastro
+  document.getElementById('crNCRNome').value = '';
+  document.getElementById('crNCRTelefone').value = '';
+  document.getElementById('crNCRCpf').value = '';
+  document.getElementById('crNCRFeedback').innerHTML = '';
+  modal._onCriado = onCriado;
+  modal.classList.remove('hidden');
+  setTimeout(() => document.getElementById('crNCRNome')?.focus(), 50);
+}
+
 function abrirModalContaManual() {
   _injectCrNcStyles();
 
@@ -4197,24 +4302,25 @@ function abrirModalContaManual() {
             </div>
           </div>
 
-          <!-- Seção: Cliente -->
+          <!-- Seção: Cliente ── mesmo padrão visual do painel de Cliente no PDV -->
           <div class="cr-nc-section">
             <p class="cr-nc-section-title">Cliente</p>
-            <div class="cr-nc-card-group">
-              <div class="cr-nc-cell">
-                <span class="cr-nc-cell-ico"><i class="fa-solid fa-user"></i></span>
-                <div class="cr-nc-cell-content">
-                  <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-                    <label class="cr-nc-lbl" for="crManualClienteSearch" style="margin-bottom:0">Buscar cadastrado</label>
-                    <button type="button" id="crManualClienteNovoBtn" style="border:none;background:none;cursor:pointer;color:var(--primary,#2563eb);font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;padding:2px 0">
-                      <i class="fa-solid fa-plus" style="font-size:10px"></i> Novo cliente
-                    </button>
-                  </div>
-                  <input type="text" id="crManualClienteSearch" class="cr-nc-cell-input" placeholder="Nome, telefone ou CPF..." autocomplete="off" />
-                  <input type="hidden" id="crManualCliente" value="" />
+            <div class="form-field" style="margin-bottom:0">
+              <label>Buscar cadastrado</label>
+              <div style="display:flex;gap:6px;align-items:flex-start">
+                <div style="position:relative;flex:1">
+                  <input type="text" id="crManualClienteSearch" class="pdv-v2__search-input" autocomplete="off"
+                    placeholder="Buscar pelo nome, telefone ou CPF...">
+                  <input type="hidden" id="crManualCliente" value="">
                 </div>
+                <button type="button" class="btn btn-light btn-sm" id="crManualClienteNovoBtn" style="white-space:nowrap;height:40px" title="Cadastrar novo cliente">
+                  <i class="fa-solid fa-user-plus"></i> Novo
+                </button>
               </div>
-              <div class="cr-nc-or-divider"><span>ou</span></div>
+              <small class="pdv-helper" id="crManualClienteInfo">Nenhum cliente selecionado.</small>
+            </div>
+            <div class="cr-nc-or-divider"><span>ou</span></div>
+            <div class="cr-nc-card-group">
               <div class="cr-nc-cell cr-nc-cell--last">
                 <span class="cr-nc-cell-ico"><i class="fa-solid fa-pen-to-square"></i></span>
                 <div class="cr-nc-cell-content">
@@ -4286,33 +4392,16 @@ function abrirModalContaManual() {
   {
     const srch = document.getElementById('crManualClienteSearch');
     const hid  = document.getElementById('crManualCliente');
+    const info = document.getElementById('crManualClienteInfo');
     const drop = document.createElement('div');
     drop.className = 'cr-nc-combo-drop';
 
     const _renderOpts = () => `
-      <div class="cr-nc-combo-opt cr-nc-combo-opt--novo" data-novo="1">
-        <i class="fa-solid fa-plus" style="font-size:11px;margin-right:6px"></i>Criar novo cliente
-      </div>
       <div class="cr-nc-combo-opt cr-nc-combo-opt--sel" data-val="" data-lbl="">Avulso / sem cliente</div>
       ${state.clientes.map(c => `<div class="cr-nc-combo-opt" data-val="${c.id}" data-lbl="${escapeHtml(c.nome)}">${escapeHtml(c.nome)}</div>`).join('')}`;
 
-    const _formHtml = `
-      <div class="cr-nc-combo-newform" id="crManualClienteNovoForm" style="display:none;padding:12px 14px">
-        <input type="text" id="crManualClienteNovoNome" placeholder="Nome do cliente *" autocomplete="off"
-          style="width:100%;margin-bottom:8px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:.85rem;background:var(--surface);color:var(--text);box-sizing:border-box">
-        <input type="text" id="crManualClienteNovoTel" placeholder="Telefone (opcional)" autocomplete="off"
-          style="width:100%;margin-bottom:10px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:.85rem;background:var(--surface);color:var(--text);box-sizing:border-box">
-        <div style="display:flex;gap:8px">
-          <button type="button" id="crManualClienteNovoSalvar" class="btn btn-primary" style="flex:1;padding:7px;font-size:.82rem">Criar e selecionar</button>
-          <button type="button" id="crManualClienteNovoCancelar" class="btn btn-light" style="flex:1;padding:7px;font-size:.82rem">Cancelar</button>
-        </div>
-      </div>`;
-
-    drop.innerHTML = `<div id="crManualClienteOpts">${_renderOpts()}</div>${_formHtml}`;
+    drop.innerHTML = _renderOpts();
     document.body.appendChild(drop);
-
-    const optsBox = () => document.getElementById('crManualClienteOpts');
-    const form    = () => document.getElementById('crManualClienteNovoForm');
 
     const _pos = () => {
       const r = srch.getBoundingClientRect();
@@ -4320,90 +4409,48 @@ function abrirModalContaManual() {
       drop.style.top   = (r.bottom + 4) + 'px';
       drop.style.width = r.width + 'px';
     };
-    const _voltarLista = () => {
-      if (form()) form().style.display = 'none';
-      if (optsBox()) optsBox().style.display = '';
-    };
-    const _abrirFormNovo = () => {
-      if (optsBox()) optsBox().style.display = 'none';
-      if (form()) form().style.display = 'block';
-      document.getElementById('crManualClienteNovoNome')?.focus();
+    const _atualizarInfo = () => {
+      if (!info) return;
+      info.textContent = hid.value ? `Cliente selecionado: ${srch.value}` : 'Nenhum cliente selecionado.';
     };
 
     srch.addEventListener('focus', () => { _pos(); drop.style.display = 'block'; });
-    document.getElementById('crManualClienteNovoBtn')?.addEventListener('click', () => {
-      _pos();
-      drop.style.display = 'block';
-      _abrirFormNovo();
-    });
     srch.addEventListener('input', () => {
+      hid.value = ''; // digitar invalida a seleção anterior até escolher de novo na lista
+      _atualizarInfo();
       const q = srch.value.toLowerCase();
-      drop.querySelectorAll('#crManualClienteOpts .cr-nc-combo-opt[data-val]').forEach(o => {
+      drop.querySelectorAll('.cr-nc-combo-opt[data-val]').forEach(o => {
         o.style.display = !q || o.dataset.lbl.toLowerCase().includes(q) ? '' : 'none';
       });
       _pos(); drop.style.display = 'block';
     });
     drop.addEventListener('mousedown', e => {
-      if (e.target.closest('#crManualClienteNovoForm')) return; // deixa focar/digitar nos campos do form
-      const novo = e.target.closest('[data-novo]');
-      if (novo) { e.preventDefault(); _abrirFormNovo(); return; }
       const opt = e.target.closest('.cr-nc-combo-opt[data-val]');
       if (!opt) return;
       e.preventDefault();
       hid.value  = opt.dataset.val;
       srch.value = opt.dataset.val ? opt.dataset.lbl : '';
-      drop.querySelectorAll('#crManualClienteOpts .cr-nc-combo-opt[data-val]').forEach(o => { o.style.display = ''; o.classList.remove('cr-nc-combo-opt--sel'); });
+      drop.querySelectorAll('.cr-nc-combo-opt[data-val]').forEach(o => { o.style.display = ''; o.classList.remove('cr-nc-combo-opt--sel'); });
       opt.classList.add('cr-nc-combo-opt--sel');
       drop.style.display = 'none';
+      _atualizarInfo();
     });
-    let _salvandoNovoCliente = false;
-    const _fecharSeForaDoDrop = () => setTimeout(() => {
-      if (_salvandoNovoCliente || drop.contains(document.activeElement)) return;
-      drop.style.display = 'none';
-      _voltarLista();
-    }, 150);
-    srch.addEventListener('blur', _fecharSeForaDoDrop);
-    document.getElementById('crManualClienteNovoNome')?.addEventListener('blur', _fecharSeForaDoDrop);
-    document.getElementById('crManualClienteNovoTel')?.addEventListener('blur', _fecharSeForaDoDrop);
-
-    drop.addEventListener('click', async e => {
-      if (e.target.id === 'crManualClienteNovoCancelar') { _voltarLista(); srch.focus(); return; }
-      if (e.target.id !== 'crManualClienteNovoSalvar') return;
-
-      const nomeEl = document.getElementById('crManualClienteNovoNome');
-      const telEl  = document.getElementById('crManualClienteNovoTel');
-      const nome = nomeEl?.value?.trim() || '';
-      if (!nome) { nomeEl?.focus(); showToast('Informe o nome do cliente.', 'error'); return; }
-
-      const btn = e.target;
-      _salvandoNovoCliente = true;
-      btn.disabled = true;
-      btn.textContent = 'Criando...';
-      try {
-        const resp = await api.createCliente({ nome, telefone: telEl?.value?.trim() || '' });
-        const novoCliente = { id: resp?.id ?? resp?.dados?.id, nome };
-        state.clientes.push(novoCliente);
-
-        hid.value  = novoCliente.id;
-        srch.value = nome;
-
-        if (optsBox()) optsBox().innerHTML = _renderOpts();
-        _voltarLista();
-        drop.style.display = 'none';
-        showToast('Cliente criado e selecionado.', 'success');
-      } catch (error) {
-        showToast(buildFriendlyError(error), 'error');
-      } finally {
-        _salvandoNovoCliente = false;
-        btn.disabled = false;
-        btn.textContent = 'Criar e selecionar';
-      }
-    });
+    srch.addEventListener('blur', () => setTimeout(() => { drop.style.display = 'none'; }, 150));
 
     const _crCliObs = new MutationObserver(() => {
       if (!document.getElementById('crContaManualModal')) { drop.remove(); _crCliObs.disconnect(); }
     });
     _crCliObs.observe(document.body, { childList: true });
+
+    // ── Botão "Novo" — cadastro rápido de cliente, mesmo padrão do PDV ───────
+    document.getElementById('crManualClienteNovoBtn')?.addEventListener('click', () => {
+      abrirNovoClienteRapidoModal((cliente) => {
+        state.clientes.push(cliente);
+        hid.value  = cliente.id;
+        srch.value = cliente.nome;
+        _atualizarInfo();
+      });
+    });
   }
 
   // ── Combobox forma de recebimento ─────────────────────────────────────────
