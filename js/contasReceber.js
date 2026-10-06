@@ -4106,6 +4106,7 @@ function _injectCrNcStyles() {
     .cr-nc-combo-opt:last-child { border-bottom: none; }
     .cr-nc-combo-opt:hover, .cr-nc-combo-opt--sel { background: var(--surface-2); }
     .cr-nc-combo-opt--sel { color: var(--primary, #2563eb); }
+    .cr-nc-combo-opt--novo { color: var(--primary, #2563eb); font-weight: 700; border-bottom: 1px solid var(--border); }
     .cr-nc-combo-trigger { display: flex; align-items: center; justify-content: space-between; gap: 6px; cursor: pointer; font-size: 15px; font-weight: 500; color: var(--text); background: transparent; user-select: none; width: 100%; padding: 0; border: none; outline: none; }
     .cr-nc-combo-trigger .cr-nc-combo-chev { font-size: 11px; color: var(--text-muted, #6b7280); flex-shrink: 0; transition: transform 0.15s; }
     .cr-nc-combo-trigger.open .cr-nc-combo-chev { transform: rotate(180deg); }
@@ -4282,35 +4283,107 @@ function abrirModalContaManual() {
     const hid  = document.getElementById('crManualCliente');
     const drop = document.createElement('div');
     drop.className = 'cr-nc-combo-drop';
-    drop.innerHTML =
-      `<div class="cr-nc-combo-opt cr-nc-combo-opt--sel" data-val="" data-lbl="">Avulso / sem cliente</div>` +
-      state.clientes.map(c => `<div class="cr-nc-combo-opt" data-val="${c.id}" data-lbl="${escapeHtml(c.nome)}">${escapeHtml(c.nome)}</div>`).join('');
+
+    const _renderOpts = () => `
+      <div class="cr-nc-combo-opt cr-nc-combo-opt--novo" data-novo="1">
+        <i class="fa-solid fa-plus" style="font-size:11px;margin-right:6px"></i>Criar novo cliente
+      </div>
+      <div class="cr-nc-combo-opt cr-nc-combo-opt--sel" data-val="" data-lbl="">Avulso / sem cliente</div>
+      ${state.clientes.map(c => `<div class="cr-nc-combo-opt" data-val="${c.id}" data-lbl="${escapeHtml(c.nome)}">${escapeHtml(c.nome)}</div>`).join('')}`;
+
+    const _formHtml = `
+      <div class="cr-nc-combo-newform" id="crManualClienteNovoForm" style="display:none;padding:12px 14px">
+        <input type="text" id="crManualClienteNovoNome" placeholder="Nome do cliente *" autocomplete="off"
+          style="width:100%;margin-bottom:8px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:.85rem;background:var(--surface);color:var(--text);box-sizing:border-box">
+        <input type="text" id="crManualClienteNovoTel" placeholder="Telefone (opcional)" autocomplete="off"
+          style="width:100%;margin-bottom:10px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:.85rem;background:var(--surface);color:var(--text);box-sizing:border-box">
+        <div style="display:flex;gap:8px">
+          <button type="button" id="crManualClienteNovoSalvar" class="btn btn-primary" style="flex:1;padding:7px;font-size:.82rem">Criar e selecionar</button>
+          <button type="button" id="crManualClienteNovoCancelar" class="btn btn-light" style="flex:1;padding:7px;font-size:.82rem">Cancelar</button>
+        </div>
+      </div>`;
+
+    drop.innerHTML = `<div id="crManualClienteOpts">${_renderOpts()}</div>${_formHtml}`;
     document.body.appendChild(drop);
+
+    const optsBox = () => document.getElementById('crManualClienteOpts');
+    const form    = () => document.getElementById('crManualClienteNovoForm');
+
     const _pos = () => {
       const r = srch.getBoundingClientRect();
       drop.style.left  = r.left + 'px';
       drop.style.top   = (r.bottom + 4) + 'px';
       drop.style.width = r.width + 'px';
     };
+    const _voltarLista = () => {
+      if (form()) form().style.display = 'none';
+      if (optsBox()) optsBox().style.display = '';
+    };
+    const _abrirFormNovo = () => {
+      if (optsBox()) optsBox().style.display = 'none';
+      if (form()) form().style.display = 'block';
+      document.getElementById('crManualClienteNovoNome')?.focus();
+    };
+
     srch.addEventListener('focus', () => { _pos(); drop.style.display = 'block'; });
     srch.addEventListener('input', () => {
       const q = srch.value.toLowerCase();
-      drop.querySelectorAll('.cr-nc-combo-opt').forEach(o => {
+      drop.querySelectorAll('#crManualClienteOpts .cr-nc-combo-opt[data-val]').forEach(o => {
         o.style.display = !q || o.dataset.lbl.toLowerCase().includes(q) ? '' : 'none';
       });
       _pos(); drop.style.display = 'block';
     });
     drop.addEventListener('mousedown', e => {
-      const opt = e.target.closest('.cr-nc-combo-opt');
+      if (e.target.closest('#crManualClienteNovoForm')) return; // deixa focar/digitar nos campos do form
+      const novo = e.target.closest('[data-novo]');
+      if (novo) { e.preventDefault(); _abrirFormNovo(); return; }
+      const opt = e.target.closest('.cr-nc-combo-opt[data-val]');
       if (!opt) return;
       e.preventDefault();
       hid.value  = opt.dataset.val;
       srch.value = opt.dataset.val ? opt.dataset.lbl : '';
-      drop.querySelectorAll('.cr-nc-combo-opt').forEach(o => { o.style.display = ''; o.classList.remove('cr-nc-combo-opt--sel'); });
+      drop.querySelectorAll('#crManualClienteOpts .cr-nc-combo-opt[data-val]').forEach(o => { o.style.display = ''; o.classList.remove('cr-nc-combo-opt--sel'); });
       opt.classList.add('cr-nc-combo-opt--sel');
       drop.style.display = 'none';
     });
-    srch.addEventListener('blur', () => setTimeout(() => { drop.style.display = 'none'; }, 150));
+    srch.addEventListener('blur', () => setTimeout(() => {
+      if (drop.contains(document.activeElement)) return;
+      drop.style.display = 'none';
+      _voltarLista();
+    }, 150));
+
+    drop.addEventListener('click', async e => {
+      if (e.target.id === 'crManualClienteNovoCancelar') { _voltarLista(); srch.focus(); return; }
+      if (e.target.id !== 'crManualClienteNovoSalvar') return;
+
+      const nomeEl = document.getElementById('crManualClienteNovoNome');
+      const telEl  = document.getElementById('crManualClienteNovoTel');
+      const nome = nomeEl?.value?.trim() || '';
+      if (!nome) { nomeEl?.focus(); showToast('Informe o nome do cliente.', 'error'); return; }
+
+      const btn = e.target;
+      btn.disabled = true;
+      btn.textContent = 'Criando...';
+      try {
+        const resp = await api.createCliente({ nome, telefone: telEl?.value?.trim() || '' });
+        const novoCliente = { id: resp?.id ?? resp?.dados?.id, nome };
+        state.clientes.push(novoCliente);
+
+        hid.value  = novoCliente.id;
+        srch.value = nome;
+
+        if (optsBox()) optsBox().innerHTML = _renderOpts();
+        _voltarLista();
+        drop.style.display = 'none';
+        showToast('Cliente criado e selecionado.', 'success');
+      } catch (error) {
+        showToast(buildFriendlyError(error), 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Criar e selecionar';
+      }
+    });
+
     const _crCliObs = new MutationObserver(() => {
       if (!document.getElementById('crContaManualModal')) { drop.remove(); _crCliObs.disconnect(); }
     });
