@@ -4204,7 +4204,12 @@ function abrirModalContaManual() {
               <div class="cr-nc-cell">
                 <span class="cr-nc-cell-ico"><i class="fa-solid fa-user"></i></span>
                 <div class="cr-nc-cell-content">
-                  <label class="cr-nc-lbl" for="crManualClienteSearch">Buscar cadastrado</label>
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                    <label class="cr-nc-lbl" for="crManualClienteSearch" style="margin-bottom:0">Buscar cadastrado</label>
+                    <button type="button" id="crManualClienteNovoBtn" style="border:none;background:none;cursor:pointer;color:var(--primary,#2563eb);font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;padding:2px 0">
+                      <i class="fa-solid fa-plus" style="font-size:10px"></i> Novo cliente
+                    </button>
+                  </div>
                   <input type="text" id="crManualClienteSearch" class="cr-nc-cell-input" placeholder="Nome, telefone ou CPF..." autocomplete="off" />
                   <input type="hidden" id="crManualCliente" value="" />
                 </div>
@@ -4326,6 +4331,11 @@ function abrirModalContaManual() {
     };
 
     srch.addEventListener('focus', () => { _pos(); drop.style.display = 'block'; });
+    document.getElementById('crManualClienteNovoBtn')?.addEventListener('click', () => {
+      _pos();
+      drop.style.display = 'block';
+      _abrirFormNovo();
+    });
     srch.addEventListener('input', () => {
       const q = srch.value.toLowerCase();
       drop.querySelectorAll('#crManualClienteOpts .cr-nc-combo-opt[data-val]').forEach(o => {
@@ -4346,11 +4356,15 @@ function abrirModalContaManual() {
       opt.classList.add('cr-nc-combo-opt--sel');
       drop.style.display = 'none';
     });
-    srch.addEventListener('blur', () => setTimeout(() => {
-      if (drop.contains(document.activeElement)) return;
+    let _salvandoNovoCliente = false;
+    const _fecharSeForaDoDrop = () => setTimeout(() => {
+      if (_salvandoNovoCliente || drop.contains(document.activeElement)) return;
       drop.style.display = 'none';
       _voltarLista();
-    }, 150));
+    }, 150);
+    srch.addEventListener('blur', _fecharSeForaDoDrop);
+    document.getElementById('crManualClienteNovoNome')?.addEventListener('blur', _fecharSeForaDoDrop);
+    document.getElementById('crManualClienteNovoTel')?.addEventListener('blur', _fecharSeForaDoDrop);
 
     drop.addEventListener('click', async e => {
       if (e.target.id === 'crManualClienteNovoCancelar') { _voltarLista(); srch.focus(); return; }
@@ -4362,6 +4376,7 @@ function abrirModalContaManual() {
       if (!nome) { nomeEl?.focus(); showToast('Informe o nome do cliente.', 'error'); return; }
 
       const btn = e.target;
+      _salvandoNovoCliente = true;
       btn.disabled = true;
       btn.textContent = 'Criando...';
       try {
@@ -4379,6 +4394,7 @@ function abrirModalContaManual() {
       } catch (error) {
         showToast(buildFriendlyError(error), 'error');
       } finally {
+        _salvandoNovoCliente = false;
         btn.disabled = false;
         btn.textContent = 'Criar e selecionar';
       }
