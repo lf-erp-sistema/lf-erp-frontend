@@ -1,6 +1,6 @@
 import api from './api.js';
 import { showToast, confirmarAcao } from './feedback.js';
-import { escapeHtml, buildFriendlyError, debounce } from './utils.js';
+import { escapeHtml, buildFriendlyError, debounce, toCurrency } from './utils.js';
 
 const state = {
   sessoes:   [],
@@ -14,10 +14,6 @@ const state = {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const esc = escapeHtml;
-
-function toCurrency(v) {
-  return Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-}
 
 function formatDate(d) {
   if (!d) return '-';

@@ -1,15 +1,12 @@
 import api from './api.js';
 import { showToast } from './feedback.js';
+import { toCurrency } from './utils.js';
 
 let _pollInterval = null;
 let _timerTick = null;
 
 function esc(v) {
   return String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
-function toCurrency(v) {
-  return Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
 function stopPoll() {

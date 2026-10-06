@@ -1,6 +1,6 @@
 ﻿import api from './api.js';
 import { showToast } from './feedback.js';
-import { todayFortaleza, escapeHtml, buildFriendlyError, calcPeriodoLocal, debounce } from './utils.js';
+import { todayFortaleza, escapeHtml, buildFriendlyError, calcPeriodoLocal, debounce, formatCurrency } from './utils.js';
 
 const state = {
   contas: [],
@@ -1620,12 +1620,6 @@ function getVencimentoInfo(dataVencimento) {
   return `Vence em ${diffDias} dia(s)`;
 }
 
-function formatCurrency(value) {
-  return Number(value || 0).toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL'
-  });
-}
 
 function formatDate(value) {
   if (!value) return '-';

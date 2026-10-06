@@ -1,7 +1,7 @@
 import api from './api.js';
 import { exportCSV, numCSV } from './exportUtils.js';
 import { showToast } from './feedback.js';
-import { escapeHtml, todayFortaleza, buildFriendlyError } from './utils.js';
+import { escapeHtml, todayFortaleza, buildFriendlyError, formatCurrency } from './utils.js';
 
 const state = {
   resumo: null,
@@ -1177,12 +1177,6 @@ function formatReferencia(item) {
   return `#${id}`;
 }
 
-function formatCurrency(value) {
-  return Number(value || 0).toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL'
-  });
-}
 
 function formatDate(value) {
   if (!value) return '-';

@@ -1,7 +1,7 @@
 ﻿import api from './api.js';
 import { showToast, confirmarAcao } from './feedback.js';
 import { gerarPIX } from './pix.js';
-import { escapeHtml, buildFriendlyError, todayFortaleza, calcPeriodoLocal, debounce } from './utils.js';
+import { escapeHtml, buildFriendlyError, todayFortaleza, calcPeriodoLocal, debounce, formatCurrency } from './utils.js';
 
 let _dropClickHandler = null;
 
@@ -2640,12 +2640,6 @@ function getVencimentoInfo(dataVencimento) {
   return `Vence em ${diffDias} dia(s)`;
 }
 
-function formatCurrency(value) {
-  return Number(value || 0).toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL'
-  });
-}
 
 function formatDate(value) {
   if (!value) return '-';

@@ -2,7 +2,7 @@
 import { getAuth } from './auth.js';
 import { showToast, confirmarAcao } from './feedback.js';
 import { exportCSV } from './exportUtils.js';
-import { escapeHtml, maskPhone, debounce } from './utils.js';
+import { escapeHtml, maskPhone, debounce, maskCPF } from './utils.js';
 
 const ClientesModule = {
   state: {
@@ -1402,14 +1402,6 @@ const ClientesModule = {
     });
   }
 };
-
-function maskCPF(value) {
-  return String(value || '')
-    .replace(/\D/g, '')
-    .replace(/(\d{3})(\d)/, '$1.$2')
-    .replace(/(\d{3})(\d)/, '$1.$2')
-    .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
-}
 
 function validarCPF(cpf) {
   const n = String(cpf).replace(/\D/g, '');

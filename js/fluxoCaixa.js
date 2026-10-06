@@ -1,6 +1,6 @@
 import api from './api.js';
 import { showToast } from './feedback.js';
-import { escapeHtml, buildFriendlyError, calcPeriodoLocal, debounce } from './utils.js';
+import { escapeHtml, buildFriendlyError, calcPeriodoLocal, debounce, formatCurrency } from './utils.js';
 
 const state = {
   resumo: {
@@ -822,12 +822,6 @@ function formatOrigem(origem) {
   return map[value] || 'Outros';
 }
 
-function formatCurrency(value) {
-  return Number(value || 0).toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL'
-  });
-}
 
 function formatDate(value) {
   if (!value) return '-';

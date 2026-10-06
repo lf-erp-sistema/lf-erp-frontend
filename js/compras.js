@@ -1,7 +1,7 @@
 ﻿import api from './api.js';
 import { getAuth } from './auth.js';
 import { showToast, confirmarAcao } from './feedback.js';
-import { escapeHtml, calcPeriodoLocal, debounce } from './utils.js';
+import { escapeHtml, calcPeriodoLocal, debounce, formatCurrency } from './utils.js';
 
 const ComprasModule = {
   state: {
@@ -1542,13 +1542,6 @@ const ComprasModule = {
     });
   }
 };
-
-function formatCurrency(value) {
-  return Number(value || 0).toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL'
-  });
-}
 
 function formatDate(value) {
   if (!value) return '-';

@@ -1,5 +1,5 @@
 import api from './api.js';
-import { escapeHtml, buildFriendlyError, debounce } from './utils.js';
+import { escapeHtml, buildFriendlyError, debounce, toCurrency } from './utils.js';
 
 const state = {
   logs:    [],
@@ -11,9 +11,6 @@ const state = {
 };
 
 const esc = escapeHtml;
-function toCurrency(v) {
-  return Number(v || 0).toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
-}
 function formatDateTime(d) {
   if (!d) return '-';
   const dt = new Date(d);

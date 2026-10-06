@@ -2,7 +2,7 @@
 import { getAuth } from './auth.js';
 import { showToast, confirmarAcao } from './feedback.js';
 import { exportCSV, numCSV } from './exportUtils.js';
-import { todayFortaleza, escapeHtml, calcPeriodoLocal } from './utils.js';
+import { todayFortaleza, escapeHtml, calcPeriodoLocal, formatCurrency } from './utils.js';
 
 const VendasModule = {
   state: {
@@ -2655,12 +2655,6 @@ const VendasModule = {
   }
 };
 
-function formatCurrency(value) {
-  return Number(value || 0).toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL'
-  });
-}
 
 function formatDate(value) {
   if (!value) return '-';

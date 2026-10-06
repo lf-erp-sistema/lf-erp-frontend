@@ -2,13 +2,7 @@ import api from './api.js';
 import { getAuth } from './auth.js';
 import { showToast, confirmarAcao } from './feedback.js';
 import { exportCSV, numCSV } from './exportUtils.js';
-import { escapeHtml, buildFriendlyError, debounce } from './utils.js';
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function toCurrency(v) {
-  return Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-}
+import { escapeHtml, buildFriendlyError, debounce, toCurrency } from './utils.js';
 
 
 // ─── Module ───────────────────────────────────────────────────────────────────

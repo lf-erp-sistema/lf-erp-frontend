@@ -1,15 +1,7 @@
 'use strict';
 import api from './api.js';
 import { showToast, confirmarAcao } from './feedback.js';
-import { escapeHtml, buildFriendlyError, maskPhone } from './utils.js';
-
-function maskCPF(value) {
-  return String(value || '')
-    .replace(/\D/g, '')
-    .replace(/(\d{3})(\d)/, '$1.$2')
-    .replace(/(\d{3})(\d)/, '$1.$2')
-    .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
-}
+import { escapeHtml, buildFriendlyError, maskPhone, maskCPF } from './utils.js';
 
 function maskDate(v) {
   return String(v || '').replace(/\D/g,'')

@@ -1,6 +1,6 @@
 ﻿import api from './api.js';
 import { showToast } from './feedback.js';
-import { buildFriendlyError, escapeHtml } from './utils.js';
+import { buildFriendlyError, escapeHtml, toCurrency } from './utils.js';
 
 let _dashReqId = 0;
 let lastDashboardContext = {
@@ -12,14 +12,6 @@ function showMessage(message, type = 'info') {
   showToast(message, type);
 }
 
-
-function toCurrency(value) {
-  const numericValue = Number(value) || 0;
-  return numericValue.toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL'
-  });
-}
 
 function getPeriodLabel(filters = {}) {
   const labels = {

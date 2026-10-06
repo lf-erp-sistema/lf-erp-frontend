@@ -81,6 +81,24 @@ export function maskPhone(value) {
     .slice(0, 15);
 }
 
+export function formatCurrency(value) {
+  return Number(value || 0).toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL'
+  });
+}
+
+// Mesma função, nome usado em alguns módulos (produtos.js, lancamentosFinanceiros.js)
+export const toCurrency = formatCurrency;
+
+export function maskCPF(value) {
+  return String(value || '')
+    .replace(/\D/g, '')
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+}
+
 export function debounce(fn, delay = 300) {
   let timer;
   return function (...args) {

@@ -1,7 +1,7 @@
 import api from './api.js';
 import { getAuth } from './auth.js';
 import { showToast, confirmarAcao } from './feedback.js';
-import { escapeHtml, debounce } from './utils.js';
+import { escapeHtml, debounce, formatCurrency } from './utils.js';
 
 const EstoqueModule = {
   state: {
@@ -1058,12 +1058,6 @@ const EstoqueModule = {
   }
 };
 
-function formatCurrency(value) {
-  return Number(value || 0).toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL'
-  });
-}
 
 
 export async function initEstoqueModule() {

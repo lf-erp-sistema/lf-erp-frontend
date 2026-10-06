@@ -1,6 +1,6 @@
 import api from './api.js';
 import { showToast, confirmarAcao } from './feedback.js';
-import { escapeHtml, buildFriendlyError, calcPeriodoLocal, todayFortaleza, debounce } from './utils.js';
+import { escapeHtml, buildFriendlyError, calcPeriodoLocal, todayFortaleza, debounce, toCurrency } from './utils.js';
 
 const state = {
   itens:   [],
@@ -22,10 +22,6 @@ const state = {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const esc = escapeHtml;
-
-function toCurrency(v) {
-  return Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-}
 
 function formatDate(d) {
   if (!d) return '-';
