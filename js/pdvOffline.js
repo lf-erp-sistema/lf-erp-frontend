@@ -1,3 +1,5 @@
+import { showToast } from './feedback.js';
+
 const PDV_DB_VERSION = 1;
 
 let _empresaId = null;
@@ -116,7 +118,7 @@ export async function salvarVendaPendente(venda) {
   } catch (err) {
     console.warn('[PDV Offline] salvarVendaPendente:', err);
     if (err.name === 'QuotaExceededError' || err.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
-      alert('Armazenamento do dispositivo cheio. A venda offline não pôde ser salva. Conecte-se à internet e tente novamente.');
+      showToast('Armazenamento do dispositivo cheio. A venda offline não pôde ser salva. Conecte-se à internet e tente novamente.', 'error');
     }
     return null;
   }

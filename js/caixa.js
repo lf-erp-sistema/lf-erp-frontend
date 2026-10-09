@@ -1,5 +1,6 @@
 import api from './api.js';
 import { showToast, confirmarAcao } from './feedback.js';
+import { buildFriendlyError } from './utils.js';
 
 const CaixaModule = {
   state: {
@@ -260,7 +261,7 @@ const CaixaModule = {
         showToast('Caixa aberto!', 'success');
         await this.load();
       } catch (err) {
-        if (fb) { fb.className = 'module-feedback module-feedback--error'; fb.textContent = err.message || 'Erro ao abrir caixa.'; }
+        if (fb) { fb.className = 'module-feedback module-feedback--error'; fb.textContent = buildFriendlyError(err); }
       } finally {
         if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-lock-open"></i> Abrir Caixa'; }
       }
@@ -281,7 +282,7 @@ const CaixaModule = {
         if (descEl) descEl.value = '';
         await this.load();
       } catch (err) {
-        showToast(err.message || 'Erro ao registrar sangria.', 'error');
+        showToast(buildFriendlyError(err), 'error');
       } finally {
         if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-arrow-down" style="color:var(--danger)"></i> Registrar'; }
       }
@@ -302,7 +303,7 @@ const CaixaModule = {
         if (descEl) descEl.value = '';
         await this.load();
       } catch (err) {
-        showToast(err.message || 'Erro ao registrar suprimento.', 'error');
+        showToast(buildFriendlyError(err), 'error');
       } finally {
         if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-arrow-up" style="color:var(--success)"></i> Registrar'; }
       }
@@ -328,7 +329,7 @@ const CaixaModule = {
         showToast(msg, dif === 0 ? 'success' : 'warning');
         await this.load();
       } catch (err) {
-        showToast(err.message || 'Erro ao fechar caixa.', 'error');
+        showToast(buildFriendlyError(err), 'error');
         if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-lock"></i> Fechar Caixa'; }
       }
     });

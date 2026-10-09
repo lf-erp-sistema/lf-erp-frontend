@@ -1,6 +1,7 @@
 import api from './api.js';
 import { getAuth } from './auth.js';
 import { showToast } from './feedback.js';
+import { buildFriendlyError } from './utils.js';
 
 function esc(v) {
   return String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -40,7 +41,7 @@ const ConfigModule = {
       await api.updateMePerfil({ nome_completo: nome || null, cpf: cpf || null, nascimento: nascimento || null });
       showToast('Perfil atualizado com sucesso!', 'success');
     } catch (err) {
-      showToast(err.message || 'Erro ao atualizar perfil', 'error');
+      showToast(buildFriendlyError(err), 'error');
     } finally {
       if (btn) { btn.disabled = false; btn.textContent = 'Salvar perfil'; }
     }
@@ -138,7 +139,7 @@ const ConfigModule = {
 
       showToast('Dados exportados com sucesso!', 'success');
     } catch (err) {
-      showToast(err.message || 'Erro ao exportar dados', 'error');
+      showToast(buildFriendlyError(err), 'error');
     } finally {
       if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-download"></i> Baixar meus dados'; }
     }
@@ -170,7 +171,7 @@ const ConfigModule = {
       showToast('Configuração Asaas salva!', 'success');
       if (document.getElementById('cfgAsaasApiKey')) document.getElementById('cfgAsaasApiKey').value = '';
     } catch (err) {
-      showToast(err.message || 'Erro ao salvar configuração Asaas', 'error');
+      showToast(buildFriendlyError(err), 'error');
     } finally {
       if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Salvar configuração Asaas'; }
     }
@@ -194,7 +195,7 @@ const ConfigModule = {
       const certEl = document.getElementById('cfgPixCertificado');
       if (certEl) { certEl.value = ''; certEl.placeholder = '✓ Certificado configurado (deixe vazio para manter)'; }
     } catch (err) {
-      showToast(err.message || 'Erro ao salvar configuração PIX', 'error');
+      showToast(buildFriendlyError(err), 'error');
     } finally {
       if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Salvar configuração PIX'; }
     }
@@ -261,7 +262,7 @@ const ConfigModule = {
       if (typeof window.aplicarCorPrimaria === 'function') window.aplicarCorPrimaria(cor || null);
       showToast(cor ? 'Cor salva!' : 'Cor restaurada para o padrão.', 'success');
     } catch (err) {
-      showToast(err.message || 'Erro ao salvar cor', 'error');
+      showToast(buildFriendlyError(err), 'error');
     }
   },
 
@@ -277,7 +278,7 @@ const ConfigModule = {
       this._aplicarLogoSidebar(logoUrl);
       showToast(logoUrl ? 'Logo salvo com sucesso!' : 'Logo removido.', 'success');
     } catch (err) {
-      showToast(err.message || 'Erro ao salvar logo', 'error');
+      showToast(buildFriendlyError(err), 'error');
     }
   },
 
@@ -334,7 +335,7 @@ const ConfigModule = {
       document.getElementById('cfgSenhaNova').value = '';
       document.getElementById('cfgSenhaConfirmar').value = '';
     } catch (err) {
-      showToast(err.message || 'Erro ao alterar senha', 'error');
+      showToast(buildFriendlyError(err), 'error');
     } finally {
       if (btn) { btn.disabled = false; btn.textContent = 'Alterar senha'; }
     }
@@ -718,7 +719,7 @@ const ConfigModule = {
               }
             }
           } catch (err) {
-            showToast(err.message || 'Erro ao processar imagem', 'error');
+            showToast(buildFriendlyError(err), 'error');
           } finally {
             e.target.value = '';
           }

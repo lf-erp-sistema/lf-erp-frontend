@@ -1,7 +1,7 @@
 import api from './api.js';
 import { getAuth } from './auth.js';
 import { confirmarAcao } from './feedback.js';
-import { escapeHtml, debounce } from './utils.js';
+import { escapeHtml, debounce, buildFriendlyError } from './utils.js';
 
 const UsuariosModule = {
   state: {
@@ -255,7 +255,7 @@ const UsuariosModule = {
       this.render();
       this.cache();
       this.renderTable();
-      this.setFeedback(error.message || 'Erro ao carregar usuários.', 'error');
+      this.setFeedback(buildFriendlyError(error), 'error');
     } finally {
       this.state.loading = false;
     }
@@ -757,7 +757,7 @@ const UsuariosModule = {
       this.setFeedback('Usuário salvo com sucesso.', 'success');
     } catch (error) {
       console.error('Erro ao salvar usuário:', error);
-      this.setFeedback(error.message || 'Erro ao salvar usuário.', 'error');
+      this.setFeedback(buildFriendlyError(error), 'error');
     } finally {
       this.state.loading = false;
       if (saveBtn) saveBtn.disabled = false;
@@ -803,7 +803,7 @@ const UsuariosModule = {
       this.setFeedback('Usuário excluído com sucesso.', 'success');
     } catch (error) {
       console.error('Erro ao excluir usuário:', error);
-      this.setFeedback(error.message || 'Erro ao excluir usuário.', 'error');
+      this.setFeedback(buildFriendlyError(error), 'error');
     } finally {
       this.state.loading = false;
     }
