@@ -33,26 +33,6 @@ const PROXIMO_STATUS = {
 
 const EQUIPAMENTOS = ['Celular', 'Notebook', 'Computador', 'Tablet', 'Smartwatch', 'Impressora', 'Outro'];
 
-function injectOsStyles() {
-  if (document.getElementById('osStyles')) return;
-  const s = document.createElement('style');
-  s.id = 'osStyles';
-  s.textContent = `
-    .os-empty {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-      padding: 48px 20px;
-      text-align: center;
-    }
-    .os-empty i { font-size: 2.2rem; opacity: .2; margin-bottom: 4px; color: var(--text-muted); }
-    .os-empty strong { font-size: 15px; color: var(--text); }
-    .os-empty p { font-size: 13px; margin: 0; color: var(--text-muted); }
-  `;
-  document.head.appendChild(s);
-}
-
 const OrdensServicoModule = {
   state: {
     ordens: [],
@@ -65,7 +45,6 @@ const OrdensServicoModule = {
   },
 
   init() {
-    injectOsStyles();
     this.render();
     this.bindShellEvents();
     this.load();

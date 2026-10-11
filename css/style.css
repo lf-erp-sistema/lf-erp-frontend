@@ -9440,6 +9440,18 @@ body:not(.pdv-active) .empty-state {
 .orc-empty p,
 .ped-empty p { margin: 0; color: var(--text-muted); font-size: 13px; }
 
+.os-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 48px 20px;
+  text-align: center;
+}
+.os-empty i { margin-bottom: 4px; color: var(--text-muted); font-size: 2.2rem; opacity: .2; }
+.os-empty strong { color: var(--text); font-size: 15px; }
+.os-empty p { margin: 0; color: var(--text-muted); font-size: 13px; }
+
 /* Integrações — estilos estáticos migrados dos módulos para o tema principal. */
 .chk-tabs, .apipub-tabs, .fil-tabs {
   display: flex;
