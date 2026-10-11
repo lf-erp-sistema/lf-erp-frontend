@@ -9552,7 +9552,7 @@ body:not(.pdv-active) .empty-state {
 .cr-filters-modal-body { overflow-y: auto; }
 .cr-filters-modal-card .cr-fi-sections { grid-template-columns: 1.2fr 1.05fr 1.15fr; gap: 12px; }
 .cr-filters-modal-card .cr-fi-section:last-child .cr-fpills { flex-wrap: nowrap; }
-.cr-filters-modal-card .cr-fi-section:last-child .cr-fpill { white-space: nowrap; }
+.cr-filters-modal-card .cr-fi-section:last-child .cr-fpill { flex:1 1 0; min-width:0; padding-inline:8px; white-space:nowrap; }
 .cr-fi-section-hint { display:flex; align-items:flex-start; gap:6px; margin:auto 0 0; padding-top:10px; border-top:1px dashed var(--border); color:var(--text-muted); font-size:.73rem; line-height:1.4; }
 .cr-fi-section-hint i { margin-top:2px; color:var(--primary); }
 .cr-filters-modal-card .cr-fi-footer { position:relative; flex:0 0 auto; padding:12px 24px 14px; box-shadow:0 -8px 18px rgba(15,23,42,.035); }
