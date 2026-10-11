@@ -2077,6 +2077,7 @@ img {
   width: 100%;
   max-width: 460px;
   flex: 1;
+  min-width: 0;
 }
 
 .module-toolbar__search i {
@@ -2885,6 +2886,11 @@ img {
 
   .module-toolbar__search {
     max-width: 100%;
+  }
+
+  .module-toolbar > .module-card__actions {
+    margin-left: 0;
+    justify-content: flex-start;
   }
 
   .form-grid {
