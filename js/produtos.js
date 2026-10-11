@@ -3,6 +3,7 @@ import { getAuth } from './auth.js';
 import { showToast, confirmarAcao } from './feedback.js';
 import { exportCSV, numCSV } from './exportUtils.js';
 import { escapeHtml, buildFriendlyError, debounce, toCurrency } from './utils.js';
+import { enhanceSelect } from './premiumSelect.js';
 
 
 // ─── Module ───────────────────────────────────────────────────────────────────
@@ -49,6 +50,7 @@ const ProdutosModule = {
     if (!this.state.initialized) {
       this.state.initialized = true;
       this.renderInitialState();
+      ['produtosFiltroCategoria', 'produtosFiltroAlerta', 'produtosFiltroPromocao', 'produtosFiltroTipo', 'produtosFiltroOrdem'].forEach(id => enhanceSelect(document.getElementById(id)));
       this.cacheElements();
       this.bindEvents();
     } else {

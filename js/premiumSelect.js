@@ -11,5 +11,6 @@ export function enhanceSelect(select) {
   select.parentNode.insertBefore(wrap, select); wrap.append(trigger, menu, select); select.classList.add('premium-select__native'); sync();
   trigger.addEventListener('click', () => { document.querySelectorAll('.premium-select.is-open').forEach(el => el !== wrap && el.classList.remove('is-open')); wrap.classList.toggle('is-open'); });
   select.addEventListener('change', sync);
+  new MutationObserver(sync).observe(select, { childList: true, subtree: true, characterData: true });
   document.addEventListener('click', event => { if (!wrap.contains(event.target)) wrap.classList.remove('is-open'); });
 }
