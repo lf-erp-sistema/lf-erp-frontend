@@ -2354,9 +2354,9 @@ const ProdutosModule = {
     if (!item) return;
 
     const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px';
+    overlay.className = 'modal-overlay modal-overlay--prompt';
     overlay.innerHTML = `
-      <div style="background:var(--surface);border-radius:16px;padding:24px;max-width:360px;width:100%;box-shadow:0 24px 50px rgba(0,0,0,.2)">
+      <div class="modal-card modal-card--compact" style="padding:24px">
         <h3 style="margin:0 0 6px;font-size:16px;font-weight:700"><i class="fa-solid fa-boxes-stacked"></i> Ajustar Estoque</h3>
         <p style="font-size:13px;color:var(--text-muted);margin:0 0 16px">${escapeHtml(String(item.nome).substring(0, 50))}</p>
         <p style="font-size:13px;margin:0 0 12px">Estoque atual: <strong>${Number(item.estoque || 0)}</strong></p>

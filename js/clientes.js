@@ -1323,9 +1323,9 @@ const ClientesModule = {
     document.getElementById('extratoMsgCopyOverlay')?.remove();
     const m = document.createElement('div');
     m.id = 'extratoMsgCopyOverlay';
-    m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:12001;display:flex;align-items:center;justify-content:center;padding:20px';
+    m.className = 'modal-overlay modal-overlay--prompt';
     m.innerHTML = `
-      <div style="background:var(--surface,#fff);border-radius:18px;width:100%;max-width:440px;box-shadow:0 8px 40px rgba(0,0,0,.25);padding:24px">
+      <div class="modal-card modal-card--compact" style="padding:24px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
           <h3 style="margin:0;font-size:.95rem;font-weight:900"><i class="fa-brands fa-whatsapp" style="color:#25D366"></i> Mensagem WhatsApp</h3>
           <button id="extratoMsgCopyFechar" class="icon-button" title="Fechar" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>

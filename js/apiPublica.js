@@ -129,9 +129,9 @@ const ApiPublicaModule = {
 
   mostrarTokenUnico(token) {
     const div = document.createElement('div');
-    div.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;display:flex;align-items:center;justify-content:center;';
+    div.className = 'modal-overlay modal-overlay--prompt';
     div.innerHTML = `
-      <div style="background:var(--surface);border-radius:16px;padding:28px;max-width:500px;width:95%;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+      <div class="modal-card modal-card--medium" style="padding:28px">
         <h3 style="margin:0 0 8px;font-size:16px;font-weight:700;color:var(--success);">
           <i class="fa fa-circle-check"></i> Chave gerada com sucesso!
         </h3>
