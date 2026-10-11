@@ -1312,7 +1312,7 @@ function bindEventos() {
                 <div class="cr-fi-draft"><i class="fa-solid fa-wand-magic-sparkles"></i><span id="crDraftSummary">${PERIOD_OPTS.find(o => o.val === state.periodo.preset)?.lbl || 'Período'} · ${state.filtros.status ? STATUS_OPTS.find(o => o.val === state.filtros.status)?.lbl || 'Status' : 'Todos os status'} · ${state.ordemDir === 'asc' ? 'Mais antigo' : 'Mais recente'}</span></div>
               </div>
               <div class="cr-fi-head-actions">
-                <span class="cr-fi-active-count${activeCount ? ' is-active' : ''}" id="crDraftState">${activeCount ? `${activeCount} ajuste${activeCount > 1 ? 's' : ''}` : 'Padrão'}</span>
+                <span class="cr-fi-active-count${activeCount ? ' is-active' : ''}" id="crDraftState">${activeCount ? `${activeCount} filtro${activeCount > 1 ? 's' : ''}` : 'Padrão'}</span>
                 <button type="button" class="modal-close" id="crFecharFiltros" title="Fechar filtros" aria-label="Fechar filtros"><i class="fa-solid fa-xmark"></i></button>
               </div>
             </div>
@@ -1377,7 +1377,7 @@ function bindEventos() {
         ].filter(Boolean).length;
         const stateBadge = inline.querySelector('#crDraftState');
         if (stateBadge) {
-          stateBadge.textContent = adjustments ? `${adjustments} ajuste${adjustments > 1 ? 's' : ''}` : 'Padrão';
+          stateBadge.textContent = adjustments ? `${adjustments} filtro${adjustments > 1 ? 's' : ''}` : 'Padrão';
           stateBadge.classList.toggle('is-active', adjustments > 0);
         }
       };
