@@ -84,62 +84,7 @@ function renderErro(msg) {
   }
 }
 
-function injectAuditoriaStyles() {
-  if (document.getElementById('audStyles')) return;
-  const s = document.createElement('style');
-  s.id = 'audStyles';
-  s.textContent = `
-    .aud-toolbar-grid {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      align-items: center;
-      margin-bottom: 16px;
-    }
-    @media (min-width: 800px) {
-      .aud-toolbar-grid {
-        display: grid;
-        grid-template-columns: auto auto auto 1fr auto auto;
-      }
-    }
-    .aud-badge-tipo {
-      display: inline-block;
-      font-size: .75rem;
-      font-weight: 700;
-      border-radius: 4px;
-      padding: 2px 8px;
-      white-space: nowrap;
-      line-height: 1.5;
-    }
-    mark.aud-hl {
-      background: #fef08a;
-      color: #713f12;
-      border-radius: 2px;
-      padding: 0 2px;
-    }
-    .aud-empty {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-      padding: 40px 20px;
-      text-align: center;
-    }
-    .aud-empty i { font-size: 36px; opacity: .3; margin-bottom: 4px; color: var(--text-muted); }
-    .aud-empty strong { font-size: 15px; color: var(--text); }
-    .aud-empty p { font-size: 13px; margin: 0; color: var(--text-muted); }
-    .sort-icon { font-size: .75rem; opacity: .45; margin-left: 3px; }
-    .sort-icon--asc, .sort-icon--desc { opacity: 1; color: var(--primary, #3b82f6); }
-    @media (prefers-color-scheme: dark) {
-      :root:not([data-theme="light"]) mark.aud-hl { background: #854d0e; color: #fef9c3; }
-    }
-    :root[data-theme="dark"] mark.aud-hl { background: #854d0e; color: #fef9c3; }
-  `;
-  document.head.appendChild(s);
-}
-
 export async function initAuditoriaFinanceiraModule() {
-  injectAuditoriaStyles();
   const container = document.getElementById('auditoriaFinanceiraContainer');
   if (!container) return;
 

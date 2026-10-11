@@ -31,33 +31,7 @@ function statusBadge(status) {
   return `<span class="badge ${cls}">${label}</span>`;
 }
 
-function injectRelatoriosStyles() {
-  if (document.getElementById('relStyles')) return;
-  const s = document.createElement('style');
-  s.id = 'relStyles';
-  s.textContent = `
-    .rel-preset-btn {
-      font-size: 12px;
-      padding: 4px 10px;
-      height: 30px;
-    }
-    .rel-empty {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-      padding: 48px 20px;
-      text-align: center;
-    }
-    .rel-empty i { font-size: 2rem; opacity: .2; margin-bottom: 4px; color: var(--text-muted); }
-    .rel-empty strong { font-size: 15px; color: var(--text); }
-    .rel-empty p { font-size: 13px; margin: 0; color: var(--text-muted); }
-  `;
-  document.head.appendChild(s);
-}
-
 export async function initRelatoriosFinanceirosModule() {
-  injectRelatoriosStyles();
   try {
     renderLoading();
     await carregarDados();

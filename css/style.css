@@ -9557,3 +9557,61 @@ body:not(.pdv-active) .empty-state {
 @media (max-width: 480px) {
   .chk-form-row, .fil-form-row { grid-template-columns: 1fr; }
 }
+
+/* Financeiro — auditoria e relatórios. */
+.aud-toolbar-grid {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.aud-badge-tipo {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: .75rem;
+  font-weight: 700;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+mark.aud-hl,
+mark.cb-hl {
+  padding: 0 2px;
+  border-radius: 2px;
+  background: #fef08a;
+  color: #713f12;
+}
+
+.aud-empty,
+.rel-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 44px 20px;
+  text-align: center;
+}
+
+.aud-empty i { margin-bottom: 4px; color: var(--text-muted); font-size: 36px; opacity: .3; }
+.rel-empty i { margin-bottom: 4px; color: var(--text-muted); font-size: 2rem; opacity: .2; }
+.aud-empty strong, .rel-empty strong { color: var(--text); font-size: 15px; }
+.aud-empty p, .rel-empty p { margin: 0; color: var(--text-muted); font-size: 13px; }
+.sort-icon { margin-left: 3px; font-size: .75rem; opacity: .45; }
+.sort-icon--asc, .sort-icon--desc { color: var(--primary); opacity: 1; }
+.rel-preset-btn { height: 30px; padding: 4px 10px; font-size: 12px; }
+
+@media (min-width: 800px) {
+  .aud-toolbar-grid { display: grid; grid-template-columns: auto auto auto 1fr auto auto; }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) mark.aud-hl,
+  :root:not([data-theme="light"]) mark.cb-hl { background: #854d0e; color: #fef9c3; }
+}
+
+:root[data-theme="dark"] mark.aud-hl,
+:root[data-theme="dark"] mark.cb-hl { background: #854d0e; color: #fef9c3; }
