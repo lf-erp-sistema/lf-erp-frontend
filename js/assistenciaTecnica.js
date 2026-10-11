@@ -258,7 +258,6 @@ const AT = {
 
   // ── Init ────────────────────────────────────────────────────────────────────
   async init() {
-    injectAtStyles();
     this.render();
     this.bindEvents();
     await Promise.all([this.loadDashboard(), this.loadOS()]);
