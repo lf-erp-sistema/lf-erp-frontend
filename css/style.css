@@ -8497,3 +8497,81 @@ body:not(.pdv-active) .modal-card__footer {
 
   #nfeContainer .module-toolbar > .btn { width: 100%; }
 }
+
+/* Relatórios & BI — superfícies analíticas consistentes e focadas na leitura */
+#biContainer .bi-toolbar,
+#auditoriaFinanceiraContainer .aud-toolbar-grid,
+#relatoriosContainer .module-toolbar {
+  padding: 8px;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-2);
+}
+
+#biContainer .filter-input,
+#auditoriaFinanceiraContainer .filter-input,
+#relatoriosContainer .module-toolbar input,
+#relatoriosContainer .module-toolbar select {
+  min-height: 44px;
+  border-radius: 11px;
+  background: var(--surface);
+}
+
+#biContainer .bi-toolbar .btn,
+#auditoriaFinanceiraContainer .aud-toolbar-grid .btn,
+#relatoriosContainer .module-toolbar .btn {
+  min-height: 42px;
+  border-radius: 11px;
+  font-weight: 700;
+}
+
+#biContainer .bi-toolbar .btn-primary,
+#relatoriosContainer .module-toolbar .btn-primary {
+  box-shadow: 0 7px 16px color-mix(in srgb, var(--primary) 24%, transparent);
+}
+
+#biContainer .bi-card,
+#biContainer .bi-kpi {
+  border-radius: 16px;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, .04);
+}
+
+#biContainer .bi-ai-card {
+  border-color: color-mix(in srgb, var(--primary) 22%, var(--border));
+}
+
+#relatoriosContainer .kpi-grid { gap: 14px; }
+
+#relatoriosContainer .kpi-card,
+#relatoriosContainer .dashboard-card,
+#relatoriosContainer .panel-card {
+  border-radius: 16px;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, .04);
+}
+
+#auditoriaFinanceiraContainer .table-wrapper {
+  border-radius: 16px;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, .04);
+}
+
+#auditoriaFinanceiraContainer .aud-empty {
+  min-height: 220px;
+  border: 1px dashed var(--border);
+  border-radius: 16px;
+  background: var(--surface-2);
+}
+
+.dashboard-grid-executive .dashboard-list__item,
+.dashboard-abc-card {
+  box-shadow: 0 6px 18px rgba(15, 23, 42, .04);
+}
+
+@media (max-width: 640px) {
+  #biContainer .bi-toolbar,
+  #auditoriaFinanceiraContainer .aud-toolbar-grid,
+  #relatoriosContainer .module-toolbar { padding: 7px; }
+
+  #biContainer .bi-toolbar .btn,
+  #auditoriaFinanceiraContainer .aud-toolbar-grid .btn { width: 100%; justify-content: center; }
+}
