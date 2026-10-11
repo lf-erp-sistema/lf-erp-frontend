@@ -388,6 +388,8 @@ const RastreabilidadeModule = {
       }
     `;
 
+    enhanceSelect(document.getElementById('rastFiltroSerieProd'));
+    enhanceSelect(document.getElementById('rastFiltroSerieStatus'));
     document.getElementById('rastFiltroSerieProd')?.addEventListener('change', (e) => { this.state.filtroSerieProd = e.target.value; this.loadSeries(); });
     document.getElementById('rastFiltroSerieStatus')?.addEventListener('change', (e) => { this.state.filtroSerieStatus = e.target.value; this.loadSeries(); });
     document.getElementById('importarSeriesBtn')?.addEventListener('click', () => this.abrirImportarSeries());
