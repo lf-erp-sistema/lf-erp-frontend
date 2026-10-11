@@ -200,14 +200,21 @@ function renderAlertasVencCR() {
   const { atrasadas, valAtrasadas, hoje, valHoje, prox7, valProx7 } = calcAlertasVencCR();
   if (!atrasadas && !hoje && !prox7) return '';
   const fmtC = v => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-  const chip = (label, qtd, val, cls) =>
-    qtd ? `<div class="cp-alerta-chip cp-alerta-chip--${cls}"><span class="cp-alerta-chip__num">${qtd}</span><span class="cp-alerta-chip__label">${label}</span><span class="cp-alerta-chip__val">${fmtC(val)}</span></div>` : '';
+  const insight = (label, qtd, val, tone, icon, action = '') => qtd ? `
+    <article class="cr-alert-insight cr-alert-insight--${tone}">
+      <span class="cr-alert-insight__icon"><i class="fa-solid ${icon}"></i></span>
+      <div class="cr-alert-insight__content">
+        <span class="cr-alert-insight__eyebrow">${label}</span>
+        <strong>${qtd} título${qtd !== 1 ? 's' : ''} · ${fmtC(val)}</strong>
+      </div>
+      ${action}
+    </article>` : '';
   return `
-    <div class="cr-alertas-venc cp-alertas-venc">
-      ${chip('Em atraso', atrasadas, valAtrasadas, 'danger')}
-      ${chip('Vencem hoje', hoje, valHoje, 'warning')}
-      ${chip('Próx. 7 dias', prox7, valProx7, 'info')}
-    </div>`;
+    <section class="cr-alertas-venc" aria-label="Alertas de vencimento">
+      ${insight('Atenção necessária', atrasadas, valAtrasadas, 'danger', 'fa-triangle-exclamation', '<button type="button" class="cr-alert-insight__action" data-cr-alert-filter="atrasado">Ver títulos <i class="fa-solid fa-arrow-right"></i></button>')}
+      ${insight('Vencem hoje', hoje, valHoje, 'warning', 'fa-calendar-day')}
+      ${insight('Próximos 7 dias', prox7, valProx7, 'info', 'fa-calendar-week')}
+    </section>`;
 }
 
 function _sortItems() {
@@ -1260,6 +1267,15 @@ function bindEventos() {
 
   btnNovaContaManual?.addEventListener('click', () => {
     abrirModalContaManual();
+  });
+
+  document.querySelectorAll('[data-cr-alert-filter]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      state.filtros.status = btn.dataset.crAlertFilter || '';
+      state.pagina = 1;
+      salvarFiltrosCR();
+      await recarregar();
+    });
   });
 
   btnLimpar?.addEventListener('click', async () => {
@@ -2960,18 +2976,60 @@ function injectContasReceberStyles() {
       border-radius: 99px; padding: 1px 7px; margin-left: auto;
     }
 
-    /* ── Chips de alertas de vencimento (cp-alerta-chip não vem do CP) ── */
-    .cp-alerta-chip {
-      display: flex; align-items: center; gap: 8px;
-      padding: 8px 14px; border-radius: 10px; border: 1px solid transparent;
-      font-size: .84rem; font-weight: 700;
+    /* ── Resumo de vencimentos: informação concisa, com ação para atrasos ── */
+    .cr-alertas-venc {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
     }
-    .cp-alerta-chip--danger  { background: var(--danger-soft, rgba(220,38,38,.08)); border-color: rgba(220,38,38,.18); color: #b91c1c; }
-    .cp-alerta-chip--warning { background: var(--warning-soft, rgba(217,119,6,.08)); border-color: rgba(217,119,6,.18); color: #92400e; }
-    .cp-alerta-chip--info    { background: var(--info-soft, rgba(8,145,178,.08)); border-color: rgba(8,145,178,.18); color: #0e7490; }
-    .cp-alerta-chip__num   { font-size: 1.1em; font-weight: 900; }
-    .cp-alerta-chip__label { opacity: .85; }
-    .cp-alerta-chip__val   { font-variant-numeric: tabular-nums; font-weight: 800; }
+    .cr-alert-insight {
+      display: flex;
+      align-items: center;
+      min-width: 0;
+      min-height: 74px;
+      gap: 11px;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--surface);
+    }
+    .cr-alert-insight__icon {
+      display: grid;
+      flex: 0 0 34px;
+      width: 34px;
+      height: 34px;
+      place-items: center;
+      border-radius: 10px;
+      font-size: .86rem;
+    }
+    .cr-alert-insight__content { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 2px; }
+    .cr-alert-insight__eyebrow { color: var(--text-muted); font-size: .72rem; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; }
+    .cr-alert-insight__content strong { overflow: hidden; color: var(--text); font-size: .93rem; font-variant-numeric: tabular-nums; text-overflow: ellipsis; white-space: nowrap; }
+    .cr-alert-insight--danger { border-color: rgba(220,38,38,.18); background: linear-gradient(110deg, var(--danger-soft, rgba(220,38,38,.08)), var(--surface) 68%); }
+    .cr-alert-insight--danger .cr-alert-insight__icon { background: rgba(220,38,38,.12); color: #c62828; }
+    .cr-alert-insight--danger .cr-alert-insight__content strong { color: #c62828; }
+    .cr-alert-insight--warning { border-color: rgba(217,119,6,.18); background: linear-gradient(110deg, var(--warning-soft, rgba(217,119,6,.08)), var(--surface) 68%); }
+    .cr-alert-insight--warning .cr-alert-insight__icon { background: rgba(217,119,6,.12); color: #a16207; }
+    .cr-alert-insight--info { border-color: rgba(8,145,178,.18); background: linear-gradient(110deg, var(--info-soft, rgba(8,145,178,.08)), var(--surface) 68%); }
+    .cr-alert-insight--info .cr-alert-insight__icon { background: rgba(8,145,178,.12); color: #0e7490; }
+    .cr-alert-insight__action {
+      display: inline-flex;
+      flex: 0 0 auto;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 9px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: #b91c1c;
+      cursor: pointer;
+      font: inherit;
+      font-size: .76rem;
+      font-weight: 800;
+    }
+    .cr-alert-insight__action:hover { background: rgba(220,38,38,.10); }
+    .cr-alert-insight__action:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 
     .sort-icon {
       font-size: 0.72rem;
@@ -3620,8 +3678,9 @@ function injectContasReceberStyles() {
   font-weight: 600;
   font-size: 0.8rem;
 }
-    .cr-alertas-venc.cp-alertas-venc {
-      margin-bottom: 16px;
+    @media (max-width: 620px) {
+      .cr-alertas-venc { grid-template-columns: 1fr; }
+      .cr-alert-insight { min-height: 66px; }
     }
 
     /* ── Coluna Situação ── */
