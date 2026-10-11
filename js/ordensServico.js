@@ -1,6 +1,7 @@
 import api from './api.js';
 import { showToast, confirmarAcao } from './feedback.js';
 import { escapeHtml, buildFriendlyError } from './utils.js';
+import { enhanceSelect } from './premiumSelect.js';
 
 const STATUS_LABEL = {
   aberta:           'Aberta',
@@ -338,6 +339,7 @@ const OrdensServicoModule = {
         </button>
       </div>`;
 
+    enhanceSelect(document.getElementById('osEquipTipo'));
     // Renderiza itens existentes
     const listaItens = document.getElementById('osItensLista');
     itens.forEach(item => this.adicionarLinhaItem(listaItens, item));
