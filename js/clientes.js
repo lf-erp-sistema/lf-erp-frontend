@@ -701,28 +701,37 @@ const ClientesModule = {
 
   async configurarPortal(clienteId, clienteNome) {
     const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px';
+    overlay.className = 'modal-overlay modal-overlay--prompt';
     overlay.innerHTML = `
-      <div style="background:var(--surface);border-radius:16px;padding:24px;max-width:420px;width:100%;box-shadow:0 24px 50px rgba(0,0,0,.2)">
-        <h3 style="margin:0 0 6px;font-size:16px;font-weight:700">Portal do Cliente</h3>
-        <p style="font-size:13px;color:var(--text-muted);margin:0 0 16px">${escapeHtml(clienteNome)} — defina uma senha de acesso ao portal. Mínimo 8 caracteres.</p>
-        <div style="margin-bottom:12px">
+      <div class="modal-card modal-card--compact">
+        <div class="modal-card__header">
+          <div>
+            <h3>Portal do Cliente</h3>
+            <p>${escapeHtml(clienteNome)} — defina uma senha de acesso ao portal.</p>
+          </div>
+          <button type="button" class="modal-close" id="_portalFechar" title="Fechar" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-card__body modal-prompt__body">
+          <div>
           <label style="font-size:11px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:4px;text-transform:uppercase">Nova senha</label>
           <input type="password" id="_portalSenha" placeholder="Mínimo 8 caracteres" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;box-sizing:border-box" />
+          </div>
+          <div style="font-size:12px;color:var(--text-muted)">
+            O cliente acessa em: <strong>/portal.html</strong> com seu CPF/CNPJ + esta senha.
+          </div>
+          <div id="_portalFeedback" style="font-size:13px;display:none"></div>
         </div>
-        <div style="font-size:12px;color:var(--text-muted);margin-bottom:16px">
-          O cliente acessa em: <strong>/portal.html</strong> com seu CPF/CNPJ + esta senha.
-        </div>
-        <div style="display:flex;gap:10px;justify-content:flex-end">
+        <div class="modal-card__footer modal-prompt__actions">
           <button id="_portalCancelar" class="btn-cancel">Cancelar</button>
           <button id="_portalSalvar" class="btn-confirm">Salvar senha</button>
         </div>
-        <div id="_portalFeedback" style="margin-top:10px;font-size:13px;display:none"></div>
       </div>
     `;
     document.body.appendChild(overlay);
 
     overlay.querySelector('#_portalCancelar').addEventListener('click', () => document.body.removeChild(overlay));
+    overlay.querySelector('#_portalFechar').addEventListener('click', () => document.body.removeChild(overlay));
+    overlay.addEventListener('click', (event) => { if (event.target === overlay) overlay.remove(); });
     overlay.querySelector('#_portalSalvar').addEventListener('click', async () => {
       const senha = overlay.querySelector('#_portalSenha').value;
       const feedback = overlay.querySelector('#_portalFeedback');

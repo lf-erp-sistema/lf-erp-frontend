@@ -885,19 +885,18 @@ const FornecedoresModule = {
 
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px';
     overlay.innerHTML = `
-      <div style="background:var(--surface);border-radius:16px;max-width:700px;width:100%;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 24px 50px rgba(0,0,0,.2)">
-        <div style="padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+      <div class="modal-card modal-card--medium">
+        <div class="modal-card__header">
           <div>
             <h3 style="margin:0;font-size:16px">Histórico de Compras</h3>
             <p style="margin:2px 0 0;font-size:13px;color:var(--text-muted)">${escapeHtml(forn.nome)}</p>
           </div>
-          <button id="_histFechar" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--text-muted)" title="Fechar" aria-label="Fechar">
+          <button type="button" class="modal-close" id="_histFechar" title="Fechar" aria-label="Fechar">
             <i class="fa-solid fa-xmark"></i>
           </button>
         </div>
-        <div id="_histCorpo" style="padding:20px 24px;overflow-y:auto;flex:1">
+        <div id="_histCorpo" class="modal-card__body modal-card__body--scroll">
           <p style="color:var(--text-muted)">Carregando...</p>
         </div>
       </div>`;
