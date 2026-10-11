@@ -760,8 +760,8 @@ const PDVModule = {
 
             <!-- Painel: Cliente -->
             <div class="pdv-v2__panel" data-pdv-panel="cliente">
-              <div class="form-field" style="margin-bottom:14px">
-                <label>Cliente</label>
+              <div class="form-field pdv-v2__form-section pdv-v2__form-section--cliente" style="margin-bottom:14px">
+                <label><i class="fa-solid fa-user"></i> Cliente <span>opcional</span></label>
                 <div style="display:flex;gap:6px;align-items:flex-start">
                   <div style="position:relative;flex:1">
                     <input type="text" id="pdvClienteBusca" class="pdv-v2__search-input" autocomplete="off"
@@ -778,9 +778,9 @@ const PDVModule = {
               </div>
 
               <!-- Seção: Pagamento — logo após o cliente, é o que mais se usa nesta aba -->
-              <div id="pdvSecaoPagamento" class="pdv-v2__secao-pagamento" style="margin-top:0">
+              <div id="pdvSecaoPagamento" class="pdv-v2__secao-pagamento pdv-v2__form-section" style="margin-top:0">
               <div class="form-field">
-                <label>Formas de pagamento</label>
+                <label><i class="fa-solid fa-wallet"></i> Formas de pagamento</label>
                 <div id="pdvPagamentosLista" class="pdv-split-lista"></div>
                 <div class="pdv-split-footer" style="margin-top:10px">
                   <span id="pdvSplitRestante" class="pdv-split-restante"></span>
@@ -797,7 +797,7 @@ const PDVModule = {
               </div>
 
               <!-- Desconto/acréscimo/observação: usados ocasionalmente, ficam por último -->
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;margin-bottom:14px">
+              <div class="pdv-v2__adjustments" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;margin-bottom:14px">
                 <div class="form-field">
                   <label for="pdvDesconto">Desconto (R$)</label>
                   <input type="number" min="0" step="0.01" id="pdvDesconto" value="0" inputmode="decimal" />
@@ -807,7 +807,7 @@ const PDVModule = {
                   <input type="number" min="0" step="0.01" id="pdvAcrescimo" value="0" inputmode="decimal" />
                 </div>
               </div>
-              <div class="form-field">
+              <div class="form-field pdv-v2__notes">
                 <label for="pdvObservacao">Observação</label>
                 <textarea id="pdvObservacao" rows="2"
                   placeholder="Informações adicionais da venda"></textarea>
@@ -859,7 +859,7 @@ const PDVModule = {
             <button type="button" class="btn btn-light" id="pdvPausarBtn" title="Guardar esta venda e atender outro cliente (Alt+P)">
               <i class="fa-solid fa-pause"></i> Em espera
             </button>
-            <button type="button" class="btn pdv-v2__btn-excluir" id="pdvLimparBtn">
+            <button type="button" class="btn pdv-v2__btn-excluir" id="pdvLimparBtn" title="Cancelar venda atual">
               <i class="fa-solid fa-trash"></i> Excluir venda
             </button>
           </div>
