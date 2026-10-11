@@ -362,10 +362,13 @@
         const vaBloqueada = document.getElementById('empresaBloqueada').value === 'true';
         if (vaBloqueada) {
           const nomeEmpresa = document.getElementById('empresaNome').value.trim() || `empresa #${id}`;
-          const ok = window.confirm(
+          const { confirmarAcao } = await import('./feedback.js');
+          const ok = await confirmarAcao(
             `Você está prestes a BLOQUEAR "${nomeEmpresa}".\n` +
             'Todos os usuários perderão acesso imediatamente.\n\n' +
-            'Confirmar bloqueio?'
+            'Confirmar bloqueio?',
+            'Bloquear empresa',
+            'danger'
           );
           if (!ok) { _savingEmpresa = false; return; }
         }
@@ -741,7 +744,18 @@
       return;
     }
 
-    const vencimento = prompt(`Vencimento da cobrança para "${nome}" (YYYY-MM-DD):`, addDias(new Date().toISOString().slice(0,10), 5));
+    const { pedirInput } = await import('./feedback.js');
+    const vencimento = await pedirInput(
+      `Vencimento da cobrança para "${nome}"`,
+      'AAAA-MM-DD',
+      'date',
+      {
+        titulo: 'Gerar cobrança',
+        descricao: 'Data limite para pagamento do boleto/PIX.',
+        valorInicial: addDias(new Date().toISOString().slice(0, 10), 5),
+        validar: (valor) => (/^\d{4}-\d{2}-\d{2}$/.test(valor || '') ? true : 'Informe uma data válida (AAAA-MM-DD).'),
+      }
+    );
     if (!vencimento) return;
 
     try {

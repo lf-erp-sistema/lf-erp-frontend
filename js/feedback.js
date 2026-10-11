@@ -45,89 +45,224 @@ function getTituloToast(type) {
   }
 }
 
+const _TIPOS_VALIDOS = ['danger', 'warning', 'primary', 'success'];
+
+const _TIPO_ICONE = {
+  danger:  'fa-solid fa-trash-can',
+  warning: 'fa-solid fa-triangle-exclamation',
+  primary: 'fa-solid fa-circle-question',
+  success: 'fa-solid fa-circle-check',
+};
+
+const _TIPO_TITULO = {
+  danger:  'Confirmar exclusão',
+  warning: 'Atenção',
+  primary: 'Confirmar ação',
+  success: 'Confirmar',
+};
+
+function _tipoValido(tipo) {
+  return _TIPOS_VALIDOS.includes(tipo) ? tipo : 'primary';
+}
+
+// Prende o foco (Tab/Shift+Tab) dentro de `card`. Retorna o handler de
+// keydown já registrado, pra poder ser removido depois com a mesma
+// referência.
+function _prenderFoco(card) {
+  function onKeydown(e) {
+    if (e.key !== 'Tab') return;
+    const focaveis = Array.from(
+      card.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
+    ).filter((el) => !el.disabled && el.offsetParent !== null);
+    if (!focaveis.length) return;
+    const primeiro = focaveis[0];
+    const ultimo = focaveis[focaveis.length - 1];
+    if (e.shiftKey && document.activeElement === primeiro) {
+      e.preventDefault();
+      ultimo.focus();
+    } else if (!e.shiftKey && document.activeElement === ultimo) {
+      e.preventDefault();
+      primeiro.focus();
+    }
+  }
+  document.addEventListener('keydown', onKeydown);
+  return onKeydown;
+}
+
+function _travarScroll() {
+  document.body.classList.add('scroll-locked');
+}
+
+function _destravarScroll() {
+  document.body.classList.remove('scroll-locked');
+}
+
+/**
+ * Pede confirmação ao usuário antes de uma ação (ex: exclusão). Substitui
+ * window.confirm()/confirm() nativos em todo o app.
+ *
+ * @param {string} mensagem - texto da confirmação (quebras de linha \n são preservadas)
+ * @param {string} labelConfirmar - texto do botão de ação (padrão "Confirmar")
+ * @param {'danger'|'warning'|'primary'|'success'} tipo - variante visual (padrão "danger")
+ * @returns {Promise<boolean>} true se confirmado, false se cancelado/Escape/backdrop
+ */
 export function confirmarAcao(mensagem, labelConfirmar = 'Confirmar', tipo = 'danger') {
+  const tipoValido = _tipoValido(tipo);
+
   return new Promise((resolve) => {
-    const cor = tipo === 'danger' ? 'var(--danger)' : tipo === 'warning' ? 'var(--warning)' : 'var(--primary)';
+    const acionador = document.activeElement;
 
     const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:3000;display:flex;align-items:center;justify-content:center;padding:20px';
+    overlay.className = 'cf-overlay';
     overlay.innerHTML = `
-      <div style="background:var(--surface);border-radius:16px;padding:24px;max-width:380px;width:100%;box-shadow:0 24px 50px rgba(0,0,0,.2)">
-        <p style="font-size:14px;margin:0 0 20px;color:var(--text)">${escapeHtml(mensagem)}</p>
-        <div style="display:flex;gap:10px;justify-content:flex-end">
-          <button class="_cf-cancelar" style="padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface-3);font-size:13px;cursor:pointer">Cancelar</button>
-          <button class="_cf-confirmar" style="padding:8px 16px;border-radius:8px;border:none;background:${cor};color:#fff;font-size:13px;font-weight:600;cursor:pointer">${escapeHtml(labelConfirmar)}</button>
+      <div class="cf-card cf-card--${tipoValido}" role="alertdialog" aria-modal="true" aria-labelledby="_cfTitulo" aria-describedby="_cfMsg">
+        <div class="cf-card__header">
+          <span class="cf-card__icon"><i class="${_TIPO_ICONE[tipoValido]}" aria-hidden="true"></i></span>
+          <strong class="cf-card__title" id="_cfTitulo">${escapeHtml(_TIPO_TITULO[tipoValido])}</strong>
+        </div>
+        <div class="cf-card__body">
+          <p class="cf-card__message" id="_cfMsg">${escapeHtml(mensagem)}</p>
+        </div>
+        <div class="cf-card__footer">
+          <button type="button" class="cf-card__btn cf-card__btn--cancel" data-cf="cancelar">Cancelar</button>
+          <button type="button" class="cf-card__btn cf-card__btn--confirm" data-cf="confirmar">${escapeHtml(labelConfirmar)}</button>
         </div>
       </div>`;
 
     document.body.appendChild(overlay);
+    _travarScroll();
 
+    const card = overlay.querySelector('.cf-card');
+    const btnCancelar = overlay.querySelector('[data-cf="cancelar"]');
+    const btnConfirmar = overlay.querySelector('[data-cf="confirmar"]');
+    const onKeydownFoco = _prenderFoco(card);
     let resolvido = false;
 
     function fechar(resultado) {
       if (resolvido) return;
       resolvido = true;
-      document.removeEventListener('keydown', onKeydown);
+      document.removeEventListener('keydown', onEscape);
+      document.removeEventListener('keydown', onKeydownFoco);
       overlay.remove();
+      _destravarScroll();
       resolve(resultado);
+      if (acionador && document.contains(acionador) && typeof acionador.focus === 'function') {
+        acionador.focus();
+      }
     }
 
-    function onKeydown(e) {
+    function onEscape(e) {
       if (e.key === 'Escape') fechar(false);
     }
 
-    document.addEventListener('keydown', onKeydown);
-
-    overlay.querySelector('._cf-cancelar').addEventListener('click', () => fechar(false));
-    overlay.querySelector('._cf-confirmar').addEventListener('click', () => fechar(true));
+    document.addEventListener('keydown', onEscape);
+    btnCancelar.addEventListener('click', () => fechar(false));
+    btnConfirmar.addEventListener('click', () => fechar(true));
 
     // Clicar no backdrop fecha como cancelar
     overlay.addEventListener('click', (e) => { if (e.target === overlay) fechar(false); });
 
-    // Foca o Cancelar por default — Enter não confirma acidentalmente
-    overlay.querySelector('._cf-cancelar').focus();
+    // Em exclusões (danger) o botão destrutivo NÃO fica focado por padrão —
+    // Enter não deve confirmar acidentalmente.
+    btnCancelar.focus();
   });
 }
 
 const _INPUT_TIPOS_PERMITIDOS = ['text', 'number', 'email', 'password', 'date', 'tel', 'url'];
 
-export function pedirInput(label, placeholder = '', tipo = 'text') {
+/**
+ * Pede um valor de texto/número ao usuário. Substitui prompt() nativo.
+ *
+ * @param {string} label - texto/pergunta principal
+ * @param {string} placeholder - placeholder do campo (padrão vazio)
+ * @param {string} tipo - tipo do <input> (padrão "text")
+ * @param {object} [opcoes]
+ * @param {string} [opcoes.valorInicial] - preenche o campo com um valor inicial
+ * @param {string} [opcoes.titulo] - título do diálogo (padrão "Confirmar ação")
+ * @param {string} [opcoes.descricao] - texto secundário opcional, abaixo do label
+ * @param {(valor: string) => true|string} [opcoes.validar] - retorna true se válido,
+ *   ou uma string com a mensagem de erro a exibir sem fechar o diálogo
+ * @param {'danger'|'warning'|'primary'|'success'} [opcoes.tipoVisual] - variante visual (padrão "primary")
+ * @returns {Promise<string|null>} o valor (trim) confirmado, ou null se cancelado/Escape/backdrop
+ */
+export function pedirInput(label, placeholder = '', tipo = 'text', opcoes = {}) {
   if (!_INPUT_TIPOS_PERMITIDOS.includes(tipo)) tipo = 'text';
+  const { valorInicial = '', titulo, descricao, validar, tipoVisual = 'primary' } = opcoes;
+  const tipoValido = _tipoValido(tipoVisual);
+
   return new Promise((resolve) => {
+    const acionador = document.activeElement;
+
     const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:3000;display:flex;align-items:center;justify-content:center;padding:20px';
+    overlay.className = 'cf-overlay';
     overlay.innerHTML = `
-      <div style="background:var(--surface);border-radius:16px;padding:24px;max-width:380px;width:100%;box-shadow:0 24px 50px rgba(0,0,0,.2)">
-        <p style="font-size:14px;margin:0 0 12px;color:var(--text)">${escapeHtml(label)}</p>
-        <input class="_pi-input" type="${escapeHtml(tipo)}" placeholder="${escapeHtml(placeholder)}"
-          style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;box-sizing:border-box" />
-        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">
-          <button class="_pi-cancelar" style="padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface-3);font-size:13px;cursor:pointer">Cancelar</button>
-          <button class="_pi-confirmar" style="padding:8px 16px;border-radius:8px;border:none;background:var(--primary);color:#fff;font-size:13px;font-weight:600;cursor:pointer">OK</button>
+      <div class="cf-card cf-card--${tipoValido}" role="dialog" aria-modal="true" aria-labelledby="_piTitulo">
+        <div class="cf-card__header">
+          <span class="cf-card__icon"><i class="${_TIPO_ICONE[tipoValido]}" aria-hidden="true"></i></span>
+          <strong class="cf-card__title" id="_piTitulo">${escapeHtml(titulo || _TIPO_TITULO[tipoValido])}</strong>
+        </div>
+        <div class="cf-card__body">
+          <p class="cf-card__message">${escapeHtml(label)}</p>
+          ${descricao ? `<p class="cf-card__description">${escapeHtml(descricao)}</p>` : ''}
+          <input class="cf-card__input" type="${escapeHtml(tipo)}" placeholder="${escapeHtml(placeholder)}" value="${escapeHtml(valorInicial)}" />
+          <p class="cf-card__error"></p>
+        </div>
+        <div class="cf-card__footer">
+          <button type="button" class="cf-card__btn cf-card__btn--cancel" data-pi="cancelar">Cancelar</button>
+          <button type="button" class="cf-card__btn cf-card__btn--confirm" data-pi="confirmar">OK</button>
         </div>
       </div>`;
 
     document.body.appendChild(overlay);
+    _travarScroll();
 
-    const input = overlay.querySelector('._pi-input');
+    const card = overlay.querySelector('.cf-card');
+    const input = overlay.querySelector('.cf-card__input');
+    const erroEl = overlay.querySelector('.cf-card__error');
+    const btnCancelar = overlay.querySelector('[data-pi="cancelar"]');
+    const btnConfirmar = overlay.querySelector('[data-pi="confirmar"]');
+    const onKeydownFoco = _prenderFoco(card);
     let resolvido = false;
 
     function fechar(valor) {
       if (resolvido) return;
       resolvido = true;
-      document.removeEventListener('keydown', onKeydown);
+      document.removeEventListener('keydown', onEscape);
+      document.removeEventListener('keydown', onKeydownFoco);
       overlay.remove();
+      _destravarScroll();
       resolve(valor);
+      if (acionador && document.contains(acionador) && typeof acionador.focus === 'function') {
+        acionador.focus();
+      }
     }
 
-    function onKeydown(e) {
+    function tentarConfirmar() {
+      const valor = input.value?.trim() || null;
+      if (typeof validar === 'function') {
+        const resultado = validar(valor);
+        if (resultado !== true) {
+          erroEl.textContent = typeof resultado === 'string' ? resultado : 'Valor inválido.';
+          erroEl.classList.add('cf-card__error--show');
+          input.focus();
+          return;
+        }
+      }
+      fechar(valor);
+    }
+
+    function onEscape(e) {
       if (e.key === 'Escape') fechar(null);
-      if (e.key === 'Enter') fechar(input.value?.trim() || null);
     }
 
-    document.addEventListener('keydown', onKeydown);
-    overlay.querySelector('._pi-cancelar').addEventListener('click', () => fechar(null));
-    overlay.querySelector('._pi-confirmar').addEventListener('click', () => fechar(input.value?.trim() || null));
+    document.addEventListener('keydown', onEscape);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); tentarConfirmar(); }
+    });
+    input.addEventListener('input', () => erroEl.classList.remove('cf-card__error--show'));
+
+    btnCancelar.addEventListener('click', () => fechar(null));
+    btnConfirmar.addEventListener('click', tentarConfirmar);
     overlay.addEventListener('click', (e) => { if (e.target === overlay) fechar(null); });
 
     setTimeout(() => input.focus(), 50);

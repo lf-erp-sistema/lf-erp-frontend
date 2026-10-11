@@ -1,6 +1,6 @@
 ﻿import api from './api.js';
 import { getAuth } from './auth.js';
-import { showToast } from './feedback.js';
+import { showToast, confirmarAcao } from './feedback.js';
 import * as PdvOffline from './pdvOffline.js';
 
 const PDVModule = {
@@ -327,9 +327,9 @@ const PDVModule = {
       if (this.state._ultimoRecibo) this.imprimirRecibo(this.state._ultimoRecibo);
     });
 
-    this.el.limparBtn?.addEventListener('click', (event) => {
+    this.el.limparBtn?.addEventListener('click', async (event) => {
       event.preventDefault();
-      if (this.state.carrinho.length > 0 && !confirm('Excluir venda e limpar o carrinho?')) return;
+      if (this.state.carrinho.length > 0 && !(await confirmarAcao('Excluir venda e limpar o carrinho?', 'Excluir', 'danger'))) return;
       this.resetVenda();
     });
 
@@ -1990,7 +1990,7 @@ const PDVModule = {
 
     if (desconto > 0 && subtotal > 0 && desconto > subtotal * 0.5) {
       const pct = Math.round((desconto / subtotal) * 100);
-      if (!confirm(`Desconto de ${this.toCurrency(desconto)} (${pct}% do subtotal). Confirmar?`)) return;
+      if (!(await confirmarAcao(`Desconto de ${this.toCurrency(desconto)} (${pct}% do subtotal). Confirmar?`, 'Confirmar', 'warning'))) return;
     }
 
     // ValidaÃ§Ã£o do split
@@ -2381,11 +2381,11 @@ const PDVModule = {
     showToast(`Venda guardada — ${this.state._vendasEmEspera.length} em espera.`, 'success');
   },
 
-  retomarVendaEmEspera(id) {
+  async retomarVendaEmEspera(id) {
     if (!this.state._vendasEmEspera.some((v) => v.id === id)) return;
 
     if (this.state.carrinho.length > 0) {
-      if (!confirm('Há uma venda em andamento no carrinho. Guardar ela em espera antes de retomar a outra?')) return;
+      if (!(await confirmarAcao('Há uma venda em andamento no carrinho. Guardar ela em espera antes de retomar a outra?', 'Guardar e continuar', 'warning'))) return;
       // pausarVenda() faz unshift na lista — o índice do item buscado acima
       // fica inválido depois disso, por isso procura de novo pelo id.
       this.pausarVenda();
@@ -2425,8 +2425,8 @@ const PDVModule = {
     showToast('Venda retomada.', 'success');
   },
 
-  descartarVendaEmEspera(id) {
-    if (!confirm('Descartar esta venda em espera? Esta ação não pode ser desfeita.')) return;
+  async descartarVendaEmEspera(id) {
+    if (!(await confirmarAcao('Descartar esta venda em espera? Esta ação não pode ser desfeita.', 'Descartar', 'danger'))) return;
     this.state._vendasEmEspera = this.state._vendasEmEspera.filter((v) => v.id !== id);
     this._persistirVendasEmEspera();
     this.renderEsperaDropdown();

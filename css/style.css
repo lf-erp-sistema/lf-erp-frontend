@@ -3139,7 +3139,7 @@ img {
 .modal {
   position: fixed;
   inset: 0;
-  z-index: 120;
+  z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3980,10 +3980,12 @@ select {
 }
 
 /* MODAIS / DETALHES */
+/* Escala de camadas do sistema de modais: modal padrão = 1000,
+   confirmação/input global (feedback.js) = 1100, toast = 1200. */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  z-index: 120;
+  z-index: 1000;
   background: rgba(2, 6, 23, 0.5);
   backdrop-filter: blur(4px);
   display: flex;
@@ -4023,6 +4025,144 @@ select {
   position: sticky;
   bottom: 0;
   z-index: 1;
+}
+
+/* =========================
+   CONFIRMAÇÃO / INPUT GLOBAL (feedback.js)
+   Camada acima do modal padrão (1000), abaixo do toast (1200).
+========================= */
+body.scroll-locked { overflow: hidden; }
+
+.cf-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  background: rgba(2, 6, 23, 0.5);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.cf-card {
+  width: 100%;
+  max-width: 400px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+.cf-card__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 22px 22px 2px;
+}
+
+.cf-card__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.05rem;
+  flex-shrink: 0;
+}
+.cf-card--danger  .cf-card__icon { background: var(--danger-soft);  color: var(--danger); }
+.cf-card--warning .cf-card__icon { background: var(--warning-soft); color: var(--warning); }
+.cf-card--primary .cf-card__icon { background: var(--primary-soft); color: var(--primary); }
+.cf-card--success .cf-card__icon { background: var(--success-soft); color: var(--success); }
+
+.cf-card__title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text);
+  margin-top: 8px;
+}
+
+.cf-card__body { padding: 8px 22px 4px; }
+
+.cf-card__message {
+  font-size: 0.88rem;
+  color: var(--text-soft);
+  white-space: pre-line;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.cf-card__description {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 4px 0 0;
+}
+
+.cf-card__input {
+  width: 100%;
+  margin-top: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 0.9rem;
+  background: var(--surface);
+  color: var(--text);
+  box-sizing: border-box;
+}
+.cf-card__input:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+  border-color: var(--primary);
+}
+
+.cf-card__error {
+  font-size: 0.8rem;
+  color: var(--danger);
+  margin: 8px 0 0;
+  display: none;
+}
+.cf-card__error.cf-card__error--show { display: block; }
+
+.cf-card__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 18px 22px 22px;
+}
+
+.cf-card__btn {
+  padding: 9px 18px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background .15s, border-color .15s, filter .15s;
+}
+.cf-card__btn--cancel {
+  background: var(--surface-3);
+  border-color: var(--border);
+  color: var(--text);
+}
+.cf-card__btn--cancel:hover { background: var(--border); }
+
+.cf-card__btn--confirm { color: #fff; }
+.cf-card--danger  .cf-card__btn--confirm { background: var(--danger); }
+.cf-card--warning .cf-card__btn--confirm { background: var(--warning); }
+.cf-card--primary .cf-card__btn--confirm { background: var(--primary); }
+.cf-card--success .cf-card__btn--confirm { background: var(--success); }
+.cf-card__btn--confirm:hover { filter: brightness(0.92); }
+
+.cf-card__btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+@media (max-width: 480px) {
+  .cf-overlay { align-items: flex-end; padding: 0; }
+  .cf-card { max-width: 100%; border-radius: 22px 22px 0 0; }
 }
 
 /* DETALHES DE COMPRA/VENDA */
@@ -4298,7 +4438,7 @@ select {
   position: fixed;
   top: 18px;
   right: 18px;
-  z-index: 99999;
+  z-index: 1200;
   display: grid;
   gap: 10px;
   width: min(360px, calc(100vw - 32px));
@@ -4357,6 +4497,32 @@ select {
   opacity: 0;
   transform: translateX(12px);
   transition: all 0.22s ease;
+}
+
+.toast__content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.toast__close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.6;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  transition: opacity .15s;
+}
+.toast__close:hover { opacity: 1; }
+.toast__close:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+  opacity: 1;
 }
 
 @keyframes toastIn {
@@ -5029,7 +5195,7 @@ select {
   position: fixed;
   inset: 0;
   background: rgba(2,6,23,0.52);
-  z-index: 4000;
+  z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -5543,12 +5709,6 @@ select {
 [data-theme="dark"] .topbar {
   background: var(--surface);
   border-bottom: 1px solid var(--border);
-}
-
-/* Modal overlay */
-[data-theme="dark"] .modal-card {
-  background: var(--surface);
-  border-color: var(--border);
 }
 
 /* Tabelas */
@@ -6669,6 +6829,66 @@ body.pdv-active #pdvContainer.module-placeholder {
 .rast-modal-card { background:var(--surface); border-radius:16px; width:100%; max-width:580px; max-height:90vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,.3); margin:16px; }
 .rast-modal-header { display:flex; align-items:center; justify-content:space-between; padding:18px 24px 14px; border-bottom:1px solid var(--border); flex-shrink:0; }
 .rast-modal-header h3 { margin:0; font-size:15px; font-weight:700; }
+
+/* ── Compatibilidade mobile (bottom sheet) para famílias próprias de
+   modal — CRM, Rastreabilidade, PIX e Assistência Técnica (.at-modal,
+   injetado por assistenciaTecnica.js). Mesmo tratamento do modal
+   padrão: largura total, altura máxima ~92dvh, cantos superiores
+   arredondados, pinado na base. ────────────────────────────────── */
+@media (max-width: 767px) {
+  .crm-modal-overlay,
+  .rast-modal-overlay,
+  .pix-modal-overlay,
+  .at-modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  /* CRM e Rastreabilidade não têm um elemento de corpo dedicado — cabeçalho
+     e rodapé viram sticky dentro do card, que passa a rolar inteiro. */
+  .crm-modal-card,
+  .rast-modal-card {
+    width: 100%;
+    max-width: 100%;
+    max-height: 92dvh;
+    max-height: 92vh;
+    margin: 0;
+    border-radius: 22px 22px 14px 14px;
+    overflow-y: auto;
+  }
+  .crm-modal-header,
+  .rast-modal-header {
+    position: sticky;
+    top: 0;
+    background: var(--surface);
+    z-index: 1;
+  }
+  .crm-modal-footer {
+    position: sticky;
+    bottom: 0;
+    background: var(--surface);
+  }
+
+  /* PIX e Assistência Técnica já têm corpo com scroll próprio — só precisam
+     ficar largura total / altura máxima / pinados na base. */
+  .pix-modal,
+  .at-modal {
+    width: 100%;
+    max-width: 100%;
+    max-height: 92dvh;
+    max-height: 92vh;
+    margin: 0;
+    border-radius: 22px 22px 14px 14px;
+    display: flex;
+    flex-direction: column;
+  }
+  .pix-modal__body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    min-height: 0;
+  }
+}
+
 .rast-form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
 .rast-form-group { display:flex; flex-direction:column; gap:4px; }
 .rast-form-group label { font-size:12px; font-weight:600; color:var(--text-muted); }
