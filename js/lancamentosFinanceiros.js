@@ -1,6 +1,7 @@
 import api from './api.js';
 import { showToast, confirmarAcao } from './feedback.js';
 import { escapeHtml, buildFriendlyError, calcPeriodoLocal, todayFortaleza, debounce, toCurrency } from './utils.js';
+import { enhanceSelect } from './premiumSelect.js';
 
 const state = {
   itens:   [],
@@ -726,6 +727,8 @@ function _abrirAcoesLFModal(btn) {
 let _lfDropdownCloseBound = false;
 
 function bindEventos() {
+  enhanceSelect(document.getElementById('lfTipo'));
+  enhanceSelect(document.getElementById('lfStatus'));
   // ── "Ações" dropdown
   document.getElementById('lfActionsBtn')?.addEventListener('click', () => {
     document.getElementById('lfActionsDropdown')?.classList.toggle('hidden');

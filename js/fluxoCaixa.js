@@ -1,6 +1,7 @@
 import api from './api.js';
 import { showToast } from './feedback.js';
 import { escapeHtml, buildFriendlyError, calcPeriodoLocal, debounce, formatCurrency } from './utils.js';
+import { enhanceSelect } from './premiumSelect.js';
 
 const state = {
   resumo: {
@@ -666,6 +667,8 @@ function bindEventos() {
   const busca = document.getElementById('fluxoBusca');
   const tipo = document.getElementById('fluxoTipo');
   const origem = document.getElementById('fluxoOrigem');
+  enhanceSelect(tipo);
+  enhanceSelect(origem);
 
   btnAtualizar?.addEventListener('click', async () => {
     await recarregar();
