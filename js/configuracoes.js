@@ -2,9 +2,21 @@ import api from './api.js';
 import { getAuth } from './auth.js';
 import { confirmarAcao, showToast } from './feedback.js';
 import { buildFriendlyError } from './utils.js';
+import { setActiveView } from './app.js';
 
 function esc(v) {
   return String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function injectCfgExtLinkStyles() {
+  if (document.getElementById('cfgExtLinkStyles')) return;
+  const s = document.createElement('style');
+  s.id = 'cfgExtLinkStyles';
+  s.textContent = `
+    .cfg-ext-link:last-child { border-bottom: none; }
+    .cfg-ext-link:hover { background: var(--surface-2); }
+  `;
+  document.head.appendChild(s);
 }
 
 const ConfigModule = {
@@ -21,6 +33,17 @@ const ConfigModule = {
     this.state.user = auth?.user || {};
     this.state.isAdmin = ['admin', 'administrador'].includes((auth?.user?.perfil || '').toLowerCase());
 
+    const tipo = auth?.user?.tipo;
+    this.state.podeVerLixeira = tipo === 'admin' || tipo === 'gerente' || !!auth?.user?.is_saas_owner;
+    this.state.lixeiraCarregada = false;
+
+    try {
+      const perm = await api.getMinhasPermissoes();
+      this.state.permissoesModulos = perm;
+    } catch {
+      this.state.permissoesModulos = { isAdmin: this.state.isAdmin || !!auth?.user?.is_saas_owner };
+    }
+
     this.state.eventsBound = false;
     this.render();
     this.load();
@@ -29,6 +52,36 @@ const ConfigModule = {
       const { initUsuariosModule } = await import('./usuarios.js');
       await initUsuariosModule(true);
     }
+  },
+
+  _podeVerModulo(modulo) {
+    const perm = this.state.permissoesModulos;
+    if (!perm || perm.isAdmin) return true;
+    return perm.permissoes?.[modulo]?.pode_ver === true;
+  },
+
+  _renderCfgExtLink(view, icone, cor, titulo, descricao) {
+    const moduloPorView = {
+      whatsapp: 'whatsapp',
+      marketplace: 'marketplace',
+      'api-publica': 'configuracoes',
+      'checkout-links': 'checkout',
+      filiais: 'filiais',
+      rastreabilidade: 'rastreabilidade'
+    };
+    if (!this._podeVerModulo(moduloPorView[view])) return '';
+    return `
+      <button type="button" class="cfg-ext-link" data-config-nav="${view}"
+        style="display:flex;align-items:center;gap:14px;padding:14px 12px;border:none;border-bottom:1px solid var(--border);background:none;width:100%;text-align:left;cursor:pointer;border-radius:8px">
+        <span style="width:38px;height:38px;border-radius:10px;background:color-mix(in srgb, ${cor} 14%, transparent);color:${cor};display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">
+          <i class="${icone}"></i>
+        </span>
+        <span style="flex:1;min-width:0">
+          <strong style="display:block;font-size:13px;color:var(--text)">${esc(titulo)}</strong>
+          <small style="display:block;font-size:12px;color:var(--text-muted);margin-top:2px">${esc(descricao)}</small>
+        </span>
+        <i class="fa-solid fa-chevron-right" style="color:var(--text-muted);font-size:12px"></i>
+      </button>`;
   },
 
   async salvarPerfil() {
@@ -221,6 +274,11 @@ const ConfigModule = {
       botao.classList.toggle('is-active', ativa);
       botao.setAttribute('aria-current', ativa ? 'page' : 'false');
     });
+
+    if (aba === 'lixeira' && !this.state.lixeiraCarregada) {
+      this.state.lixeiraCarregada = true;
+      import('./lixeira.js').then(({ initLixeiraModule }) => initLixeiraModule());
+    }
   },
 
   _atualizarStatusAmbiente(statusId, sandbox) {
@@ -451,6 +509,8 @@ const ConfigModule = {
     const c = document.getElementById('configuracoesContainer');
     if (!c) return;
 
+    injectCfgExtLinkStyles();
+
     const logoAtual = this.state.dados?.logo_url || '';
 
     const corAtual = this.state.dados?.cor_primaria || '#2563eb';
@@ -462,7 +522,9 @@ const ConfigModule = {
           <button type="button" class="cfg-page-nav__button is-active" data-config-tab="empresa"><i class="fa-solid fa-building"></i> Empresa</button>
           <button type="button" class="cfg-page-nav__button" data-config-tab="conta"><i class="fa-solid fa-user"></i> Minha conta</button>
           <button type="button" class="cfg-page-nav__button" data-config-tab="integracoes"><i class="fa-solid fa-plug"></i> Integrações</button>
+          <button type="button" class="cfg-page-nav__button" data-config-tab="operacoes"><i class="fa-solid fa-gears"></i> Operações</button>
           ${this.state.isAdmin ? '<button type="button" class="cfg-page-nav__button" data-config-tab="equipe"><i class="fa-solid fa-users"></i> Equipe</button>' : ''}
+          ${this.state.podeVerLixeira ? '<button type="button" class="cfg-page-nav__button" data-config-tab="lixeira"><i class="fa-solid fa-trash-can-arrow-up"></i> Lixeira</button>' : ''}
           <button type="button" class="cfg-page-nav__button" data-config-tab="privacidade"><i class="fa-solid fa-shield-halved"></i> Privacidade</button>
         </div>
       </div>
@@ -712,6 +774,48 @@ const ConfigModule = {
         </div>
       </section>
 
+      <!-- CARD 6b: Outras integrações -->
+      <section class="module-card" style="margin-bottom:16px">
+        <div class="module-card__header" style="margin-bottom:12px">
+          <div>
+            <h3><i class="fa-solid fa-plug-circle-bolt" style="color:var(--primary);margin-right:6px"></i>Outras integrações</h3>
+            <p>Canais de venda e comunicação conectados ao sistema</p>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column">
+          ${this._renderCfgExtLink('whatsapp', 'fa-brands fa-whatsapp', '#25d366', 'WhatsApp Business', 'Mensagens automáticas de cobrança e confirmação')}
+          ${this._renderCfgExtLink('marketplace', 'fa-solid fa-store', 'var(--primary)', 'Marketplace', 'Catálogo de produtos publicado para venda online')}
+          ${this._renderCfgExtLink('api-publica', 'fa-solid fa-plug', 'var(--primary)', 'API / Webhooks', 'Integração com sistemas externos via API Key e webhooks')}
+          ${this._renderCfgExtLink('checkout-links', 'fa-solid fa-link', 'var(--primary)', 'Link de Pagamento', 'Gere links de cobrança com PIX e Boleto')}
+        </div>
+      </section>
+
+      <!-- CARD: Operações -->
+      <section class="module-card" style="margin-bottom:16px">
+        <div class="module-card__header" style="margin-bottom:12px">
+          <div>
+            <h3><i class="fa-solid fa-gears" style="color:var(--primary);margin-right:6px"></i>Operações</h3>
+            <p>Recursos de gestão operacional da empresa</p>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column">
+          ${this._renderCfgExtLink('filiais', 'fa-solid fa-code-branch', 'var(--primary)', 'Multi-filial', 'Gerencie unidades e transferências entre filiais')}
+          ${this._renderCfgExtLink('rastreabilidade', 'fa-solid fa-boxes-stacked', 'var(--primary)', 'Rastreabilidade', 'Lotes, números de série e rastreio de estoque')}
+        </div>
+      </section>
+
+      ${this.state.podeVerLixeira ? `
+      <!-- CARD: Lixeira -->
+      <section class="module-card">
+        <div class="module-card__header" style="margin-bottom:12px">
+          <div>
+            <h3><i class="fa-solid fa-trash-can-arrow-up" style="color:var(--primary);margin-right:6px"></i>Lixeira</h3>
+            <p>Registros excluídos — recupere ou exclua definitivamente</p>
+          </div>
+        </div>
+        <div id="lixeiraContainer"></div>
+      </section>` : ''}
+
       <!-- CARD 7: Usuários do sistema (admin only) -->
       ${this.state.isAdmin ? `
       <section class="module-card" style="margin-bottom:16px">
@@ -743,7 +847,8 @@ const ConfigModule = {
     `;
 
     const secoes = [...c.querySelectorAll('.configuracoes-premium > .module-card')];
-    const tabsPorSecao = ['empresa', 'conta', 'conta', 'conta', 'integracoes', 'integracoes'];
+    const tabsPorSecao = ['empresa', 'conta', 'conta', 'conta', 'integracoes', 'integracoes', 'integracoes', 'operacoes'];
+    if (this.state.podeVerLixeira) tabsPorSecao.push('lixeira');
     if (this.state.isAdmin) tabsPorSecao.push('equipe');
     tabsPorSecao.push('privacidade');
     secoes.forEach((secao, indice) => { secao.dataset.configTab = tabsPorSecao[indice] || 'empresa'; });
@@ -754,6 +859,10 @@ const ConfigModule = {
       setTimeout(() => {
         document.querySelectorAll('.cfg-page-nav__button').forEach((button) => {
           button.addEventListener('click', () => this._selecionarAba(button.dataset.configTab));
+        });
+
+        document.querySelectorAll('[data-config-nav]').forEach((link) => {
+          link.addEventListener('click', () => setActiveView(link.dataset.configNav));
         });
 
         ['cfgSenhaAtual', 'cfgSenhaNova', 'cfgSenhaConfirmar'].forEach((inputId) => this._adicionarControleSenha(inputId));

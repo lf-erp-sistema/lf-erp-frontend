@@ -432,58 +432,9 @@
               </div>
             </div>
 
-            <!-- Avancado (colapsado por padrão) -->
-            <button class="nav-advanced-toggle" id="navAdvancedToggle" type="button">
-              <span class="nav-advanced-toggle__line"></span>
-              <span class="nav-advanced-toggle__label">Mais recursos</span>
-              <span class="nav-advanced-toggle__arrow"><i class="fa-solid fa-chevron-down"></i></span>
-              <span class="nav-advanced-toggle__line"></span>
-            </button>
-
-            <div class="nav-advanced-section" id="navAdvancedSection">
-
-              <!-- Integracoes -->
-              <div class="nav-group" data-group="integracoes">
-                <button class="nav-group__toggle" type="button" title="Integrações">
-                  <span class="nav-group__left">
-                    <span class="nav-item__icon"><i class="fa-solid fa-plug-circle-bolt"></i></span>
-                    <span class="nav-item__label">Integrações</span>
-                  </span>
-                  <span class="nav-group__arrow"><i class="fa-solid fa-chevron-right"></i></span>
-                </button>
-                <div class="nav-group__menu">
-                  <button class="nav-subitem" data-view="whatsapp"><i class="fa-brands fa-whatsapp"></i><span>WhatsApp</span></button>
-                  <button class="nav-subitem" data-view="marketplace"><i class="fa-solid fa-store"></i><span>Marketplace</span></button>
-                  <button class="nav-subitem" data-view="api-publica"><i class="fa-solid fa-plug"></i><span>API / Webhooks</span></button>
-                  <button class="nav-subitem" data-view="checkout-links"><i class="fa-solid fa-link"></i><span>Link Pagamento</span></button>
-                </div>
-              </div>
-
-              <!-- Operacoes -->
-              <div class="nav-group" data-group="operacoes">
-                <button class="nav-group__toggle" type="button" title="Operações">
-                  <span class="nav-group__left">
-                    <span class="nav-item__icon"><i class="fa-solid fa-gears"></i></span>
-                    <span class="nav-item__label">Operações</span>
-                  </span>
-                  <span class="nav-group__arrow"><i class="fa-solid fa-chevron-right"></i></span>
-                </button>
-                <div class="nav-group__menu">
-                  <button class="nav-subitem" data-view="filiais"><i class="fa-solid fa-code-branch"></i><span>Multi-filial</span></button>
-                  <button class="nav-subitem" data-view="rastreabilidade"><i class="fa-solid fa-boxes-stacked"></i><span>Rastreabilidade</span></button>
-                </div>
-              </div>
-
-            </div><!-- /nav-advanced-section -->
-
             <div class="nav-divider"></div>
 
             <!-- Rodape -->
-            <button id="lixeiraNavBtn" class="nav-item hidden" data-view="lixeira" title="Lixeira">
-              <span class="nav-item__icon"><i class="fa-solid fa-trash-can-arrow-up"></i></span>
-              <span class="nav-item__label">Lixeira</span>
-            </button>
-
             <button class="nav-item" data-view="configuracoes" title="Configurações">
               <span class="nav-item__icon"><i class="fa-solid fa-gear"></i></span>
               <span class="nav-item__label">Configurações</span>
@@ -1253,15 +1204,7 @@
               </div>
             </section>
 
-            <!-- CONFIGURAÇÕES -->
-            <!-- LIXEIRA -->
-            <section class="view-section" data-view="lixeira">
-
-              <div id="lixeiraContainer" class="module-placeholder">
-                Carregando lixeira...
-              </div>
-            </section>
-
+            <!-- CONFIGURAÇÕES (inclui Lixeira como aba) -->
             <section class="view-section" data-view="configuracoes">
 
               <div id="configuracoesContainer" class="module-placeholder">

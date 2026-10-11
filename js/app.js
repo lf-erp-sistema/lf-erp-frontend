@@ -159,7 +159,7 @@ function aplicarPermissoesMenu() {
   // Admin: restaura visibilidade de tudo (exceto itens com lógica própria)
   if (isAdmin) {
     document.querySelectorAll('[data-view]').forEach(el => {
-      if (el.id === 'lixeiraNavBtn' || el.id === 'adminNavLink') return;
+      if (el.id === 'adminNavLink') return;
       el.style.removeProperty('display');
     });
     // AT group: controlado exclusivamente por feature flag, não por permissão de admin
@@ -172,7 +172,7 @@ function aplicarPermissoesMenu() {
   // Outros perfis: aplica visibilidade por módulo
   document.querySelectorAll('[data-view]').forEach(el => {
     const view = el.getAttribute('data-view');
-    if (!view || view === 'lixeira') return;
+    if (!view) return;
     const modulo = VIEW_MODULO[view];
     if (!modulo) return;
     const podeVer = perm.permissoes?.[modulo]?.pode_ver === true;
@@ -1001,7 +1001,7 @@ function closeMobileSidebar() {
   overlay.classList.add('hidden');
 }
 
-async function setActiveView(view) {
+export async function setActiveView(view) {
   if (view === 'usuarios') view = 'configuracoes';
   if (view !== AppState.currentView) {
     const openModal = Array.from(document.querySelectorAll('.modal-overlay:not(.hidden), [role="dialog"]:not([aria-hidden="true"]):not(.hidden)')).find(el => !el.closest('.hidden'));
@@ -1068,7 +1068,6 @@ const VIEW_LOADERS = {
   'lancamentos':         loadLancamentosReal,
   'conciliacao':         loadConciliacaoReal,
   'auditoria-financeira':loadAuditoriaFinanceiraReal,
-  'lixeira':             loadLixeiraReal,
   'relatorios':          loadRelatoriosFinanceirosReal,
   'fornecedores':        loadFornecedoresReal,
   'usuarios':            loadUsuariosReal,
@@ -1514,14 +1513,6 @@ function renderAuthenticatedUser() {
   if (adminLink && AppState.user?.is_saas_owner) {
     adminLink.style.display = 'block';
     adminLink.addEventListener('click', () => location.assign('./admin.html'));
-  }
-
-  const lixeiraBtn = document.getElementById('lixeiraNavBtn');
-  if (lixeiraBtn) {
-    const tipo = AppState.user?.tipo;
-    if (tipo === 'admin' || tipo === 'gerente' || AppState.user?.is_saas_owner) {
-      lixeiraBtn.classList.remove('hidden');
-    }
   }
 }
 
@@ -2027,20 +2018,6 @@ async function loadConciliacaoReal() {
   }
 }
 
-async function loadLixeiraReal() {
-  showGlobalLoader('Carregando lixeira...');
-  try {
-    const { initLixeiraModule } = await import('./lixeira.js');
-    await initLixeiraModule();
-  } catch (error) {
-    console.error('Erro ao carregar lixeira:', error);
-    showToast('Erro ao carregar lixeira', 'error');
-    renderModuleError('lixeiraContainer', 'Lixeira', 'Não foi possível carregar a lixeira.');
-  } finally {
-    hideGlobalLoader();
-  }
-}
-
 async function loadAuditoriaFinanceiraReal() {
   showGlobalLoader('Carregando auditoria financeira...');
   try {
@@ -2435,7 +2412,6 @@ function renderViewFeedback(view) {
     lancamentos: 'lancamentosContainer',
     conciliacao: 'conciliacaoContainer',
     'auditoria-financeira': 'auditoriaFinanceiraContainer',
-    lixeira: 'lixeiraContainer',
     pdv: 'pdvContainer',
     usuarios: 'usuariosContainer',
     estoque: 'estoqueContainer',
