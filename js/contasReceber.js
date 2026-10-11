@@ -2745,7 +2745,8 @@ function injectContasReceberStyles() {
       display: flex;
       gap: 10px;
       align-items: center;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
+      min-width: 0;
     }
 
     .cr-toolbar-row2 {
@@ -2908,13 +2909,13 @@ function injectContasReceberStyles() {
       border-left: 1px solid var(--border);
     }
 
-    .cr-toolbar-row1 .cr-search-box { max-width: none; flex: 1 1 340px; height: 46px; border-radius: 13px; }
-    .cr-toolbar-row1 .cr-filter-box--cliente { flex: 0 1 230px; height: 46px; border-radius: 13px; }
+    .cr-toolbar-row1 .cr-search-box { max-width:none; min-width:250px; flex:1 1 280px; height:46px; border-radius:13px; }
+    .cr-toolbar-row1 .cr-filter-box--cliente { flex:0 1 210px; min-width:180px; height:46px; border-radius:13px; }
     .cr-month-nav { display:flex; align-items:center; gap:2px; height:46px; padding:3px; border:1px solid var(--border); border-radius:13px; background:var(--surface); flex-shrink:0; }
-    .cr-month-nav__button { display:grid; width:36px; height:36px; place-items:center; border:0; border-radius:10px; background:transparent; color:var(--text-muted); cursor:pointer; font-size:.82rem; }
+    .cr-month-nav__button { display:grid; width:32px; height:36px; place-items:center; border:0; border-radius:10px; background:transparent; color:var(--text-muted); cursor:pointer; font-size:.82rem; }
     .cr-month-nav__button:hover { background:var(--surface-2); color:var(--primary); }
     .cr-month-nav__button:focus-visible { outline:2px solid var(--primary); outline-offset:1px; }
-    .cr-month-nav__label { min-width:132px; padding:0 4px; color:var(--text); font-size:.88rem; font-weight:800; text-align:center; white-space:nowrap; }
+    .cr-month-nav__label { min-width:116px; padding:0 4px; color:var(--text); font-size:.88rem; font-weight:800; text-align:center; white-space:nowrap; }
 
     /* ── Kebab menu ⋮ ── */
     .cr-more-menu { position: relative; flex-shrink: 0; }
