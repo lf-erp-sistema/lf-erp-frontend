@@ -509,6 +509,41 @@ img {
   line-height: 1.35;
 }
 
+/* Keep the desktop login composed within the visible viewport. */
+@media (min-width: 1201px) {
+  .login-screen {
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .login-screen__left {
+    padding-block: clamp(28px, 5.2vh, 56px);
+  }
+
+  .login-brand {
+    margin-bottom: clamp(20px, 3.5vh, 42px);
+  }
+
+  .login-brand__wordmark {
+    width: min(100%, clamp(290px, 23vw, 380px));
+  }
+
+  .login-highlight h2 {
+    font-size: clamp(1.85rem, 4.5vh, 2.75rem);
+    margin-bottom: clamp(10px, 1.7vh, 16px);
+  }
+
+  .login-highlight > p {
+    line-height: 1.5;
+    margin-bottom: clamp(14px, 2.8vh, 28px);
+  }
+
+  .login-feature {
+    padding-block: clamp(7px, 1.2vh, 12px);
+  }
+}
+
 .login-screen__right {
   padding: 34px;
   display: flex;
