@@ -2116,6 +2116,24 @@ function injectContasPagarStyles() {
 
     .cp-nc-body { gap: 0; padding: 0; overflow-y: auto; }
 
+    .cp-nc-field { display: flex; flex-direction: column; gap: 6px; }
+    .cp-nc-field__label { font-size: .8rem; font-weight: 600; color: var(--text-muted); }
+    .cp-nc-spinner {
+      display: flex; flex-direction: column; align-items: stretch;
+      border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+      width: fit-content;
+    }
+    .cp-nc-spin-up, .cp-nc-spin-down {
+      border: none; background: var(--surface-2); color: var(--text-muted);
+      padding: 6px 16px; cursor: pointer; font-size: .75rem;
+      transition: background .1s, color .1s;
+    }
+    .cp-nc-spin-up:hover, .cp-nc-spin-down:hover { background: var(--primary-soft); color: var(--primary); }
+    .cp-nc-spin-val {
+      font-size: 1rem; font-weight: 900; font-variant-numeric: tabular-nums;
+      color: var(--text); padding: 4px 16px; min-width: 44px; text-align: center;
+    }
+
     .cp-nc-section {
       padding: 18px 22px;
       border-bottom: 1px solid var(--border);

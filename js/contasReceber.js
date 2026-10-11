@@ -3637,6 +3637,8 @@ function injectContasReceberStyles() {
     .cr-vc-row__info small { color: var(--text-muted); font-size: .75rem; }
     .cr-vc-row__valor { text-align: right; }
     .cr-vc-row__valor strong { display: block; font-size: .94rem; font-weight: 800; }
+    .cr-vc-row__icon { display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
+    .cr-vc-progress { padding: 10px 16px; border-bottom: 1px solid var(--border); }
     .cr-vc-progress__label {
       display: flex; justify-content: space-between;
       font-size: .78rem; font-weight: 700; margin-bottom: 4px; color: var(--text-muted);
@@ -3826,6 +3828,24 @@ function _injectCrNcStyles() {
     }
     .cr-nc-col { display: flex; flex-direction: column; min-width: 0; }
     .cr-nc-col:first-child { border-right: 1px solid var(--border); }
+
+    .cr-nc-spinner-block { display: flex; flex-direction: column; gap: 6px; }
+    .cr-nc-field-lbl { font-size: .8rem; font-weight: 600; color: var(--text-muted); }
+    .cr-nc-spinner {
+      display: flex; flex-direction: column; align-items: stretch;
+      border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+      width: fit-content;
+    }
+    .cr-nc-spin-up, .cr-nc-spin-down {
+      border: none; background: var(--surface-2); color: var(--text-muted);
+      padding: 6px 16px; cursor: pointer; font-size: .75rem;
+      transition: background .1s, color .1s;
+    }
+    .cr-nc-spin-up:hover, .cr-nc-spin-down:hover { background: var(--primary-soft); color: var(--primary); }
+    .cr-nc-spin-val {
+      font-size: 1rem; font-weight: 900; font-variant-numeric: tabular-nums;
+      color: var(--text); padding: 4px 16px; min-width: 44px; text-align: center;
+    }
 
     .cr-nc-section {
       padding: 18px 22px;

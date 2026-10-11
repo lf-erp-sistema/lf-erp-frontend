@@ -604,7 +604,7 @@ const AlertasModule = {
             </div>
             <label class="toggle-switch">
               <input type="checkbox" id="alertasPreventivaToogle" ${preventiva ? 'checked' : ''}>
-              <span class="toggle-slider"></span>
+              <span class="toggle-switch__track"></span>
             </label>
           </div>
           <div id="alertasPreventivaCronInfo" style="display:${preventiva ? 'block' : 'none'};padding:0 16px 14px">

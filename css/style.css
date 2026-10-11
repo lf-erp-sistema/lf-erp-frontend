@@ -1130,6 +1130,13 @@ img {
   padding-left: 11px;
 }
 
+.nav-group__left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
 .nav-item__icon {
   width: 20px;
 }
@@ -1316,6 +1323,18 @@ img {
 }
 
 /* PAGINAÇÃO */
+/* .pagination-bar (Ordens de Serviço) — mesmo espírito do .lf-pagination
+   abaixo, mas com botão/texto soltos em vez de sub-classes BEM. */
+.pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px 0 4px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
 .lf-pagination {
   display: flex;
   align-items: center;
@@ -2106,6 +2125,10 @@ img {
 
 .text-right {
   text-align: right;
+}
+
+.text-center {
+  text-align: center;
 }
 
 .table-muted {
@@ -3128,6 +3151,15 @@ img {
   margin-bottom: 16px;
 }
 
+.module-placeholder__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
 .module-placeholder__note {
   background: var(--primary-soft);
   color: var(--primary-hover);
@@ -4025,6 +4057,48 @@ select {
   position: sticky;
   bottom: 0;
   z-index: 1;
+}
+
+/* .modal-close/.modal-box/.modal-header/.modal-body/.modal-footer nunca
+   tiveram CSS em lugar nenhum do projeto, nem aqui nem injetado pelos
+   próprios módulos — usados em alertas, compras, conciliação bancária,
+   lançamentos financeiros e PIX (6 botões de fechar + 1 modal completo
+   sem card/sombra/estrutura nenhuma, na prévia de WhatsApp em Alertas). */
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: var(--text-muted);
+  line-height: 1;
+  padding: 4px;
+  border-radius: 6px;
+  transition: background .15s, color .15s;
+}
+.modal-close:hover { background: var(--surface-2); color: var(--text); }
+
+.modal-box {
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  width: 100%;
+  box-shadow: var(--shadow-lg);
+}
+.modal-box .modal-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.modal-box .modal-header h3 { font-size: 16px; font-weight: 700; margin: 0; }
+.modal-box .modal-body { padding: 20px 24px; }
+.modal-box .modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
 }
 
 /* =========================
@@ -5620,6 +5694,25 @@ body.scroll-locked { overflow: hidden; }
 }
 
 .skeleton-row:last-child { border-bottom: none; }
+
+/* Segundo sistema de skeleton, usado em 16 módulos (alertas, crm,
+   fidelidade, nfe, whatsapp etc.) — nunca teve CSS nenhum: o fundo e a
+   animação de shimmer estavam ausentes, então o "carregando" aparecia
+   como espaço em branco, não como skeleton visível. Mesmo visual do
+   .skeleton acima, só que .skeleton-line já recebe altura/raio via
+   inline style em cada chamada. */
+.module-skeleton { display: flex; flex-direction: column; }
+.skeleton-line {
+  background: linear-gradient(
+    90deg,
+    var(--surface-2) 25%,
+    var(--surface-3) 50%,
+    var(--surface-2) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+  border-radius: var(--radius-xs);
+}
 
 /* KPI card skeleton */
 .kpi-card--skeleton .kpi-card__icon { background: var(--surface-2); }
@@ -9151,6 +9244,23 @@ body:not(.pdv-active) .modal-card__footer {
 #pedidosContainer .filter-input:focus-visible {
   border-color: var(--primary);
 }
+
+/* .input/.input-sm — mesmo problema do .filter-input, sem regra base
+   nenhuma. Usados em compras.js (filtros de data, campos de importação
+   de XML) e ordensServico.js (linhas de item: descrição/qtd/valor). */
+.input {
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13px;
+  box-sizing: border-box;
+  transition: border-color .15s;
+}
+.input:focus-visible { border-color: var(--primary); }
+.input-sm { min-height: 30px; padding: 0 10px; font-size: 12px; border-radius: 7px; }
 
 .pix-modal { border-radius: 20px; }
 .pix-qr-wrap { border-radius: 16px; }
