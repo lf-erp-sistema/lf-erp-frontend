@@ -30,6 +30,7 @@ const ComprasModule = {
       this.render();
       ['comprasFiltroStatus', 'comprasFiltroFornecedor'].forEach(id => enhanceSelect(document.getElementById(id)));
       this.cache();
+      this._enhanceFormSelects();
       this.bind();
     } else {
       this.cache();
@@ -68,6 +69,14 @@ const ComprasModule = {
       itensTable: document.getElementById('compraItensTable'),
       totalCompra: document.getElementById('compraTotalValor')
     };
+  },
+
+  _enhanceFormSelects(sync = false) {
+    [this.el?.fornecedor, this.el?.formaPagamento, this.el?.produto].forEach((select) => {
+      if (!select) return;
+      enhanceSelect(select);
+      if (sync) select.dispatchEvent(new Event('change', { bubbles: true }));
+    });
   },
 
   _filtrosCompraAtivos() {
@@ -661,6 +670,7 @@ const ComprasModule = {
       this.el.quantidade.value = '1';
     }
 
+    this._enhanceFormSelects(true);
     this.renderItensCompra();
     this.toggleVencimentoField();
 
@@ -699,6 +709,7 @@ const ComprasModule = {
           this.el.primeiroVencimento.value = String(compra.primeiro_vencimento).slice(0, 10);
         }
         if (this.el.observacao) this.el.observacao.value = compra.observacao || '';
+        this._enhanceFormSelects(true);
         this.toggleVencimentoField();
         this.renderItensCompra();
 
@@ -1493,6 +1504,8 @@ const ComprasModule = {
       </div>`;
 
     document.body.appendChild(overlay);
+    enhanceSelect(document.getElementById('_xmlFornecedor'));
+    enhanceSelect(document.getElementById('_xmlForma'));
 
     document.getElementById('_xmlFechar').addEventListener('click', () => overlay.remove());
     document.getElementById('_xmlCancelar').addEventListener('click', () => overlay.remove());

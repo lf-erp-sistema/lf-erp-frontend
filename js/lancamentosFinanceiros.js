@@ -879,6 +879,12 @@ function abrirModal(item) {
   document.getElementById('lfFormaPagamento').value = item?.forma_pagamento || '';
   document.getElementById('lfObservacao').value     = item?.observacao      || '';
 
+  ['lfTipoInput', 'lfFormaPagamento'].forEach((id) => {
+    const select = document.getElementById(id);
+    enhanceSelect(select);
+    select?.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+
   document.getElementById('lfModal').classList.remove('hidden');
   document.getElementById('lfDescricao').focus();
 }
@@ -982,6 +988,7 @@ async function pagar(id) {
           </div>
         </div>`;
       document.body.appendChild(overlay);
+      enhanceSelect(overlay.querySelector('#_lfPagarFormaInput'));
       overlay.querySelector('#_lfPagarCancelarBtn').onclick = () => { document.body.removeChild(overlay); resolve(null); };
       overlay.querySelector('#_lfPagarConfirmarBtn').onclick = (e) => {
         e.currentTarget.disabled = true;
