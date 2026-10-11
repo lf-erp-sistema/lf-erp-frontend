@@ -2,6 +2,7 @@
 import api from './api.js';
 import { showToast, confirmarAcao } from './feedback.js';
 import { escapeHtml, buildFriendlyError, maskPhone, maskCPF } from './utils.js';
+import { enhanceSelect } from './premiumSelect.js';
 
 function maskDate(v) {
   return String(v || '').replace(/\D/g,'')
@@ -1086,6 +1087,7 @@ const AT = {
         </div>
       </div>`;
     document.body.insertAdjacentHTML('beforeend', html);
+    enhanceSelect(document.getElementById('atEntPag'));
 
     const close = () => document.getElementById('atEntregaModal')?.remove();
     document.getElementById('atEntClose').addEventListener('click', close);

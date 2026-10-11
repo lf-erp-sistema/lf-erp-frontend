@@ -1,6 +1,7 @@
 import api from './api.js';
 import { showToast, confirmarAcao } from './feedback.js';
 import { escapeHtml, buildFriendlyError } from './utils.js';
+import { enhanceSelect } from './premiumSelect.js';
 
 const esc = escapeHtml;
 
@@ -329,6 +330,7 @@ const FidelidadeModule = {
       </div>
     `;
 
+    enhanceSelect(document.getElementById('fidAjusteCliente'));
     let _fidBuscaTimer = null;
     document.getElementById('fidBuscaCliente')?.addEventListener('input', (e) => {
       clearTimeout(_fidBuscaTimer);
@@ -459,6 +461,7 @@ const FidelidadeModule = {
       </div>
     `;
 
+    enhanceSelect(document.getElementById('fidResCli'));
     document.getElementById('fidResPts')?.addEventListener('input', () => {
       const pts = parseInt(document.getElementById('fidResPts').value) || 0;
       const rpp = Number(this.state.cfg?.reais_por_ponto || 0.05);
