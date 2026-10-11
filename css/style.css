@@ -9293,3 +9293,107 @@ body:not(.pdv-active) .modal-card__footer {
   #checkoutLinksContainer .chk-toolbar .btn,
   #fidelidadeContainer .fid-toolbar .btn { width: 100%; justify-content: center; }
 }
+
+/* ========================================================================
+   FUNDAÇÃO VISUAL — COMPONENTES COMPARTILHADOS
+   Camada final para as telas internas. Centraliza métricas e comportamentos
+   recorrentes sem interferir na experiência operacional própria do PDV.
+   ======================================================================== */
+:root {
+  --control-height-compact: 38px;
+  --control-radius: 12px;
+  --component-radius: 16px;
+  --component-radius-lg: 20px;
+  --control-shadow-focus: 0 0 0 4px color-mix(in srgb, var(--primary) 14%, transparent);
+  --z-dropdown: 300;
+  --z-modal: 1000;
+  --z-dialog: 1100;
+  --z-toast: 1200;
+}
+
+/* Ações: mesma densidade, foco e estados em todos os módulos administrativos. */
+body:not(.pdv-active) .btn {
+  border-radius: var(--control-radius);
+  line-height: 1.2;
+}
+
+body:not(.pdv-active) .btn:disabled,
+body:not(.pdv-active) .icon-btn:disabled,
+body:not(.pdv-active) .icon-button:disabled {
+  cursor: not-allowed;
+  filter: saturate(.72);
+}
+
+body:not(.pdv-active) .btn-sm {
+  min-height: var(--control-height-compact);
+  border-radius: 10px;
+}
+
+body:not(.pdv-active) .icon-btn,
+body:not(.pdv-active) .icon-button {
+  border-radius: var(--control-radius);
+}
+
+/* Campos: borda, foco e altura reconhecíveis independentemente do módulo. */
+body:not(.pdv-active) .input,
+body:not(.pdv-active) .input-base,
+body:not(.pdv-active) .filter-input {
+  border-radius: var(--control-radius);
+  transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
+}
+
+body:not(.pdv-active) .input,
+body:not(.pdv-active) .input-base {
+  min-height: var(--control-height);
+}
+
+body:not(.pdv-active) .input-sm {
+  min-height: var(--control-height-compact);
+  border-radius: 10px;
+}
+
+body:not(.pdv-active) .input:focus-visible,
+body:not(.pdv-active) .input-base:focus-visible,
+body:not(.pdv-active) .filter-input:focus-visible,
+body:not(.pdv-active) .form-field input:focus-visible,
+body:not(.pdv-active) .form-field select:focus-visible,
+body:not(.pdv-active) .form-field textarea:focus-visible {
+  border-color: var(--primary);
+  box-shadow: var(--control-shadow-focus);
+}
+
+/* Tabelas e estados vazios mantêm a mesma leitura visual em toda a operação. */
+body:not(.pdv-active) .table-wrapper {
+  background: var(--surface);
+  border-radius: var(--component-radius);
+}
+
+body:not(.pdv-active) .data-table th,
+body:not(.pdv-active) .data-table td {
+  vertical-align: middle;
+}
+
+body:not(.pdv-active) .badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  line-height: 1;
+  letter-spacing: .01em;
+}
+
+body:not(.pdv-active) .empty-state {
+  border-radius: var(--component-radius);
+}
+
+/* Menus e feedback ficam sobre o conteúdo sem disputar a hierarquia das telas. */
+.actions-menu-dropdown { z-index: var(--z-dropdown); border-radius: var(--control-radius); }
+.toast-container { z-index: var(--z-toast); }
+
+@media (max-width: 640px) {
+  :root {
+    --control-height: 44px;
+    --control-height-compact: 36px;
+    --control-radius: 11px;
+    --component-radius: 14px;
+  }
+}
