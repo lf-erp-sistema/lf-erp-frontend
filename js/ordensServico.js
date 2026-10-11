@@ -179,7 +179,7 @@ const OrdensServicoModule = {
           <td>${fmtData(os.data_prevista)}</td>
           <td><span class="badge ${STATUS_BADGE[os.status] || ''}">${STATUS_LABEL[os.status] || os.status}</span></td>
           <td>
-            <div style="display:flex;gap:4px;flex-wrap:nowrap">
+            <div class="os-row-actions" aria-label="Ações da ordem de serviço">
               <button class="btn-icon btn-icon--sm" data-os-editar="${os.id}" title="Editar" aria-label="Editar"><i class="fa-solid fa-pen"></i></button>
               <button class="btn-icon btn-icon--sm" data-os-imprimir="${os.id}" title="Imprimir OS" aria-label="Imprimir OS"><i class="fa-solid fa-print"></i></button>
               ${prox ? `<button class="btn-icon btn-icon--sm btn-icon--success" data-os-avancar="${os.id}" data-os-prox="${prox}" title="Avançar para: ${STATUS_LABEL[prox]}" aria-label="Avançar para: ${STATUS_LABEL[prox]}"><i class="fa-solid fa-arrow-right"></i></button>` : ''}
