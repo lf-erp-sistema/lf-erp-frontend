@@ -7930,3 +7930,102 @@ body {
     justify-content: center;
   }
 }
+
+/* Fundação visual premium compartilhada */
+:root {
+  --content-gap: 20px;
+  --control-height: 46px;
+  --focus-ring: 0 0 0 4px color-mix(in srgb, var(--primary) 14%, transparent);
+}
+
+body:not(.pdv-active) .view-container { gap: var(--content-gap); }
+
+body:not(.pdv-active) .module-card {
+  border-radius: 20px;
+  border-color: color-mix(in srgb, var(--border) 88%, transparent);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, .045);
+}
+
+body:not(.pdv-active) .module-card__header {
+  padding-bottom: 16px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+}
+
+body:not(.pdv-active) .module-card__header h3 {
+  font-size: clamp(1.18rem, 1vw + .85rem, 1.45rem);
+  letter-spacing: -.03em;
+}
+
+body:not(.pdv-active) .module-toolbar {
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+body:not(.pdv-active) .module-toolbar__search input,
+body:not(.pdv-active) .module-toolbar select,
+body:not(.pdv-active) .module-toolbar .input,
+body:not(.pdv-active) .form-field input,
+body:not(.pdv-active) .form-field select,
+body:not(.pdv-active) .form-field textarea { border-radius: 12px; }
+
+body:not(.pdv-active) .module-toolbar__search input {
+  height: var(--control-height);
+  border-color: var(--border);
+}
+
+body:not(.pdv-active) input:focus-visible,
+body:not(.pdv-active) select:focus-visible,
+body:not(.pdv-active) textarea:focus-visible,
+body:not(.pdv-active) button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+body:not(.pdv-active) .mini-stat {
+  min-height: 78px;
+  border-radius: 14px;
+  padding: 12px 14px;
+  box-shadow: none;
+}
+
+body:not(.pdv-active) .table-wrapper {
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .02);
+}
+
+body:not(.pdv-active) .data-table thead th {
+  padding-top: 13px;
+  padding-bottom: 13px;
+  font-size: .76rem;
+  letter-spacing: .025em;
+  text-transform: uppercase;
+}
+
+body:not(.pdv-active) .data-table tbody tr { transition: background .16s ease; }
+body:not(.pdv-active) .data-table tbody tr:hover { background: color-mix(in srgb, var(--primary) 4%, transparent); }
+
+body:not(.pdv-active) .empty-state {
+  min-height: 180px;
+  border: 1px dashed var(--border);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--surface-2) 72%, transparent);
+}
+
+body:not(.pdv-active) .modal-card {
+  border-radius: 20px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, .18);
+}
+
+body:not(.pdv-active) .modal-card__header,
+body:not(.pdv-active) .modal-card__footer {
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+@media (max-width: 640px) {
+  :root { --content-gap: 14px; }
+  body:not(.pdv-active) .module-card { border-radius: 16px; }
+  body:not(.pdv-active) .module-card__header { padding-bottom: 12px; }
+  body:not(.pdv-active) .module-card__header h3 { font-size: 1.15rem; }
+}
