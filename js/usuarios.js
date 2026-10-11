@@ -2,6 +2,7 @@ import api from './api.js';
 import { getAuth } from './auth.js';
 import { confirmarAcao } from './feedback.js';
 import { escapeHtml, debounce, buildFriendlyError } from './utils.js';
+import { enhanceSelect } from './premiumSelect.js';
 
 const UsuariosModule = {
   state: {
@@ -23,6 +24,7 @@ const UsuariosModule = {
     if (!this.state.initialized) {
       this.state.initialized = true;
       this.render();
+      enhanceSelect(document.getElementById('usuariosFiltroTipo'));
       this.cache();
       this.bind();
     } else {

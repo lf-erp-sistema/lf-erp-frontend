@@ -2,6 +2,7 @@ import api from './api.js';
 import { showToast, confirmarAcao } from './feedback.js';
 import { exportCSV, numCSV } from './exportUtils.js';
 import { escapeHtml, buildFriendlyError } from './utils.js';
+import { enhanceSelect } from './premiumSelect.js';
 
 const esc = escapeHtml;
 
@@ -41,6 +42,7 @@ const ComissoesModule = {
   init() {
     injectComissoesStyles();
     this.render();
+    enhanceSelect(document.getElementById('comFiltroPeriodo'));
     this.bindShellEvents();
   },
 
