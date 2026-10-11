@@ -8575,3 +8575,88 @@ body:not(.pdv-active) .modal-card__footer {
   #biContainer .bi-toolbar .btn,
   #auditoriaFinanceiraContainer .aud-toolbar-grid .btn { width: 100%; justify-content: center; }
 }
+
+/* Operações de serviço — visão de fila, filtros e ações no mesmo padrão */
+#assistenciaContainer .cl-tb-kpi-strip {
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--surface), var(--surface-2));
+  box-shadow: none;
+}
+
+#assistenciaContainer .cl-tb-kpi-item { padding: 14px 16px; }
+
+#assistenciaContainer .cl-tb-row,
+#ordensServicoContainer .module-toolbar,
+#comissoesContainer .module-toolbar {
+  padding: 8px;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-2);
+}
+
+#assistenciaContainer .cl-tb-search,
+#ordensServicoContainer #osBusca {
+  min-height: 44px;
+  border-radius: 11px;
+  background: var(--surface);
+}
+
+#assistenciaContainer .cl-tb-btn,
+#ordensServicoContainer .module-toolbar .btn,
+#ordensServicoContainer .module-toolbar .btn-inline,
+#comissoesContainer .module-toolbar .cl-tb-btn,
+#comissoesContainer .module-toolbar .btn-inline {
+  min-height: 42px;
+  border-radius: 11px;
+  font-weight: 700;
+}
+
+#assistenciaContainer .cl-tb-btn--primary,
+#ordensServicoContainer .module-toolbar .btn-primary {
+  box-shadow: 0 7px 16px color-mix(in srgb, var(--primary) 24%, transparent);
+}
+
+#assistenciaContainer .at-table-wrap,
+#ordensServicoContainer .table-wrapper,
+#comissoesContainer .table-wrapper {
+  border-radius: 16px;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, .04);
+}
+
+#ordensServicoContainer .os-empty,
+#comissoesContainer .com-empty {
+  min-height: 220px;
+  border: 1px dashed var(--border);
+  border-radius: 16px;
+  background: var(--surface-2);
+}
+
+#comissoesContainer .kpi-grid { gap: 14px; }
+
+#comissoesContainer .kpi-card,
+#conciliacaoContainer .cb-sessao-card,
+#conciliacaoContainer .cb-info-card {
+  border-radius: 16px;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, .04);
+}
+
+#conciliacaoContainer .btn {
+  min-height: 42px;
+  border-radius: 11px;
+  font-weight: 700;
+}
+
+#conciliacaoContainer .cb-drop-area {
+  border-radius: 14px;
+  background: var(--surface-2);
+}
+
+@media (max-width: 640px) {
+  #assistenciaContainer .cl-tb-row,
+  #ordensServicoContainer .module-toolbar,
+  #comissoesContainer .module-toolbar { padding: 7px; }
+
+  #assistenciaContainer .cl-tb-search,
+  #ordensServicoContainer #osBusca { flex-basis: 100%; width: 100%; }
+}
