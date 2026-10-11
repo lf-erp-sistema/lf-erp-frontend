@@ -128,13 +128,13 @@ const OrdensServicoModule = {
           <div class="modal-card__header">
             <div>
               <h3 id="osModalTitulo">Nova Ordem de Serviço</h3>
-              <p style="margin:0;font-size:13px;color:var(--text-muted)">Preencha os dados do equipamento e do serviço</p>
+              <p class="os-modal-subtitle">Preencha os dados do equipamento e do serviço</p>
             </div>
             <button type="button" class="icon-button" id="osModalFechar" aria-label="Fechar">
               <i class="fa-solid fa-xmark"></i>
             </button>
           </div>
-          <div id="osModalBody" style="padding:24px;overflow-y:auto;max-height:calc(90vh - 90px)"></div>
+          <div id="osModalBody" class="os-modal-body"></div>
         </div>
       </div>
     `;
