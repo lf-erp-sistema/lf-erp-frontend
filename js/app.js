@@ -1,6 +1,6 @@
 import api from './api.js';
 import dashboard from './dashboard.js';
-import { showToast } from './feedback.js';
+import { showToast, confirmarAcao } from './feedback.js';
 import { login as authLogin, logout as authLogout, getAuth, validateSession, scheduleTokenRefresh, saveAuth } from './auth.js';
 import { escapeHtml, makeSortable } from './utils.js';
 
@@ -1006,7 +1006,11 @@ async function setActiveView(view) {
   if (view !== AppState.currentView) {
     const openModal = Array.from(document.querySelectorAll('.modal-overlay:not(.hidden), [role="dialog"]:not([aria-hidden="true"]):not(.hidden)')).find(el => !el.closest('.hidden'));
     if (openModal) {
-      const ok = confirm('Você tem uma janela aberta. Deseja sair e descartar as alterações não salvas?');
+      const ok = await confirmarAcao(
+        'Você tem uma janela aberta. Deseja sair e descartar as alterações não salvas?',
+        'Sair e descartar',
+        'warning'
+      );
       if (!ok) return;
     }
   }
@@ -1752,6 +1756,15 @@ function _sanitizeModalHtml(html) {
   return tmp.innerHTML;
 }
 
+let _globalModalAcionador = null;
+let _globalModalKeydownHandler = null;
+
+function _globalModalFocaveis(modal) {
+  return Array.from(
+    modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
+  ).filter((el) => !el.disabled && el.offsetParent !== null);
+}
+
 function openGlobalModal({ title = 'Aviso', body = '', footer = '' } = {}) {
   const modal = document.getElementById('globalModal');
   const modalTitle = document.getElementById('globalModalTitle');
@@ -1765,6 +1778,30 @@ function openGlobalModal({ title = 'Aviso', body = '', footer = '' } = {}) {
   modalFooter.innerHTML = _sanitizeModalHtml(footer);
   modal.classList.remove('hidden');
   modal.setAttribute('aria-hidden', 'false');
+
+  document.body.classList.add('scroll-locked');
+  _globalModalAcionador = document.activeElement;
+
+  _globalModalKeydownHandler = (e) => {
+    if (e.key === 'Escape') { closeGlobalModal(); return; }
+    if (e.key === 'Tab') {
+      const focaveis = _globalModalFocaveis(modal);
+      if (!focaveis.length) return;
+      const primeiro = focaveis[0];
+      const ultimo = focaveis[focaveis.length - 1];
+      if (e.shiftKey && document.activeElement === primeiro) {
+        e.preventDefault();
+        ultimo.focus();
+      } else if (!e.shiftKey && document.activeElement === ultimo) {
+        e.preventDefault();
+        primeiro.focus();
+      }
+    }
+  };
+  document.addEventListener('keydown', _globalModalKeydownHandler);
+
+  const focaveis = _globalModalFocaveis(modal);
+  (focaveis[0] || modal).focus?.();
 }
 
 function closeGlobalModal() {
@@ -1773,6 +1810,16 @@ function closeGlobalModal() {
 
   modal.classList.add('hidden');
   modal.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('scroll-locked');
+
+  if (_globalModalKeydownHandler) {
+    document.removeEventListener('keydown', _globalModalKeydownHandler);
+    _globalModalKeydownHandler = null;
+  }
+  if (_globalModalAcionador && document.contains(_globalModalAcionador) && typeof _globalModalAcionador.focus === 'function') {
+    _globalModalAcionador.focus();
+  }
+  _globalModalAcionador = null;
 }
 
 
