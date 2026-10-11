@@ -2536,9 +2536,10 @@ const VendasModule = {
 
     const resultado = await new Promise((resolve) => {
       const overlay = document.createElement('div');
-      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px';
+      overlay.className = 'modal-overlay modal-overlay--prompt';
       const div = document.createElement('div');
-      div.style.cssText = 'background:var(--surface);border-radius:16px;padding:24px;max-width:340px;width:100%;box-shadow:0 24px 50px rgba(0,0,0,.2)';
+      div.className = 'modal-card modal-card--compact';
+      div.style.padding = '24px';
       div.innerHTML = `
         <h3 style="margin:0 0 16px;font-size:16px;font-weight:700">Meta — ${escapeHtml(periodo)}</h3>
         <label style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;display:block;margin-bottom:4px">Valor (R$)</label>

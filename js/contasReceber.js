@@ -994,13 +994,13 @@ function _escolherEscopo(conta, tipo, { mostrarProximas = true, totalLabel = nul
     document.getElementById('crEscopoModal')?.remove();
     const m = document.createElement('div');
     m.id = 'crEscopoModal';
-    m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:11000;display:flex;align-items:center;justify-content:center;padding:20px';
+    m.className = 'modal-overlay modal-overlay--prompt';
     const parc = conta.parcela || 1;
     const total = conta.total_parcelas || 1;
     const v = tipo === 'excluir' ? 'Excluir' : 'Alterar';
     const subtitulo = conta.venda_id ? `Parcela ${parc}/${total}` : (totalLabel || '');
     m.innerHTML = `
-      <div style="background:var(--surface);border-radius:18px;width:100%;max-width:380px;box-shadow:0 8px 40px rgba(0,0,0,.25);padding:24px;display:flex;flex-direction:column;gap:16px">
+      <div class="modal-card modal-card--compact" style="padding:24px;display:flex;flex-direction:column;gap:16px">
         <div>
           <h3 style="margin:0 0 4px;font-size:1.05rem;font-weight:900">O que você deseja?</h3>
           ${subtitulo ? `<p style="margin:0;font-size:.85rem;color:var(--text-muted)">${subtitulo}</p>` : ''}
@@ -1034,9 +1034,9 @@ function _escolherModoData(diaNum) {
     document.getElementById('crModoDataModal')?.remove();
     const m = document.createElement('div');
     m.id = 'crModoDataModal';
-    m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:11001;display:flex;align-items:center;justify-content:center;padding:20px';
+    m.className = 'modal-overlay modal-overlay--prompt';
     m.innerHTML = `
-      <div style="background:var(--surface);border-radius:18px;width:100%;max-width:380px;box-shadow:0 8px 40px rgba(0,0,0,.25);padding:24px;display:flex;flex-direction:column;gap:16px">
+      <div class="modal-card modal-card--compact" style="padding:24px;display:flex;flex-direction:column;gap:16px">
         <div>
           <h3 style="margin:0 0 4px;font-size:1.05rem;font-weight:900">Como alterar a data?</h3>
           <p style="margin:0;font-size:.85rem;color:var(--text-muted)">Você alterou o vencimento. Escolha como aplicar nas demais contas.</p>
@@ -1066,7 +1066,7 @@ function abrirModalEditarConta(conta) {
   document.getElementById('crEditarContaModal')?.remove();
   const modal = document.createElement('div');
   modal.id = 'crEditarContaModal';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:10003;display:flex;align-items:center;justify-content:center;padding:20px';
+  modal.className = 'modal-overlay modal-overlay--prompt';
 
   const inp = 'width:100%;padding:9px 12px;border:1.5px solid var(--border-color,#d1d5db);border-radius:10px;font-size:.93rem;background:var(--surface-2,#f9fafb);color:var(--text,#111);outline:none;box-sizing:border-box';
   const lbl = 'font-size:.72rem;font-weight:700;color:var(--text-muted);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em';
@@ -1074,7 +1074,7 @@ function abrirModalEditarConta(conta) {
   const parc = (conta.parcela && conta.total_parcelas) ? `Parcela ${conta.parcela}/${conta.total_parcelas}` : '';
 
   modal.innerHTML = `
-    <div style="background:var(--surface,#fff);border-radius:20px;width:100%;max-width:440px;box-shadow:0 12px 48px rgba(0,0,0,.22);display:flex;flex-direction:column;overflow:hidden">
+    <div class="modal-card modal-card--compact" style="display:flex;flex-direction:column;overflow:hidden">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px 16px;border-bottom:1px solid var(--border-color,#e5e7eb)">
         <div>
           <h3 style="margin:0;font-size:1rem;font-weight:900;color:var(--text,#111)">Editar conta</h3>
