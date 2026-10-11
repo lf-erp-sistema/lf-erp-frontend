@@ -956,12 +956,13 @@ async function pagar(id) {
   try {
     const dataPagamento = await new Promise((resolve) => {
       const overlay = document.createElement('div');
-      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px';
+      overlay.className = 'modal-overlay modal-overlay--prompt';
       const hoje = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Fortaleza' });
       overlay.innerHTML = `
-        <div style="background:var(--surface);border-radius:16px;padding:24px;max-width:380px;width:100%;box-shadow:0 24px 50px rgba(0,0,0,.2)">
-          <h3 style="margin:0 0 16px;font-size:16px;font-weight:700">Confirmar pagamento</h3>
-          <div style="margin-bottom:12px">
+        <div class="modal-card modal-card--compact">
+          <div class="modal-card__header"><div><h3>Confirmar pagamento</h3><p>Informe os dados para registrar a quitação.</p></div></div>
+          <div class="modal-card__body modal-prompt__body">
+          <div>
             <label style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;display:block;margin-bottom:5px">Data do pagamento</label>
             <input id="_lfPagarDataInput" type="date" value="${hoje}" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;box-sizing:border-box" />
           </div>
@@ -978,11 +979,12 @@ async function pagar(id) {
               <option value="cheque">Cheque</option>
             </select>
           </div>
-          <div style="margin-bottom:20px">
+          <div>
             <label style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;display:block;margin-bottom:5px">Observação</label>
             <textarea id="_lfPagarObsInput" rows="2" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;box-sizing:border-box;resize:vertical;background:var(--surface);color:var(--text)" placeholder="Opcional..."></textarea>
           </div>
-          <div style="display:flex;gap:10px;justify-content:flex-end">
+          </div>
+          <div class="modal-card__footer modal-prompt__actions">
             <button id="_lfPagarCancelarBtn" class="btn-cancel">Cancelar</button>
             <button id="_lfPagarConfirmarBtn" class="btn-confirm btn-confirm--success">Confirmar</button>
           </div>

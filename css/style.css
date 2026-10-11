@@ -9478,7 +9478,7 @@ body:not(.pdv-active) .empty-state {
   .modal-card__body { padding: 16px 18px 18px; }
   .modal-card__footer { gap: 8px; }
   .modal-card__footer .btn { min-height: 42px; }
-  .modal-prompt__actions .btn { flex: 1; }
+  .modal-prompt__actions > button { flex: 1; }
 }
 
 /* Assistência técnica — base de lista, detalhe e checklist. */

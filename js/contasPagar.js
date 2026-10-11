@@ -708,16 +708,15 @@ async function recarregar() {
 async function pagarConta(id) {
   return new Promise((resolve) => {
     const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px';
+    overlay.className = 'modal-overlay modal-overlay--prompt';
 
     const hoje = todayFortaleza();
     const contaRef = state.contas.find(c => String(c.id) === String(id));
     const valorMax = contaRef ? Number(contaRef.valor_atualizado || contaRef.valor || 0) : 0;
     overlay.innerHTML = `
-      <div style="background:var(--surface);border-radius:20px;max-width:400px;width:100%;box-shadow:0 24px 50px rgba(0,0,0,.2);overflow:hidden">
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px 0">
-          <h3 style="margin:0;font-size:15px;font-weight:800">Confirmar pagamento</h3>
-        </div>
+      <div class="modal-card modal-card--compact">
+        <div class="modal-card__header"><div><h3>Confirmar pagamento</h3><p>Registre os dados da quitação desta conta.</p></div></div>
+        <div class="modal-card__body" style="padding:0">
         <div class="cp-pg-body">
           <div class="cp-pg-section">
             <div class="cp-pg-card-group">
@@ -756,7 +755,8 @@ async function pagarConta(id) {
             </div>
           </div>
         </div>
-        <div style="display:flex;gap:10px;justify-content:flex-end;padding:12px 20px 18px">
+        </div>
+        <div class="modal-card__footer modal-prompt__actions">
           <button id="_pagarCancelarBtn" class="btn-cancel">Cancelar</button>
           <button id="_pagarConfirmarBtn" class="btn-confirm btn-confirm--success">Confirmar pagamento</button>
         </div>
