@@ -1,6 +1,7 @@
 import api from './api.js';
 import { showToast, confirmarAcao } from './feedback.js';
 import { escapeHtml, buildFriendlyError } from './utils.js';
+import { enhanceSelect } from './premiumSelect.js';
 
 const esc = escapeHtml;
 
@@ -149,6 +150,7 @@ const WhatsappModule = {
       </div>
     `;
 
+    enhanceSelect(document.getElementById('wppProvider'));
     document.getElementById('wppProvider')?.addEventListener('change', (e) => {
       const group = document.getElementById('wppApiUrlGroup');
       if (group) group.style.display = e.target.value !== 'link' ? '' : 'none';
@@ -482,6 +484,7 @@ const WhatsappModule = {
       </div>
     `;
 
+    enhanceSelect(document.getElementById('wppCobCliente'));
     document.getElementById('wppCobCliente')?.addEventListener('change', (e) => {
       const val = e.target.value;
       const prev = document.getElementById('wppCobPreview');

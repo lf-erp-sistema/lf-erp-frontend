@@ -1,6 +1,7 @@
 import api from './api.js';
 import { showToast, confirmarAcao } from './feedback.js';
 import { escapeHtml, buildFriendlyError } from './utils.js';
+import { enhanceSelect } from './premiumSelect.js';
 const esc = escapeHtml;
 
 function injectMarketplaceStyles() {
@@ -361,8 +362,10 @@ const MarketplaceModule = {
       showToast(buildFriendlyError(err), 'error');
     }
 
+    enhanceSelect(select);
+    enhanceSelect(document.getElementById('mktVincPlataforma'));
     document.getElementById('mktVincularModal').style.display = 'flex';
-    setTimeout(() => select?.focus(), 50);
+    setTimeout(() => select.closest('.premium-select')?.querySelector('.premium-select__trigger')?.focus(), 50);
 
     document.removeEventListener('keydown', this._escVincular);
     this._escVincular = (e) => { if (e.key === 'Escape') this.fecharModais(); };
