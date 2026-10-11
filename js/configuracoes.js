@@ -11,7 +11,8 @@ const ConfigModule = {
   state: {
     empresa: null,
     dados: null,
-    eventsBound: false
+    eventsBound: false,
+    abaAtiva: 'empresa'
   },
 
   async init() {
@@ -205,6 +206,21 @@ const ConfigModule = {
     } finally {
       if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Salvar configuração PIX'; }
     }
+  },
+
+  _selecionarAba(aba) {
+    const abaDisponivel = document.querySelector(`.cfg-page-nav__button[data-config-tab="${aba}"]`);
+    if (!abaDisponivel) aba = 'empresa';
+    this.state.abaAtiva = aba;
+
+    document.querySelectorAll('.configuracoes-premium > .module-card').forEach((secao) => {
+      secao.hidden = secao.dataset.configTab !== aba;
+    });
+    document.querySelectorAll('.cfg-page-nav__button').forEach((botao) => {
+      const ativa = botao.dataset.configTab === aba;
+      botao.classList.toggle('is-active', ativa);
+      botao.setAttribute('aria-current', ativa ? 'page' : 'false');
+    });
   },
 
   _atualizarStatusAmbiente(statusId, sandbox) {
@@ -443,11 +459,11 @@ const ConfigModule = {
       <div class="cfg-page-nav" aria-label="Navegação das configurações">
         <span class="cfg-page-nav__label">Configurações</span>
         <div class="cfg-page-nav__items">
-          <button type="button" class="cfg-page-nav__button is-active" data-config-section="1"><i class="fa-solid fa-building"></i> Empresa</button>
-          <button type="button" class="cfg-page-nav__button" data-config-section="2"><i class="fa-solid fa-user"></i> Minha conta</button>
-          <button type="button" class="cfg-page-nav__button" data-config-section="5"><i class="fa-solid fa-plug"></i> Integrações</button>
-          ${this.state.isAdmin ? '<button type="button" class="cfg-page-nav__button" data-config-section="7"><i class="fa-solid fa-users"></i> Equipe</button>' : ''}
-          <button type="button" class="cfg-page-nav__button" data-config-section="${this.state.isAdmin ? '8' : '7'}"><i class="fa-solid fa-shield-halved"></i> Privacidade</button>
+          <button type="button" class="cfg-page-nav__button is-active" data-config-tab="empresa"><i class="fa-solid fa-building"></i> Empresa</button>
+          <button type="button" class="cfg-page-nav__button" data-config-tab="conta"><i class="fa-solid fa-user"></i> Minha conta</button>
+          <button type="button" class="cfg-page-nav__button" data-config-tab="integracoes"><i class="fa-solid fa-plug"></i> Integrações</button>
+          ${this.state.isAdmin ? '<button type="button" class="cfg-page-nav__button" data-config-tab="equipe"><i class="fa-solid fa-users"></i> Equipe</button>' : ''}
+          <button type="button" class="cfg-page-nav__button" data-config-tab="privacidade"><i class="fa-solid fa-shield-halved"></i> Privacidade</button>
         </div>
       </div>
       <div class="configuracoes-premium">
@@ -726,15 +742,18 @@ const ConfigModule = {
       </div>
     `;
 
+    const secoes = [...c.querySelectorAll('.configuracoes-premium > .module-card')];
+    const tabsPorSecao = ['empresa', 'conta', 'conta', 'conta', 'integracoes', 'integracoes'];
+    if (this.state.isAdmin) tabsPorSecao.push('equipe');
+    tabsPorSecao.push('privacidade');
+    secoes.forEach((secao, indice) => { secao.dataset.configTab = tabsPorSecao[indice] || 'empresa'; });
+    this._selecionarAba(this.state.abaAtiva);
+
     if (!this.state.eventsBound) {
       this.state.eventsBound = true;
       setTimeout(() => {
         document.querySelectorAll('.cfg-page-nav__button').forEach((button) => {
-          button.addEventListener('click', () => {
-            const section = document.querySelector(`.configuracoes-premium > section:nth-of-type(${button.dataset.configSection})`);
-            section?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            document.querySelectorAll('.cfg-page-nav__button').forEach((item) => item.classList.toggle('is-active', item === button));
-          });
+          button.addEventListener('click', () => this._selecionarAba(button.dataset.configTab));
         });
 
         ['cfgSenhaAtual', 'cfgSenhaNova', 'cfgSenhaConfirmar'].forEach((inputId) => this._adicionarControleSenha(inputId));
