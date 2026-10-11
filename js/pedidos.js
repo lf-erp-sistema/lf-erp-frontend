@@ -241,13 +241,13 @@ const PedidosModule = {
     return new Promise((resolve) => {
       const hoje = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Fortaleza' }).format(new Date());
       const overlay = document.createElement('div');
-      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px';
+      overlay.className = 'modal-overlay modal-overlay--prompt';
       overlay.innerHTML = `
-        <div style="background:var(--surface);border-radius:16px;padding:24px;max-width:460px;width:100%;box-shadow:0 24px 50px rgba(0,0,0,.2)">
-          <h3 style="margin:0 0 6px;font-size:16px;font-weight:700">Converter Pedido em Venda</h3>
-          <p style="font-size:13px;color:var(--text-muted);margin:0 0 16px">Esta ação baixa o estoque e gera o financeiro. Confirme os dados da venda.</p>
+        <div class="modal-card modal-card--compact">
+          <div class="modal-card__header"><div><h3>Converter Pedido em Venda</h3><p>Esta ação baixa o estoque e gera o financeiro. Confirme os dados da venda.</p></div></div>
+          <div class="modal-card__body modal-prompt__body">
 
-          <div style="display:grid;gap:12px;margin-bottom:16px">
+          <div style="display:grid;gap:12px">
             <div>
               <label style="font-size:12px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:4px">Forma de pagamento</label>
               <select id="_pedFormaSelect" class="filter-input" style="width:100%">
@@ -268,7 +268,8 @@ const PedidosModule = {
             </div>
           </div>
 
-          <div style="display:flex;gap:10px;justify-content:flex-end">
+          </div>
+          <div class="modal-card__footer modal-prompt__actions">
             <button id="_pedCancelarConv" class="btn-cancel">Cancelar</button>
             <button id="_pedConfirmarConv" class="btn-confirm">Converter em Venda</button>
           </div>

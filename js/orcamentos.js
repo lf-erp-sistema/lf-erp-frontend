@@ -253,11 +253,11 @@ const OrcamentosModule = {
   promptFormaPagamento(titulo, descricao) {
     return new Promise((resolve) => {
       const overlay = document.createElement('div');
-      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px';
+      overlay.className = 'modal-overlay modal-overlay--prompt';
       overlay.innerHTML = `
-        <div style="background:var(--surface);border-radius:16px;padding:24px;max-width:420px;width:100%;box-shadow:0 24px 50px rgba(0,0,0,.2)">
-          <h3 style="margin:0 0 8px;font-size:16px;font-weight:700">${titulo}</h3>
-          <p style="font-size:13px;color:var(--text-muted);margin:0 0 14px">${descricao}</p>
+        <div class="modal-card modal-card--compact">
+          <div class="modal-card__header"><div><h3>${titulo}</h3><p>${descricao}</p></div></div>
+          <div class="modal-card__body modal-prompt__body">
           <select id="_orcFormaSelect" class="filter-input" style="width:100%;margin-bottom:14px">
             <option value="">Não informado</option>
             <option value="Dinheiro">Dinheiro</option>
@@ -266,7 +266,8 @@ const OrcamentosModule = {
             <option value="Cartão de Crédito">Cartão de Crédito</option>
             <option value="Promissória">Promissória</option>
           </select>
-          <div style="display:flex;gap:10px;justify-content:flex-end">
+          </div>
+          <div class="modal-card__footer modal-prompt__actions">
             <button id="_orcCancelarConv" class="btn-cancel">Cancelar</button>
             <button id="_orcConfirmarConv" class="btn-confirm">Converter</button>
           </div>

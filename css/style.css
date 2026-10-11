@@ -9470,10 +9470,15 @@ body:not(.pdv-active) .empty-state {
 .modal-card__footer { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
 .modal-card .modal-close { display: inline-grid; width: 36px; height: 36px; place-items: center; flex: 0 0 auto; border: 1px solid transparent; border-radius: 10px; }
 .modal-card .modal-close:hover { border-color: var(--border); background: var(--surface-2); }
+.modal-overlay--prompt { z-index: 1050; align-items: center; }
+.modal-card--compact { max-width: 440px; }
+.modal-prompt__body { display: grid; gap: 14px; padding: 20px 24px 24px; }
+.modal-prompt__actions { padding: 14px 24px 20px; }
 @media (max-width: 767px) {
   .modal-card__body { padding: 16px 18px 18px; }
   .modal-card__footer { gap: 8px; }
   .modal-card__footer .btn { min-height: 42px; }
+  .modal-prompt__actions .btn { flex: 1; }
 }
 
 /* Assistência técnica — base de lista, detalhe e checklist. */
