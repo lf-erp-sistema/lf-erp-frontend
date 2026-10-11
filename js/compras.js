@@ -1435,19 +1435,19 @@ const ComprasModule = {
 
     const overlay = document.createElement('div');
     overlay.id = '_xmlNFModal';
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(2,6,23,.55);z-index:3500;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto';
+    overlay.className = 'modal-overlay modal-overlay--prompt';
 
     overlay.innerHTML = `
-      <div style="background:var(--surface);border-radius:var(--radius-md);box-shadow:var(--shadow-lg);width:100%;max-width:860px;max-height:90vh;overflow-y:auto">
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border)">
+      <div class="modal-card modal-card--large">
+        <div class="modal-card__header">
           <div>
-            <h3 style="margin:0;font-size:1rem;font-weight:700">Importar NF do Fornecedor</h3>
-            <p style="margin:4px 0 0;font-size:.83rem;color:var(--text-muted)">NF-e nº ${esc(data.numero_nf || '—')} · ${esc(data.data_emissao || '—')} · Total: ${cur(data.total)}</p>
+            <h3>Importar NF do Fornecedor</h3>
+            <p>NF-e nº ${esc(data.numero_nf || '—')} · ${esc(data.data_emissao || '—')} · Total: ${cur(data.total)}</p>
           </div>
           <button id="_xmlFechar" class="modal-close" title="Fechar" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
         </div>
 
-        <div style="padding:22px;display:grid;gap:18px">
+        <div class="modal-card__body" style="display:grid;gap:18px">
 
           ${!data.fornecedor_id ? `<div class="module-feedback module-feedback--info" style="margin:0">
             CNPJ ${esc(data.fornecedor_cnpj)} não encontrado na base. Selecione um fornecedor abaixo ou cadastre-o primeiro.
@@ -1494,12 +1494,10 @@ const ComprasModule = {
             </div>
           </div>
 
-          <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:8px;border-top:1px solid var(--border)">
-            <button class="btn btn-light" id="_xmlCancelar">Cancelar</button>
-            <button class="btn btn-primary" id="_xmlConfirmar">
-              <i class="fa-solid fa-basket-shopping"></i> Criar Compra
-            </button>
-          </div>
+        </div>
+        <div class="modal-card__footer">
+          <button class="btn btn-light" id="_xmlCancelar">Cancelar</button>
+          <button class="btn btn-primary" id="_xmlConfirmar"><i class="fa-solid fa-basket-shopping"></i> Criar Compra</button>
         </div>
       </div>`;
 

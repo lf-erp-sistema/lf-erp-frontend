@@ -321,13 +321,13 @@ function renderModalImport() {
     <div class="modal-overlay hidden" id="cbModalImport">
       <div class="modal-card" style="max-width:480px;width:100%">
         <div class="modal-card__header">
-          <h3>Importar Extrato Bancário</h3>
+          <div><h3>Importar Extrato Bancário</h3><p>Envie um arquivo OFX ou CSV para iniciar a conciliação.</p></div>
           <button class="modal-close" id="cbBtnFecharImport" type="button" title="Fechar" aria-label="Fechar">
             <i class="fa-solid fa-xmark"></i>
           </button>
         </div>
 
-        <form id="cbFormImport" class="form-grid" autocomplete="off">
+        <form id="cbFormImport" class="modal-card__body form-grid" autocomplete="off">
           <div class="form-field">
             <label>Formato do arquivo <span style="color:var(--danger)">*</span></label>
             <select id="cbTipo" class="input" required>
@@ -355,13 +355,11 @@ function renderModalImport() {
             <div class="module-feedback module-feedback--info" id="cbImportMsg"></div>
           </div>
 
-          <div class="form-field form-field--span-2" style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
-            <button type="button" class="btn btn-light" id="cbBtnCancelarImport">Cancelar</button>
-            <button type="submit" class="btn btn-primary" id="cbBtnImportar">
-              <i class="fa-solid fa-upload"></i> Importar
-            </button>
-          </div>
         </form>
+        <div class="modal-card__footer">
+          <button type="button" class="btn btn-light" id="cbBtnCancelarImport">Cancelar</button>
+          <button type="submit" form="cbFormImport" class="btn btn-primary" id="cbBtnImportar"><i class="fa-solid fa-upload"></i> Importar</button>
+        </div>
       </div>
     </div>`;
 }
