@@ -8174,3 +8174,110 @@ body:not(.pdv-active) .modal-card__footer {
   #vendasContainer .cl-tb-search,
   #comprasContainer .cl-tb-search { flex-basis: 100%; }
 }
+
+/* Financeiro — leitura rápida de saldo, filtros e próximas ações */
+#contasPagarContainer .cl-tb-kpi-strip,
+#contasReceberContainer .cl-tb-kpi-strip,
+#lancamentosContainer .cl-tb-kpi-strip {
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--surface), var(--surface-2));
+  box-shadow: none;
+}
+
+#contasPagarContainer .cl-tb-kpi-item,
+#contasReceberContainer .cl-tb-kpi-item,
+#lancamentosContainer .cl-tb-kpi-item { padding: 14px 16px; }
+
+#contasPagarContainer .periodo-local,
+#lancamentosContainer .periodo-local {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-2);
+}
+
+#contasPagarContainer .periodo-local__btn,
+#lancamentosContainer .periodo-local__btn {
+  min-height: 36px;
+  border-radius: 9px;
+  font-weight: 700;
+}
+
+#contasPagarContainer .cl-tb-row,
+#lancamentosContainer .cl-tb-row,
+#contasReceberContainer .cr-toolbar-grid {
+  padding: 8px;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-2);
+}
+
+#contasPagarContainer .cl-tb-search,
+#lancamentosContainer .cl-tb-search,
+#contasReceberContainer .module-toolbar__search input,
+#contasReceberContainer .cr-combobox__input {
+  min-height: 44px;
+  border-radius: 11px;
+  background: var(--surface);
+}
+
+#contasPagarContainer .cl-tb-btn,
+#lancamentosContainer .cl-tb-btn,
+#contasReceberContainer .cr-primary-actions .btn,
+#contasReceberContainer .cr-primary-actions .icon-button {
+  min-height: 44px;
+  border-radius: 11px;
+  font-weight: 700;
+}
+
+#contasPagarContainer .cl-tb-btn--primary,
+#lancamentosContainer .cl-tb-btn--primary,
+#contasReceberContainer .cr-primary-actions .btn-primary {
+  box-shadow: 0 7px 16px color-mix(in srgb, var(--primary) 24%, transparent);
+}
+
+#fluxoCaixaContainer .fluxo-explain-card {
+  border-radius: 16px;
+  box-shadow: none;
+}
+
+#fluxoCaixaContainer .fluxo-kpi-card,
+#fluxoCaixaContainer .fluxo-forma-card,
+#fluxoCaixaContainer .fluxo-panel,
+#fluxoCaixaContainer .fluxo-cf-mini-card {
+  border-radius: 16px;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, .04);
+}
+
+#fluxoCaixaContainer .fluxo-toolbar-grid {
+  padding: 8px;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-2);
+}
+
+#fluxoCaixaContainer .fluxo-search-box input,
+#fluxoCaixaContainer .fluxo-filter-box select,
+#fluxoCaixaContainer .fluxo-action-box .btn {
+  min-height: 44px;
+  border-radius: 11px;
+  background: var(--surface);
+}
+
+#fluxoCaixaContainer .fluxo-action-box .btn {
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  #contasPagarContainer .periodo-local,
+  #lancamentosContainer .periodo-local,
+  #contasPagarContainer .cl-tb-row,
+  #lancamentosContainer .cl-tb-row,
+  #contasReceberContainer .cr-toolbar-grid,
+  #fluxoCaixaContainer .fluxo-toolbar-grid { padding: 7px; }
+
+  #contasPagarContainer .cl-tb-search,
+  #lancamentosContainer .cl-tb-search { flex-basis: 100%; }
+}
