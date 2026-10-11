@@ -9615,3 +9615,30 @@ mark.cb-hl {
 
 :root[data-theme="dark"] mark.aud-hl,
 :root[data-theme="dark"] mark.cb-hl { background: #854d0e; color: #fef9c3; }
+
+/* Conciliação bancária. */
+.cb-sessoes-lista { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+.cb-sessao-card { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 16px; border: 1px solid var(--border); border-radius: var(--control-radius); background: var(--surface-2); transition: box-shadow var(--transition), border-color var(--transition); }
+.cb-sessao-card:hover { border-color: var(--border-strong); box-shadow: var(--shadow-sm); }
+.cb-sessao-card__left { display: flex; flex: 1; align-items: center; gap: 12px; min-width: 0; }
+.cb-sessao-card__icon { display: grid; width: 40px; height: 40px; flex-shrink: 0; place-items: center; border-radius: 10px; background: var(--primary-soft); color: var(--primary); font-size: 18px; }
+.cb-sessao-card__nome { display: block; overflow: hidden; font-size: 14px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.cb-sessao-card__meta { display: block; margin-top: 2px; color: var(--text-muted); font-size: 12px; }
+.cb-sessao-card__right, .cb-sessao-card__badges, .cb-progresso-wrap, .cb-filtro-status { display: flex; align-items: center; gap: 8px; }
+.cb-sessao-card__right { flex-shrink: 0; gap: 12px; }
+.cb-sessao-card__badges { flex-wrap: wrap; justify-content: flex-end; gap: 4px; }
+.cb-progresso { width: 80px; height: 6px; overflow: hidden; border-radius: 999px; background: var(--border); }
+.cb-progresso__bar { height: 100%; border-radius: inherit; background: var(--primary); transition: width .4s ease; }
+.cb-progresso__bar--warning { background: var(--warning); }.cb-progresso__bar--success { background: var(--success); }
+.cb-progresso__pct { min-width: 28px; color: var(--text-muted); font-size: 11px; font-weight: 600; text-align: right; }
+.cb-info-card { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 16px; padding: 12px 14px; border: 1px solid color-mix(in srgb, var(--primary) 26%, var(--border)); border-radius: 10px; background: var(--primary-soft); color: var(--primary); font-size: 14px; }
+.cb-info-card i { flex-shrink: 0; margin-top: 2px; }.cb-info-card strong { display: block; margin-bottom: 2px; }.cb-info-card p { margin: 0; color: var(--text); font-size: 13px; }
+.cb-stats-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 20px; }
+.cb-stat--credito { border-top: 3px solid var(--success); }.cb-stat--debito { border-top: 3px solid var(--danger); }.cb-stat--pendente { border-top: 3px solid var(--warning); }.cb-stat--ok { border-top: 3px solid var(--primary); }
+.cb-filtro-status { flex-wrap: wrap; margin-bottom: 12px; }.cb-filtro-btn { padding: 5px 14px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--text); cursor: pointer; font-size: 13px; transition: background var(--transition), border-color var(--transition), color var(--transition); }.cb-filtro-btn--ativo { border-color: var(--primary); background: var(--primary); color: var(--white); font-weight: 700; }.cb-filtro-btn:not(.cb-filtro-btn--ativo):hover { background: var(--surface-2); }
+.cb-drop-area { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 28px; border: 2px dashed var(--border); border-radius: var(--control-radius); cursor: pointer; text-align: center; transition: background var(--transition), border-color var(--transition); }.cb-drop-area i { color: var(--text-muted); font-size: 28px; }.cb-drop-area p, .cb-drop-area small { margin: 0; color: var(--text-muted); }.cb-drop-area p { font-size: 14px; }.cb-drop-area small { font-size: 12px; }.cb-drop-area--over, .cb-drop-area:hover { border-color: var(--primary); background: var(--primary-soft); }.cb-drop-area--over i, .cb-drop-area:hover i { color: var(--primary); }
+.cb-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 48px 24px; text-align: center; }.cb-empty i { margin-bottom: 4px; color: var(--border-strong); font-size: 48px; }.cb-empty strong { font-size: 16px; }.cb-empty p { margin: 0; color: var(--text-muted); font-size: 14px; }
+.cb-busca-detalhe { display: flex; align-items: center; gap: 8px; max-width: 360px; height: var(--control-height-compact); margin-bottom: 12px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-2); }.cb-busca-detalhe input { flex: 1; border: 0; outline: 0; background: transparent; color: var(--text); font-size: 13px; }
+@media (max-width: 700px) { .cb-stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }.cb-sessao-card { flex-direction: column; align-items: flex-start; }.cb-sessao-card__right { width: 100%; justify-content: flex-end; }.cb-busca-detalhe { max-width: 100%; } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cb-info-card { border-color: rgba(59,130,246,.25); background: rgba(59,130,246,.1); color: #93c5fd; }:root:not([data-theme="light"]) .cb-sessao-card, :root:not([data-theme="light"]) .cb-busca-detalhe { background: var(--bg); } }
+:root[data-theme="dark"] .cb-info-card { border-color: rgba(59,130,246,.25); background: rgba(59,130,246,.1); color: #93c5fd; }:root[data-theme="dark"] .cb-sessao-card, :root[data-theme="dark"] .cb-busca-detalhe { background: var(--bg); }

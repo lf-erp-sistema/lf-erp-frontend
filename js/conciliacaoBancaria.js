@@ -181,7 +181,6 @@ function injectConciliacaoStyles() {
 
 export async function initConciliacaoModule() {
   try {
-    injectConciliacaoStyles();
     renderSkeleton();
     await carregarSessoes();
     renderLista();
