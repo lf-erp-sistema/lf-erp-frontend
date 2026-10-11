@@ -24,26 +24,6 @@ const STATUS_LABEL = {
 
 const esc = escapeHtml;
 
-function injectPedidosStyles() {
-  if (document.getElementById('pedStyles')) return;
-  const s = document.createElement('style');
-  s.id = 'pedStyles';
-  s.textContent = `
-    .ped-empty {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-      padding: 48px 20px;
-      text-align: center;
-    }
-    .ped-empty i { font-size: 2.2rem; opacity: .25; margin-bottom: 4px; color: var(--text-muted); }
-    .ped-empty strong { font-size: 15px; color: var(--text); }
-    .ped-empty p { font-size: 13px; margin: 0; color: var(--text-muted); }
-  `;
-  document.head.appendChild(s);
-}
-
 const PedidosModule = {
   state: {
     pedidos: [],
@@ -52,7 +32,6 @@ const PedidosModule = {
   },
 
   init() {
-    injectPedidosStyles();
     this.render();
     this.bindShellEvents();
     this.load();

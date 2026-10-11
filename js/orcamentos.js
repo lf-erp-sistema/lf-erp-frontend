@@ -22,26 +22,6 @@ const STATUS_LABEL = {
 
 const esc = escapeHtml;
 
-function injectOrcamentosStyles() {
-  if (document.getElementById('orcStyles')) return;
-  const s = document.createElement('style');
-  s.id = 'orcStyles';
-  s.textContent = `
-    .orc-empty {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-      padding: 48px 20px;
-      text-align: center;
-    }
-    .orc-empty i { font-size: 2.2rem; opacity: .25; margin-bottom: 4px; color: var(--text-muted); }
-    .orc-empty strong { font-size: 15px; color: var(--text); }
-    .orc-empty p { font-size: 13px; margin: 0; color: var(--text-muted); }
-  `;
-  document.head.appendChild(s);
-}
-
 const OrcamentosModule = {
   state: {
     orcamentos: [],
@@ -50,7 +30,6 @@ const OrcamentosModule = {
   },
 
   init() {
-    injectOrcamentosStyles();
     this.render();
     this.bindShellEvents();
     this.load();
