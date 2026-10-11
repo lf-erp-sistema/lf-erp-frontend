@@ -1458,25 +1458,32 @@ const VendasModule = {
 
     const resultado = await new Promise((resolve) => {
       const overlay = document.createElement('div');
-      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px';
+      overlay.className = 'modal-overlay modal-overlay--prompt';
       overlay.innerHTML = `
-        <div style="background:var(--surface);border-radius:16px;padding:24px;max-width:380px;width:100%;box-shadow:0 24px 50px rgba(0,0,0,.2)">
-          <h3 style="margin:0 0 16px;font-size:16px;font-weight:700">Confirmar recebimento</h3>
-          <div style="margin-bottom:12px">
+        <div class="modal-card modal-card--compact">
+          <div class="modal-card__header">
+            <div><h3>Confirmar recebimento</h3><p>Registre o pagamento recebido nesta parcela.</p></div>
+            <button type="button" class="modal-close" id="_bpFechar" title="Fechar" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <div class="modal-card__body modal-prompt__body">
+          <div>
             <label style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;display:block;margin-bottom:5px">Valor pago (R$)</label>
             <input id="_bpValor" type="number" step="0.01" min="0.01" inputmode="decimal" value="${valorSugerido.toFixed(2)}" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;box-sizing:border-box" />
           </div>
-          <div style="margin-bottom:20px">
+          <div>
             <label style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;display:block;margin-bottom:5px">Data do pagamento</label>
             <input id="_bpData" type="date" value="${hoje}" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;box-sizing:border-box" />
           </div>
-          <div style="display:flex;gap:10px;justify-content:flex-end">
-            <button id="_bpCancelar" style="padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface-3);font-size:13px;cursor:pointer">Cancelar</button>
-            <button id="_bpConfirmar" style="padding:8px 16px;border-radius:8px;border:none;background:var(--success);color:#fff;font-size:13px;font-weight:600;cursor:pointer">Confirmar pagamento</button>
+          </div>
+          <div class="modal-card__footer modal-prompt__actions">
+            <button id="_bpCancelar" class="btn btn-secondary btn-sm">Cancelar</button>
+            <button id="_bpConfirmar" class="btn btn-success btn-sm">Confirmar pagamento</button>
           </div>
         </div>`;
       document.body.appendChild(overlay);
       overlay.querySelector('#_bpCancelar').addEventListener('click', () => { document.body.removeChild(overlay); resolve(null); });
+      overlay.querySelector('#_bpFechar').addEventListener('click', () => { document.body.removeChild(overlay); resolve(null); });
+      overlay.addEventListener('click', (event) => { if (event.target === overlay) { overlay.remove(); resolve(null); } });
       let _bpClicado = false;
       overlay.querySelector('#_bpConfirmar').addEventListener('click', () => {
         if (_bpClicado) return;
@@ -1533,18 +1540,25 @@ const VendasModule = {
 
     const novaObservacao = await new Promise((resolve) => {
       const overlay = document.createElement('div');
-      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px';
+      overlay.className = 'modal-overlay modal-overlay--prompt';
       overlay.innerHTML = `
-        <div style="background:var(--surface);border-radius:16px;padding:24px;max-width:420px;width:100%;box-shadow:0 24px 50px rgba(0,0,0,.2)">
-          <h3 style="margin:0 0 12px;font-size:16px;font-weight:700">Observação da venda</h3>
-          <textarea id="_obsInput" rows="4" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;resize:vertical;box-sizing:border-box">${escapeHtml(venda.observacao || '')}</textarea>
-          <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">
-            <button id="_obsCancelar" style="padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface-3);font-size:13px;cursor:pointer">Cancelar</button>
-            <button id="_obsSalvar" style="padding:8px 16px;border-radius:8px;border:none;background:var(--primary);color:#fff;font-size:13px;font-weight:600;cursor:pointer">Salvar</button>
+        <div class="modal-card modal-card--compact">
+          <div class="modal-card__header">
+            <div><h3>Observação da venda</h3><p>Adicione informações internas para esta venda.</p></div>
+            <button type="button" class="modal-close" id="_obsFechar" title="Fechar" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <div class="modal-card__body modal-prompt__body">
+            <textarea id="_obsInput" rows="4" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;resize:vertical;box-sizing:border-box">${escapeHtml(venda.observacao || '')}</textarea>
+          </div>
+          <div class="modal-card__footer modal-prompt__actions">
+            <button id="_obsCancelar" class="btn btn-secondary btn-sm">Cancelar</button>
+            <button id="_obsSalvar" class="btn btn-primary btn-sm">Salvar</button>
           </div>
         </div>`;
       document.body.appendChild(overlay);
       overlay.querySelector('#_obsCancelar').addEventListener('click', () => { document.body.removeChild(overlay); resolve(null); });
+      overlay.querySelector('#_obsFechar').addEventListener('click', () => { document.body.removeChild(overlay); resolve(null); });
+      overlay.addEventListener('click', (event) => { if (event.target === overlay) { overlay.remove(); resolve(null); } });
       let _obsClicado = false;
       overlay.querySelector('#_obsSalvar').addEventListener('click', () => {
         if (_obsClicado) return;
@@ -1593,20 +1607,26 @@ const VendasModule = {
 
     const novoObservacao = await new Promise((resolve) => {
       const overlay = document.createElement('div');
-      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px';
+      overlay.className = 'modal-overlay modal-overlay--prompt';
       overlay.innerHTML = `
-        <div style="background:var(--surface);border-radius:16px;padding:24px;max-width:420px;width:100%;box-shadow:0 24px 50px rgba(0,0,0,.2)">
-          <h3 style="margin:0 0 8px;font-size:16px;font-weight:700">Salvar edição da venda</h3>
-          <p style="font-size:13px;color:var(--text-muted);margin:0 0 14px">O sistema reprocessará estoque e financeiro com segurança.</p>
-          <label style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;display:block;margin-bottom:5px">Observação</label>
-          <textarea id="_seObs" rows="3" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;resize:vertical;box-sizing:border-box">${escapeHtml(venda.observacao || '')}</textarea>
-          <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">
-            <button id="_seCancelar" style="padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface-3);font-size:13px;cursor:pointer">Cancelar</button>
-            <button id="_seConfirmar" style="padding:8px 16px;border-radius:8px;border:none;background:var(--primary);color:#fff;font-size:13px;font-weight:600;cursor:pointer">Salvar edição</button>
+        <div class="modal-card modal-card--compact">
+          <div class="modal-card__header">
+            <div><h3>Salvar edição da venda</h3><p>O sistema reprocessará estoque e financeiro com segurança.</p></div>
+            <button type="button" class="modal-close" id="_seFechar" title="Fechar" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <div class="modal-card__body modal-prompt__body">
+            <div><label style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;display:block;margin-bottom:5px">Observação</label>
+            <textarea id="_seObs" rows="3" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;resize:vertical;box-sizing:border-box">${escapeHtml(venda.observacao || '')}</textarea></div>
+          </div>
+          <div class="modal-card__footer modal-prompt__actions">
+            <button id="_seCancelar" class="btn btn-secondary btn-sm">Cancelar</button>
+            <button id="_seConfirmar" class="btn btn-primary btn-sm">Salvar edição</button>
           </div>
         </div>`;
       document.body.appendChild(overlay);
       overlay.querySelector('#_seCancelar').addEventListener('click', () => { document.body.removeChild(overlay); resolve(null); });
+      overlay.querySelector('#_seFechar').addEventListener('click', () => { document.body.removeChild(overlay); resolve(null); });
+      overlay.addEventListener('click', (event) => { if (event.target === overlay) { overlay.remove(); resolve(null); } });
       let _seClicado = false;
       overlay.querySelector('#_seConfirmar').addEventListener('click', () => {
         if (_seClicado) return;
