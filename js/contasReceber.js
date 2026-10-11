@@ -1341,6 +1341,7 @@ function bindEventos() {
                 <button class="cr-fpill${state.ordemDir === 'asc' && state.ordem === 'data_vencimento' ? ' cr-fpill--active' : ''}" data-fp-ordem="asc">↑ Mais antigo</button>
                 <button class="cr-fpill${state.ordemDir === 'desc' && state.ordem === 'data_vencimento' ? ' cr-fpill--active' : ''}" data-fp-ordem="desc">↓ Mais recente</button>
               </div>
+              <p class="cr-fi-section-hint"><i class="fa-regular fa-lightbulb"></i> Define a prioridade de exibição das contas por data de vencimento.</p>
             </div>
               </div>
             </div>
