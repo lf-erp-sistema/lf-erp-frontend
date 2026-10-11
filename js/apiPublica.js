@@ -20,7 +20,8 @@ function injectApiPublicaStyles() {
     .apipub-badge--ok  { background:var(--success-soft); color:var(--success); }
     .apipub-badge--off { background:var(--surface-3); color:var(--text-muted); }
     .apipub-badge--err { background:var(--danger-soft); color:var(--danger); }
-    .apipub-info-box { padding:12px 16px; background:var(--surface-2); border-radius:8px; font-size:12px; color:var(--text-muted); display:flex; gap:8px; align-items:flex-start; }
+    .apipub-info-box { position:relative; padding:12px 16px 12px 40px; background:var(--surface-2); border-radius:8px; font-size:12px; color:var(--text-muted); line-height:1.6; }
+    .apipub-info-box i { position:absolute; left:14px; top:13px; }
 
     .apipub-ep-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:10px; }
     .apipub-ep-head { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; gap:12px; }

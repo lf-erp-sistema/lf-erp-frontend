@@ -45,7 +45,8 @@ function injectRastreabilidadeStyles() {
     .rast-detalhe-info { display:flex; flex-direction:column; gap:6px; font-size:13px; padding-bottom:12px; border-bottom:1px solid var(--border); margin-bottom:12px; }
     .rast-section-label { font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; margin-top:4px; }
     .rast-result-card { background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:12px; margin-bottom:8px; }
-    .rast-info-box { padding:12px 16px; background:var(--surface-2); border-radius:8px; font-size:12px; color:var(--text-muted); display:flex; gap:8px; }
+    .rast-info-box { position:relative; padding:12px 16px 12px 40px; background:var(--surface-2); border-radius:8px; font-size:12px; color:var(--text-muted); line-height:1.6; }
+    .rast-info-box i { position:absolute; left:14px; top:13px; }
     .text-right { text-align:right; }
     @media(max-width:480px) { .rast-form-row { grid-template-columns:1fr; } }
   `;

@@ -6895,7 +6895,8 @@ body.pdv-active #pdvContainer.module-placeholder {
 .rast-detalhe-info { display:flex; flex-direction:column; gap:6px; font-size:13px; padding-bottom:12px; border-bottom:1px solid var(--border); margin-bottom:12px; }
 .rast-section-label { font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; margin-top:4px; }
 .rast-result-card { background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:12px; margin-bottom:8px; }
-.rast-info-box { padding:12px 16px; background:var(--surface-2); border-radius:8px; font-size:12px; color:var(--text-muted); display:flex; gap:8px; }
+.rast-info-box { position:relative; padding:12px 16px 12px 40px; background:var(--surface-2); border-radius:8px; font-size:12px; color:var(--text-muted); line-height:1.6; }
+.rast-info-box i { position:absolute; left:14px; top:13px; }
 
 /* ── WhatsApp ────────────────────────────────────────────────────────────── */
 .wpp-tabs { display:flex; gap:4px; border-bottom:1px solid var(--border); }
@@ -6954,8 +6955,10 @@ body.pdv-active #pdvContainer.module-placeholder {
 .fid-top-pts { font-size:13px; font-weight:700; color:var(--warning); display:flex; align-items:center; gap:5px; }
 .fid-regras { display:flex; flex-direction:column; gap:8px; font-size:13px; color:var(--text-muted); max-width:420px; }
 .fid-regras i { color:var(--warning); margin-right:6px; }
-.fid-alert { background:var(--warning-soft); border:1px solid var(--warning); border-radius:10px; padding:12px 16px; font-size:13px; color:var(--warning); margin-bottom:20px; display:flex; align-items:center; gap:8px; }
-.fid-info-box { padding:12px 16px; background:var(--surface-2); border-radius:8px; font-size:12px; color:var(--text-muted); display:flex; gap:8px; }
+.fid-alert { position:relative; background:var(--warning-soft); border:1px solid var(--warning); border-radius:10px; padding:12px 16px 12px 40px; font-size:13px; color:var(--warning); margin-bottom:20px; }
+.fid-alert i { position:absolute; left:16px; top:50%; transform:translateY(-50%); }
+.fid-info-box { position:relative; padding:12px 16px 12px 40px; background:var(--surface-2); border-radius:8px; font-size:12px; color:var(--text-muted); line-height:1.6; }
+.fid-info-box i { position:absolute; left:14px; top:13px; }
 .fid-success-box { background:var(--success-soft); border:1px solid var(--success); border-radius:10px; padding:14px 16px; font-size:13px; display:flex; align-items:flex-start; gap:10px; color:var(--success); }
 .fid-form-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
 .fid-form-group { display:flex; flex-direction:column; gap:5px; }
@@ -7049,7 +7052,8 @@ body.pdv-active #pdvContainer.module-placeholder {
 .apipub-badge--ok  { background:var(--success-soft); color:var(--success); }
 .apipub-badge--off { background:var(--surface-3); color:var(--text-muted); }
 .apipub-badge--err { background:var(--danger-soft); color:var(--danger); }
-.apipub-info-box { padding:12px 16px; background:var(--surface-2); border-radius:8px; font-size:12px; color:var(--text-muted); display:flex; gap:8px; align-items:flex-start; }
+.apipub-info-box { position:relative; padding:12px 16px 12px 40px; background:var(--surface-2); border-radius:8px; font-size:12px; color:var(--text-muted); line-height:1.6; }
+.apipub-info-box i { position:absolute; left:14px; top:13px; }
 .apipub-ep-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:10px; }
 .apipub-ep-head { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; gap:12px; }
 .apipub-ep-eventos { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
@@ -7110,7 +7114,7 @@ body.pdv-active #pdvContainer.module-placeholder {
 }
 @media (max-width:600px) {
   .rast-table-wrap,.fid-table-wrap,.chk-table-wrap,.fil-table-wrap,.apipub-table-wrap { overflow-x:auto; }
-  .fid-alert,.apipub-ep-head,.wpp-template-head { flex-wrap:wrap; gap:8px; }
+  .apipub-ep-head,.wpp-template-head { flex-wrap:wrap; gap:8px; }
   .fid-top-list { max-width:100%; }
   .fil-bars { gap:8px; padding:12px; }
   .fil-kpi,.fid-kpi,.chk-kpi,.rast-kpi { min-width:100px; }
@@ -9096,11 +9100,21 @@ body:not(.pdv-active) .modal-card__footer {
 }
 
 /* .filter-input não tem regra base nenhuma em todo o projeto — cada módulo
-   precisa da sua própria #xxxContainer .filter-input para não renderizar
-   como input/select nativo sem estilo. O WhatsApp usa essa classe pros
-   campos do formulário de configuração/templates/envio e nunca ganhou a
-   dele. */
-#whatsappContainer .filter-input {
+   precisa da sua própria #xxxContainer .filter-input, senão o campo
+   renderiza como input/select nativo do navegador, sem nenhum estilo.
+   Auditoria encontrou mais 9 módulos nessa mesma situação do WhatsApp —
+   todos usam a classe pra campos de formulário reais (configuração,
+   modais de cadastro, filtros), não só busca de toolbar. */
+#whatsappContainer .filter-input,
+#vendasContainer .filter-input,
+#nfeContainer .filter-input,
+#apiPublicaContainer .filter-input,
+#checkoutLinksContainer .filter-input,
+#comissoesContainer .filter-input,
+#fidelidadeContainer .filter-input,
+#marketplaceContainer .filter-input,
+#orcamentosContainer .filter-input,
+#pedidosContainer .filter-input {
   width: 100%;
   min-height: 42px;
   padding: 0 14px;
@@ -9112,11 +9126,29 @@ body:not(.pdv-active) .modal-card__footer {
   box-sizing: border-box;
   transition: border-color .15s;
 }
-#whatsappContainer textarea.filter-input {
+#whatsappContainer textarea.filter-input,
+#vendasContainer textarea.filter-input,
+#nfeContainer textarea.filter-input,
+#apiPublicaContainer textarea.filter-input,
+#checkoutLinksContainer textarea.filter-input,
+#comissoesContainer textarea.filter-input,
+#fidelidadeContainer textarea.filter-input,
+#marketplaceContainer textarea.filter-input,
+#orcamentosContainer textarea.filter-input,
+#pedidosContainer textarea.filter-input {
   min-height: 90px;
   padding: 10px 14px;
 }
-#whatsappContainer .filter-input:focus-visible {
+#whatsappContainer .filter-input:focus-visible,
+#vendasContainer .filter-input:focus-visible,
+#nfeContainer .filter-input:focus-visible,
+#apiPublicaContainer .filter-input:focus-visible,
+#checkoutLinksContainer .filter-input:focus-visible,
+#comissoesContainer .filter-input:focus-visible,
+#fidelidadeContainer .filter-input:focus-visible,
+#marketplaceContainer .filter-input:focus-visible,
+#orcamentosContainer .filter-input:focus-visible,
+#pedidosContainer .filter-input:focus-visible {
   border-color: var(--primary);
 }
 
