@@ -6,6 +6,7 @@
 import api from './api.js';
 import { showToast } from './feedback.js';
 import { escapeHtml, buildFriendlyError } from './utils.js';
+import { enhanceSelect } from './premiumSelect.js';
 
 const CHARTS = {};
 
@@ -117,6 +118,8 @@ export async function initBiModule() {
     </div>
   `;
 
+  enhanceSelect(document.getElementById('biPeriodo'));
+  enhanceSelect(document.getElementById('biMeses'));
   bindBiEvents();
   await carregarBI();
 }
