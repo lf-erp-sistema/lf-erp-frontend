@@ -8281,3 +8281,101 @@ body:not(.pdv-active) .modal-card__footer {
   #contasPagarContainer .cl-tb-search,
   #lancamentosContainer .cl-tb-search { flex-basis: 100%; }
 }
+
+/* Comercial — pedidos, orçamentos, CRM e integrações de marketplace */
+#pedidosContainer .module-toolbar,
+#orcamentosContainer .module-toolbar {
+  padding: 8px;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-2);
+}
+
+#pedidosContainer .table-actions,
+#orcamentosContainer .table-actions {
+  gap: 6px;
+}
+
+#pedidosContainer .btn-inline,
+#orcamentosContainer .btn-inline {
+  min-height: 38px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+
+#pedidosContainer .module-toolbar > .btn,
+#orcamentosContainer .module-toolbar > .btn {
+  min-height: 42px;
+  border-radius: 11px;
+  font-weight: 700;
+}
+
+#pedidosContainer .ped-empty,
+#orcamentosContainer .orc-empty {
+  min-height: 220px;
+  border: 1px dashed var(--border);
+  border-radius: 16px;
+  background: var(--surface-2);
+}
+
+#crmContainer .crm-toolbar {
+  padding: 8px;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-2);
+}
+
+#crmContainer .filter-input {
+  min-height: 44px;
+  border-radius: 11px;
+  background: var(--surface);
+}
+
+#crmContainer .crm-toolbar .btn,
+#crmContainer .crm-view-btn {
+  min-height: 42px;
+  border-radius: 11px;
+  font-weight: 700;
+}
+
+#crmContainer .crm-kpi-card,
+#crmContainer .crm-kanban-column,
+#crmContainer .crm-opportunity-card {
+  border-radius: 16px;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, .04);
+}
+
+#marketplaceContainer .mkt-card,
+#marketplaceContainer .mkt-table-wrap {
+  border-radius: 16px;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, .04);
+}
+
+#marketplaceContainer .mkt-card { padding: 22px; }
+
+#marketplaceContainer .mkt-toolbar {
+  padding: 10px;
+  gap: 8px;
+  background: var(--surface-2);
+}
+
+#marketplaceContainer .mkt-toolbar .btn {
+  min-height: 42px;
+  border-radius: 11px;
+  font-weight: 700;
+  box-shadow: 0 7px 16px color-mix(in srgb, var(--primary) 24%, transparent);
+}
+
+@media (max-width: 640px) {
+  #pedidosContainer .module-toolbar,
+  #orcamentosContainer .module-toolbar,
+  #crmContainer .crm-toolbar { padding: 7px; }
+
+  #pedidosContainer .module-toolbar > .btn,
+  #orcamentosContainer .module-toolbar > .btn { width: 100%; }
+
+  #marketplaceContainer .mkt-toolbar { align-items: stretch; }
+  #marketplaceContainer .mkt-toolbar .btn { width: 100%; justify-content: center; }
+}
