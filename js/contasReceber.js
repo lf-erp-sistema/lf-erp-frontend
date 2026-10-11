@@ -1446,8 +1446,10 @@ function bindEventos() {
         if (e.target.closest('#crLimparFiltrosModal')) {
           state.filtros = { status: '', cliente_id: '', busca: '' };
           state.ordem = 'data_vencimento'; state.ordemDir = 'desc';
-          state.periodo.preset = '30dias';
-          const { dataInicial, dataFinal } = calcPeriodoLocal('30dias');
+          // "Limpar" deve voltar ao estado-base da tela, igual ao botão
+          // principal de limpar filtros: o mês vigente, não os últimos 30 dias.
+          state.periodo.preset = 'mesAtual';
+          const { dataInicial, dataFinal } = calcPeriodoLocal('mesAtual');
           state.periodo.dataInicial = dataInicial; state.periodo.dataFinal = dataFinal;
           salvarFiltrosCR(); _closePanel(); recarregar();
         }
