@@ -250,6 +250,7 @@ const RastreabilidadeModule = {
           <button type="submit" class="btn btn-primary btn-sm">Salvar lote</button>
         </div>
       </form>`;
+    enhanceSelect(document.getElementById('rlProduto'));
     document.getElementById('rastLoteForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       await this.salvarLote();
@@ -377,7 +378,7 @@ const RastreabilidadeModule = {
                   <td style="font-size:12px;">${s.venda_id ? `#${s.venda_id}` : '—'}</td>
                   <td style="font-size:11px;color:var(--text-muted);">${dataBR(s.criado_em)}</td>
                   <td>
-                    <select class="rast-status-sel" data-serie-id="${s.id}" style="font-size:11px;border:1px solid var(--border);border-radius:6px;padding:3px 6px;background:var(--surface-2);">
+                    <select class="rast-status-sel" data-serie-id="${s.id}" aria-label="Alterar status da série ${esc(s.numero)}" style="font-size:11px;border:1px solid var(--border);border-radius:6px;padding:3px 6px;background:var(--surface-2);">
                       ${Object.entries(STATUS_SERIE).map(([k,v]) => `<option value="${k}" ${s.status === k ? 'selected' : ''}>${v.label}</option>`).join('')}
                     </select>
                   </td>
@@ -434,6 +435,7 @@ const RastreabilidadeModule = {
         </div>
       </form>`;
     modal.style.display = 'flex';
+    enhanceSelect(document.getElementById('rseProduto'));
     document.getElementById('rastSeriesForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const produtoId = document.getElementById('rseProduto').value;
@@ -454,7 +456,7 @@ const RastreabilidadeModule = {
     });
     document.getElementById('rastModalCancelBtn').addEventListener('click', () => this._fecharModal());
     this._abrirModal();
-    setTimeout(() => document.getElementById('rseProduto')?.focus(), 50);
+    setTimeout(() => document.querySelector('#rastModal .premium-select__trigger')?.focus(), 50);
   },
 
   // ── Rastrear ──────────────────────────────────────────────────────────────
