@@ -68,6 +68,10 @@ const ConfigModule = {
 
       this.state.dados = data;
 
+      if (data.nome_empresa && typeof window.aplicarNomeEmpresaSidebar === 'function') {
+        window.aplicarNomeEmpresaSidebar(data.nome_empresa);
+      }
+
       const campoNome = document.getElementById('cfgNomeEmpresa');
       if (campoNome) campoNome.value = data.nome_empresa || '';
 

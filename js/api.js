@@ -256,6 +256,11 @@ function normalizeLoginResponse(data) {
     data?.user?.empresa ||
     data?.user?.empresa_nome ||
     null;
+  const empresaNomeExibicao =
+    data?.empresa?.nome_exibicao ||
+    data?.empresa_nome_exibicao ||
+    data?.user?.empresa_nome_exibicao ||
+    null;
 
   return {
     authToken: data?.authToken || data?.token || data?.accessToken || data?.access_token || null,
@@ -264,7 +269,8 @@ function normalizeLoginResponse(data) {
       empresaNome || empresaId
         ? {
             id: empresaId,
-            nome: empresaNome
+            nome: empresaNome,
+            nome_exibicao: empresaNomeExibicao
           }
         : null,
     user: data?.user ||

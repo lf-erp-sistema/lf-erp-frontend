@@ -14,6 +14,7 @@ const AppState = {
   user: null,
   empresa: null,
   empresaId: null,
+  empresaNomeExibicao: null,
   rememberSession: false,
   loadingCount: 0,
   permissoes: null,
@@ -1421,6 +1422,7 @@ async function restoreAuthSession() {
     const meData = await validateSession(6000);
     if (meData) {
       AppState.user = { ...AppState.user, ...meData };
+      AppState.empresaNomeExibicao = meData.empresa_nome_exibicao || AppState.empresaNomeExibicao;
       AppState.assinatura = {
         status: meData.assinatura_status || null,
         trial_fim: meData.trial_fim || null,
@@ -1470,6 +1472,7 @@ function applyAuthData(data) {
   };
 
   AppState.empresaId = data.empresaId || data.empresa_id || data.user?.empresa_id || null;
+  AppState.empresaNomeExibicao = data?.empresa?.nome_exibicao || data?.empresa_nome_exibicao || data?.user?.empresa_nome_exibicao || null;
 }
 
 function renderAuthenticatedUser() {
@@ -1479,7 +1482,7 @@ function renderAuthenticatedUser() {
   const topbarUserRole = document.getElementById('topbarUserRole');
   const topbarUserAvatar = document.getElementById('topbarUserAvatar');
 
-  const companyName = AppState.empresa?.nome || AppState.user?.empresa || 'Empresa Logada';
+  const companyName = AppState.empresaNomeExibicao || AppState.empresa?.nome || AppState.user?.empresa || 'Empresa Logada';
 
   const userName =
     AppState.user?.nome || AppState.user?.name || AppState.user?.usuario || 'Usuário';
@@ -1538,8 +1541,7 @@ window.aplicarLogoSidebar = aplicarLogoSidebar;
 
 function aplicarNomeEmpresaSidebar(nome) {
   if (!nome) return;
-  AppState.empresa = AppState.empresa || {};
-  AppState.empresa.nome = nome;
+  AppState.empresaNomeExibicao = nome;
   const sidebarCompanyName = document.getElementById('sidebarCompanyName');
   const topbarCompanyName = document.getElementById('topbarCompanyName');
   if (sidebarCompanyName) sidebarCompanyName.textContent = nome;

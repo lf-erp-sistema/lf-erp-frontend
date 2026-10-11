@@ -15,13 +15,19 @@ export function saveAuth(data, remember = false) {
     data?.user?.empresa ||
     data?.user?.empresa_nome ||
     null;
+  const empresaNomeExibicao =
+    data?.empresa?.nome_exibicao ||
+    data?.empresa_nome_exibicao ||
+    data?.user?.empresa_nome_exibicao ||
+    null;
 
   const payload = {
     authToken: data?.authToken || data?.token || null,
     empresaId,
     empresa: {
       id: empresaId,
-      nome: empresaNome
+      nome: empresaNome,
+      nome_exibicao: empresaNomeExibicao
     },
     user: {
       ...(data?.user || {}),
