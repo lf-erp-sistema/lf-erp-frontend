@@ -305,10 +305,16 @@ img {
 .login-brand {
   display: flex;
   align-items: center;
-  gap: 16px;
   margin-bottom: 42px;
   position: relative;
   z-index: 1;
+}
+
+.login-brand__wordmark {
+  display: block;
+  width: min(100%, 380px);
+  height: auto;
+  filter: drop-shadow(0 12px 20px rgba(2, 6, 23, 0.28));
 }
 
 /* Legacy icon badge — registro screen */
@@ -7370,6 +7376,9 @@ body {
   }
   .login-brand {
     margin-bottom: 0;
+  }
+  .login-brand__wordmark {
+    width: min(100%, 220px);
   }
   .login-brand h1 {
     font-size: 1.4rem;
