@@ -200,8 +200,9 @@ const ComissoesModule = {
     const c = document.getElementById('comConteudo');
     if (!c) return;
     if (this.state.aba === 'resumo')   { c.innerHTML = this.renderResumo();   return; }
-    if (this.state.aba === 'detalhes') { c.innerHTML = this.renderDetalhes(); this.bindDetalhesEvents(); return; }
+    if (this.state.aba === 'detalhes') { c.innerHTML = this.renderDetalhes(); enhanceSelect(document.getElementById('comFiltroVendedor')); this.bindDetalhesEvents(); return; }
     c.innerHTML = this.renderConfig();
+    enhanceSelect(document.getElementById('comVendedorSelect'));
     this.bindConfigEvents();
   },
 
@@ -559,6 +560,7 @@ const ComissoesModule = {
         </div>
       `;
       document.body.appendChild(overlay);
+      enhanceSelect(overlay.querySelector('#_comFormaPgto'));
       setTimeout(() => overlay.querySelector('#_comDataPgto')?.focus(), 50);
       overlay.addEventListener('keydown', (e) => { if (e.key === 'Escape') { document.body.removeChild(overlay); resolve(null); } });
       overlay.querySelector('#_comCancelarPgto').onclick = () => { document.body.removeChild(overlay); resolve(null); };

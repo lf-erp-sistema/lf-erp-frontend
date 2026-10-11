@@ -426,6 +426,10 @@ const CrmModule = {
       }
     }
 
+    const estagio = document.getElementById('crmEstagio');
+    enhanceSelect(estagio);
+    estagio?.dispatchEvent(new Event('change', { bubbles: true }));
+
     document.getElementById('crmModal').style.display = 'flex';
     setTimeout(() => document.getElementById('crmTitulo')?.focus(), 50);
 
@@ -585,6 +589,7 @@ const CrmModule = {
       </div>
     `;
 
+    enhanceSelect(document.getElementById('crmAtivTipo'));
     document.getElementById('crmEditarDetalheBtn')?.addEventListener('click', () => {
       this.fecharDetalhe();
       this.abrirForm(op.id);
