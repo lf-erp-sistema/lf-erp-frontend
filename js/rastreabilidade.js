@@ -1,6 +1,7 @@
 import api from './api.js';
 import { showToast, confirmarAcao, pedirInput } from './feedback.js';
 import { escapeHtml, buildFriendlyError } from './utils.js';
+import { enhanceSelect } from './premiumSelect.js';
 const esc = escapeHtml;
 
 function dataBR(d) { if (!d) return '—'; const [y,m,dia] = String(d).substring(0,10).split('-'); return `${dia}/${m}/${y}`; }
@@ -74,6 +75,7 @@ const RastreabilidadeModule = {
     if (!this.state.initialized) {
       injectRastreabilidadeStyles();
       this.render();
+      enhanceSelect(document.getElementById('rastFiltroLoteProd'));
       this.bindEvents();
       this.state.initialized = true;
     }

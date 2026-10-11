@@ -2,6 +2,7 @@ import api from './api.js';
 import { getAuth } from './auth.js';
 import { showToast, confirmarAcao } from './feedback.js';
 import { escapeHtml, buildFriendlyError } from './utils.js';
+import { enhanceSelect } from './premiumSelect.js';
 
 const esc = escapeHtml;
 
@@ -47,6 +48,7 @@ const CrmModule = {
     if (!this.state.initialized) {
       injectCrmStyles();
       this.render();
+      enhanceSelect(document.getElementById('crmFiltroEstagio'));
       this.bindEvents();
       this.state.initialized = true;
     }
