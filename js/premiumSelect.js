@@ -1,5 +1,23 @@
+let observerInstalled = false;
+
+function enhanceActionMenuSelects(root = document) {
+  root.querySelectorAll?.('.actions-menu-dropdown select.cl-tb-select').forEach(enhanceSelect);
+}
+
+function installObserver() {
+  if (observerInstalled || !document.body) return;
+  observerInstalled = true;
+  enhanceActionMenuSelects();
+  new MutationObserver(records => records.forEach(record => record.addedNodes.forEach(node => {
+    if (node.nodeType !== Node.ELEMENT_NODE) return;
+    if (node.matches?.('.actions-menu-dropdown select.cl-tb-select')) enhanceSelect(node);
+    enhanceActionMenuSelects(node);
+  }))).observe(document.body, { childList: true, subtree: true });
+}
+
 export function enhanceSelect(select) {
   if (!select || select.dataset.premiumSelect === 'true') return;
+  installObserver();
   select.dataset.premiumSelect = 'true';
   const wrap = document.createElement('div');
   wrap.className = 'premium-select';
