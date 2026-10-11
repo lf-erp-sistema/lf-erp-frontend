@@ -226,6 +226,12 @@ const PDVModule = {
       this.resetVenda();
     });
 
+    document.getElementById('pdvIrProdutosBtn')?.addEventListener('click', () => {
+      this.switchTab('produtos');
+      this.cache();
+      this.el.buscaProduto?.focus();
+    });
+
     document.getElementById('pdvPausarBtn')?.addEventListener('click', (e) => {
       e.preventDefault();
       this.pausarVenda();
@@ -665,6 +671,10 @@ const PDVModule = {
         <!-- ── Cabeçalho ─────────────────────────────────────────────────── -->
         <header class="pdv-v2__header">
           <div class="pdv-v2__header-left">
+            <div class="pdv-v2__sale-context">
+              <span><i class="fa-solid fa-cash-register"></i> Venda atual</span>
+              <small>Caixa principal</small>
+            </div>
             <span id="pdvOfflineIndicator" class="pdv-offline-badge hidden">
               <i class="fa-solid fa-wifi-slash"></i> Offline
             </span>
@@ -718,8 +728,8 @@ const PDVModule = {
 
             <!-- Tabs -->
             <div class="pdv-v2__tabs" id="pdvTabs">
-              <button type="button" class="pdv-v2__tab pdv-v2__tab--active" data-tab="produtos">Produto</button>
-              <button type="button" class="pdv-v2__tab" data-tab="cliente">Cliente e pagamento</button>
+              <button type="button" class="pdv-v2__tab pdv-v2__tab--active" data-tab="produtos"><i class="fa-solid fa-box"></i> Produtos</button>
+              <button type="button" class="pdv-v2__tab" data-tab="cliente"><i class="fa-solid fa-user"></i> Cliente e pagamento</button>
             </div>
 
             <!-- Painel: Produto -->
@@ -807,11 +817,19 @@ const PDVModule = {
 
           <!-- Painel direito: Carrinho -->
           <div class="pdv-v2__right">
+            <div class="pdv-v2__cart-header">
+              <div>
+                <span class="pdv-v2__eyebrow">Venda em andamento</span>
+                <h3><i class="fa-solid fa-bag-shopping"></i> Carrinho</h3>
+              </div>
+              <span class="pdv-v2__cart-count" id="pdvCartCount">0 itens</span>
+            </div>
             <!-- Estado vazio -->
             <div class="pdv-v2__cart-empty" id="pdvCarrinhoEmpty">
-              <i class="fa-solid fa-store"></i>
+              <span class="pdv-v2__empty-icon"><i class="fa-solid fa-bag-shopping"></i></span>
               <p>Carrinho vazio</p>
-              <small>Busque produtos na aba <strong>Produto</strong></small>
+              <small>Busque, leia o código de barras ou selecione um produto para começar.</small>
+              <button type="button" class="btn btn-light btn-sm" id="pdvIrProdutosBtn"><i class="fa-solid fa-magnifying-glass"></i> Buscar produtos</button>
             </div>
 
             <!-- Tabela de itens -->
@@ -837,15 +855,14 @@ const PDVModule = {
 
         <!-- ── Rodapé fixo ────────────────────────────────────────────────── -->
         <footer class="pdv-v2__footer">
-          <button type="button" class="btn btn-light" id="pdvPausarBtn" title="Guardar esta venda e atender outro cliente (Alt+P)">
-            <i class="fa-solid fa-pause"></i> Em espera
-          </button>
-          <button type="button" class="btn pdv-v2__btn-excluir" id="pdvLimparBtn">
-            <i class="fa-solid fa-trash"></i> Excluir venda
-          </button>
-          <button type="button" class="btn btn-primary pdv-v2__btn-finalizar" id="pdvFinalizarBtn">
-            <i class="fa-solid fa-check"></i> Finalizar venda
-          </button>
+          <div class="pdv-v2__footer-actions">
+            <button type="button" class="btn btn-light" id="pdvPausarBtn" title="Guardar esta venda e atender outro cliente (Alt+P)">
+              <i class="fa-solid fa-pause"></i> Em espera
+            </button>
+            <button type="button" class="btn pdv-v2__btn-excluir" id="pdvLimparBtn">
+              <i class="fa-solid fa-trash"></i> Excluir venda
+            </button>
+          </div>
           <div class="pdv-v2__resumo">
             <button type="button" class="pdv-resumo-cliente" id="pdvResumoCliente" title="Alterar cliente (Alt+C)">
               <i class="fa-solid fa-user"></i><span id="pdvResumoClienteNome">Consumidor final</span>
@@ -857,6 +874,9 @@ const PDVModule = {
             <span>Total</span>
             <strong id="pdvTotal">R$ 0,00</strong>
           </div>
+          <button type="button" class="btn btn-primary pdv-v2__btn-finalizar" id="pdvFinalizarBtn">
+            <i class="fa-solid fa-check"></i> Finalizar venda
+          </button>
         </footer>
 
       </div>
@@ -1036,7 +1056,7 @@ const PDVModule = {
       this.el.listaProdutos.innerHTML = chips + `
         <div class="pdv-v2__prod-hint">
           <i class="fa-solid fa-magnifying-glass"></i>
-          <span>${this.state._buscaAtiva ? 'Nenhum produto encontrado.' : 'Nenhum produto nesta categoria.'}</span>
+          <span>${this.state._buscaAtiva ? 'Nenhum produto encontrado.' : 'Nenhum produto disponível nesta seleção.'}</span>
           ${semBusca ? '<small style="display:block;margin-top:6px;color:var(--text-muted);font-size:11px">Dica: pressione <kbd style="border:1px solid var(--border);border-radius:4px;padding:0 4px;font-size:10px">F2</kbd> para focar a busca</small>' : ''}
         </div>
       `;
@@ -1208,6 +1228,9 @@ const PDVModule = {
 
     const footerItens = document.getElementById('pdvFooterItens');
     if (footerItens) footerItens.textContent = totalItens > 0 ? `${totalItens} item${totalItens > 1 ? 's' : ''}` : '';
+
+    const cartCount = document.getElementById('pdvCartCount');
+    if (cartCount) cartCount.textContent = `${totalItens} ${totalItens === 1 ? 'item' : 'itens'}`;
 
     // Sticky mobile footer
     const stickyTotal = document.getElementById('pdvMobileStickyTotal');
