@@ -8660,3 +8660,100 @@ body:not(.pdv-active) .modal-card__footer {
   #assistenciaContainer .cl-tb-search,
   #ordensServicoContainer #osBusca { flex-basis: 100%; width: 100%; }
 }
+
+/* Gestão administrativa — controle de acesso, unidades e operações sensíveis */
+#usuariosContainer .module-toolbar,
+#alertasContainer .module-toolbar {
+  padding: 8px;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-2);
+}
+
+#usuariosContainer .module-toolbar__search input,
+#usuariosContainer .filter-input {
+  min-height: 44px;
+  border-radius: 11px;
+  background: var(--surface);
+}
+
+#usuariosContainer .module-toolbar .btn,
+#alertasContainer .module-toolbar .btn,
+#alertasContainer .module-toolbar .btn-inline {
+  min-height: 42px;
+  border-radius: 11px;
+  font-weight: 700;
+}
+
+#usuariosContainer .module-toolbar .btn-primary {
+  box-shadow: 0 7px 16px color-mix(in srgb, var(--primary) 24%, transparent);
+}
+
+#usuariosContainer .table-wrapper,
+#alertasContainer .table-wrapper,
+#lixeiraContainer .lix-secao {
+  border-radius: 16px;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, .04);
+}
+
+#filiaisContainer .fil-kpi,
+#filiaisContainer .fil-card {
+  border-radius: 16px;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, .04);
+}
+
+#filiaisContainer .fil-kpi { padding: 16px 18px; }
+
+#filiaisContainer .fil-toolbar {
+  padding: 8px;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-2);
+}
+
+#filiaisContainer .fil-toolbar .btn,
+#filiaisContainer .filter-input {
+  min-height: 42px;
+  border-radius: 11px;
+}
+
+#filiaisContainer .fil-toolbar .btn {
+  font-weight: 700;
+  box-shadow: 0 7px 16px color-mix(in srgb, var(--primary) 24%, transparent);
+}
+
+#filiaisContainer .fil-empty,
+#lixeiraContainer .lix-empty {
+  min-height: 220px;
+  border: 1px dashed var(--border);
+  border-radius: 16px;
+  background: var(--surface-2);
+}
+
+#lixeiraContainer .lix-banner { border-radius: 14px; }
+
+#lixeiraContainer .lix-secao {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+#lixeiraContainer .lix-secao-titulo {
+  padding: 16px 18px;
+  margin: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
+#lixeiraContainer .btn { border-radius: 10px; font-weight: 700; }
+
+@media (max-width: 640px) {
+  #usuariosContainer .module-toolbar,
+  #alertasContainer .module-toolbar,
+  #filiaisContainer .fil-toolbar { padding: 7px; }
+
+  #usuariosContainer .module-toolbar__search { flex-basis: 100%; }
+  #filiaisContainer .fil-toolbar .btn { width: 100%; justify-content: center; }
+}
