@@ -1309,9 +1309,11 @@ function bindEventos() {
               <div>
                 <span class="cr-fi-panel-kicker"><i class="fa-solid fa-sliders"></i> Filtros avançados</span>
                 <p>Refine a visualização das contas por período, situação e vencimento.</p>
+                <div class="cr-fi-draft"><i class="fa-solid fa-wand-magic-sparkles"></i><span id="crDraftSummary">${PERIOD_OPTS.find(o => o.val === state.periodo.preset)?.lbl || 'Período'} · ${state.filtros.status ? STATUS_OPTS.find(o => o.val === state.filtros.status)?.lbl || 'Status' : 'Todos os status'} · ${state.ordemDir === 'asc' ? 'Mais antigo' : 'Mais recente'}</span></div>
               </div>
               <div class="cr-fi-head-actions">
                 <span class="cr-fi-active-count${activeCount ? ' is-active' : ''}">${activeCount ? `${activeCount} ativo${activeCount > 1 ? 's' : ''}` : 'Padrão'}</span>
+                <button class="btn btn-primary btn-sm cr-fi-apply-top" id="crAplicarFiltrosTop" type="button">Aplicar</button>
                 <button type="button" class="modal-close" id="crFecharFiltros" title="Fechar filtros" aria-label="Fechar filtros"><i class="fa-solid fa-xmark"></i></button>
               </div>
             </div>
@@ -1359,6 +1361,13 @@ function bindEventos() {
       const _onEscape = (event) => { if (event.key === 'Escape') _closePanel(); };
       const _openPanel  = () => { _renderPanel(); inline.classList.remove('hidden'); document.addEventListener('keydown', _onEscape); };
       const _closePanel = () => { inline.classList.add('hidden'); document.removeEventListener('keydown', _onEscape); };
+      const _syncDraftSummary = () => {
+        const period = inline.querySelector('[data-fp-period].cr-fpill--active')?.textContent.trim() || 'Período';
+        const status = inline.querySelector('[data-fp-status].cr-fpill--active')?.textContent.trim() || 'Todos os status';
+        const order = inline.querySelector('[data-fp-ordem].cr-fpill--active')?.textContent.trim().replace(/^↑\s*|^↓\s*/, '') || 'Mais recente';
+        const summary = inline.querySelector('#crDraftSummary');
+        if (summary) summary.textContent = `${period} · ${status} · ${order}`;
+      };
 
       const _applyFiltros = async () => {
         const selPeriod = inline.querySelector('[data-fp-period].cr-fpill--active');
@@ -1403,7 +1412,8 @@ function bindEventos() {
           inline.querySelectorAll('[data-fp-ordem]').forEach(b => b.classList.remove('cr-fpill--active'));
           fpOrdem.classList.add('cr-fpill--active');
         }
-        if (e.target.closest('#crAplicarFiltros'))  _applyFiltros();
+        if (fpPeriod || fpStatus || fpOrdem) _syncDraftSummary();
+        if (e.target.closest('#crAplicarFiltros, #crAplicarFiltrosTop'))  _applyFiltros();
         if (e.target.closest('#crLimparFiltrosModal')) {
           state.filtros = { status: '', cliente_id: '', busca: '' };
           state.ordem = 'data_vencimento'; state.ordemDir = 'desc';
