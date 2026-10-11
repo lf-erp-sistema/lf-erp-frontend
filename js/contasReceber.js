@@ -783,10 +783,10 @@ function render() {
           </div>
 
           <div class="cr-primary-actions">
-            <div id="crMesNav" style="display:flex;align-items:center;gap:2px;border:1px solid var(--border-color,#e5e7eb);border-radius:20px;padding:3px 10px;background:var(--surface,#fff);flex-shrink:0">
-              <button type="button" class="icon-button" id="crMesAnterior" style="width:26px;height:26px;font-size:.8rem;border-radius:50%" title="Mês anterior" aria-label="Mês anterior"><i class="fa-solid fa-chevron-left"></i></button>
-              <span id="crMesNavLabel" style="font-weight:700;min-width:130px;text-align:center;font-size:.88rem">${_getMesNavLabel()}</span>
-              <button type="button" class="icon-button" id="crMesSeguinte" style="width:26px;height:26px;font-size:.8rem;border-radius:50%" title="Mês seguinte" aria-label="Mês seguinte"><i class="fa-solid fa-chevron-right"></i></button>
+            <div id="crMesNav" class="cr-month-nav">
+              <button type="button" class="cr-month-nav__button" id="crMesAnterior" title="Mês anterior" aria-label="Mês anterior"><i class="fa-solid fa-chevron-left"></i></button>
+              <span id="crMesNavLabel" class="cr-month-nav__label">${_getMesNavLabel()}</span>
+              <button type="button" class="cr-month-nav__button" id="crMesSeguinte" title="Mês seguinte" aria-label="Mês seguinte"><i class="fa-solid fa-chevron-right"></i></button>
             </div>
             <button class="btn btn-primary" id="btnNovaContaManual" type="button">
               <i class="fa-solid fa-plus"></i> Conta manual
@@ -2732,17 +2732,18 @@ function injectContasReceberStyles() {
     .cr-toolbar-grid {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 0;
       margin-bottom: 18px;
-      background: var(--bg-card, #fff);
-      border: 1px solid var(--border-color, #e5e7eb);
-      border-radius: 10px;
-      padding: 14px 16px;
+      background: linear-gradient(135deg, var(--surface), var(--surface-2));
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 10px;
+      box-shadow: 0 8px 22px rgba(15, 23, 42, .035);
     }
 
     .cr-toolbar-row1 {
       display: flex;
-      gap: 8px;
+      gap: 10px;
       align-items: center;
       flex-wrap: wrap;
     }
@@ -2898,12 +2899,22 @@ function injectContasReceberStyles() {
 
     .cr-primary-actions {
       display: flex;
-      gap: 6px;
+      gap: 8px;
       flex-wrap: nowrap;
       align-items: center;
       margin-left: auto;
       flex-shrink: 0;
+      padding-left: 10px;
+      border-left: 1px solid var(--border);
     }
+
+    .cr-toolbar-row1 .cr-search-box { max-width: none; flex: 1 1 340px; height: 46px; border-radius: 13px; }
+    .cr-toolbar-row1 .cr-filter-box--cliente { flex: 0 1 230px; height: 46px; border-radius: 13px; }
+    .cr-month-nav { display:flex; align-items:center; gap:2px; height:46px; padding:3px; border:1px solid var(--border); border-radius:13px; background:var(--surface); flex-shrink:0; }
+    .cr-month-nav__button { display:grid; width:36px; height:36px; place-items:center; border:0; border-radius:10px; background:transparent; color:var(--text-muted); cursor:pointer; font-size:.82rem; }
+    .cr-month-nav__button:hover { background:var(--surface-2); color:var(--primary); }
+    .cr-month-nav__button:focus-visible { outline:2px solid var(--primary); outline-offset:1px; }
+    .cr-month-nav__label { min-width:132px; padding:0 4px; color:var(--text); font-size:.88rem; font-weight:800; text-align:center; white-space:nowrap; }
 
     /* ── Kebab menu ⋮ ── */
     .cr-more-menu { position: relative; flex-shrink: 0; }
@@ -3478,7 +3489,15 @@ function injectContasReceberStyles() {
       .cr-primary-actions {
         display: grid;
         grid-template-columns: 1fr 1fr 1fr;
+        width: 100%;
+        margin-left: 0;
+        padding: 10px 0 0;
+        border-top: 1px solid var(--border);
+        border-left: 0;
       }
+
+      .cr-toolbar-row1 .cr-search-box,
+      .cr-toolbar-row1 .cr-filter-box--cliente { flex-basis: 100%; width: 100%; }
 
       .cr-toolbar-row2 {
         flex-wrap: wrap;
