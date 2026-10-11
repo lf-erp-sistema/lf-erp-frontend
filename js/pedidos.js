@@ -1,6 +1,7 @@
 import api from './api.js';
 import { showToast, confirmarAcao } from './feedback.js';
 import { escapeHtml, buildFriendlyError } from './utils.js';
+import { enhanceSelect } from './premiumSelect.js';
 
 const STATUS_BADGE = {
   pendente:      'badge--warning',
@@ -274,7 +275,8 @@ const PedidosModule = {
         </div>
       `;
       document.body.appendChild(overlay);
-      setTimeout(() => overlay.querySelector('#_pedFormaSelect')?.focus(), 50);
+      enhanceSelect(overlay.querySelector('#_pedFormaSelect'));
+      setTimeout(() => overlay.querySelector('.premium-select__trigger')?.focus(), 50);
       overlay.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') { document.body.removeChild(overlay); resolve(null); }
       });
