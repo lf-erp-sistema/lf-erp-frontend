@@ -1,0 +1,6 @@
+node_modules/
+.env.test
+.seed-cache.json
+test-results/
+playwright-report/
+playwright/.cache/
