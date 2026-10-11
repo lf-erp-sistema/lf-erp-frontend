@@ -9472,8 +9472,10 @@ body:not(.pdv-active) .empty-state {
 .modal-card .modal-close:hover { border-color: var(--border); background: var(--surface-2); }
 .modal-overlay--prompt { z-index: 1050; align-items: center; }
 .modal-card--compact { max-width: 440px; }
+.modal-card--medium { max-width: 560px; }
 .modal-prompt__body { display: grid; gap: 14px; padding: 20px 24px 24px; }
 .modal-prompt__actions { padding: 14px 24px 20px; }
+.fid-extrato-body { max-height: 60vh; overflow-y: auto; }
 @media (max-width: 767px) {
   .modal-card__body { padding: 16px 18px 18px; }
   .modal-card__footer { gap: 8px; }

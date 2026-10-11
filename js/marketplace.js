@@ -95,20 +95,28 @@ const MarketplaceModule = {
       </div>
 
       <!-- Modal configurar plataforma -->
-      <div id="mktConfigModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;">
-        <div style="background:var(--surface);border-radius:16px;padding:28px;width:100%;max-width:440px;box-shadow:0 20px 60px rgba(0,0,0,.3);">
-          <h3 id="mktConfigModalTitle" style="margin:0 0 20px;font-size:16px;font-weight:700;">Configurar plataforma</h3>
+      <div id="mktConfigModal" class="modal-overlay" style="display:none;">
+        <div class="modal-card modal-card--compact">
+          <div class="modal-card__header">
+            <div>
+              <h3 id="mktConfigModalTitle">Configurar plataforma</h3>
+              <p>Informe as credenciais da integraÃ§Ã£o selecionada.</p>
+            </div>
+            <button type="button" class="modal-close" id="mktConfigClose" title="Fechar" aria-label="Fechar"><i class="fa fa-xmark"></i></button>
+          </div>
           <form id="mktConfigForm">
             <input type="hidden" id="mktCfgPlataforma">
-            <div style="margin-bottom:14px;">
+            <div class="modal-card__body modal-prompt__body">
+            <div>
               <label style="font-size:12px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:5px;">App ID / Client ID</label>
               <input id="mktCfgAppId" class="filter-input" style="width:100%;box-sizing:border-box;" placeholder="Cole o App ID aqui">
             </div>
-            <div style="margin-bottom:20px;">
+            <div>
               <label style="font-size:12px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:5px;">Client Secret</label>
               <input id="mktCfgSecret" class="filter-input" style="width:100%;box-sizing:border-box;" placeholder="Cole o Client Secret (ou *** para manter)">
             </div>
-            <div style="display:flex;gap:10px;justify-content:flex-end;">
+            </div>
+            <div class="modal-card__footer modal-prompt__actions">
               <button type="button" class="btn btn-secondary btn-sm" id="mktConfigCancelBtn">Cancelar</button>
               <button type="submit" class="btn btn-primary btn-sm" id="mktConfigSaveBtn">Salvar</button>
             </div>
@@ -117,32 +125,40 @@ const MarketplaceModule = {
       </div>
 
       <!-- Modal vincular produto -->
-      <div id="mktVincularModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;">
-        <div style="background:var(--surface);border-radius:16px;padding:28px;width:100%;max-width:460px;box-shadow:0 20px 60px rgba(0,0,0,.3);">
-          <h3 style="margin:0 0 20px;font-size:16px;font-weight:700;">Vincular produto</h3>
+      <div id="mktVincularModal" class="modal-overlay" style="display:none;">
+        <div class="modal-card modal-card--compact">
+          <div class="modal-card__header">
+            <div>
+              <h3>Vincular produto</h3>
+              <p>Associe um produto interno ao anÃºncio do marketplace.</p>
+            </div>
+            <button type="button" class="modal-close" id="mktVincClose" title="Fechar" aria-label="Fechar"><i class="fa fa-xmark"></i></button>
+          </div>
           <form id="mktVincularForm">
-            <div style="margin-bottom:14px;">
+            <div class="modal-card__body modal-prompt__body">
+            <div>
               <label style="font-size:12px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:5px;">Produto</label>
               <select id="mktVincProduto" class="filter-input" style="width:100%;box-sizing:border-box;" required>
                 <option value="">Selecione o produto...</option>
               </select>
             </div>
-            <div style="margin-bottom:14px;">
+            <div>
               <label style="font-size:12px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:5px;">Plataforma</label>
               <select id="mktVincPlataforma" class="filter-input" style="width:100%;box-sizing:border-box;" required>
                 <option value="">Selecione...</option>
                 <option value="mercadolivre">Mercado Livre</option>
               </select>
             </div>
-            <div style="margin-bottom:14px;">
+            <div>
               <label style="font-size:12px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:5px;">Listing ID (ID do anúncio)</label>
               <input id="mktVincListingId" class="filter-input" style="width:100%;box-sizing:border-box;" placeholder="Ex: MLB123456789" required>
             </div>
-            <div style="margin-bottom:20px;">
+            <div>
               <label style="font-size:12px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:5px;">Título do anúncio (opcional)</label>
               <input id="mktVincTitulo" class="filter-input" style="width:100%;box-sizing:border-box;" placeholder="Título para referência interna">
             </div>
-            <div style="display:flex;gap:10px;justify-content:flex-end;">
+            </div>
+            <div class="modal-card__footer modal-prompt__actions">
               <button type="button" class="btn btn-secondary btn-sm" id="mktVincCancelBtn">Cancelar</button>
               <button type="submit" class="btn btn-primary btn-sm">Salvar vínculo</button>
             </div>
@@ -268,6 +284,8 @@ const MarketplaceModule = {
     document.getElementById('mktVincularBtn')?.addEventListener('click', () => this.abrirModalVincular());
     document.getElementById('mktConfigCancelBtn')?.addEventListener('click', () => this.fecharModais());
     document.getElementById('mktVincCancelBtn')?.addEventListener('click', () => this.fecharModais());
+    document.getElementById('mktConfigClose')?.addEventListener('click', () => this.fecharModais());
+    document.getElementById('mktVincClose')?.addEventListener('click', () => this.fecharModais());
     document.getElementById('mktConfigForm')?.addEventListener('submit', (e) => { e.preventDefault(); this.salvarConfig(); });
     document.getElementById('mktVincularForm')?.addEventListener('submit', (e) => { e.preventDefault(); this.salvarVinculo(); });
 

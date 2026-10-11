@@ -296,20 +296,29 @@ const FidelidadeModule = {
            </table></div>`
       }
       <!-- Modal extrato -->
-      <div id="fidExtratoModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;">
-        <div style="background:var(--surface);border-radius:16px;padding:0;width:95%;max-width:560px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3);">
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid var(--border);">
-            <h3 id="fidExtratoTitle" style="margin:0;font-size:15px;font-weight:700;">Extrato de pontos</h3>
-            <button class="btn-icon" id="fidExtratoClose" title="Fechar" aria-label="Fechar"><i class="fa fa-xmark"></i></button>
+      <div id="fidExtratoModal" class="modal-overlay" style="display:none;">
+        <div class="modal-card modal-card--medium">
+          <div class="modal-card__header">
+            <div>
+              <h3 id="fidExtratoTitle">Extrato de pontos</h3>
+              <p>HistÃ³rico de crÃ©ditos e utilizaÃ§Ãµes do cliente.</p>
+            </div>
+            <button type="button" class="modal-close" id="fidExtratoClose" title="Fechar" aria-label="Fechar"><i class="fa fa-xmark"></i></button>
           </div>
-          <div id="fidExtratoBody" style="overflow-y:auto;padding:16px 24px;"></div>
+          <div id="fidExtratoBody" class="modal-card__body fid-extrato-body"></div>
         </div>
       </div>
       <!-- Modal ajuste -->
-      <div id="fidAjusteModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;">
-        <div style="background:var(--surface);border-radius:16px;padding:24px;width:95%;max-width:440px;box-shadow:0 20px 60px rgba(0,0,0,.3);">
-          <h3 style="margin:0 0 16px;font-size:15px;font-weight:700;">Ajuste manual de pontos</h3>
-          <div style="display:flex;flex-direction:column;gap:12px;">
+      <div id="fidAjusteModal" class="modal-overlay" style="display:none;">
+        <div class="modal-card modal-card--compact">
+          <div class="modal-card__header">
+            <div>
+              <h3>Ajuste manual de pontos</h3>
+              <p>Registre um crÃ©dito ou dÃ©bito com motivo identificado.</p>
+            </div>
+            <button type="button" class="modal-close" id="fidAjusteClose" title="Fechar" aria-label="Fechar"><i class="fa fa-xmark"></i></button>
+          </div>
+          <div class="modal-card__body modal-prompt__body">
             <div class="fid-form-group"><label>Cliente</label>
               <select id="fidAjusteCliente" class="filter-input">
                 ${this.state.clientes.map((c) => `<option value="${c.id}">${esc(c.nome)} (${c.pontos_fidelidade} pts)</option>`).join('')}
@@ -321,10 +330,10 @@ const FidelidadeModule = {
             <div class="fid-form-group"><label>Motivo</label>
               <input id="fidAjusteMot" class="filter-input" placeholder="Ex: correção, bônus especial...">
             </div>
-            <div style="display:flex;gap:8px;justify-content:flex-end;">
-              <button class="btn btn-secondary btn-sm" id="fidAjusteCancelBtn">Cancelar</button>
-              <button class="btn btn-primary btn-sm" id="fidAjusteSalvarBtn">Aplicar ajuste</button>
-            </div>
+          </div>
+          <div class="modal-card__footer modal-prompt__actions">
+            <button class="btn btn-secondary btn-sm" id="fidAjusteCancelBtn">Cancelar</button>
+            <button class="btn btn-primary btn-sm" id="fidAjusteSalvarBtn">Aplicar ajuste</button>
           </div>
         </div>
       </div>
@@ -354,6 +363,10 @@ const FidelidadeModule = {
       document.addEventListener('keydown', this._escAjuste);
     });
     document.getElementById('fidAjusteCancelBtn')?.addEventListener('click', () => {
+      document.getElementById('fidAjusteModal').style.display = 'none';
+      if (this._escAjuste) { document.removeEventListener('keydown', this._escAjuste); this._escAjuste = null; }
+    });
+    document.getElementById('fidAjusteClose')?.addEventListener('click', () => {
       document.getElementById('fidAjusteModal').style.display = 'none';
       if (this._escAjuste) { document.removeEventListener('keydown', this._escAjuste); this._escAjuste = null; }
     });
