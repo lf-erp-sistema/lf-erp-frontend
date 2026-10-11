@@ -1298,10 +1298,22 @@ function bindEventos() {
 
       const _renderPanel = () => {
         const isCustom = state.periodo.preset === 'personalizado';
+        const activeCount = [
+          state.periodo.preset !== 'mesAtual',
+          Boolean(state.filtros.status),
+          state.ordem !== 'data_vencimento' || state.ordemDir !== 'desc'
+        ].filter(Boolean).length;
         inline.innerHTML = `
+          <div class="cr-fi-panel-head">
+            <div>
+              <span class="cr-fi-panel-kicker"><i class="fa-solid fa-sliders"></i> Filtros avançados</span>
+              <p>Refine a visualização das contas por período, situação e vencimento.</p>
+            </div>
+            <span class="cr-fi-active-count${activeCount ? ' is-active' : ''}">${activeCount ? `${activeCount} ativo${activeCount > 1 ? 's' : ''}` : 'Padrão'}</span>
+          </div>
           <div class="cr-fi-sections">
             <div class="cr-fi-section">
-              <div class="cr-filtros-lbl">Período</div>
+              <div class="cr-filtros-lbl"><i class="fa-regular fa-calendar"></i> Período</div>
               <div class="cr-fpills">
                 ${PERIOD_OPTS.map(o => `<button class="cr-fpill${state.periodo.preset === o.val ? ' cr-fpill--active' : ''}" data-fp-period="${o.val}">${o.lbl}</button>`).join('')}
               </div>
@@ -1312,13 +1324,13 @@ function bindEventos() {
               </div>
             </div>
             <div class="cr-fi-section">
-              <div class="cr-filtros-lbl">Status</div>
+              <div class="cr-filtros-lbl"><i class="fa-solid fa-circle-check"></i> Status</div>
               <div class="cr-fpills">
                 ${STATUS_OPTS.map(o => `<button class="cr-fpill${state.filtros.status === o.val ? ' cr-fpill--active' : ''}" data-fp-status="${o.val}">${o.lbl}</button>`).join('')}
               </div>
             </div>
             <div class="cr-fi-section">
-              <div class="cr-filtros-lbl">Ordenar por vencimento</div>
+              <div class="cr-filtros-lbl"><i class="fa-solid fa-arrow-down-wide-short"></i> Ordenar por vencimento</div>
               <div class="cr-fpills">
                 <button class="cr-fpill${state.ordemDir === 'asc' && state.ordem === 'data_vencimento' ? ' cr-fpill--active' : ''}" data-fp-ordem="asc">↑ Mais antigo</button>
                 <button class="cr-fpill${state.ordemDir === 'desc' && state.ordem === 'data_vencimento' ? ' cr-fpill--active' : ''}" data-fp-ordem="desc">↓ Mais recente</button>
@@ -1326,6 +1338,7 @@ function bindEventos() {
             </div>
           </div>
           <div class="cr-fi-footer">
+            <span class="cr-fi-footer-note"><i class="fa-solid fa-circle-info"></i> As alterações são aplicadas ao confirmar.</span>
             <button class="btn btn-light btn-sm" id="crLimparFiltrosModal">
               <i class="fa-solid fa-rotate-left"></i> Limpar filtros
             </button>
@@ -2729,31 +2742,51 @@ function injectContasReceberStyles() {
 
     /* ── Painel de filtros inline (substitui o modal overlay) ── */
     .cr-filtros-inline {
-      background: var(--surface-2); border: 1px solid var(--border);
-      border-radius: 16px; padding: 18px 20px 14px;
-      display: flex; flex-direction: column; gap: 16px;
+      background: linear-gradient(145deg, var(--surface), var(--surface-2));
+      border: 1px solid var(--border);
+      border-radius: 20px; padding: 18px 20px 16px;
+      display: flex; flex-direction: column; gap: 14px;
+      box-shadow: 0 10px 26px rgba(15, 23, 42, .045);
     }
     .cr-filtros-inline.hidden { display: none; }
+    .cr-fi-panel-head { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+    .cr-fi-panel-kicker { display:flex; align-items:center; gap:8px; color:var(--text); font-size:.94rem; font-weight:800; }
+    .cr-fi-panel-kicker i { color:var(--primary); }
+    .cr-fi-panel-head p { margin:4px 0 0; color:var(--text-muted); font-size:.79rem; }
+    .cr-fi-active-count { flex-shrink:0; padding:6px 10px; border:1px solid var(--border); border-radius:999px; color:var(--text-muted); background:var(--surface); font-size:.74rem; font-weight:700; }
+    .cr-fi-active-count.is-active { border-color:color-mix(in srgb, var(--primary) 30%, var(--border)); color:var(--primary); background:var(--primary-soft); }
     .cr-fi-sections {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+      display: grid; grid-template-columns: 1.25fr 1.1fr .95fr; gap: 12px;
     }
-    @media (max-width: 720px) { .cr-fi-sections { grid-template-columns: 1fr; } }
-    .cr-fi-section { display: flex; flex-direction: column; gap: 10px; }
+    @media (max-width: 820px) { .cr-fi-sections { grid-template-columns: 1fr; } }
+    .cr-fi-section { display:flex; flex-direction:column; gap:10px; min-width:0; padding:14px; border:1px solid var(--border); border-radius:14px; background:color-mix(in srgb, var(--surface) 86%, var(--surface-2)); }
     .cr-fi-footer {
       display: flex; align-items: center; justify-content: flex-end;
       gap: 8px; border-top: 1px solid var(--border); padding-top: 14px;
     }
-    .cr-filtros-lbl { font-size: .72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; }
-    .cr-fpills { display: flex; flex-wrap: wrap; gap: 6px; }
-    .cr-fpill { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 6px 14px; font-size: .83rem; font-weight: 600; color: var(--text); cursor: pointer; transition: all .12s; }
-    .cr-fpill:hover { border-color: var(--primary, #2563eb); color: var(--primary, #2563eb); }
-    .cr-fpill--active { background: var(--primary, #2563eb) !important; color: #fff !important; border-color: var(--primary, #2563eb) !important; }
+    .cr-fi-footer-note { margin-right:auto; color:var(--text-muted); font-size:.76rem; }
+    .cr-fi-footer-note i { margin-right:5px; color:var(--primary); }
+    .cr-filtros-lbl { display:flex; align-items:center; gap:7px; font-size:.71rem; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:.06em; }
+    .cr-filtros-lbl i { color:var(--primary); font-size:.72rem; }
+    .cr-fpills { display:flex; flex-wrap:wrap; gap:7px; }
+    .cr-fpill { min-height:36px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:6px 12px; font-size:.82rem; font-weight:650; color:var(--text); cursor:pointer; transition:background .15s,border-color .15s,color .15s,box-shadow .15s; }
+    .cr-fpill:hover { border-color:var(--primary, #2563eb); color:var(--primary, #2563eb); background:var(--primary-soft); }
+    .cr-fpill--active { background:var(--primary, #2563eb) !important; color:#fff !important; border-color:var(--primary, #2563eb) !important; box-shadow:0 5px 12px color-mix(in srgb,var(--primary) 22%,transparent); }
     .cr-filtros-badge { background: #fff; color: var(--primary, #2563eb); font-size: .7rem; font-weight: 800; border-radius: 99px; padding: 1px 6px; margin-left: 4px; display: inline-block; }
     .cr-filtros-trigger .cr-filtros-badge { background: rgba(255,255,255,.25); color: #fff; }
     .cr-fp-custom-dates { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     .cr-fp-custom-dates .input { height: 36px; font-size: .82rem; padding: 0 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); flex: 1; min-width: 120px; }
     .cr-fp-custom-dates span { color: var(--text-muted); font-size: .82rem; flex-shrink: 0; }
     .cr-fp-custom-dates.hidden { display: none; }
+
+    @media (max-width: 560px) {
+      .cr-filtros-inline { padding:16px; border-radius:16px; }
+      .cr-fi-panel-head { align-items:flex-start; }
+      .cr-fi-panel-head p { max-width:260px; }
+      .cr-fi-footer { flex-wrap:wrap; }
+      .cr-fi-footer-note { width:100%; margin:0 0 4px; }
+      .cr-fi-footer .btn { flex:1; justify-content:center; }
+    }
 
     .cr-util-btn {
       height: 34px;
