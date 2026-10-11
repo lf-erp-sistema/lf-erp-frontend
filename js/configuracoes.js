@@ -421,7 +421,7 @@ const ConfigModule = {
                 <i class="fa-solid fa-trash"></i>
               </button>` : ''}
             </div>
-            <span style="font-size:11px;color:var(--text-muted);text-align:center;max-width:90px">PNG · JPG · SVG<br>Recomendado 200×200</span>
+            <span style="font-size:11px;color:var(--text-muted);text-align:center;max-width:110px">PNG · JPG · WEBP · SVG<br>Máx. 5 MB · exibido em 200×200</span>
           </div>
 
           <!-- Nome e Cor -->
