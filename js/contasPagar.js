@@ -1,6 +1,7 @@
 ﻿import api from './api.js';
 import { showToast } from './feedback.js';
 import { todayFortaleza, escapeHtml, buildFriendlyError, calcPeriodoLocal, debounce, formatCurrency } from './utils.js';
+import { enhanceSelect } from './premiumSelect.js';
 
 const state = {
   contas: [],
@@ -543,6 +544,8 @@ function bindEventos() {
   const busca = document.getElementById('cpBusca');
   const status = document.getElementById('cpStatus');
   const fornecedor = document.getElementById('cpFornecedor');
+  enhanceSelect(status);
+  enhanceSelect(fornecedor);
 
   // ── "Ações" dropdown — elemento é recriado a cada render(), então o toggle
   // é ligado direto nele (sem acumular); o fechar-ao-clicar-fora usa um
