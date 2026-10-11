@@ -9452,6 +9452,18 @@ body:not(.pdv-active) .empty-state {
 .os-empty strong { color: var(--text); font-size: 15px; }
 .os-empty p { margin: 0; color: var(--text-muted); font-size: 13px; }
 
+/* Assistência técnica — base de lista, detalhe e checklist. */
+.at-layout { display: flex; flex-direction: column; height: 100%; }
+.at-view { display: none; }.at-view.active { display: block; }
+.at-table-wrap { overflow-x: auto; }.at-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.at-table th { padding: 9px 12px; border-bottom: 1px solid var(--border); background: var(--surface-2); color: var(--text-muted); font-size: 12px; font-weight: 700; letter-spacing: .04em; text-align: left; text-transform: uppercase; white-space: nowrap; }
+.at-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }.at-table tr:hover td { background: var(--surface-2); }
+.at-table .at-cliente { color: var(--text); font-weight: 700; }.at-table .at-device { margin-top: 2px; color: var(--text-muted); font-size: 12px; }.at-table .at-numero { color: var(--primary); font-size: 12px; font-weight: 700; letter-spacing: .04em; }.at-table .at-actions { display: flex; gap: 6px; }.at-table .at-actions button { padding: 4px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); cursor: pointer; font-size: 12px; }.at-table .at-actions button:hover { background: var(--surface-2); }
+.at-detail { max-width: 900px; padding: 24px; }.at-detail-header { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 20px; }.at-detail-header h2 { margin: 0; font-size: 18px; font-weight: 700; }.at-section { margin-bottom: 16px; padding: 16px; border: 1px solid var(--border); border-radius: var(--component-radius); background: var(--surface); }.at-section h3 { margin: 0 0 12px; color: var(--text-muted); font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }.at-grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }.at-field label { display: block; margin-bottom: 4px; color: var(--text-muted); font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; }.at-field span { color: var(--text); font-size: 14px; }.at-field span.empty { color: var(--text-muted); font-size: 13px; font-style: italic; }
+.at-timeline { margin: 0; padding: 0; list-style: none; }.at-timeline li { display: flex; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); }.at-timeline li:last-child { border-bottom: 0; }.at-timeline .at-ev-icon { display: grid; width: 28px; height: 28px; flex-shrink: 0; place-items: center; border-radius: 50%; background: var(--surface-2); font-size: 13px; }.at-timeline .at-ev-body { flex: 1; }.at-timeline .at-ev-desc { color: var(--text); font-size: 13px; }.at-timeline .at-ev-meta { margin-top: 2px; color: var(--text-muted); font-size: 11px; }
+.at-checklist-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }.at-cl-item { display: flex; align-items: center; gap: 8px; padding: 8px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; }.at-cl-item.ok { border-color: var(--success); background: var(--success-soft); }.at-cl-item.problema { border-color: var(--danger); background: var(--danger-soft); }.at-cl-item.nao_aplica { opacity: .5; }
+@media (max-width: 600px) { .at-grid-2 { grid-template-columns: 1fr; }.at-detail { padding: 16px; } }
+
 /* Integrações — estilos estáticos migrados dos módulos para o tema principal. */
 .chk-tabs, .apipub-tabs, .fil-tabs {
   display: flex;
