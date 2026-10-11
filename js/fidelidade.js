@@ -4,25 +4,6 @@ import { escapeHtml, buildFriendlyError } from './utils.js';
 
 const esc = escapeHtml;
 
-function injectFidelidadeStyles() {
-  if (document.getElementById('fidStyles')) return;
-  const s = document.createElement('style');
-  s.id = 'fidStyles';
-  s.textContent = `
-    .fid-empty {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-      padding: 48px 20px;
-      text-align: center;
-    }
-    .fid-empty i { font-size: 2.2rem; opacity: .25; margin-bottom: 4px; color: var(--text-muted); }
-    .fid-empty strong { font-size: 15px; color: var(--text); }
-    .fid-empty p { font-size: 13px; margin: 0; color: var(--text-muted); }
-  `;
-  document.head.appendChild(s);
-}
 function moeda(v) { return Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
 function dataBR(d) { if (!d) return '—'; const [y,m,dia]=String(d).substring(0,10).split('-'); return `${dia}/${m}/${y}`; }
 
@@ -44,7 +25,6 @@ const FidelidadeModule = {
 
   async init() {
     if (!this.state.initialized) {
-      injectFidelidadeStyles();
       this.render();
       this.bindTabEvents();
       this.state.initialized = true;

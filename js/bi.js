@@ -29,27 +29,6 @@ function destroyChart(id) {
   if (CHARTS[id]) { CHARTS[id].destroy(); delete CHARTS[id]; }
 }
 
-function injectBiStyles() {
-  if (document.getElementById('biStyles')) return;
-  const s = document.createElement('style');
-  s.id = 'biStyles';
-  s.textContent = `
-    .bi-empty {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 32px 20px;
-      text-align: center;
-      color: var(--text-muted, #94a3b8);
-      font-size: 13px;
-    }
-    .bi-empty i { font-size: 1.8rem; opacity: .2; margin-bottom: 4px; }
-  `;
-  document.head.appendChild(s);
-}
-
 // ── Paleta de cores ──────────────────────────────────────────────────────────
 
 const CORES = ['#6366f1','#22c55e','#f59e0b','#ef4444','#14b8a6','#8b5cf6','#f97316','#ec4899','#06b6d4','#84cc16'];
@@ -59,7 +38,6 @@ let _carregando = false;
 // ── Render principal ─────────────────────────────────────────────────────────
 
 export async function initBiModule() {
-  injectBiStyles();
   const container = document.getElementById('biContainer');
   if (!container) return;
 

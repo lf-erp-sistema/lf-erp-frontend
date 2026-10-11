@@ -70,31 +70,10 @@ const EXPORTS = [
 
 let _painelCarregando = false;
 
-function injectExportStyles() {
-  if (document.getElementById('expStyles')) return;
-  const s = document.createElement('style');
-  s.id = 'expStyles';
-  s.textContent = `
-    .exp-empty {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-      padding: 32px 20px;
-      text-align: center;
-      color: var(--text-muted, #94a3b8);
-      font-size: 13px;
-    }
-    .exp-empty i { font-size: 1.8rem; opacity: .2; margin-bottom: 4px; }
-  `;
-  document.head.appendChild(s);
-}
-
 const ExportacaoModule = {
   state: { initialized: false, tabAtiva: 'downloads', painelTimer: null },
 
   init() {
-    injectExportStyles();
     if (!this.state.initialized) {
       this.render();
       this.bindEvents();
