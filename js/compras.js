@@ -2,6 +2,7 @@
 import { getAuth } from './auth.js';
 import { showToast, confirmarAcao } from './feedback.js';
 import { escapeHtml, calcPeriodoLocal, debounce, formatCurrency } from './utils.js';
+import { enhanceSelect } from './premiumSelect.js';
 
 const ComprasModule = {
   state: {
@@ -27,6 +28,7 @@ const ComprasModule = {
     if (!this.state.initialized) {
       this.state.initialized = true;
       this.render();
+      ['comprasFiltroStatus', 'comprasFiltroFornecedor'].forEach(id => enhanceSelect(document.getElementById(id)));
       this.cache();
       this.bind();
     } else {

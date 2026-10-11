@@ -3,6 +3,7 @@ import { getAuth } from './auth.js';
 import { showToast, confirmarAcao } from './feedback.js';
 import { exportCSV, numCSV } from './exportUtils.js';
 import { todayFortaleza, escapeHtml, calcPeriodoLocal, formatCurrency } from './utils.js';
+import { enhanceSelect } from './premiumSelect.js';
 
 const VendasModule = {
   state: {
@@ -36,6 +37,7 @@ const VendasModule = {
       this.state.initialized = true;
       this.carregarFiltros();
       this.render();
+      ['vendasPagamento', 'vendasStatus'].forEach(id => enhanceSelect(document.getElementById(id)));
       this.cache();
       this.bindEvents();
     } else {
