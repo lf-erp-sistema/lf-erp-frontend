@@ -359,17 +359,18 @@ function bindLoginEvents() {
   if (loginHelpBtn) {
     loginHelpBtn.addEventListener('click', () => {
       openGlobalModal({
-        title: 'Ajuda de acesso',
+        title: 'Problemas para entrar?',
         body: `
           <div class="modal-help-content">
-            <p>O login usa o backend real.</p>
-            <p>Confira os pontos abaixo se houver falha:</p>
+            <p>Use o nome de usuário cadastrado para sua conta.</p>
+            <p>Antes de tentar novamente, confira:</p>
             <ul>
-              <li>Backend online</li>
-              <li>Endpoint <strong>/login</strong> respondendo</li>
+              <li>Sua conexão com a internet</li>
+              <li>Caps Lock está desativado</li>
               <li>Usuário e senha corretos</li>
-              <li>API URL correta no arquivo <strong>api.js</strong></li>
+              <li>Se o acesso não foi bloqueado ou expirou</li>
             </ul>
+            <p>Se o problema continuar, fale com o administrador da sua empresa para confirmar ou redefinir seu acesso.</p>
           </div>
         `,
         footer: `
@@ -877,7 +878,10 @@ async function handleLoginSubmit(event) {
     return;
   }
 
+  const loginSubmitMarkup = loginSubmitBtn.innerHTML;
   loginSubmitBtn.disabled = true;
+  loginSubmitBtn.setAttribute('aria-busy', 'true');
+  loginSubmitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Entrando...';
   setLoginMessage('Validando acesso...', 'info');
   showGlobalLoader('Validando acesso...');
 
@@ -922,6 +926,8 @@ async function handleLoginSubmit(event) {
     showToast(friendlyMessage, 'error');
   } finally {
     loginSubmitBtn.disabled = false;
+    loginSubmitBtn.removeAttribute('aria-busy');
+    loginSubmitBtn.innerHTML = loginSubmitMarkup;
     hideGlobalLoader();
   }
 }
