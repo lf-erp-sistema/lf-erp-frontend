@@ -201,13 +201,13 @@ const OrdensServicoModule = {
           <td><span class="badge ${STATUS_BADGE[os.status] || ''}">${STATUS_LABEL[os.status] || os.status}</span></td>
           <td>
             <div style="display:flex;gap:4px;flex-wrap:nowrap">
-              <button class="btn-icon btn-icon--sm" data-os-editar="${os.id}" title="Editar"><i class="fa-solid fa-pen"></i></button>
-              <button class="btn-icon btn-icon--sm" data-os-imprimir="${os.id}" title="Imprimir OS"><i class="fa-solid fa-print"></i></button>
-              ${prox ? `<button class="btn-icon btn-icon--sm btn-icon--success" data-os-avancar="${os.id}" data-os-prox="${prox}" title="Avançar para: ${STATUS_LABEL[prox]}"><i class="fa-solid fa-arrow-right"></i></button>` : ''}
+              <button class="btn-icon btn-icon--sm" data-os-editar="${os.id}" title="Editar" aria-label="Editar"><i class="fa-solid fa-pen"></i></button>
+              <button class="btn-icon btn-icon--sm" data-os-imprimir="${os.id}" title="Imprimir OS" aria-label="Imprimir OS"><i class="fa-solid fa-print"></i></button>
+              ${prox ? `<button class="btn-icon btn-icon--sm btn-icon--success" data-os-avancar="${os.id}" data-os-prox="${prox}" title="Avançar para: ${STATUS_LABEL[prox]}" aria-label="Avançar para: ${STATUS_LABEL[prox]}"><i class="fa-solid fa-arrow-right"></i></button>` : ''}
               ${os.status !== 'entregue' && os.status !== 'cancelada'
-                ? `<button class="btn-icon btn-icon--sm btn-icon--danger" data-os-cancelar="${os.id}" title="Cancelar OS"><i class="fa-solid fa-ban"></i></button>`
+                ? `<button class="btn-icon btn-icon--sm btn-icon--danger" data-os-cancelar="${os.id}" title="Cancelar OS" aria-label="Cancelar OS"><i class="fa-solid fa-ban"></i></button>`
                 : ''}
-              <button class="btn-icon btn-icon--sm btn-icon--danger" data-os-excluir="${os.id}" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+              <button class="btn-icon btn-icon--sm btn-icon--danger" data-os-excluir="${os.id}" title="Excluir" aria-label="Excluir"><i class="fa-solid fa-trash"></i></button>
             </div>
           </td>
         </tr>`;
@@ -226,9 +226,9 @@ const OrdensServicoModule = {
     if (paginas <= 1) { bar.innerHTML = ''; return; }
 
     bar.innerHTML = `
-      <button class="btn-icon btn-icon--sm" data-os-pag="${atual - 1}" ${atual === 0 ? 'disabled' : ''}><i class="fa-solid fa-chevron-left"></i></button>
+      <button class="btn-icon btn-icon--sm" data-os-pag="${atual - 1}" ${atual === 0 ? 'disabled' : ''} title="Página anterior" aria-label="Página anterior"><i class="fa-solid fa-chevron-left"></i></button>
       <span>Página ${atual + 1} de ${paginas} (${total} registros)</span>
-      <button class="btn-icon btn-icon--sm" data-os-pag="${atual + 1}" ${atual >= paginas - 1 ? 'disabled' : ''}><i class="fa-solid fa-chevron-right"></i></button>`;
+      <button class="btn-icon btn-icon--sm" data-os-pag="${atual + 1}" ${atual >= paginas - 1 ? 'disabled' : ''} title="Próxima página" aria-label="Próxima página"><i class="fa-solid fa-chevron-right"></i></button>`;
   },
 
   // ── Modal de criação/edição ──────────────────────────────────────────────
@@ -325,7 +325,7 @@ const OrdensServicoModule = {
           <div id="osCatalogoPanel" style="display:none;border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:10px;margin-bottom:10px">
             <div style="display:flex;gap:6px;margin-bottom:8px">
               <input type="search" id="osCatalogoBusca" class="input" style="flex:1;font-size:13px" placeholder="Buscar serviço...">
-              <button type="button" class="icon-button" id="osCatalogoFechar" title="Fechar catálogo"><i class="fa-solid fa-xmark"></i></button>
+              <button type="button" class="icon-button" id="osCatalogoFechar" title="Fechar catálogo" aria-label="Fechar catálogo"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div id="osCategoriaChips" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px"></div>
             <div id="osCatalogoLista" style="max-height:200px;overflow-y:auto;font-size:13px"></div>
@@ -436,7 +436,7 @@ const OrdensServicoModule = {
       <input type="number" class="input input-sm os-item-qty"   placeholder="Qtd"   step="0.001" min="0" value="${item?.quantidade || 1}">
       <input type="text"   class="input input-sm os-item-vunit" placeholder="R$ unit." value="${item ? Number(item.valor_unitario).toFixed(2).replace('.', ',') : ''}">
       <input type="text"   class="input input-sm os-item-vtotal" placeholder="Total" readonly style="background:var(--bg-subtle,#f8f9fa)">
-      <button type="button" class="btn-icon btn-icon--sm btn-icon--danger os-item-rm" title="Remover"><i class="fa-solid fa-trash"></i></button>`;
+      <button type="button" class="btn-icon btn-icon--sm btn-icon--danger os-item-rm" title="Remover" aria-label="Remover"><i class="fa-solid fa-trash"></i></button>`;
 
     const qty   = row.querySelector('.os-item-qty');
     const vunit = row.querySelector('.os-item-vunit');
@@ -655,13 +655,15 @@ ${os.observacoes ? `<div class="field" style="margin-bottom:12px"><label>Observa
   </div>
 </div>
 
-<script>window.print(); window.addEventListener('afterprint', () => window.close());<\/script>
 </body></html>`;
 
       const win = window.open('', '_blank', 'width=800,height=900');
       if (win) {
         win.document.write(html);
         win.document.close();
+        // Via DOM do opener, não inline — evita <script> injetado na janela gerada
+        win.print();
+        win.addEventListener('afterprint', () => win.close());
       }
     } catch (err) {
       console.error('[os] imprimir:', err);

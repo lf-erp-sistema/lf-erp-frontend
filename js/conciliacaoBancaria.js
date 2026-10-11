@@ -307,7 +307,7 @@ function renderCardSessao(s) {
           <button class="btn btn-primary" style="padding:5px 12px;font-size:12px" data-action="abrir" data-id="${s.id}">
             <i class="fa-solid fa-eye"></i> Abrir
           </button>
-          <button class="btn btn-light" style="padding:5px 10px;font-size:12px;color:var(--danger)" data-action="excluir" data-id="${s.id}" title="Excluir sessão">
+          <button class="btn btn-light" style="padding:5px 10px;font-size:12px;color:var(--danger)" data-action="excluir" data-id="${s.id}" title="Excluir sessão" aria-label="Excluir sessão">
             <i class="fa-solid fa-trash"></i>
           </button>
         </div>
@@ -321,7 +321,7 @@ function renderModalImport() {
       <div class="modal-card" style="max-width:480px;width:100%">
         <div class="modal-card__header">
           <h3>Importar Extrato Bancário</h3>
-          <button class="modal-close" id="cbBtnFecharImport" type="button">
+          <button class="modal-close" id="cbBtnFecharImport" type="button" title="Fechar" aria-label="Fechar">
             <i class="fa-solid fa-xmark"></i>
           </button>
         </div>
@@ -371,7 +371,8 @@ function bindLista() {
   document.getElementById('cbBtnCancelarImport').onclick = fecharModalImport;
   document.getElementById('cbModalImport').onclick  = (e) => { if (e.target.id === 'cbModalImport') fecharModalImport(); };
 
-  document.getElementById('cbBtnNovaEmpty')?.onclick = () => document.getElementById('cbModalImport').classList.remove('hidden');
+  const btnNovaEmpty = document.getElementById('cbBtnNovaEmpty');
+  if (btnNovaEmpty) btnNovaEmpty.onclick = () => document.getElementById('cbModalImport').classList.remove('hidden');
 
   document.getElementById('cbBtnAtualizar').onclick = async () => {
     try { await carregarSessoes(); renderLista(); } catch (e) { showMsg(buildFriendlyError(e), 'error'); }
@@ -616,7 +617,7 @@ function renderLinhaItem(item) {
         <i class="fa-solid fa-plus"></i> Lançar
       </button>
       <button class="btn btn-light" style="padding:4px 10px;font-size:12px;color:var(--text-muted)"
-        data-action="ignorar" data-id="${item.id}" title="Ignorar transação">
+        data-action="ignorar" data-id="${item.id}" title="Ignorar transação" aria-label="Ignorar transação">
         <i class="fa-solid fa-ban"></i>
       </button>
     </div>` : (item.lancamento_id
@@ -642,7 +643,7 @@ function renderModalLancamento() {
       <div class="modal-card" style="max-width:420px;width:100%">
         <div class="modal-card__header">
           <h3>Criar Lançamento Financeiro</h3>
-          <button class="modal-close" id="cbBtnFecharLanc" type="button">
+          <button class="modal-close" id="cbBtnFecharLanc" type="button" title="Fechar" aria-label="Fechar">
             <i class="fa-solid fa-xmark"></i>
           </button>
         </div>

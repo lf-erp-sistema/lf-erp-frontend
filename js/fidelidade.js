@@ -307,7 +307,7 @@ const FidelidadeModule = {
                   </td>
                   <td class="text-right" style="font-size:13px;color:var(--success);">${valor}</td>
                   <td>
-                    <button class="btn-icon" data-extrato="${c.id}" title="Ver extrato"><i class="fa fa-eye"></i></button>
+                    <button class="btn-icon" data-extrato="${c.id}" title="Ver extrato" aria-label="Ver extrato"><i class="fa fa-eye"></i></button>
                   </td>
                 </tr>`;
               }).join('')}
@@ -319,7 +319,7 @@ const FidelidadeModule = {
         <div style="background:var(--surface);border-radius:16px;padding:0;width:95%;max-width:560px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3);">
           <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid var(--border);">
             <h3 id="fidExtratoTitle" style="margin:0;font-size:15px;font-weight:700;">Extrato de pontos</h3>
-            <button class="btn-icon" id="fidExtratoClose"><i class="fa fa-xmark"></i></button>
+            <button class="btn-icon" id="fidExtratoClose" title="Fechar" aria-label="Fechar"><i class="fa fa-xmark"></i></button>
           </div>
           <div id="fidExtratoBody" style="overflow-y:auto;padding:16px 24px;"></div>
         </div>

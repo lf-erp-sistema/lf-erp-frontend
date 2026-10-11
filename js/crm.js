@@ -98,12 +98,12 @@ const CrmModule = {
             <option value="">Todos os estágios</option>
             ${ESTAGIOS.map((e) => `<option value="${e.key}">${e.label}</option>`).join('')}
           </select>
-          <button class="btn btn-secondary btn-sm" id="crmRefreshBtn"><i class="fa fa-rotate"></i></button>
+          <button class="btn btn-secondary btn-sm" id="crmRefreshBtn" title="Atualizar" aria-label="Atualizar"><i class="fa fa-rotate"></i></button>
         </div>
         <div style="display:flex;gap:8px;align-items:center;">
           <div class="crm-view-toggle">
-            <button id="crmViewKanban" class="crm-view-btn active" title="Kanban"><i class="fa fa-columns"></i></button>
-            <button id="crmViewLista"  class="crm-view-btn"        title="Lista"><i class="fa fa-list"></i></button>
+            <button id="crmViewKanban" class="crm-view-btn active" title="Kanban" aria-label="Kanban"><i class="fa fa-columns"></i></button>
+            <button id="crmViewLista"  class="crm-view-btn"        title="Lista" aria-label="Lista"><i class="fa fa-list"></i></button>
           </div>
           <button class="btn btn-primary btn-sm" id="crmNovaBtn"><i class="fa fa-plus"></i> Nova oportunidade</button>
         </div>
@@ -120,7 +120,7 @@ const CrmModule = {
         <div class="crm-modal-card">
           <div class="crm-modal-header">
             <h3 id="crmModalTitle">Nova oportunidade</h3>
-            <button class="btn-icon" id="crmModalCloseBtn"><i class="fa fa-xmark"></i></button>
+            <button class="btn-icon" id="crmModalCloseBtn" title="Fechar" aria-label="Fechar"><i class="fa fa-xmark"></i></button>
           </div>
           <form id="crmForm" class="crm-form">
             <input type="hidden" id="crmId">
@@ -179,7 +179,7 @@ const CrmModule = {
         <div class="crm-modal-card" style="max-width:640px;">
           <div class="crm-modal-header">
             <h3 id="crmDetalheTitle">Oportunidade</h3>
-            <button class="btn-icon" id="crmDetalheCloseBtn"><i class="fa fa-xmark"></i></button>
+            <button class="btn-icon" id="crmDetalheCloseBtn" title="Fechar" aria-label="Fechar"><i class="fa fa-xmark"></i></button>
           </div>
           <div id="crmDetalheBody" style="padding:0 24px 8px;overflow-y:auto;max-height:70vh;"></div>
         </div>
@@ -281,7 +281,7 @@ const CrmModule = {
           <select class="crm-estagio-sel" data-op-mover="${op.id}">
             ${ESTAGIOS.map((e) => `<option value="${e.key}" ${op.estagio === e.key ? 'selected' : ''}>${e.label}</option>`).join('')}
           </select>
-          <button class="btn-icon" data-op-edit="${op.id}" title="Editar"><i class="fa fa-pen"></i></button>
+          <button class="btn-icon" data-op-edit="${op.id}" title="Editar" aria-label="Editar"><i class="fa fa-pen"></i></button>
         </div>
       </div>`;
   },
@@ -322,8 +322,8 @@ const CrmModule = {
                   <td>${dataFmt(op.data_prev_fechamento)}</td>
                   <td style="text-align:center;">${op.total_atividades || 0}</td>
                   <td>
-                    <button class="btn-icon" data-op-edit="${op.id}" title="Editar"><i class="fa fa-pen"></i></button>
-                    <button class="btn-icon danger" data-op-del="${op.id}" title="Excluir"><i class="fa fa-trash"></i></button>
+                    <button class="btn-icon" data-op-edit="${op.id}" title="Editar" aria-label="Editar"><i class="fa fa-pen"></i></button>
+                    <button class="btn-icon danger" data-op-del="${op.id}" title="Excluir" aria-label="Excluir"><i class="fa fa-trash"></i></button>
                   </td>
                 </tr>`;
             }).join('')}
@@ -576,7 +576,7 @@ const CrmModule = {
                     <div style="font-size:13px;">${esc(a.descricao)}</div>
                     <div style="font-size:11px;color:var(--text-muted);">${tipo.label} · ${dataFmt(a.data)}</div>
                   </div>
-                  <button class="btn-icon danger" data-at-del="${a.id}" title="Remover"><i class="fa fa-trash"></i></button>
+                  <button class="btn-icon danger" data-at-del="${a.id}" title="Remover" aria-label="Remover"><i class="fa fa-trash"></i></button>
                 </div>`;
             }).join('')
         }

@@ -608,7 +608,7 @@ const VendasModule = {
                 </button>
               </div>
             </div>
-            <button type="button" class="cl-tb-btn cl-tb-btn--icon" id="vendasAtualizarBtn" title="Atualizar">
+            <button type="button" class="cl-tb-btn cl-tb-btn--icon" id="vendasAtualizarBtn" title="Atualizar" aria-label="Atualizar">
               <i class="fa-solid fa-rotate"></i>
             </button>
           </div>
@@ -777,7 +777,7 @@ const VendasModule = {
           </td>
 
           <td class="text-right">
-            <button type="button" class="cr-act-toggle" data-action="vnd-acoes" data-id="${id}">
+            <button type="button" class="cr-act-toggle" data-action="vnd-acoes" data-id="${id}" title="Mais ações" aria-label="Mais ações">
               <i class="fa-solid fa-ellipsis-vertical"></i>
             </button>
           </td>
@@ -870,7 +870,7 @@ const VendasModule = {
             <div style="font-weight:900;font-size:.95rem">${escapeHtml(cliente)}</div>
             ${data ? `<div style="font-size:.78rem;color:var(--text-muted)">${data}</div>` : ''}
           </div>
-          <button type="button" class="cr-mai-fechar" id="vndAcoesFechar"><i class="fa-solid fa-xmark"></i></button>
+          <button type="button" class="cr-mai-fechar" id="vndAcoesFechar" title="Fechar" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div class="cr-mai-actions">
           <button type="button" class="cr-mai-item" data-action="detalhar-venda" data-id="${venda.id}">
@@ -2411,7 +2411,7 @@ const VendasModule = {
               <h3><i class="fa-solid fa-bullseye" style="margin-right:8px"></i>Metas de Vendas</h3>
               <p id="metasSubtitulo" style="color:var(--text-muted);font-size:.9rem"></p>
             </div>
-            <button type="button" class="icon-button" id="metasFecharBtn">
+            <button type="button" class="icon-button" id="metasFecharBtn" title="Fechar" aria-label="Fechar">
               <i class="fa-solid fa-xmark"></i>
             </button>
           </div>
@@ -2646,11 +2646,15 @@ const VendasModule = {
       <div class="rodape">
         Documento sem valor fiscal · Gerado em ${new Date().toLocaleDateString('pt-BR')}
       </div>
-      <script>window.onload = () => { window.print(); }<\/script>
       </body></html>`;
 
     const win = window.open('', '_blank', 'width=420,height=600');
-    if (win) { win.document.write(html); win.document.close(); }
+    if (win) {
+      win.document.write(html);
+      win.document.close();
+      // Via DOM do opener, não inline — evita <script> injetado na janela gerada
+      win.print();
+    }
     else showToast('Permita pop-ups para imprimir o recibo.', 'warning');
   }
 };

@@ -701,10 +701,10 @@ const PDVModule = {
             <button type="button" class="btn btn-primary" id="pdvNovaVendaBtn">
               <i class="fa-solid fa-plus"></i> Nova venda
             </button>
-            <button type="button" class="btn btn-light btn-icon" id="pdvTelaClienteBtn" title="Abrir tela do cliente (2ª janela/monitor)">
+            <button type="button" class="btn btn-light btn-icon" id="pdvTelaClienteBtn" title="Abrir tela do cliente (2ª janela/monitor)" aria-label="Abrir tela do cliente (2ª janela/monitor)">
               <i class="fa-solid fa-tv"></i>
             </button>
-            <button type="button" class="btn btn-light btn-icon" id="pdvAtualizarBtn" title="Atualizar dados">
+            <button type="button" class="btn btn-light btn-icon" id="pdvAtualizarBtn" title="Atualizar dados" aria-label="Atualizar dados">
               <i class="fa-solid fa-rotate"></i>
             </button>
           </div>
@@ -873,7 +873,7 @@ const PDVModule = {
         <div class="modal-card pdv-nc-card">
           <div class="modal-card__header">
             <div><h3>Novo Cliente</h3><p style="margin:0;font-size:13px;color:var(--text-muted)">Cadastro rápido durante a venda</p></div>
-            <button type="button" class="icon-button" id="pdvNovoClienteFechar"><i class="fa-solid fa-xmark"></i></button>
+            <button type="button" class="icon-button" id="pdvNovoClienteFechar" title="Fechar" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
           </div>
           <div class="pdv-nc-body">
             <div class="pdv-nc-section">
@@ -923,7 +923,7 @@ const PDVModule = {
         <div class="modal-card" style="max-width:560px">
           <div class="modal-card__header">
             <div><h3>Cobrar Ordem de Serviço</h3><p style="margin:0;font-size:13px;color:var(--text-muted)">Busque a OS pelo número ou nome do cliente</p></div>
-            <button type="button" class="icon-button" id="pdvCobrarOSFechar"><i class="fa-solid fa-xmark"></i></button>
+            <button type="button" class="icon-button" id="pdvCobrarOSFechar" title="Fechar" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
           </div>
           <div style="padding:20px 24px 24px">
             <div style="display:flex;gap:8px;margin-bottom:14px">
@@ -945,7 +945,7 @@ const PDVModule = {
         <div class="modal-card" style="max-width:600px">
           <div class="modal-card__header">
             <div><h3>Devolução</h3><p style="margin:0;font-size:13px;color:var(--text-muted)">Busque a venda pelo número ou nome do cliente</p></div>
-            <button type="button" class="icon-button" id="pdvDevolucaoFechar"><i class="fa-solid fa-xmark"></i></button>
+            <button type="button" class="icon-button" id="pdvDevolucaoFechar" title="Fechar" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
           </div>
           <div style="padding:20px 24px 24px">
             <div style="display:flex;gap:8px;margin-bottom:14px">
@@ -970,7 +970,7 @@ const PDVModule = {
               <h3 id="pdvGradeModalTitle">Selecionar variação</h3>
               <p id="pdvGradeModalSub">Escolha o tamanho/cor disponível.</p>
             </div>
-            <button type="button" class="icon-button" id="pdvGradeModalClose">
+            <button type="button" class="icon-button" id="pdvGradeModalClose" title="Fechar" aria-label="Fechar">
               <i class="fa-solid fa-xmark"></i>
             </button>
           </div>
@@ -1134,11 +1134,11 @@ const PDVModule = {
 
             <td data-label="Qtd">
               <div class="pdv-qty">
-                <button type="button" class="pdv-mini-btn" data-action="pdv-qty-minus" data-index="${index}">
+                <button type="button" class="pdv-mini-btn" data-action="pdv-qty-minus" data-index="${index}" title="Diminuir quantidade" aria-label="Diminuir quantidade">
                   <i class="fa-solid fa-minus"></i>
                 </button>
                 <span class="pdv-qty__value">${Number(item.quantidade || 0)}</span>
-                <button type="button" class="pdv-mini-btn" data-action="pdv-qty-plus" data-index="${index}">
+                <button type="button" class="pdv-mini-btn" data-action="pdv-qty-plus" data-index="${index}" title="Aumentar quantidade" aria-label="Aumentar quantidade">
                   <i class="fa-solid fa-plus"></i>
                 </button>
               </div>
@@ -1394,7 +1394,7 @@ const PDVModule = {
                 value="${p.vencimento || ''}" placeholder="1Âº vencimento" />
             </div>` : ''}
           ${this.state.pagamentos.length > 1
-            ? `<button type="button" class="pdv-split-remove" data-idx="${i}" title="Remover">
+            ? `<button type="button" class="pdv-split-remove" data-idx="${i}" title="Remover" aria-label="Remover">
                 <i class="fa-solid fa-xmark"></i>
                </button>`
             : ''}
@@ -2313,11 +2313,15 @@ const PDVModule = {
       <div class="rodape">
         Documento sem valor fiscal · Gerado em ${new Date().toLocaleDateString('pt-BR')}
       </div>
-      <script>window.onload = () => { window.print(); }<\/script>
       </body></html>`;
 
     const win = window.open('', '_blank', 'width=420,height=600');
-    if (win) { win.document.write(html); win.document.close(); }
+    if (win) {
+      win.document.write(html);
+      win.document.close();
+      // Via DOM do opener, não inline — evita <script> injetado na janela gerada
+      win.print();
+    }
     else showToast('Permita pop-ups para imprimir o recibo.', 'warning');
   },
 
@@ -2450,7 +2454,7 @@ const PDVModule = {
             <strong>${this.escapeHtml(v.label || 'Consumidor final')}</strong>
             <small>${v.itens} ${v.itens === 1 ? 'item' : 'itens'} · ${this.toCurrency(v.total)} · ${tempo}</small>
           </button>
-          <button type="button" class="pdv-espera-item__del" data-descartar-id="${v.id}" title="Descartar">
+          <button type="button" class="pdv-espera-item__del" data-descartar-id="${v.id}" title="Descartar" aria-label="Descartar">
             <i class="fa-solid fa-trash"></i>
           </button>
         </div>
@@ -2475,7 +2479,7 @@ const PDVModule = {
 
       overlay.innerHTML = `
         <div id="_pixModal" style="background:var(--surface);border-radius:20px;padding:32px 28px;max-width:420px;width:100%;box-shadow:0 32px 64px rgba(0,0,0,.3);text-align:center;position:relative">
-          <button id="_pixFechar" style="position:absolute;top:14px;right:16px;background:none;border:none;cursor:pointer;font-size:18px;color:var(--text-muted)" title="Fechar">
+          <button id="_pixFechar" style="position:absolute;top:14px;right:16px;background:none;border:none;cursor:pointer;font-size:18px;color:var(--text-muted)" title="Fechar" aria-label="Fechar">
             <i class="fa-solid fa-xmark"></i>
           </button>
           <div id="_pixConteudo">
@@ -2491,7 +2495,7 @@ const PDVModule = {
                 <label style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;display:block;margin-bottom:4px">PIX Copia e Cola</label>
                 <div style="display:flex;gap:6px">
                   <input id="_pixCopiaCola" readonly style="flex:1;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:11px;font-family:monospace;background:var(--surface-2);color:var(--text);min-width:0" />
-                  <button id="_pixCopiar" style="padding:8px 12px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);cursor:pointer;font-size:13px" title="Copiar código">
+                  <button id="_pixCopiar" style="padding:8px 12px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);cursor:pointer;font-size:13px" title="Copiar código" aria-label="Copiar código">
                     <i class="fa-solid fa-copy"></i>
                   </button>
                 </div>

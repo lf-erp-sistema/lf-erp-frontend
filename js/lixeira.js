@@ -95,7 +95,7 @@ function renderSecao(titulo, _tipo, itens, campos) {
         <button class="btn btn-sm btn-success" data-action="recuperar" data-tabela="${tabela}" data-id="${item.id}" data-nome="${esc(item.nome)}" style="margin-right:6px">
           <i class="fa-solid fa-rotate-left"></i> Recuperar
         </button>
-        <button class="btn btn-sm btn-danger" data-action="excluir-permanente" data-tabela="${tabela}" data-id="${item.id}" data-nome="${esc(item.nome)}">
+        <button class="btn btn-sm btn-danger" data-action="excluir-permanente" data-tabela="${tabela}" data-id="${item.id}" data-nome="${esc(item.nome)}" title="Excluir permanentemente" aria-label="Excluir permanentemente">
           <i class="fa-solid fa-trash"></i>
         </button>
       </td>

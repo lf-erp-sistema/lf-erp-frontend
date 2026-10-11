@@ -407,7 +407,7 @@ const ProdutosModule = {
             <div style="font-weight:900;font-size:.95rem">${escapeHtml(item.nome || 'Produto')}</div>
             ${item.codigo_barras ? `<div style="font-size:.78rem;color:var(--text-muted)">${escapeHtml(item.codigo_barras)}</div>` : ''}
           </div>
-          <button type="button" class="cr-mai-fechar" id="prodAcoesFechar"><i class="fa-solid fa-xmark"></i></button>
+          <button type="button" class="cr-mai-fechar" id="prodAcoesFechar" title="Fechar" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div class="cr-mai-actions">
           <button type="button" class="cr-mai-item" data-action="edit" data-id="${item.id}">
@@ -580,7 +580,7 @@ const ProdutosModule = {
           <td>${Number(item.estoque_minimo || 0)}</td>
           <td><span class="${statusClass}">${alerta ? 'Alerta' : 'Ok'}</span></td>
           <td class="text-right">
-            <button type="button" class="cr-act-toggle" data-action="prod-acoes" data-id="${item.id}">
+            <button type="button" class="cr-act-toggle" data-action="prod-acoes" data-id="${item.id}" title="Mais ações" aria-label="Mais ações">
               <i class="fa-solid fa-ellipsis-vertical"></i>
             </button>
           </td>
@@ -1526,8 +1526,8 @@ const ProdutosModule = {
         <img src="${escapeHtml(img.url_thumbnail || img.url)}" alt="Imagem do produto" loading="lazy" />
         ${img.principal ? '<span class="imagem-card__badge">Principal</span>' : ''}
         <div class="imagem-card__actions">
-          ${!img.principal ? `<button type="button" class="btn-star" data-action="imagemPrincipal" data-id="${img.id}" title="Definir como principal"><i class="fa-solid fa-star"></i></button>` : ''}
-          <button type="button" data-action="imagemDelete" data-id="${img.id}" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+          ${!img.principal ? `<button type="button" class="btn-star" data-action="imagemPrincipal" data-id="${img.id}" title="Definir como principal" aria-label="Definir como principal"><i class="fa-solid fa-star"></i></button>` : ''}
+          <button type="button" data-action="imagemDelete" data-id="${img.id}" title="Excluir" aria-label="Excluir"><i class="fa-solid fa-trash"></i></button>
         </div>
       </div>`).join('');
   },
@@ -1650,10 +1650,10 @@ const ProdutosModule = {
           <div class="grade-card__estoque">Estoque: <strong>${Number(g.estoque || 0)}</strong></div>
           ${g.preco ? `<div style="font-size:12px;color:var(--primary);margin-bottom:6px">${toCurrency(g.preco)}</div>` : ''}
           <div class="grade-card__actions">
-            <button type="button" class="btn-inline" data-action="gradeEdit" data-id="${g.id}" title="Editar">
+            <button type="button" class="btn-inline" data-action="gradeEdit" data-id="${g.id}" title="Editar" aria-label="Editar">
               <i class="fa-solid fa-pen"></i>
             </button>
-            <button type="button" class="btn-inline btn-inline--danger" data-action="gradeDelete" data-id="${g.id}" title="Excluir">
+            <button type="button" class="btn-inline btn-inline--danger" data-action="gradeDelete" data-id="${g.id}" title="Excluir" aria-label="Excluir">
               <i class="fa-solid fa-trash"></i>
             </button>
           </div>
@@ -1835,7 +1835,7 @@ const ProdutosModule = {
         <div class="kit-row__nome">${escapeHtml(comp.componente_nome || '-')}</div>
         <div class="kit-row__info">${Number(comp.quantidade)} por kit</div>
         <div class="kit-row__estoque">Est: ${comp.estoque_componente ?? '-'}</div>
-        <button type="button" class="btn-inline btn-inline--danger" data-action="kitDelete" data-id="${comp.id}" style="flex-shrink:0">
+        <button type="button" class="btn-inline btn-inline--danger" data-action="kitDelete" data-id="${comp.id}" style="flex-shrink:0" title="Remover" aria-label="Remover">
           <i class="fa-solid fa-trash"></i>
         </button>
       </div>`).join('');
@@ -1928,7 +1928,7 @@ const ProdutosModule = {
               <h3><i class="fa-solid fa-store" style="margin-right:8px"></i>Marketplace</h3>
               <p style="color:var(--text-muted);font-size:.9rem">Sincronize produtos com Mercado Livre e Shopee</p>
             </div>
-            <button type="button" class="icon-button" id="mktFecharX">
+            <button type="button" class="icon-button" id="mktFecharX" title="Fechar" aria-label="Fechar">
               <i class="fa-solid fa-xmark"></i>
             </button>
           </div>
@@ -2014,7 +2014,7 @@ const ProdutosModule = {
                        <button class="btn-inline" data-action="sync-estoque" data-id="${Number(p.produto_id)}" data-plat="${escapeHtml(p.plataforma)}">
                          <i class="fa-solid fa-sync"></i> Sync
                        </button>
-                       <button class="btn-inline btn-inline--danger" data-action="desvincular" data-id="${Number(p.id)}">
+                       <button class="btn-inline btn-inline--danger" data-action="desvincular" data-id="${Number(p.id)}" title="Desvincular" aria-label="Desvincular">
                          <i class="fa-solid fa-unlink"></i>
                        </button>
                      </td>

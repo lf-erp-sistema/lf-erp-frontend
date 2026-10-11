@@ -425,7 +425,7 @@ const ClientesModule = {
         <td>
           <button type="button" class="cr-act-toggle" data-action="cli-acoes"
             data-id="${cliente.id}" data-nome="${escapeHtml(cliente.nome || '')}"
-            data-portal="${cliente.portal_ativo ? '1' : '0'}">
+            data-portal="${cliente.portal_ativo ? '1' : '0'}" title="Mais ações" aria-label="Mais ações">
             <i class="fa-solid fa-ellipsis-vertical"></i>
           </button>
         </td>
@@ -896,7 +896,7 @@ const ClientesModule = {
             <div style="font-weight:900;font-size:.95rem">${escapeHtml(cliente.nome || 'Cliente')}</div>
             ${cliente.telefone ? `<div style="font-size:.78rem;color:var(--text-muted)">${escapeHtml(cliente.telefone)}</div>` : ''}
           </div>
-          <button type="button" class="cr-mai-fechar" id="cliAcoesFechar"><i class="fa-solid fa-xmark"></i></button>
+          <button type="button" class="cr-mai-fechar" id="cliAcoesFechar" title="Fechar" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div class="cr-mai-actions">
           <button type="button" class="cr-mai-item" data-action="edit-cliente" data-id="${cliente.id}">
@@ -943,21 +943,21 @@ const ClientesModule = {
               <p id="extratoClienteSubtitulo" style="color:var(--text-muted);font-size:.9rem"></p>
             </div>
             <div id="extratoMesNav" style="display:flex;align-items:center;gap:2px;border:1px solid var(--border);border-radius:20px;padding:3px 10px">
-              <button type="button" class="icon-button" id="extratoMesAnterior" style="width:26px;height:26px;font-size:.8rem"><i class="fa-solid fa-chevron-left"></i></button>
+              <button type="button" class="icon-button" id="extratoMesAnterior" style="width:26px;height:26px;font-size:.8rem" title="Mês anterior" aria-label="Mês anterior"><i class="fa-solid fa-chevron-left"></i></button>
               <span id="extratoMesLabel" style="font-weight:700;min-width:130px;text-align:center;font-size:.88rem"></span>
-              <button type="button" class="icon-button" id="extratoMesSeguinte" style="width:26px;height:26px;font-size:.8rem"><i class="fa-solid fa-chevron-right"></i></button>
+              <button type="button" class="icon-button" id="extratoMesSeguinte" style="width:26px;height:26px;font-size:.8rem" title="Mês seguinte" aria-label="Mês seguinte"><i class="fa-solid fa-chevron-right"></i></button>
             </div>
             <div style="display:flex;gap:8px;align-items:center">
               <button type="button" class="btn btn-light btn-sm" id="extratoBtnTotal">Dívida total</button>
               <button type="button" class="icon-button" id="extratoWhatsappBtn"
                 style="background:#25D366;color:#fff;width:34px;height:34px;font-size:1.1rem;border-radius:50%;flex-shrink:0"
-                title="Enviar mensagem via WhatsApp">
+                title="Enviar mensagem via WhatsApp" aria-label="Enviar mensagem via WhatsApp">
                 <i class="fa-brands fa-whatsapp"></i>
               </button>
               <button type="button" class="btn btn-light btn-sm" id="extratoClienteImprimirBtn">
                 <i class="fa-solid fa-print"></i> Imprimir
               </button>
-              <button type="button" class="icon-button" id="extratoClienteFecharBtn">
+              <button type="button" class="icon-button" id="extratoClienteFecharBtn" title="Fechar" aria-label="Fechar">
                 <i class="fa-solid fa-xmark"></i>
               </button>
             </div>
@@ -1315,7 +1315,7 @@ const ClientesModule = {
       <div style="background:var(--surface,#fff);border-radius:18px;width:100%;max-width:440px;box-shadow:0 8px 40px rgba(0,0,0,.25);padding:24px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
           <h3 style="margin:0;font-size:.95rem;font-weight:900"><i class="fa-brands fa-whatsapp" style="color:#25D366"></i> Mensagem WhatsApp</h3>
-          <button id="extratoMsgCopyFechar" class="icon-button"><i class="fa-solid fa-xmark"></i></button>
+          <button id="extratoMsgCopyFechar" class="icon-button" title="Fechar" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <p style="font-size:.82rem;color:var(--text-muted);margin:0 0 10px">Telefone não cadastrado — copie a mensagem e envie manualmente:</p>
         <textarea id="extratoMsgCopyText" rows="9" readonly

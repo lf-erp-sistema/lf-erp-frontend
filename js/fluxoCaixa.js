@@ -299,7 +299,7 @@ function render() {
               </div>
             </div>
           </div>
-          <button class="cl-tb-btn cl-tb-btn--icon" id="btnAtualizarFluxoCaixa" type="button" title="Atualizar">
+          <button class="cl-tb-btn cl-tb-btn--icon" id="btnAtualizarFluxoCaixa" type="button" title="Atualizar" aria-label="Atualizar">
             <i class="fa-solid fa-rotate"></i>
           </button>
         </div>

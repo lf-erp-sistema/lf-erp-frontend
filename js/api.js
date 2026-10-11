@@ -206,15 +206,31 @@ async function request(path, options = {}) {
 
   try {
     const response = await fetch(url, fetchOptions);
-    if (response.status === 401 && !API_CONFIG._isRedirecting401) {
+    const encerrarSessao = () => {
+      if (API_CONFIG._isRedirecting401) return;
       API_CONFIG._isRedirecting401 = true;
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('lferp:session-expired'));
         // Reset flag when SPA re-renders login so future 401s are caught
         window.addEventListener('lferp:auth-changed', () => { API_CONFIG._isRedirecting401 = false; }, { once: true });
       }
+    };
+
+    if (response.status === 401) {
+      encerrarSessao();
     }
-    return parseResponse(response);
+
+    try {
+      return await parseResponse(response);
+    } catch (error) {
+      // Token revogado é retornado pelo backend como 403 para diferenciar de
+      // credenciais ausentes. Para a SPA, porém, a sessão não é mais válida e
+      // deve ter exatamente o mesmo tratamento de uma expiração (401).
+      if (error?.status === 403 && error?.payload?.codigo === 'TOKEN_REVOGADO') {
+        encerrarSessao();
+      }
+      throw error;
+    }
   } catch (error) {
     if (error.name === 'AbortError') {
       throw new Error('A requisição demorou demais para responder.');

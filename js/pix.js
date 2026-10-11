@@ -57,7 +57,7 @@ export async function gerarPIX({ contaReceberID, valor, clienteNome, onPago } = 
           <i class="fa-brands fa-pix pix-icon"></i>
           <span>Cobrar via PIX</span>
         </div>
-        <button class="modal-close" id="_pixFechar"><i class="fa-solid fa-xmark"></i></button>
+        <button class="modal-close" id="_pixFechar" title="Fechar" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <div class="pix-modal__body" id="_pixBody">
         <div style="text-align:center;padding:40px 0">
@@ -112,7 +112,7 @@ function renderPIXModal(data, valor, clienteNome, onPago) {
       <div class="pix-chave-box">
         <input class="pix-chave-input" id="_pixChave" type="text" readonly
           value="${esc(data.pix_copia_e_cola || '')}"/>
-        <button class="btn btn-light pix-copy-btn" id="_pixCopiar" title="Copiar">
+        <button class="btn btn-light pix-copy-btn" id="_pixCopiar" title="Copiar" aria-label="Copiar">
           <i class="fa-solid fa-copy"></i>
         </button>
       </div>

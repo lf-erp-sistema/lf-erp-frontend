@@ -176,8 +176,8 @@ const RastreabilidadeModule = {
                   <td class="text-right"><strong>${l.quantidade_atual}</strong></td>
                   <td><span class="rast-badge ${statusCls}">${statusLabel}</span></td>
                   <td>
-                    <button class="btn-icon" data-detalhe-lote="${l.id}" title="Detalhe"><i class="fa fa-eye"></i></button>
-                    <button class="btn-icon" data-saida-lote="${l.id}" title="Registrar saída"><i class="fa fa-arrow-up-from-bracket"></i></button>
+                    <button class="btn-icon" data-detalhe-lote="${l.id}" title="Detalhe" aria-label="Detalhe"><i class="fa fa-eye"></i></button>
+                    <button class="btn-icon" data-saida-lote="${l.id}" title="Registrar saída" aria-label="Registrar saída"><i class="fa fa-arrow-up-from-bracket"></i></button>
                   </td>
                 </tr>`;
               }).join('')}

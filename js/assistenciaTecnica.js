@@ -424,6 +424,8 @@ const AT = {
       else if (action === 'imprimir')  { await this.imprimirOS(id); }
       else if (action === 'cancelar')  { await this.cancelarOS(id); }
       else if (action === 'back-lista'){ this.voltarLista(); }
+      else if (action === 'pagina-anterior') { this._pagina(-1); }
+      else if (action === 'pagina-proxima')  { this._pagina(1); }
     });
   },
 
@@ -519,11 +521,11 @@ const AT = {
           <td>${fmtDate(o.data_entrada)}</td>
           <td>
             <div class="at-actions">
-              <button data-action="ver" data-id="${o.id}" title="Ver detalhes"><i class="fa-solid fa-eye"></i></button>
-              ${proximo ? `<button data-action="avancar-status" data-id="${o.id}" data-status="${proximo}" title="Avançar: ${STATUS_LABEL[proximo]||proximo}"><i class="fa-solid fa-forward-step"></i></button>` : ''}
-              <button data-action="imprimir" data-id="${o.id}" title="Imprimir OS"><i class="fa-solid fa-print"></i></button>
-              ${!['entregue','cancelada','reprovada'].includes(o.status) ? `<button data-action="cancelar" data-id="${o.id}" title="Cancelar OS" style="color:#dc2626"><i class="fa-solid fa-ban"></i></button>` : ''}
-              <button data-action="excluir" data-id="${o.id}" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+              <button data-action="ver" data-id="${o.id}" title="Ver detalhes" aria-label="Ver detalhes"><i class="fa-solid fa-eye"></i></button>
+              ${proximo ? `<button data-action="avancar-status" data-id="${o.id}" data-status="${proximo}" title="Avançar: ${STATUS_LABEL[proximo]||proximo}" aria-label="Avançar: ${STATUS_LABEL[proximo]||proximo}"><i class="fa-solid fa-forward-step"></i></button>` : ''}
+              <button data-action="imprimir" data-id="${o.id}" title="Imprimir OS" aria-label="Imprimir OS"><i class="fa-solid fa-print"></i></button>
+              ${!['entregue','cancelada','reprovada'].includes(o.status) ? `<button data-action="cancelar" data-id="${o.id}" title="Cancelar OS" aria-label="Cancelar OS" style="color:#dc2626"><i class="fa-solid fa-ban"></i></button>` : ''}
+              <button data-action="excluir" data-id="${o.id}" title="Excluir" aria-label="Excluir"><i class="fa-solid fa-trash"></i></button>
             </div>
           </td>
         </tr>`;
@@ -535,8 +537,8 @@ const AT = {
       const fim    = Math.min(inicio + this.state.os.length - 1, total);
       pag.innerHTML = total > this.state.porPagina
         ? `<span>Exibindo ${inicio}–${fim} de ${total}</span>
-           ${this.state.paginaAtual > 0 ? `<button style="margin-left:8px;cursor:pointer;padding:3px 10px;border-radius:5px;border:1px solid var(--border)" onclick="AT._pagina(-1)">‹ Anterior</button>` : ''}
-           ${fim < total ? `<button style="margin-left:6px;cursor:pointer;padding:3px 10px;border-radius:5px;border:1px solid var(--border)" onclick="AT._pagina(1)">Próxima ›</button>` : ''}`
+           ${this.state.paginaAtual > 0 ? `<button data-action="pagina-anterior" style="margin-left:8px;cursor:pointer;padding:3px 10px;border-radius:5px;border:1px solid var(--border)">‹ Anterior</button>` : ''}
+           ${fim < total ? `<button data-action="pagina-proxima" style="margin-left:6px;cursor:pointer;padding:3px 10px;border-radius:5px;border:1px solid var(--border)">Próxima ›</button>` : ''}`
         : `${total} ordem${total !== 1 ? 's' : ''} encontrada${total !== 1 ? 's' : ''}`;
     }
   },
@@ -1348,7 +1350,7 @@ const AT = {
     <h1>Ordem de Serviço <span style="color:#1d4ed8">${esc(os.numero)}</span></h1>
     <div style="color:#555;font-size:11px;margin-top:4px">Abertura: ${fmtDate(os.data_entrada)} &nbsp;|&nbsp; Previsão: ${fmtDate(os.data_prevista)} &nbsp;|&nbsp; Status: <span class="badge">${STATUS_LABEL[os.status]||os.status}</span></div>
   </div>
-  <button onclick="window.print()" style="padding:6px 14px;cursor:pointer;border:1px solid #ccc;border-radius:4px;background:#fff;font-size:12px">🖨 Imprimir</button>
+  <button id="atBtnImprimir" style="padding:6px 14px;cursor:pointer;border:1px solid #ccc;border-radius:4px;background:#fff;font-size:12px">🖨 Imprimir</button>
 </div>
 
 <h2>Cliente</h2>
@@ -1415,6 +1417,9 @@ ${os.observacoes ? `<h2>Observações</h2><p style="font-size:12px;margin-top:4p
 <p style="font-size:9px;color:#aaa;text-align:center;margin-top:24px">OS ${esc(os.numero)} · Gerado em ${new Date().toLocaleString('pt-BR')}</p>
 </body></html>`);
     win.document.close();
+    // Listener via DOM (não inline) — a janela gerada não recebe os headers de CSP
+    // do app principal, mas evitamos onclick inline mesmo assim por consistência/segurança.
+    win.document.getElementById('atBtnImprimir')?.addEventListener('click', () => win.print());
   },
 
   // ── Aparelhos ─────────────────────────────────────────────────────────────

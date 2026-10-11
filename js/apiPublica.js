@@ -136,7 +136,7 @@ const ApiPublicaModule = {
                    <td><code style="font-size:12px;">${esc(k.key_prefix)}</code></td>
                    <td style="font-size:12px;color:var(--text-muted);">${k.ultimo_uso ? dataBR(k.ultimo_uso) : '—'}</td>
                    <td><span class="apipub-badge ${k.ativo ? 'apipub-badge--ok' : 'apipub-badge--off'}">${k.ativo ? 'Ativa' : 'Revogada'}</span></td>
-                   <td>${k.ativo ? `<button class="btn-icon danger" data-del-key="${k.id}" title="Revogar"><i class="fa fa-ban"></i></button>` : ''}</td>
+                   <td>${k.ativo ? `<button class="btn-icon danger" data-del-key="${k.id}" title="Revogar" aria-label="Revogar"><i class="fa fa-ban"></i></button>` : ''}</td>
                  </tr>`).join('')}
              </tbody>
            </table>
@@ -258,7 +258,7 @@ const ApiPublicaModule = {
                 <button class="btn btn-secondary btn-sm" data-toggle-ep="${ep.id}" data-ativo="${ep.ativo}">
                   <i class="fa ${ep.ativo ? 'fa-pause' : 'fa-play'}"></i> ${ep.ativo ? 'Desativar' : 'Ativar'}
                 </button>
-                <button class="btn-icon danger" data-del-ep="${ep.id}" title="Remover"><i class="fa fa-trash"></i></button>
+                <button class="btn-icon danger" data-del-ep="${ep.id}" title="Remover" aria-label="Remover"><i class="fa fa-trash"></i></button>
               </div>
             </div>`).join('')
       }

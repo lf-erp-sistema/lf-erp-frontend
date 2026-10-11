@@ -178,6 +178,12 @@ button {
   cursor: pointer;
 }
 
+/* O botão de menu é exclusivo do layout mobile; o JavaScript só controla a
+   abertura, enquanto a media query controla quando ele pode aparecer. */
+.btn.sidebar__mobile-toggle {
+  display: none;
+}
+
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
@@ -817,6 +823,29 @@ img {
   border-color: var(--border-strong);
   color: var(--text);
 }
+
+/* Botão somente-ícone "leve" (sem borda), usado em linhas de tabela/lista
+   (ex: ordensServico, crm, checkoutLinks, fidelidade, rastreabilidade) */
+.btn-icon {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  min-width: 32px;
+  min-height: 32px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition), color var(--transition);
+}
+.btn-icon:hover { background: var(--surface-2); color: var(--text); }
+.btn-icon:disabled { opacity: .4; cursor: not-allowed; }
+.btn-icon.danger:hover,
+.btn-icon--danger:hover { color: var(--danger); background: var(--danger-soft); }
+.btn-icon--success:hover { color: var(--success); background: var(--success-soft); }
+.btn-icon--sm { min-width: 28px; min-height: 28px; padding: 4px 6px; font-size: .85rem; }
 
 /* LAYOUT PRINCIPAL */
 .main-screen {
@@ -2720,6 +2749,10 @@ img {
   }
 
   .topbar-mobile-btn {
+    display: inline-grid;
+  }
+
+  .btn.sidebar__mobile-toggle {
     display: inline-grid;
   }
 
@@ -7422,9 +7455,14 @@ body {
     min-height: 44px;
   }
   .icon-btn,
-  .icon-button {
+  .icon-button,
+  .btn-icon {
     min-width: 42px;
     min-height: 42px;
+  }
+  .btn-icon--sm {
+    min-width: 36px;
+    min-height: 36px;
   }
   .data-table td,
   .data-table th {

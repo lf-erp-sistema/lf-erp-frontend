@@ -819,7 +819,7 @@ const NfeModule = {
                 <td><span class="badge ${statusColor[e.status] || ''}">${esc(e.status || 'pendente')}</span></td>
                 <td class="text-right">
                   <div class="table-actions">
-                    <button class="btn-inline" data-nfse-consultar="${esc(e.ref)}">
+                    <button class="btn-inline" data-nfse-consultar="${esc(e.ref)}" title="Consultar" aria-label="Consultar">
                       <i class="fa-solid fa-sync"></i>
                     </button>
                     ${e.link_pdf && /^https?:\/\//i.test(e.link_pdf) ? `
@@ -870,7 +870,7 @@ const NfeModule = {
       <div class="modal-card" style="max-width:560px;width:95vw">
         <div class="modal-card__header">
           <div><h3>Emitir NFS-e</h3><p style="color:var(--text-muted);font-size:.9rem">Nota Fiscal de Serviço Eletrônica avulsa</p></div>
-          <button type="button" class="icon-button" id="nfseFormCloseX">
+          <button type="button" class="icon-button" id="nfseFormCloseX" title="Fechar" aria-label="Fechar">
             <i class="fa-solid fa-xmark"></i>
           </button>
         </div>
@@ -944,7 +944,7 @@ const NfeModule = {
         <div class="modal-card" style="max-width:520px;width:95vw">
           <div class="modal-card__header">
             <div><h3>Configuração NFS-e</h3></div>
-            <button type="button" class="icon-button" id="nfseConfigCloseX">
+            <button type="button" class="icon-button" id="nfseConfigCloseX" title="Fechar" aria-label="Fechar">
               <i class="fa-solid fa-xmark"></i>
             </button>
           </div>

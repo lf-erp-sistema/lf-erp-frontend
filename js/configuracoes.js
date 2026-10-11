@@ -413,7 +413,7 @@ const ConfigModule = {
               <button type="button" class="btn btn-light" id="cfgLogoEscolherBtn" style="font-size:12px;padding:4px 10px;height:28px">
                 <i class="fa-solid fa-image"></i> Escolher
               </button>
-              ${logoAtual ? `<button type="button" class="btn btn-light" id="cfgLogoRemoverBtn" style="font-size:12px;padding:4px 10px;height:28px;color:var(--danger)">
+              ${logoAtual ? `<button type="button" class="btn btn-light" id="cfgLogoRemoverBtn" style="font-size:12px;padding:4px 10px;height:28px;color:var(--danger)" title="Remover logo" aria-label="Remover logo">
                 <i class="fa-solid fa-trash"></i>
               </button>` : ''}
             </div>

@@ -364,7 +364,7 @@ function render() {
             <i class="fa-solid fa-plus"></i>
             <span class="cl-tb-btn-lbl">Nova Conta</span>
           </button>
-          <button class="cl-tb-btn cl-tb-btn--icon" id="btnAtualizarContasPagar" type="button" title="Atualizar">
+          <button class="cl-tb-btn cl-tb-btn--icon" id="btnAtualizarContasPagar" type="button" title="Atualizar" aria-label="Atualizar">
             <i class="fa-solid fa-rotate"></i>
           </button>
         </div>
@@ -479,7 +479,8 @@ function renderLinhas() {
             data-id="${conta.id}"
             data-compra-id="${conta.compra_id || ''}"
             data-status="${conta.status || 'pendente'}"
-            data-forn="${escapeHtml(conta.fornecedor_nome || conta.descricao || 'Conta')}">
+            data-forn="${escapeHtml(conta.fornecedor_nome || conta.descricao || 'Conta')}"
+            title="Mais ações" aria-label="Mais ações">
             <i class="fa-solid fa-ellipsis-vertical"></i>
           </button>
         </td>
@@ -507,7 +508,7 @@ function _abrirAcoesCPModal(btn) {
           <div style="font-weight:900;font-size:.95rem">${escapeHtml(forn)}</div>
           <div style="font-size:.78rem;color:var(--text-muted)">Contas a Pagar #${id}</div>
         </div>
-        <button type="button" class="cr-mai-fechar" id="cpAcoesFechar"><i class="fa-solid fa-xmark"></i></button>
+        <button type="button" class="cr-mai-fechar" id="cpAcoesFechar" title="Fechar" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <div class="cr-mai-actions">
         <button type="button" class="cr-mai-item" id="cpAcaoDetalhe">
@@ -1101,9 +1102,9 @@ function _ncSpinner(id, label, min, max, ini) {
     <div class="cp-nc-field">
       <span class="cp-nc-field__label">${label}</span>
       <div class="cp-nc-spinner">
-        <button type="button" class="cp-nc-spin-up" data-spin="${id}" data-dir="up"><i class="fa-solid fa-chevron-up"></i></button>
+        <button type="button" class="cp-nc-spin-up" data-spin="${id}" data-dir="up" title="Aumentar" aria-label="Aumentar"><i class="fa-solid fa-chevron-up"></i></button>
         <span class="cp-nc-spin-val" id="${id}Val">${ini}</span>
-        <button type="button" class="cp-nc-spin-down" data-spin="${id}" data-dir="down"><i class="fa-solid fa-chevron-down"></i></button>
+        <button type="button" class="cp-nc-spin-down" data-spin="${id}" data-dir="down" title="Diminuir" aria-label="Diminuir"><i class="fa-solid fa-chevron-down"></i></button>
       </div>
     </div>`;
 }
@@ -1125,7 +1126,7 @@ function abrirModalNovaContaPagar() {
           <h3>Nova conta manual</h3>
           <p>Sem gerar compra ou movimentar estoque.</p>
         </div>
-        <button class="icon-button" type="button" id="cpNovaContaFechar"><i class="fa-solid fa-xmark"></i></button>
+        <button class="icon-button" type="button" id="cpNovaContaFechar" title="Fechar" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
       <div class="cp-detail-body cp-nc-body">
@@ -1328,7 +1329,7 @@ function abrirModalNovaContaPagar() {
       <div class="cp-rec-sel-card">
         <div class="cp-rec-sel-header">
           <strong>Recorrência</strong>
-          <button type="button" class="icon-button" id="cpRecSelFechar"><i class="fa-solid fa-xmark"></i></button>
+          <button type="button" class="icon-button" id="cpRecSelFechar" title="Fechar" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div class="cp-rec-sel-body">
           ${opcs.map(o => `
@@ -1369,7 +1370,7 @@ function abrirModalNovaContaPagar() {
     cfg.innerHTML = `
       <div class="cp-rec-cfg-card">
         <div class="cp-rec-cfg-header">
-          <button type="button" class="icon-button" id="cpRecCfgFechar"><i class="fa-solid fa-xmark"></i></button>
+          <button type="button" class="icon-button" id="cpRecCfgFechar" title="Fechar" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
           <strong>${recorrencia === 'fixa_mensal' ? 'Configurar Repetição' : 'Configurar Parcelamento'}</strong>
           <button type="button" class="cp-rec-cfg-concluir" id="cpRecCfgConcluir">Concluir</button>
         </div>
@@ -1379,18 +1380,18 @@ function abrirModalNovaContaPagar() {
             <span class="cp-rec-cfg-icon"><i class="fa-solid fa-hashtag"></i></span>
             <span class="cp-rec-cfg-lbl">Parcela inicial</span>
             <div class="cp-rec-cfg-spin">
-              <button type="button" class="cp-rec-cfg-dn" data-spin="parcIni"><i class="fa-solid fa-chevron-down"></i></button>
+              <button type="button" class="cp-rec-cfg-dn" data-spin="parcIni" title="Diminuir" aria-label="Diminuir"><i class="fa-solid fa-chevron-down"></i></button>
               <span class="cp-rec-cfg-val" id="cpCfgParcelaIniVal">${parcIni}</span>
-              <button type="button" class="cp-rec-cfg-up" data-spin="parcIni"><i class="fa-solid fa-chevron-up"></i></button>
+              <button type="button" class="cp-rec-cfg-up" data-spin="parcIni" title="Aumentar" aria-label="Aumentar"><i class="fa-solid fa-chevron-up"></i></button>
             </div>
           </div>` : ''}
           <div class="cp-rec-cfg-row">
             <span class="cp-rec-cfg-icon"><i class="fa-solid fa-layer-group"></i></span>
             <span class="cp-rec-cfg-lbl">Quantidade</span>
             <div class="cp-rec-cfg-spin">
-              <button type="button" class="cp-rec-cfg-dn" data-spin="qtd"><i class="fa-solid fa-chevron-down"></i></button>
+              <button type="button" class="cp-rec-cfg-dn" data-spin="qtd" title="Diminuir" aria-label="Diminuir"><i class="fa-solid fa-chevron-down"></i></button>
               <span class="cp-rec-cfg-val" id="cpCfgQtdVal">${qtd}</span>
-              <button type="button" class="cp-rec-cfg-up" data-spin="qtd"><i class="fa-solid fa-chevron-up"></i></button>
+              <button type="button" class="cp-rec-cfg-up" data-spin="qtd" title="Aumentar" aria-label="Aumentar"><i class="fa-solid fa-chevron-up"></i></button>
             </div>
           </div>
           <div class="cp-rec-cfg-row">

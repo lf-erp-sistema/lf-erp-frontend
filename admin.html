@@ -18,19 +18,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha384-PPIZEGYM1v8zp5Py7UjFb79S58UeqCL9pYVnVPURKEqvioPROaVAJKKLzvH2rDnI" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="./css/style.css" />
-    <script>
-      (function () {
-        try {
-          var raw = localStorage.getItem('lf_erp_auth') || sessionStorage.getItem('lf_erp_auth');
-          var auth = raw ? JSON.parse(raw) : null;
-          if (!auth || !auth.user || !auth.user.is_saas_owner) {
-            window.location.replace('./index.html');
-          }
-        } catch (e) {
-          window.location.replace('./index.html');
-        }
-      })();
-    </script>
+    <script src="./js/adminGuard.js"></script>
     <style>
       body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; }
 

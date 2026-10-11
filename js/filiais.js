@@ -304,7 +304,7 @@ const FiliaisModule = {
                     <i class="fa ${f.ativo ? 'fa-pause' : 'fa-play'}"></i> ${f.ativo ? 'Desativar' : 'Ativar'}
                   </button>
                   ${Number(f.total_vendas) === 0 && Number(f.total_compras) === 0
-                    ? `<button class="btn-icon danger" data-del-id="${f.id}" title="Excluir"><i class="fa fa-trash"></i></button>`
+                    ? `<button class="btn-icon danger" data-del-id="${f.id}" title="Excluir" aria-label="Excluir"><i class="fa fa-trash"></i></button>`
                     : ''}
                 </div>
               </div>`).join('')}

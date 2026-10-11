@@ -477,7 +477,7 @@ function render() {
             <i class="fa-solid fa-plus"></i>
             <span class="cl-tb-btn-lbl">Novo Lançamento</span>
           </button>
-          <button class="cl-tb-btn cl-tb-btn--icon" id="lfBtnAtualizar" type="button" title="Atualizar">
+          <button class="cl-tb-btn cl-tb-btn--icon" id="lfBtnAtualizar" type="button" title="Atualizar" aria-label="Atualizar">
             <i class="fa-solid fa-rotate"></i>
           </button>
         </div>
@@ -575,7 +575,8 @@ function renderLinha(item) {
         <button type="button" class="cr-act-toggle" data-action="lf-acoes"
           data-id="${item.id}"
           data-pendente="${pendente ? '1' : '0'}"
-          data-desc="${escapeHtml(item.descricao || 'Lançamento')}">
+          data-desc="${escapeHtml(item.descricao || 'Lançamento')}"
+          title="Mais ações" aria-label="Mais ações">
           <i class="fa-solid fa-ellipsis-vertical"></i>
         </button>
       </td>
@@ -588,7 +589,7 @@ function renderModal() {
       <div class="modal-card lf-nc-card" style="max-width:520px;width:100%">
         <div class="modal-card__header">
           <h3 id="lfModalTitulo">Novo Lançamento</h3>
-          <button class="modal-close" id="lfBtnFecharModal" type="button">
+          <button class="modal-close" id="lfBtnFecharModal" type="button" title="Fechar" aria-label="Fechar">
             <i class="fa-solid fa-xmark"></i>
           </button>
         </div>
@@ -693,7 +694,7 @@ function _abrirAcoesLFModal(btn) {
           <div style="font-weight:900;font-size:.95rem">${escapeHtml(desc)}</div>
           <div style="font-size:.78rem;color:var(--text-muted)">Lançamento #${id}</div>
         </div>
-        <button type="button" class="cr-mai-fechar" id="lfAcoesFechar"><i class="fa-solid fa-xmark"></i></button>
+        <button type="button" class="cr-mai-fechar" id="lfAcoesFechar" title="Fechar" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <div class="cr-mai-actions">
         ${isPend ? `

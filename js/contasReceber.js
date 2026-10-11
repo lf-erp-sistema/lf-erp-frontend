@@ -316,7 +316,7 @@ function abrirModalBaixaLote(ids) {
           <span class="cr-detail-eyebrow">Baixa em lote</span>
           <h3>${ids.length} conta${ids.length !== 1 ? 's' : ''} selecionada${ids.length !== 1 ? 's' : ''}</h3>
         </div>
-        <button class="icon-button" type="button" id="fecharCrLote"><i class="fa-solid fa-xmark"></i></button>
+        <button class="icon-button" type="button" id="fecharCrLote" title="Fechar" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <div class="cr-detail-body cr-bx-body">
         <div class="cr-bx-section">
@@ -460,7 +460,7 @@ async function abrirVisaoCliente(clienteId, clienteNome) {
           <h3>${escapeHtml(clienteNome || 'Cliente')}</h3>
           <p id="crVCTel" style="color:var(--text-muted)">Carregando...</p>
         </div>
-        <button class="icon-button" type="button" id="fecharCrVC"><i class="fa-solid fa-xmark"></i></button>
+        <button class="icon-button" type="button" id="fecharCrVC" title="Fechar" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <div class="cr-detail-body" id="crVCBody">
         ${Array.from({length: 4}).map(() => '<div class="skeleton-line" style="height:48px;margin-bottom:10px;border-radius:10px"></div>').join('')}
@@ -782,9 +782,9 @@ function render() {
 
           <div class="cr-primary-actions">
             <div id="crMesNav" style="display:flex;align-items:center;gap:2px;border:1px solid var(--border-color,#e5e7eb);border-radius:20px;padding:3px 10px;background:var(--surface,#fff);flex-shrink:0">
-              <button type="button" class="icon-button" id="crMesAnterior" style="width:26px;height:26px;font-size:.8rem;border-radius:50%"><i class="fa-solid fa-chevron-left"></i></button>
+              <button type="button" class="icon-button" id="crMesAnterior" style="width:26px;height:26px;font-size:.8rem;border-radius:50%" title="Mês anterior" aria-label="Mês anterior"><i class="fa-solid fa-chevron-left"></i></button>
               <span id="crMesNavLabel" style="font-weight:700;min-width:130px;text-align:center;font-size:.88rem">${_getMesNavLabel()}</span>
-              <button type="button" class="icon-button" id="crMesSeguinte" style="width:26px;height:26px;font-size:.8rem;border-radius:50%"><i class="fa-solid fa-chevron-right"></i></button>
+              <button type="button" class="icon-button" id="crMesSeguinte" style="width:26px;height:26px;font-size:.8rem;border-radius:50%" title="Mês seguinte" aria-label="Mês seguinte"><i class="fa-solid fa-chevron-right"></i></button>
             </div>
             <button class="btn btn-primary" id="btnNovaContaManual" type="button">
               <i class="fa-solid fa-plus"></i> Conta manual
@@ -798,7 +798,7 @@ function render() {
               ].filter(Boolean).length;
               return `
               <div class="cr-more-menu" id="crMoreMenu">
-                <button class="btn btn-light cr-more-btn${fpCount ? ' cr-more-btn--active' : ''}" id="crMoreBtn" type="button" title="Mais ações">
+                <button class="btn btn-light cr-more-btn${fpCount ? ' cr-more-btn--active' : ''}" id="crMoreBtn" type="button" title="Mais ações" aria-label="Mais ações">
                   <i class="fa-solid fa-ellipsis-vertical"></i>
                 </button>
                 <div class="cr-more-dropdown hidden" id="crMoreDropdown">
@@ -977,7 +977,7 @@ function renderLinhas() {
         </td>
 
         <td class="text-right">
-          <button type="button" class="cr-act-toggle" data-cr-id="${conta.id}">
+          <button type="button" class="cr-act-toggle" data-cr-id="${conta.id}" title="Mais ações" aria-label="Mais ações">
             <i class="fa-solid fa-ellipsis-vertical"></i>
           </button>
         </td>
@@ -1078,7 +1078,7 @@ function abrirModalEditarConta(conta) {
           <h3 style="margin:0;font-size:1rem;font-weight:900;color:var(--text,#111)">Editar conta</h3>
           ${parc ? `<span style="font-size:.78rem;color:var(--text-muted)">${parc}</span>` : ''}
         </div>
-        <button class="icon-button" id="crEditarFechar" type="button" style="flex-shrink:0"><i class="fa-solid fa-xmark"></i></button>
+        <button class="icon-button" id="crEditarFechar" type="button" style="flex-shrink:0" title="Fechar" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <div style="padding:20px 24px 24px;display:flex;flex-direction:column;gap:16px">
         <div>
@@ -1661,7 +1661,7 @@ function _abrirAcoesCRModal(conta) {
             <span>Vence ${formatDate(conta.data_vencimento)}</span>
           </div>
         </div>
-        <button type="button" class="cr-mai-fechar" id="crAcoesFechar">
+        <button type="button" class="cr-mai-fechar" id="crAcoesFechar" title="Fechar" aria-label="Fechar">
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
@@ -1838,7 +1838,7 @@ async function abrirRecebimentosParciais(id) {
             <p>Estorne apenas o recebimento lançado incorretamente.</p>
           </div>
 
-          <button class="icon-button" type="button" id="fecharRecebimentosParciais">
+          <button class="icon-button" type="button" id="fecharRecebimentosParciais" title="Fechar" aria-label="Fechar">
             <i class="fa-solid fa-xmark"></i>
           </button>
         </div>
@@ -1964,7 +1964,7 @@ function abrirModalBaixaConta(conta) {
           <h3>Baixar conta #${escapeHtml(conta.id)}</h3>
           <p>${escapeHtml(conta.cliente_nome || 'Cliente não informado')}</p>
         </div>
-        <button class="icon-button" type="button" id="fecharCrBaixa">
+        <button class="icon-button" type="button" id="fecharCrBaixa" title="Fechar" aria-label="Fechar">
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
@@ -2311,7 +2311,7 @@ async function gerarBoleto(contaReceberID) {
             <h3><i class="fa-solid fa-barcode" style="margin-right:8px"></i>Boleto Bancário</h3>
             <p id="boletoSubtitulo" style="color:var(--text-muted);font-size:.9rem"></p>
           </div>
-          <button type="button" class="icon-button" id="boletoFecharBtn">
+          <button type="button" class="icon-button" id="boletoFecharBtn" title="Fechar" aria-label="Fechar">
             <i class="fa-solid fa-xmark"></i>
           </button>
         </div>
@@ -3796,9 +3796,9 @@ function _crNcSpinner(id, label, ini) {
     <div class="cr-nc-spinner-block">
       <span class="cr-nc-field-lbl">${label}</span>
       <div class="cr-nc-spinner">
-        <button type="button" class="cr-nc-spin-up" data-spin="${id}"><i class="fa-solid fa-chevron-up"></i></button>
+        <button type="button" class="cr-nc-spin-up" data-spin="${id}" title="Aumentar" aria-label="Aumentar"><i class="fa-solid fa-chevron-up"></i></button>
         <span class="cr-nc-spin-val" id="${id}Val">${ini}</span>
-        <button type="button" class="cr-nc-spin-down" data-spin="${id}"><i class="fa-solid fa-chevron-down"></i></button>
+        <button type="button" class="cr-nc-spin-down" data-spin="${id}" title="Diminuir" aria-label="Diminuir"><i class="fa-solid fa-chevron-down"></i></button>
       </div>
     </div>`;
 }
@@ -4142,7 +4142,7 @@ function abrirNovoClienteRapidoModal(onCriado) {
       <div class="modal-card" style="width:min(96vw,480px)">
         <div class="modal-card__header">
           <div><h3>Novo Cliente</h3><p style="margin:0;font-size:13px;color:var(--text-muted)">Cadastro rápido</p></div>
-          <button type="button" class="icon-button" id="crNCRFechar"><i class="fa-solid fa-xmark"></i></button>
+          <button type="button" class="icon-button" id="crNCRFechar" title="Fechar" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div style="padding:16px 0">
           <div class="cr-nc-section">
@@ -4260,7 +4260,7 @@ function abrirModalContaManual() {
           <h3>Nova promissória / conta a receber</h3>
           <p>Sem gerar venda ou movimentar estoque.</p>
         </div>
-        <button class="icon-button" type="button" id="fecharContaManual"><i class="fa-solid fa-xmark"></i></button>
+        <button class="icon-button" type="button" id="fecharContaManual" title="Fechar" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
       <div class="cr-detail-body cr-nc-body">
@@ -4676,7 +4676,7 @@ function abrirModalContaManual() {
       <div class="cp-rec-sel-card">
         <div class="cp-rec-sel-header">
           <strong>Recorrência</strong>
-          <button type="button" class="icon-button" id="crRecSelFechar"><i class="fa-solid fa-xmark"></i></button>
+          <button type="button" class="icon-button" id="crRecSelFechar" title="Fechar" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div class="cp-rec-sel-body">
           ${opcs.map(o => `
@@ -4717,7 +4717,7 @@ function abrirModalContaManual() {
     cfg.innerHTML = `
       <div class="cp-rec-cfg-card">
         <div class="cp-rec-cfg-header">
-          <button type="button" class="icon-button" id="crRecCfgFechar"><i class="fa-solid fa-xmark"></i></button>
+          <button type="button" class="icon-button" id="crRecCfgFechar" title="Fechar" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
           <strong>${recorrencia === 'fixa_mensal' ? 'Configurar Repetição' : 'Configurar Parcelamento'}</strong>
           <button type="button" class="cp-rec-cfg-concluir" id="crRecCfgConcluir">Concluir</button>
         </div>
@@ -4727,18 +4727,18 @@ function abrirModalContaManual() {
             <span class="cp-rec-cfg-icon"><i class="fa-solid fa-hashtag"></i></span>
             <span class="cp-rec-cfg-lbl">Parcela inicial</span>
             <div class="cp-rec-cfg-spin">
-              <button type="button" class="cp-rec-cfg-dn" data-spin="parcIni"><i class="fa-solid fa-chevron-down"></i></button>
+              <button type="button" class="cp-rec-cfg-dn" data-spin="parcIni" title="Diminuir" aria-label="Diminuir"><i class="fa-solid fa-chevron-down"></i></button>
               <span class="cp-rec-cfg-val" id="crCfgParcelaIniVal">${parcIni}</span>
-              <button type="button" class="cp-rec-cfg-up" data-spin="parcIni"><i class="fa-solid fa-chevron-up"></i></button>
+              <button type="button" class="cp-rec-cfg-up" data-spin="parcIni" title="Aumentar" aria-label="Aumentar"><i class="fa-solid fa-chevron-up"></i></button>
             </div>
           </div>` : ''}
           <div class="cp-rec-cfg-row">
             <span class="cp-rec-cfg-icon"><i class="fa-solid fa-layer-group"></i></span>
             <span class="cp-rec-cfg-lbl">Quantidade</span>
             <div class="cp-rec-cfg-spin">
-              <button type="button" class="cp-rec-cfg-dn" data-spin="qtd"><i class="fa-solid fa-chevron-down"></i></button>
+              <button type="button" class="cp-rec-cfg-dn" data-spin="qtd" title="Diminuir" aria-label="Diminuir"><i class="fa-solid fa-chevron-down"></i></button>
               <span class="cp-rec-cfg-val" id="crCfgQtdVal">${qtd}</span>
-              <button type="button" class="cp-rec-cfg-up" data-spin="qtd"><i class="fa-solid fa-chevron-up"></i></button>
+              <button type="button" class="cp-rec-cfg-up" data-spin="qtd" title="Aumentar" aria-label="Aumentar"><i class="fa-solid fa-chevron-up"></i></button>
             </div>
           </div>
           <div class="cp-rec-cfg-row">
@@ -4965,7 +4965,7 @@ async function abrirHistoricoCliente(clienteId) {
             <p>${escapeHtml(cliente.telefone || 'Sem telefone informado')}</p>
           </div>
 
-          <button class="icon-button" type="button" id="fecharHistoricoCliente">
+          <button class="icon-button" type="button" id="fecharHistoricoCliente" title="Fechar" aria-label="Fechar">
             <i class="fa-solid fa-xmark"></i>
           </button>
         </div>

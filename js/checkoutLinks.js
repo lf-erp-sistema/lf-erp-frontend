@@ -175,11 +175,11 @@ const CheckoutLinksModule = {
                   <td style="font-size:12px;color:var(--text-muted);">${dataBR(l.expira_em)}</td>
                   <td style="font-size:12px;color:var(--text-muted);">${dataBR(l.criado_em)}</td>
                   <td>
-                    <button class="btn-icon" data-copy-token="${esc(l.token)}" title="Copiar link"><i class="fa fa-copy"></i></button>
-                    <button class="btn-icon" data-open-token="${esc(l.token)}" title="Abrir checkout"><i class="fa fa-external-link"></i></button>
+                    <button class="btn-icon" data-copy-token="${esc(l.token)}" title="Copiar link" aria-label="Copiar link"><i class="fa fa-copy"></i></button>
+                    <button class="btn-icon" data-open-token="${esc(l.token)}" title="Abrir checkout" aria-label="Abrir checkout"><i class="fa fa-external-link"></i></button>
                     ${l.status === 'pendente' ? `
-                      <button class="btn-icon" data-pago-id="${l.id}" title="Marcar como pago"><i class="fa fa-check"></i></button>
-                      <button class="btn-icon danger" data-cancel-id="${l.id}" title="Cancelar"><i class="fa fa-ban"></i></button>
+                      <button class="btn-icon" data-pago-id="${l.id}" title="Marcar como pago" aria-label="Marcar como pago"><i class="fa fa-check"></i></button>
+                      <button class="btn-icon danger" data-cancel-id="${l.id}" title="Cancelar" aria-label="Cancelar"><i class="fa fa-ban"></i></button>
                     ` : ''}
                   </td>
                 </tr>`;

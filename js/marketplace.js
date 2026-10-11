@@ -25,9 +25,6 @@ function injectMarketplaceStyles() {
     .mkt-toolbar { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--border); }
     .mkt-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 48px 20px; text-align: center; color: var(--text-muted); font-size: 13px; }
     .mkt-empty i { font-size: 2rem; opacity: .25; }
-    .btn-icon { background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 4px 6px; border-radius: 6px; transition: .15s; }
-    .btn-icon:hover { background: var(--surface-2); color: var(--text); }
-    .btn-icon.danger:hover { color: var(--danger); }
   `;
   document.head.appendChild(s);
 }
@@ -245,10 +242,10 @@ const MarketplaceModule = {
               <td>${p.estoque_publicado ?? '—'}</td>
               <td style="font-size:11px;color:var(--text-muted);">${p.ultimo_sync ? new Date(p.ultimo_sync).toLocaleString('pt-BR') : '—'}</td>
               <td>
-                <button class="btn-icon" title="Sincronizar estoque" data-sync-id="${p.id}" data-sync-prod="${p.produto_id}" data-sync-plat="${p.plataforma}">
+                <button class="btn-icon" title="Sincronizar estoque" aria-label="Sincronizar estoque" data-sync-id="${p.id}" data-sync-prod="${p.produto_id}" data-sync-plat="${p.plataforma}">
                   <i class="fa fa-rotate"></i>
                 </button>
-                <button class="btn-icon danger" title="Remover vínculo" data-del-id="${p.id}">
+                <button class="btn-icon danger" title="Remover vínculo" aria-label="Remover vínculo" data-del-id="${p.id}">
                   <i class="fa fa-trash"></i>
                 </button>
               </td>

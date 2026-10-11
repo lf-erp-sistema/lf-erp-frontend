@@ -245,7 +245,7 @@ const EstoqueModule = {
             <button class="est-action-btn" id="estoqueSugestaoBtn" type="button">
               <i class="fa-solid fa-cart-shopping"></i><span class="est-lbl">Sugestão</span>
             </button>
-            <button class="est-action-btn est-action-btn--icon" id="estoqueAtualizarBtn" type="button" title="Atualizar">
+            <button class="est-action-btn est-action-btn--icon" id="estoqueAtualizarBtn" type="button" title="Atualizar" aria-label="Atualizar">
               <i class="fa-solid fa-rotate"></i>
             </button>
           </div>
@@ -981,7 +981,7 @@ const EstoqueModule = {
               <h3>Sugestão de Compra</h3>
               <p id="sugestaoSubtitulo" style="color:var(--text-muted);font-size:.9rem">Produtos abaixo do estoque mínimo</p>
             </div>
-            <button type="button" class="icon-button" id="sugestaoFecharBtn">
+            <button type="button" class="icon-button" id="sugestaoFecharBtn" title="Fechar" aria-label="Fechar">
               <i class="fa-solid fa-xmark"></i>
             </button>
           </div>

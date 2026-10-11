@@ -592,7 +592,7 @@ const ComprasModule = {
           </td>
 
           <td class="text-right">
-            <button type="button" class="cr-act-toggle" data-action="comp-acoes" data-id="${id}">
+            <button type="button" class="cr-act-toggle" data-action="comp-acoes" data-id="${id}" title="Mais ações" aria-label="Mais ações">
               <i class="fa-solid fa-ellipsis-vertical"></i>
             </button>
           </td>
@@ -980,7 +980,7 @@ const ComprasModule = {
             <div style="font-weight:900;font-size:.95rem">${escapeHtml(forn)}</div>
             ${data ? `<div style="font-size:.78rem;color:var(--text-muted)">${data}</div>` : ''}
           </div>
-          <button type="button" class="cr-mai-fechar" id="compAcoesFechar"><i class="fa-solid fa-xmark"></i></button>
+          <button type="button" class="cr-mai-fechar" id="compAcoesFechar" title="Fechar" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div class="cr-mai-actions">
           <button type="button" class="cr-mai-item" data-action="view-compra" data-id="${comp.id}">
@@ -1431,7 +1431,7 @@ const ComprasModule = {
             <h3 style="margin:0;font-size:1rem;font-weight:700">Importar NF do Fornecedor</h3>
             <p style="margin:4px 0 0;font-size:.83rem;color:var(--text-muted)">NF-e nº ${esc(data.numero_nf || '—')} · ${esc(data.data_emissao || '—')} · Total: ${cur(data.total)}</p>
           </div>
-          <button id="_xmlFechar" class="modal-close"><i class="fa-solid fa-xmark"></i></button>
+          <button id="_xmlFechar" class="modal-close" title="Fechar" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
         </div>
 
         <div style="padding:22px;display:grid;gap:18px">

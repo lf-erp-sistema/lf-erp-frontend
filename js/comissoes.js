@@ -143,7 +143,7 @@ const ComissoesModule = {
                 </button>
               </div>
             </div>
-            <button class="cl-tb-btn cl-tb-btn--icon" id="comAtualizarBtn" title="Atualizar">
+            <button class="cl-tb-btn cl-tb-btn--icon" id="comAtualizarBtn" title="Atualizar" aria-label="Atualizar">
               <i class="fa-solid fa-rotate"></i>
             </button>
           </div>

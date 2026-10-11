@@ -552,7 +552,7 @@ const FornecedoresModule = {
           <td>${escapeHtml(f.email || '-')}</td>
           <td>${escapeHtml(f.endereco || '-')}</td>
           <td class="text-right">
-            <button type="button" class="cr-act-toggle" data-action="forn-acoes" data-id="${f.id}">
+            <button type="button" class="cr-act-toggle" data-action="forn-acoes" data-id="${f.id}" title="Mais ações" aria-label="Mais ações">
               <i class="fa-solid fa-ellipsis-vertical"></i>
             </button>
           </td>
@@ -854,7 +854,7 @@ const FornecedoresModule = {
             <div style="font-weight:900;font-size:.95rem">${escapeHtml(f.nome || 'Fornecedor')}</div>
             ${f.telefone ? `<div style="font-size:.78rem;color:var(--text-muted)">${escapeHtml(f.telefone)}</div>` : ''}
           </div>
-          <button type="button" class="cr-mai-fechar" id="fornAcoesFechar"><i class="fa-solid fa-xmark"></i></button>
+          <button type="button" class="cr-mai-fechar" id="fornAcoesFechar" title="Fechar" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div class="cr-mai-actions">
           <button type="button" class="cr-mai-item" data-action="edit-fornecedor" data-id="${f.id}">
@@ -893,7 +893,7 @@ const FornecedoresModule = {
             <h3 style="margin:0;font-size:16px">Histórico de Compras</h3>
             <p style="margin:2px 0 0;font-size:13px;color:var(--text-muted)">${escapeHtml(forn.nome)}</p>
           </div>
-          <button id="_histFechar" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--text-muted)">
+          <button id="_histFechar" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--text-muted)" title="Fechar" aria-label="Fechar">
             <i class="fa-solid fa-xmark"></i>
           </button>
         </div>
