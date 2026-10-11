@@ -1,6 +1,7 @@
 import api from './api.js';
 import { showToast, confirmarAcao } from './feedback.js';
 import { escapeHtml, buildFriendlyError } from './utils.js';
+import { enhanceSelect } from './premiumSelect.js';
 
 const STATUS_LABEL = {
   autorizado:  'Autorizado',
@@ -504,6 +505,8 @@ const NfeModule = {
   },
 
   bindConfigEvents() {
+    enhanceSelect(document.getElementById('nfeCfgAmbiente'));
+    enhanceSelect(document.getElementById('nfeCfgCrt'));
     document.getElementById('nfeSalvarConfigBtn')?.addEventListener('click', async () => {
       const btn      = document.getElementById('nfeSalvarConfigBtn');
       const feedback = document.getElementById('nfeConfigFeedback');
