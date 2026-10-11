@@ -6515,7 +6515,12 @@ body.pdv-active #pdvContainer.module-placeholder {
 .pdv-v2__total { margin-left: 0; min-width: 118px; padding-right: 2px; }
 .pdv-v2__total strong { font-size: 1.65rem; }
 .pdv-v2__resumo { justify-content: center; }
-.pdv-resumo-cliente { background: var(--surface); }
+.pdv-resumo-cliente { min-width: 248px; height: 48px; padding: 0 12px; background: var(--surface); text-align: left; }
+.pdv-resumo-cliente > i:first-child { color: var(--primary); }
+.pdv-resumo-cliente__content { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 1px; }
+.pdv-resumo-cliente__content > span { overflow: hidden; color: var(--text); font-size: .82rem; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+.pdv-resumo-cliente__content small { overflow: hidden; color: var(--text-muted); font-size: .7rem; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.pdv-resumo-cliente .pdv-resumo-cliente__chevron { margin-left: 5px; color: var(--text-muted); font-size: .68rem; }
 .pdv-resumo-pag { box-shadow: inset 0 1px 0 rgba(15, 23, 42, .02); }
 
 @media (max-width: 1250px) {
