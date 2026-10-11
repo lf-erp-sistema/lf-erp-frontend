@@ -403,8 +403,12 @@ const ClientesModule = {
     this.el.table.innerHTML = this.state.filteredItems
       .map((cliente) => {
         const emAberto = Number(cliente.total_em_aberto || 0);
+        const emAtraso = Number(cliente.total_em_atraso || 0);
         const emAbertoHtml = emAberto > 0
-          ? `<span style="display:inline-block;margin-top:3px;padding:1px 8px;background:rgba(220,38,38,0.1);color:#dc2626;border-radius:99px;font-size:11px;font-weight:700">${emAberto.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})} em aberto</span>`
+          ? `<span style="display:inline-block;margin-top:3px;margin-right:4px;padding:1px 8px;background:rgba(220,38,38,0.1);color:#dc2626;border-radius:99px;font-size:11px;font-weight:700">${emAberto.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})} em aberto</span>`
+          : '';
+        const emAtrasoHtml = emAtraso > 0
+          ? `<span style="display:inline-block;margin-top:3px;padding:1px 8px;background:rgba(234,88,12,0.12);color:#ea580c;border-radius:99px;font-size:11px;font-weight:700">${emAtraso.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})} em atraso</span>`
           : '';
         return `
       <tr>
@@ -414,7 +418,7 @@ const ClientesModule = {
             <small style="display:block; color: var(--text-muted); margin-top:4px;">
               ID: ${cliente.id}
             </small>
-            ${emAbertoHtml}
+            ${emAbertoHtml}${emAtrasoHtml}
           </div>
         </td>
 
