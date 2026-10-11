@@ -606,9 +606,9 @@ const NfeModule = {
   promptJustificativa() {
     return new Promise((resolve) => {
       const overlay = document.createElement('div');
-      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px';
+      overlay.className = 'modal-overlay modal-overlay--prompt';
       overlay.innerHTML = `
-        <div style="background:var(--surface);border-radius:16px;padding:24px;max-width:440px;width:100%;box-shadow:0 24px 50px rgba(0,0,0,.2)">
+        <div class="modal-card modal-card--compact" style="padding:24px">
           <h3 style="margin:0 0 8px;font-size:16px;font-weight:700;color:var(--danger)">Cancelar NF-e</h3>
           <p style="font-size:13px;color:var(--text-muted);margin:0 0 14px">
             O cancelamento é irreversível e deve ser solicitado em até 24h da emissão.<br>
@@ -628,6 +628,7 @@ const NfeModule = {
         if (e.key === 'Escape') { document.body.removeChild(overlay); resolve(null); }
       });
       overlay.querySelector('#_nfeCancelarAbort').addEventListener('click', () => { document.body.removeChild(overlay); resolve(null); });
+      overlay.addEventListener('click', (event) => { if (event.target === overlay) { overlay.remove(); resolve(null); } });
       overlay.querySelector('#_nfeCancelarConfirm').addEventListener('click', () => {
         const val = overlay.querySelector('#_nfeJustInput').value.trim();
         if (val.length < 15) { showToast('Justificativa deve ter ao menos 15 caracteres.', 'error'); return; }

@@ -2480,11 +2480,11 @@ const PDVModule = {
       const fmtTempo = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 
       const overlay = document.createElement('div');
-      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:3000;display:flex;align-items:center;justify-content:center;padding:16px';
+      overlay.className = 'modal-overlay modal-overlay--prompt';
 
       overlay.innerHTML = `
-        <div id="_pixModal" style="background:var(--surface);border-radius:20px;padding:32px 28px;max-width:420px;width:100%;box-shadow:0 32px 64px rgba(0,0,0,.3);text-align:center;position:relative">
-          <button id="_pixFechar" style="position:absolute;top:14px;right:16px;background:none;border:none;cursor:pointer;font-size:18px;color:var(--text-muted)" title="Fechar" aria-label="Fechar">
+        <div id="_pixModal" class="modal-card modal-card--compact" style="padding:32px 28px;text-align:center;position:relative">
+          <button type="button" class="modal-close" id="_pixFechar" style="position:absolute;top:14px;right:16px" title="Fechar" aria-label="Fechar">
             <i class="fa-solid fa-xmark"></i>
           </button>
           <div id="_pixConteudo">
