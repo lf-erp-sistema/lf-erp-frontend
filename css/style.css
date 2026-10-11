@@ -8088,3 +8088,89 @@ body:not(.pdv-active) .modal-card__footer {
   #clientesContainer .cl-tb-search,
   #fornecedoresContainer .cl-tb-search { flex-basis: 100%; }
 }
+
+/* Movimentações — mesma hierarquia visual para operações do dia a dia */
+#vendasContainer .cl-tb-kpi-strip,
+#comprasContainer .cl-tb-kpi-strip,
+#estoqueContainer .est-kpi-strip {
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--surface), var(--surface-2));
+  box-shadow: none;
+}
+
+#vendasContainer .cl-tb-kpi-item,
+#comprasContainer .cl-tb-kpi-item,
+#estoqueContainer .est-kpi-item { padding: 14px 16px; }
+
+#vendasContainer .cl-tb-row,
+#comprasContainer .cl-tb-row,
+#estoqueContainer .est-top-bar {
+  padding: 8px;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-2);
+}
+
+#vendasContainer .cl-tb-search,
+#comprasContainer .cl-tb-search {
+  height: 44px;
+  border-radius: 11px;
+  background: var(--surface);
+}
+
+#vendasContainer .cl-tb-btn,
+#comprasContainer .cl-tb-btn,
+#estoqueContainer .est-filter-dd-btn,
+#estoqueContainer .est-action-btn {
+  min-height: 44px;
+  border-radius: 11px;
+  font-weight: 700;
+}
+
+#vendasContainer .cl-tb-btn--primary,
+#comprasContainer .cl-tb-btn--primary,
+#estoqueContainer .est-action-btn--primary {
+  box-shadow: 0 7px 16px color-mix(in srgb, var(--primary) 24%, transparent);
+}
+
+#caixaContainer .module-toolbar,
+#devolucoesContainer .module-toolbar {
+  padding: 8px;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-2);
+}
+
+#caixaContainer .module-toolbar__search input,
+#devolucoesContainer .module-toolbar__search input {
+  height: 44px;
+  border-radius: 11px;
+  background: var(--surface);
+}
+
+#caixaContainer .module-toolbar .btn,
+#devolucoesContainer .module-toolbar .btn {
+  min-height: 44px;
+  border-radius: 11px;
+  font-weight: 700;
+}
+
+#caixaContainer .kpi-grid { gap: 14px; }
+
+#caixaContainer .kpi-card {
+  border-radius: 16px;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, .04);
+}
+
+@media (max-width: 640px) {
+  #vendasContainer .cl-tb-row,
+  #comprasContainer .cl-tb-row,
+  #estoqueContainer .est-top-bar,
+  #caixaContainer .module-toolbar,
+  #devolucoesContainer .module-toolbar { padding: 7px; }
+
+  #vendasContainer .cl-tb-search,
+  #comprasContainer .cl-tb-search { flex-basis: 100%; }
+}
