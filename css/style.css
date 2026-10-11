@@ -8379,3 +8379,121 @@ body:not(.pdv-active) .modal-card__footer {
   #marketplaceContainer .mkt-toolbar { align-items: stretch; }
   #marketplaceContainer .mkt-toolbar .btn { width: 100%; justify-content: center; }
 }
+
+/* Fiscal & documentos — ferramentas técnicas com navegação mais legível */
+#nfeContainer .module-toolbar {
+  padding: 8px;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-2);
+}
+
+#nfeContainer .table-actions { gap: 6px; }
+
+#nfeContainer .btn-inline,
+#nfeContainer .module-toolbar > .btn {
+  min-height: 38px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+
+#nfeContainer .module-toolbar > .btn { min-height: 42px; }
+
+#nfeContainer .nfe-empty {
+  min-height: 220px;
+  border: 1px dashed var(--border);
+  border-radius: 16px;
+  background: var(--surface-2);
+}
+
+#rastreabilidadeContainer .rast-kpi,
+#rastreabilidadeContainer .rast-table-wrap {
+  border-radius: 16px;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, .04);
+}
+
+#rastreabilidadeContainer .rast-kpi { padding: 16px 18px; }
+
+#rastreabilidadeContainer .rast-tabs {
+  padding: 6px;
+  gap: 4px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-2);
+}
+
+#rastreabilidadeContainer .rast-tab-btn {
+  min-height: 40px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+
+#rastreabilidadeContainer .rast-tab-btn.active {
+  border-bottom-color: transparent;
+  background: color-mix(in srgb, var(--primary) 12%, var(--surface));
+}
+
+#rastreabilidadeContainer .rast-toolbar {
+  padding: 8px;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-2);
+}
+
+#rastreabilidadeContainer .rast-toolbar .filter-input,
+#rastreabilidadeContainer .rast-toolbar .btn {
+  min-height: 44px;
+  border-radius: 11px;
+  background: var(--surface);
+}
+
+#rastreabilidadeContainer .rast-toolbar .btn { font-weight: 700; }
+
+#exportacaoContabilContainer .exp-tab-bar,
+#exportacaoContabilContainer .exp-periodo-bar {
+  padding: 8px;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-2);
+}
+
+#exportacaoContabilContainer .exp-tab {
+  min-height: 40px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+
+#exportacaoContabilContainer .exp-tab--ativo {
+  border-bottom-color: transparent;
+  background: color-mix(in srgb, var(--primary) 12%, var(--surface));
+}
+
+#exportacaoContabilContainer .exp-card,
+#exportacaoContabilContainer .exp-kpi-card,
+#exportacaoContabilContainer .exp-integracao-form {
+  border-radius: 16px;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, .04);
+}
+
+#exportacaoContabilContainer .filter-input,
+#exportacaoContabilContainer .exp-periodo-bar .btn {
+  min-height: 42px;
+  border-radius: 11px;
+}
+
+#exportacaoContabilContainer .exp-periodo-bar .btn {
+  font-weight: 700;
+  box-shadow: 0 7px 16px color-mix(in srgb, var(--primary) 24%, transparent);
+}
+
+@media (max-width: 640px) {
+  #nfeContainer .module-toolbar,
+  #rastreabilidadeContainer .rast-toolbar,
+  #exportacaoContabilContainer .exp-tab-bar,
+  #exportacaoContabilContainer .exp-periodo-bar { padding: 7px; }
+
+  #nfeContainer .module-toolbar > .btn { width: 100%; }
+}
