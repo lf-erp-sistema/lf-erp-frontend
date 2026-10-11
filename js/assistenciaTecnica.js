@@ -997,7 +997,7 @@ const AT = {
   async abrirOrcamento(id) {
     const html = `
       <div class="at-modal-overlay" id="atOrcModal">
-        <div class="at-modal" style="max-width:440px">
+        <div class="at-modal at-modal--sm">
           <div class="at-modal-header"><h2>Resposta do Orçamento</h2><button id="atOrcClose">×</button></div>
           <div class="at-modal-body">
             <p style="font-size:14px;color:var(--text-muted);margin-bottom:16px">O cliente aprovou ou reprovou o orçamento?</p>
@@ -1034,7 +1034,7 @@ const AT = {
   async abrirEntrega(id) {
     const html = `
       <div class="at-modal-overlay" id="atEntregaModal">
-        <div class="at-modal" style="max-width:480px">
+        <div class="at-modal at-modal--md">
           <div class="at-modal-header"><h2>Registrar Entrega</h2><button id="atEntClose">×</button></div>
           <div class="at-modal-body">
             <div class="at-form-grid">
@@ -1108,7 +1108,7 @@ const AT = {
   async abrirGarantia(id) {
     const html = `
       <div class="at-modal-overlay" id="atGarModal">
-        <div class="at-modal" style="max-width:440px">
+        <div class="at-modal at-modal--sm">
           <div class="at-modal-header"><h2>Registrar Garantia</h2><button id="atGarClose">×</button></div>
           <div class="at-modal-body">
             <div class="at-form-grid">
@@ -1161,7 +1161,7 @@ const AT = {
   async abrirEvento(id) {
     const html = `
       <div class="at-modal-overlay" id="atEvModal">
-        <div class="at-modal" style="max-width:440px">
+        <div class="at-modal at-modal--sm">
           <div class="at-modal-header"><h2>Adicionar Observação</h2><button id="atEvClose">×</button></div>
           <div class="at-modal-body">
             <label class="at-form-label">Observação</label>
@@ -1225,8 +1225,8 @@ const AT = {
   // ── Novo cliente rápido ────────────────────────────────────────────────────
   abrirNovoCliente(nomeInput, idInput) {
     const html = `
-      <div class="at-modal-overlay" id="atNcModal" style="z-index:1010">
-        <div class="at-modal" style="max-width:420px">
+      <div class="at-modal-overlay at-modal-overlay--nested" id="atNcModal">
+        <div class="at-modal at-modal--compact">
           <div class="at-modal-header">
             <div class="at-modal-header-inner">
               <div class="at-modal-header-icon"><i class="fa-solid fa-user-plus"></i></div>
