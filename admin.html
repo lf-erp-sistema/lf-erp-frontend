@@ -39,8 +39,8 @@
       .btn-logout { background: rgba(255,255,255,.1); border: none; color: rgba(255,255,255,.8); padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 13px; }
       .btn-logout:hover { background: rgba(255,255,255,.2); }
 
-      .admin-tabs { display: flex; gap: 4px; padding: 20px 24px 0; border-bottom: 1px solid var(--border); background: var(--surface); }
-      .tab-btn { padding: 10px 20px; border: none; background: none; font-size: 14px; font-weight: 500; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: .15s; }
+      .admin-tabs { display: flex; gap: 4px; padding: 20px 24px 0; border-bottom: 1px solid var(--border); background: var(--surface); overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      .tab-btn { padding: 10px 20px; border: none; background: none; font-size: 14px; font-weight: 500; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: .15s; flex-shrink: 0; white-space: nowrap; }
       .tab-btn.active { color: var(--primary); border-color: var(--primary); }
       .tab-btn:hover:not(.active) { color: var(--text); }
 
@@ -60,7 +60,7 @@
       .btn-danger { background: var(--danger-soft); color: var(--danger); border: 1px solid #fca5a5; }
       .btn-sm { padding: 5px 12px; font-size: 12px; }
 
-      .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; box-shadow: var(--shadow-xs); }
+      .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); overflow-x: auto; overflow-y: hidden; box-shadow: var(--shadow-xs); }
 
       table { width: 100%; border-collapse: collapse; font-size: 13px; }
       th { text-align: left; padding: 10px 14px; font-weight: 600; color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; border-bottom: 1px solid var(--border); background: var(--surface-2); }
@@ -94,6 +94,9 @@
       .form-input { padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; background: var(--surface); color: var(--text); outline: none; }
       .form-input:focus { border-color: var(--primary); }
       .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+      @media (max-width: 560px) {
+        .form-row { grid-template-columns: 1fr; }
+      }
 
       .empty-state { text-align: center; padding: 48px 20px; color: var(--text-muted); }
       .empty-state i { font-size: 36px; margin-bottom: 12px; opacity: .4; }

@@ -151,6 +151,15 @@
       border-top: 1px solid var(--border);
     }
 
+    /* ── Responsivo ───────────────────────────────────────── */
+    @media (max-width: 600px) {
+      #documento { margin: 12px auto; padding: 24px 20px; }
+      .doc-header { flex-direction: column; gap: 12px; }
+      .doc-titulo { text-align: left; }
+      .doc-meta { grid-template-columns: 1fr 1fr; }
+      .doc-totais { width: 100%; }
+    }
+
     /* ── IMPRESSÃO ─────────────────────────────────────────── */
     @page { margin: 10mm; size: A4 portrait; }
 
