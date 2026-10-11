@@ -8029,3 +8029,62 @@ body:not(.pdv-active) .modal-card__footer {
   body:not(.pdv-active) .module-card__header { padding-bottom: 12px; }
   body:not(.pdv-active) .module-card__header h3 { font-size: 1.15rem; }
 }
+
+/* Cadastros — Produtos, Clientes e Fornecedores */
+#produtosContainer .cl-tb-kpi-strip,
+#clientesContainer .cl-tb-kpi-strip,
+#fornecedoresContainer .cl-tb-kpi-strip {
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--surface), var(--surface-2));
+  box-shadow: none;
+}
+
+#produtosContainer .cl-tb-kpi-item,
+#clientesContainer .cl-tb-kpi-item,
+#fornecedoresContainer .cl-tb-kpi-item { padding: 14px 16px; }
+
+#produtosContainer .cl-tb-row,
+#clientesContainer .cl-tb-row,
+#fornecedoresContainer .cl-tb-row {
+  padding: 8px;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-2);
+}
+
+#produtosContainer .cl-tb-search,
+#clientesContainer .cl-tb-search,
+#fornecedoresContainer .cl-tb-search {
+  height: 44px;
+  border-radius: 11px;
+  background: var(--surface);
+}
+
+#produtosContainer .cl-tb-btn,
+#clientesContainer .cl-tb-btn,
+#fornecedoresContainer .cl-tb-btn {
+  height: 44px;
+  border-radius: 11px;
+  font-weight: 700;
+}
+
+#produtosContainer .cl-tb-btn--primary,
+#clientesContainer .cl-tb-btn--primary,
+#fornecedoresContainer .cl-tb-btn--primary {
+  box-shadow: 0 7px 16px color-mix(in srgb, var(--primary) 24%, transparent);
+}
+
+#produtosContainer .table-primary strong,
+#clientesContainer .table-primary strong,
+#fornecedoresContainer .table-primary strong { letter-spacing: -.01em; }
+
+@media (max-width: 640px) {
+  #produtosContainer .cl-tb-row,
+  #clientesContainer .cl-tb-row,
+  #fornecedoresContainer .cl-tb-row { padding: 7px; }
+
+  #produtosContainer .cl-tb-search,
+  #clientesContainer .cl-tb-search,
+  #fornecedoresContainer .cl-tb-search { flex-basis: 100%; }
+}
