@@ -3970,10 +3970,22 @@ select {
 .table-wrapper {
   width: 100%;
   overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+  scrollbar-gutter: stable;
   border: 1px solid var(--border);
   border-radius: 18px;
   background: var(--surface);
 }
+
+.table-wrapper::-webkit-scrollbar { height: 10px; }
+.table-wrapper::-webkit-scrollbar-track { background: transparent; }
+.table-wrapper::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border: 3px solid var(--surface);
+  border-radius: 999px;
+}
+.table-wrapper::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
 .data-table {
   width: 100%;
@@ -3999,6 +4011,9 @@ select {
   font-size: 0.94rem;
   vertical-align: middle;
 }
+
+.data-table tbody tr { transition: background-color .16s ease, box-shadow .16s ease; }
+.data-table tbody tr:focus-within { background: rgba(37, 99, 235, .045); }
 
 .table-primary strong {
   color: var(--text);
