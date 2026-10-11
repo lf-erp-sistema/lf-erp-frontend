@@ -8757,3 +8757,90 @@ body:not(.pdv-active) .modal-card__footer {
   #usuariosContainer .module-toolbar__search { flex-basis: 100%; }
   #filiaisContainer .fil-toolbar .btn { width: 100%; justify-content: center; }
 }
+
+/* Integrações e relacionamento — pagamentos, comunicação e fidelização */
+#checkoutLinksContainer .chk-tabs,
+#fidelidadeContainer .fid-tabs,
+#whatsappContainer .wpp-tabs {
+  padding: 6px;
+  gap: 4px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-2);
+}
+
+#checkoutLinksContainer .chk-tab-btn,
+#fidelidadeContainer .fid-tab-btn,
+#whatsappContainer .wpp-tab-btn {
+  min-height: 40px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+
+#checkoutLinksContainer .chk-tab-btn.active,
+#fidelidadeContainer .fid-tab-btn.active,
+#whatsappContainer .wpp-tab-btn.active {
+  border-bottom-color: transparent;
+  background: color-mix(in srgb, var(--primary) 12%, var(--surface));
+}
+
+#whatsappContainer .wpp-tab-btn.active { background: color-mix(in srgb, #25d366 14%, var(--surface)); }
+#fidelidadeContainer .fid-tab-btn.active { background: color-mix(in srgb, var(--warning) 14%, var(--surface)); }
+
+#checkoutLinksContainer .chk-kpi,
+#checkoutLinksContainer .chk-table-wrap,
+#fidelidadeContainer .fid-kpi,
+#fidelidadeContainer .fid-top-item,
+#fidelidadeContainer .fid-table-wrap,
+#whatsappContainer .wpp-template-card,
+#whatsappContainer .wpp-auto-card,
+#whatsappContainer .wpp-cob-preview {
+  border-radius: 16px;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, .04);
+}
+
+#checkoutLinksContainer .chk-kpi,
+#fidelidadeContainer .fid-kpi { padding: 16px 18px; }
+
+#checkoutLinksContainer .chk-toolbar,
+#fidelidadeContainer .fid-toolbar {
+  padding: 8px;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-2);
+}
+
+#checkoutLinksContainer .chk-toolbar .btn,
+#fidelidadeContainer .fid-toolbar .btn,
+#whatsappContainer .btn {
+  min-height: 42px;
+  border-radius: 11px;
+  font-weight: 700;
+}
+
+#checkoutLinksContainer .chk-toolbar .btn-primary,
+#whatsappContainer .btn-primary {
+  box-shadow: 0 7px 16px color-mix(in srgb, var(--primary) 24%, transparent);
+}
+
+#checkoutLinksContainer .chk-empty,
+#fidelidadeContainer .fid-empty,
+#whatsappContainer .wpp-empty {
+  min-height: 220px;
+  border: 1px dashed var(--border);
+  border-radius: 16px;
+  background: var(--surface-2);
+}
+
+.pix-modal { border-radius: 20px; }
+.pix-qr-wrap { border-radius: 16px; }
+.pix-chave-box { border-radius: 12px; }
+
+@media (max-width: 640px) {
+  #checkoutLinksContainer .chk-toolbar,
+  #fidelidadeContainer .fid-toolbar { padding: 7px; }
+
+  #checkoutLinksContainer .chk-toolbar .btn,
+  #fidelidadeContainer .fid-toolbar .btn { width: 100%; justify-content: center; }
+}
