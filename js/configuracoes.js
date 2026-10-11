@@ -1,6 +1,6 @@
 import api from './api.js';
 import { getAuth } from './auth.js';
-import { showToast } from './feedback.js';
+import { confirmarAcao, showToast } from './feedback.js';
 import { buildFriendlyError } from './utils.js';
 
 function esc(v) {
@@ -96,6 +96,7 @@ const ConfigModule = {
           }
           document.getElementById('cfgPixChave').value      = pixCfg.pix_chave       || '';
           document.getElementById('cfgPixSandbox').checked  = pixCfg.pix_sandbox !== false;
+          this._atualizarStatusAmbiente('cfgPixStatus', pixCfg.pix_sandbox !== false);
           if (pixCfg.pix_certificado === 'configurado')
             document.getElementById('cfgPixCertificado').placeholder = '✓ Certificado configurado (deixe vazio para manter)';
         }
@@ -156,6 +157,7 @@ const ConfigModule = {
       const sbEl   = document.getElementById('cfgAsaasSandbox');
       if (keyEl && data.asaas_api_key) keyEl.placeholder = '****  (configurada — deixe vazio para manter)';
       if (sbEl) sbEl.checked = data.asaas_sandbox !== false;
+      this._atualizarStatusAmbiente('cfgAsaasStatus', sbEl?.checked ?? true);
     } catch { /* silencioso — Asaas opcional */ }
   },
 
@@ -203,6 +205,49 @@ const ConfigModule = {
     } finally {
       if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Salvar configuração PIX'; }
     }
+  },
+
+  _atualizarStatusAmbiente(statusId, sandbox) {
+    const status = document.getElementById(statusId);
+    if (!status) return;
+    status.textContent = sandbox ? 'Sandbox ativo' : 'Produção ativa';
+    status.classList.toggle('cfg-status--sandbox', sandbox);
+    status.classList.toggle('cfg-status--production', !sandbox);
+  },
+
+  async _confirmarAmbienteProducao(input, statusId, integracao) {
+    if (input.checked) {
+      this._atualizarStatusAmbiente(statusId, true);
+      return;
+    }
+    const confirmado = await confirmarAcao(
+      `Ativar produção para ${integracao}? Cobranças reais poderão ser emitidas após salvar as credenciais.`,
+      'Ativar produção',
+      'warning'
+    );
+    if (!confirmado) input.checked = true;
+    this._atualizarStatusAmbiente(statusId, input.checked);
+  },
+
+  _adicionarControleSenha(inputId) {
+    const input = document.getElementById(inputId);
+    if (!input || input.parentElement?.classList.contains('cfg-password-control')) return;
+    const wrapper = document.createElement('div');
+    wrapper.className = 'cfg-password-control';
+    input.parentNode.insertBefore(wrapper, input);
+    wrapper.appendChild(input);
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'cfg-password-toggle';
+    button.setAttribute('aria-label', 'Mostrar senha');
+    button.innerHTML = '<i class="fa-regular fa-eye"></i>';
+    button.addEventListener('click', () => {
+      const visivel = input.type === 'text';
+      input.type = visivel ? 'password' : 'text';
+      button.setAttribute('aria-label', visivel ? 'Mostrar senha' : 'Ocultar senha');
+      button.innerHTML = `<i class="fa-regular fa-eye${visivel ? '' : '-slash'}"></i>`;
+    });
+    wrapper.appendChild(button);
   },
 
   async save() {
@@ -395,6 +440,17 @@ const ConfigModule = {
     const corAtual = this.state.dados?.cor_primaria || '#2563eb';
 
     c.innerHTML = `
+      <div class="cfg-page-nav" aria-label="Navegação das configurações">
+        <span class="cfg-page-nav__label">Configurações</span>
+        <div class="cfg-page-nav__items">
+          <button type="button" class="cfg-page-nav__button is-active" data-config-section="1"><i class="fa-solid fa-building"></i> Empresa</button>
+          <button type="button" class="cfg-page-nav__button" data-config-section="2"><i class="fa-solid fa-user"></i> Minha conta</button>
+          <button type="button" class="cfg-page-nav__button" data-config-section="5"><i class="fa-solid fa-plug"></i> Integrações</button>
+          ${this.state.isAdmin ? '<button type="button" class="cfg-page-nav__button" data-config-section="7"><i class="fa-solid fa-users"></i> Equipe</button>' : ''}
+          <button type="button" class="cfg-page-nav__button" data-config-section="${this.state.isAdmin ? '8' : '7'}"><i class="fa-solid fa-shield-halved"></i> Privacidade</button>
+        </div>
+      </div>
+      <div class="configuracoes-premium">
       <!-- CARD 1: Identidade da Empresa -->
       <section class="module-card" style="margin-bottom:16px">
         <div class="module-card__header" style="margin-bottom:20px">
@@ -528,7 +584,10 @@ const ConfigModule = {
             <i class="fa fa-refresh"></i> Carregar
           </button>
         </div>
-        <div id="cfgHistoricoAcesso" style="min-height:48px"></div>
+        <div id="cfgHistoricoAcesso" class="cfg-empty-state">
+          <i class="fa-regular fa-clock"></i>
+          <div><strong>Consulte seus acessos recentes</strong><span>Carregue o histórico quando precisar verificar uma atividade.</span></div>
+        </div>
       </section>
 
       <!-- CARD 5: PIX -->
@@ -539,7 +598,11 @@ const ConfigModule = {
             <p>Configure as credenciais da EFÍ (Gerencianet) para gerar cobranças PIX automaticamente</p>
           </div>
         </div>
-        <details style="margin-bottom:16px;border:1px solid var(--border);border-radius:10px;overflow:hidden">
+        <div class="cfg-integration-meta">
+          <span class="cfg-status cfg-status--sandbox" id="cfgPixStatus">Sandbox ativo</span>
+          <span class="cfg-integration-meta__hint">Credenciais protegidas e visíveis apenas para administradores.</span>
+        </div>
+        <details class="cfg-help-details">
           <summary style="padding:10px 16px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-muted);display:flex;align-items:center;gap:6px;user-select:none">
             <i class="fa-solid fa-circle-info"></i> Como obter as credenciais
           </summary>
@@ -570,8 +633,8 @@ const ConfigModule = {
             <label>Certificado (.p12 em Base64) <span style="color:var(--text-muted);font-weight:400">— opcional para sandbox</span></label>
             <textarea id="cfgPixCertificado" class="input" rows="3"
               placeholder="Cole aqui o conteúdo Base64 do certificado .p12 baixado da EFÍ..."></textarea>
-            <small style="color:var(--text-muted);font-size:.78rem">
-              Para converter: <code>base64 -i certificado.p12</code> (Linux/Mac) ou use uma ferramenta online segura.
+            <small class="cfg-secret-note">
+              <i class="fa-solid fa-lock"></i> Trate este certificado como segredo: gere o Base64 localmente e nunca o envie por e-mail, chat ou serviços online.
             </small>
           </div>
           <div class="form-field">
@@ -596,7 +659,11 @@ const ConfigModule = {
             <p>Emita boletos diretamente do sistema via integração com a Asaas</p>
           </div>
         </div>
-        <details style="margin-bottom:16px;border:1px solid var(--border);border-radius:10px;overflow:hidden">
+        <div class="cfg-integration-meta">
+          <span class="cfg-status cfg-status--sandbox" id="cfgAsaasStatus">Sandbox ativo</span>
+          <span class="cfg-integration-meta__hint">Use uma chave exclusiva para esta empresa.</span>
+        </div>
+        <details class="cfg-help-details">
           <summary style="padding:10px 16px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-muted);display:flex;align-items:center;gap:6px;user-select:none">
             <i class="fa-solid fa-circle-info"></i> Como configurar
           </summary>
@@ -656,11 +723,28 @@ const ConfigModule = {
           <i class="fa-solid fa-download"></i> Baixar meus dados
         </button>
       </section>
+      </div>
     `;
 
     if (!this.state.eventsBound) {
       this.state.eventsBound = true;
       setTimeout(() => {
+        document.querySelectorAll('.cfg-page-nav__button').forEach((button) => {
+          button.addEventListener('click', () => {
+            const section = document.querySelector(`.configuracoes-premium > section:nth-of-type(${button.dataset.configSection})`);
+            section?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            document.querySelectorAll('.cfg-page-nav__button').forEach((item) => item.classList.toggle('is-active', item === button));
+          });
+        });
+
+        ['cfgSenhaAtual', 'cfgSenhaNova', 'cfgSenhaConfirmar'].forEach((inputId) => this._adicionarControleSenha(inputId));
+        const pixSandbox = document.getElementById('cfgPixSandbox');
+        const asaasSandbox = document.getElementById('cfgAsaasSandbox');
+        this._atualizarStatusAmbiente('cfgPixStatus', pixSandbox?.checked ?? true);
+        this._atualizarStatusAmbiente('cfgAsaasStatus', asaasSandbox?.checked ?? true);
+        pixSandbox?.addEventListener('change', () => this._confirmarAmbienteProducao(pixSandbox, 'cfgPixStatus', 'PIX'));
+        asaasSandbox?.addEventListener('change', () => this._confirmarAmbienteProducao(asaasSandbox, 'cfgAsaasStatus', 'Asaas'));
+
         document.getElementById('salvarConfigBtn')?.addEventListener('click', () => this.save());
         document.getElementById('cfgSalvarPerfilBtn')?.addEventListener('click', () => this.salvarPerfil());
         document.getElementById('cfgTrocarSenhaBtn')?.addEventListener('click', () => this.trocarSenha());
