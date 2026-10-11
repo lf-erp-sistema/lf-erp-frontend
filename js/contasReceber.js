@@ -2734,10 +2734,12 @@ function injectContasReceberStyles() {
       flex-direction: column;
       gap: 0;
       margin-bottom: 18px;
+      width: 100%;
+      box-sizing: border-box;
       background: linear-gradient(135deg, var(--surface), var(--surface-2));
       border: 1px solid var(--border);
       border-radius: 18px;
-      padding: 10px;
+      padding: 10px clamp(18px, 2.25vw, 32px);
       box-shadow: 0 8px 22px rgba(15, 23, 42, .035);
     }
 
@@ -2747,6 +2749,8 @@ function injectContasReceberStyles() {
       align-items: center;
       flex-wrap: nowrap;
       min-width: 0;
+      width: 100%;
+      justify-content: flex-start;
     }
 
     .cr-toolbar-row2 {
@@ -2909,8 +2913,10 @@ function injectContasReceberStyles() {
       border-left: 1px solid var(--border);
     }
 
-    .cr-toolbar-row1 .cr-search-box { max-width:none; min-width:250px; flex:1 1 280px; height:46px; border-radius:13px; }
-    .cr-toolbar-row1 .cr-filter-box--cliente { flex:0 1 210px; min-width:180px; height:46px; border-radius:13px; }
+    /* A busca absorve a área disponível: o toolbar permanece equilibrado sem
+       criar margens vazias nas laterais em telas largas. */
+    .cr-toolbar-row1 .cr-search-box { max-width:none; min-width:220px; flex:1 1 360px; height:46px; border-radius:13px; }
+    .cr-toolbar-row1 .cr-filter-box--cliente { flex:0 1 250px; min-width:190px; max-width:300px; height:46px; border-radius:13px; }
     .cr-month-nav { display:flex; align-items:center; gap:2px; height:46px; padding:3px; border:1px solid var(--border); border-radius:13px; background:var(--surface); flex-shrink:0; }
     .cr-month-nav__button { display:grid; width:32px; height:36px; place-items:center; border:0; border-radius:10px; background:transparent; color:var(--text-muted); cursor:pointer; font-size:.82rem; }
     .cr-month-nav__button:hover { background:var(--surface-2); color:var(--primary); }
