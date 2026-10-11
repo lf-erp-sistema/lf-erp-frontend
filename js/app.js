@@ -431,6 +431,18 @@ function bindSidebarEvents() {
     logoutBtn.addEventListener('click', handleLogout);
   }
 
+  const topbarConfigBtn = document.getElementById('topbarConfigBtn');
+  if (topbarConfigBtn) {
+    topbarConfigBtn.addEventListener('click', async () => {
+      const dropdown = document.getElementById('topbarUserDropdown');
+      if (dropdown) {
+        dropdown.hidden = true;
+        document.getElementById('topbarUserBtn')?.setAttribute('aria-expanded', 'false');
+      }
+      await setActiveView('configuracoes');
+    });
+  }
+
   const topbarUserBtn = document.getElementById('topbarUserBtn');
   const topbarUserDropdown = document.getElementById('topbarUserDropdown');
   if (topbarUserBtn && topbarUserDropdown) {

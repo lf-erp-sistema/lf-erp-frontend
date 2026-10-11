@@ -432,14 +432,6 @@
               </div>
             </div>
 
-            <div class="nav-divider"></div>
-
-            <!-- Rodape -->
-            <button class="nav-item" data-view="configuracoes" title="Configurações">
-              <span class="nav-item__icon"><i class="fa-solid fa-gear"></i></span>
-              <span class="nav-item__label">Configurações</span>
-            </button>
-
             <button id="adminNavLink" class="nav-item" style="display:none;width:100%">
               <span class="nav-item__icon"><i class="fa-solid fa-shield-halved"></i></span>
               <span class="nav-item__label">Admin</span>
@@ -519,6 +511,11 @@
                     <span class="topbar-user__company-label">Empresa</span>
                     <strong id="topbarCompanyName">Carregando...</strong>
                   </div>
+                  <div class="topbar-user__divider"></div>
+                  <button id="topbarConfigBtn" class="topbar-user__link" type="button" data-view="configuracoes">
+                    <i class="fa-solid fa-gear" aria-hidden="true"></i>
+                    Configurações
+                  </button>
                   <div class="topbar-user__divider"></div>
                   <button id="logoutBtn" class="topbar-user__logout" type="button">
                     <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
