@@ -8987,6 +8987,8 @@ body:not(.pdv-active) .modal-card__footer {
   border: 1px solid var(--border);
   border-radius: 16px;
   background: var(--surface-2);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 #checkoutLinksContainer .chk-tab-btn,
@@ -8995,6 +8997,8 @@ body:not(.pdv-active) .modal-card__footer {
   min-height: 40px;
   border-radius: 10px;
   font-weight: 700;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 #checkoutLinksContainer .chk-tab-btn.active,
@@ -9051,6 +9055,41 @@ body:not(.pdv-active) .modal-card__footer {
   border: 1px dashed var(--border);
   border-radius: 16px;
   background: var(--surface-2);
+}
+
+/* Elementos que ficaram pra trás na passada premium acima — caixa de
+   informação, labels de formulário, badge e cards de resumo. */
+#whatsappContainer .wpp-info-box {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  gap: 12px;
+}
+#whatsappContainer .wpp-info-box i {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: color-mix(in srgb, #25d366 16%, var(--surface));
+  color: #25d366;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  margin-top: 0;
+  flex-shrink: 0;
+}
+#whatsappContainer .wpp-form-group label {
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  font-size: 11px;
+}
+#whatsappContainer .wpp-badge {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+}
+#whatsappContainer .wpp-resumo-item {
+  border-radius: 12px;
+  padding: 12px 18px;
 }
 
 .pix-modal { border-radius: 20px; }
