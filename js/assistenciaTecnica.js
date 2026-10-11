@@ -302,11 +302,11 @@ const AT = {
               </button>
               <div class="actions-menu-dropdown hidden" id="atActionsDropdown">
                 <div style="padding:0 14px 10px">
-                  <label class="prd-filtro-lbl" for="atFiltroStatus">Status</label>
-                  <select id="atFiltroStatus" class="cl-tb-select" style="width:100%">
-                    <option value="">Todos os status</option>
-                    ${Object.entries(STATUS_LABEL).map(([v,l]) => `<option value="${v}">${l}</option>`).join('')}
-                  </select>
+                  <span class="prd-filtro-lbl">Status</span>
+                  <div class="at-status-filter" role="group" aria-label="Filtrar por status">
+                    <button type="button" class="at-status-filter__option${!this.state.filtroStatus ? ' is-active' : ''}" data-at-status="">Todos os status</button>
+                    ${Object.entries(STATUS_LABEL).map(([v,l]) => `<button type="button" class="at-status-filter__option${this.state.filtroStatus === v ? ' is-active' : ''}" data-at-status="${v}">${l}</button>`).join('')}
+                  </div>
                 </div>
                 <div class="actions-menu-divider"></div>
                 <button type="button" class="actions-menu-item" id="atBtnAparelhos">
@@ -398,6 +398,17 @@ const AT = {
     }
 
     c.addEventListener('click', async e => {
+      const statusOption = e.target.closest('[data-at-status]');
+      if (statusOption) {
+        this.state.filtroStatus = statusOption.dataset.atStatus;
+        this.state.paginaAtual = 0;
+        c.querySelectorAll('[data-at-status]').forEach(option => option.classList.toggle('is-active', option === statusOption));
+        const badge = document.getElementById('atFiltrosBadge');
+        if (badge) { badge.textContent = this.state.filtroStatus ? '1' : '0'; badge.classList.toggle('hidden', !this.state.filtroStatus); }
+        document.getElementById('atActionsDropdown')?.classList.add('hidden');
+        this.loadOS();
+        return;
+      }
       const btn = e.target.closest('button[data-action]');
       if (!btn) {
         // Nav buttons
