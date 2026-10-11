@@ -9462,6 +9462,20 @@ body:not(.pdv-active) .empty-state {
 .cr-search-box,.cr-filter-box--cliente{display:flex;align-items:center;gap:8px;height:44px;padding:0 14px;border:1px solid var(--border);border-radius:14px;background:var(--surface)}.cr-search-box{flex:2;min-width:160px;max-width:320px}.cr-filter-box--cliente{flex:1;min-width:160px;max-width:240px}.cr-search-box input,.cr-filter-box--cliente .cr-combobox__input{width:100%;height:100%;padding:0;border:0;outline:0;background:transparent;color:var(--text);font-size:.94rem}.cr-search-box i,.cr-combobox__icon{color:var(--text-muted);font-size:.82rem}.cr-primary-actions{display:flex;flex-wrap:nowrap;align-items:center;gap:6px;margin-left:auto}.cr-util-actions{display:flex;align-items:center;gap:4px}.cr-util-btn{display:flex;align-items:center;gap:5px;height:34px;padding:0 10px;font-size:.82rem}@media(max-width:720px){.cr-search-box,.cr-filter-box--cliente{max-width:none}.cr-primary-actions{width:100%;margin-left:0;justify-content:flex-end}}
 .os-modal-subtitle{margin:4px 0 0;color:var(--text-muted);font-size:13px}.os-modal-body{max-height:calc(90vh - 90px);overflow-y:auto;padding:24px}.modal-card--large{max-width:860px}@media(max-width:640px){.os-modal-body{max-height:none;padding:16px}.modal-card--large{max-height:92dvh}}
 
+/* Base visual compartilhada para modais. Não use overflow:hidden no card em
+   desktop: selects premium e menus contextuais precisam ultrapassar o card. */
+.modal-card__header h3 { margin: 0; color: var(--text); font-size: 1.06rem; font-weight: 800; letter-spacing: -.015em; }
+.modal-card__header p { margin: 4px 0 0; color: var(--text-muted); font-size: .84rem; line-height: 1.45; }
+.modal-card__body { padding: 20px 24px 24px; }
+.modal-card__footer { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+.modal-card .modal-close { display: inline-grid; width: 36px; height: 36px; place-items: center; flex: 0 0 auto; border: 1px solid transparent; border-radius: 10px; }
+.modal-card .modal-close:hover { border-color: var(--border); background: var(--surface-2); }
+@media (max-width: 767px) {
+  .modal-card__body { padding: 16px 18px 18px; }
+  .modal-card__footer { gap: 8px; }
+  .modal-card__footer .btn { min-height: 42px; }
+}
+
 /* Assistência técnica — base de lista, detalhe e checklist. */
 .at-layout { display: flex; flex-direction: column; height: 100%; }
 .at-view { display: none; }.at-view.active { display: block; }
