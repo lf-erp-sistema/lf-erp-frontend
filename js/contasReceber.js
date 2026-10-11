@@ -2,6 +2,7 @@
 import { showToast, confirmarAcao } from './feedback.js';
 import { gerarPIX } from './pix.js';
 import { escapeHtml, buildFriendlyError, todayFortaleza, calcPeriodoLocal, debounce, formatCurrency } from './utils.js';
+import { enhanceSelect } from './premiumSelect.js';
 
 let _dropClickHandler = null;
 
@@ -357,6 +358,7 @@ function abrirModalBaixaLote(ids) {
       </div>
     </div>`;
   document.body.appendChild(modal);
+  enhanceSelect(modal.querySelector('#crLoteForma'));
   const fechar = () => modal.remove();
   document.getElementById('fecharCrLote')?.addEventListener('click', fechar);
   document.getElementById('cancelarCrLote')?.addEventListener('click', fechar);
@@ -2028,6 +2030,7 @@ function abrirModalBaixaConta(conta) {
   `;
 
   document.body.appendChild(modal);
+  enhanceSelect(modal.querySelector('#crBaixaForma'));
 
   document.getElementById('fecharCrBaixa')?.addEventListener('click', () => modal.remove());
   document.getElementById('cancelarCrBaixa')?.addEventListener('click', () => modal.remove());
@@ -4787,6 +4790,7 @@ function abrirModalContaManual() {
         </div>
       </div>`;
     document.body.appendChild(cfg);
+    enhanceSelect(cfg.querySelector('#crCfgPeriodicidade'));
 
     function atualizarCfgPreview() {
       const valorNum = parseFloat(document.getElementById('crManualValor')?.value || '') || 0;

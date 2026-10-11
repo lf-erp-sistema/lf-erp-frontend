@@ -763,6 +763,7 @@ async function pagarConta(id) {
       </div>`;
 
     document.body.appendChild(overlay);
+    enhanceSelect(overlay.querySelector('#_pagarFormaInput'));
 
     overlay.querySelector('#_pagarCancelarBtn').onclick = () => { document.body.removeChild(overlay); resolve(null); };
     overlay.querySelector('#_pagarConfirmarBtn').onclick = async () => {
@@ -1235,6 +1236,7 @@ function abrirModalNovaContaPagar() {
   `;
 
   document.body.appendChild(modal);
+  enhanceSelect(modal.querySelector('#cpNcForma'));
 
   // ── Combobox fornecedor ───────────────────────────────────────────────────
   {
@@ -1423,6 +1425,7 @@ function abrirModalNovaContaPagar() {
         </div>
       </div>`;
     document.body.appendChild(cfg);
+    enhanceSelect(cfg.querySelector('#cpCfgPeriodicidade'));
 
     function atualizarCfgPreview() {
       const valorNum = parseFloat(document.getElementById('cpNcValor')?.value || '') || 0;

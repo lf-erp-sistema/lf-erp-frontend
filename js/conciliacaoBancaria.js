@@ -1,6 +1,7 @@
 import api from './api.js';
 import { showToast, confirmarAcao } from './feedback.js';
 import { escapeHtml, buildFriendlyError, debounce, toCurrency } from './utils.js';
+import { enhanceSelect } from './premiumSelect.js';
 
 const state = {
   sessoes:   [],
@@ -266,6 +267,7 @@ function renderLista() {
     ${renderModalImport()}
   `;
 
+  enhanceSelect(document.getElementById('cbTipo'));
   bindLista();
 }
 
