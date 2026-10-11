@@ -1,5 +1,6 @@
 import api from './api.js';
 import { escapeHtml, buildFriendlyError, debounce, toCurrency } from './utils.js';
+import { enhanceSelect } from './premiumSelect.js';
 
 const state = {
   logs:    [],
@@ -234,6 +235,7 @@ function renderLinha(log) {
 let _audDropdownCloseBound = false;
 
 function bind() {
+  ['audFiltroTipo', 'audFiltroEntidade', 'audFiltroPeriodo'].forEach(id => enhanceSelect(document.getElementById(id)));
   // ── "Ações" dropdown
   document.getElementById('audActionsBtn')?.addEventListener('click', () => {
     document.getElementById('audActionsDropdown')?.classList.toggle('hidden');
