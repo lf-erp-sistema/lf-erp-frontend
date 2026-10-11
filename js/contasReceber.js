@@ -826,7 +826,7 @@ function render() {
 
       </div>
 
-      <div class="cr-filtros-inline hidden" id="crFiltrosInline"></div>
+      <div class="modal-overlay cr-filters-overlay hidden" id="crFiltrosInline"></div>
 
       <div class="table-wrapper">
         <table class="data-table cr-table">
@@ -1304,14 +1304,19 @@ function bindEventos() {
           state.ordem !== 'data_vencimento' || state.ordemDir !== 'desc'
         ].filter(Boolean).length;
         inline.innerHTML = `
-          <div class="cr-fi-panel-head">
-            <div>
-              <span class="cr-fi-panel-kicker"><i class="fa-solid fa-sliders"></i> Filtros avançados</span>
-              <p>Refine a visualização das contas por período, situação e vencimento.</p>
+          <div class="modal-card modal-card--xl cr-filters-modal-card">
+            <div class="modal-card__header">
+              <div>
+                <span class="cr-fi-panel-kicker"><i class="fa-solid fa-sliders"></i> Filtros avançados</span>
+                <p>Refine a visualização das contas por período, situação e vencimento.</p>
+              </div>
+              <div class="cr-fi-head-actions">
+                <span class="cr-fi-active-count${activeCount ? ' is-active' : ''}">${activeCount ? `${activeCount} ativo${activeCount > 1 ? 's' : ''}` : 'Padrão'}</span>
+                <button type="button" class="modal-close" id="crFecharFiltros" title="Fechar filtros" aria-label="Fechar filtros"><i class="fa-solid fa-xmark"></i></button>
+              </div>
             </div>
-            <span class="cr-fi-active-count${activeCount ? ' is-active' : ''}">${activeCount ? `${activeCount} ativo${activeCount > 1 ? 's' : ''}` : 'Padrão'}</span>
-          </div>
-          <div class="cr-fi-sections">
+            <div class="modal-card__body cr-filters-modal-body">
+              <div class="cr-fi-sections">
             <div class="cr-fi-section">
               <div class="cr-filtros-lbl"><i class="fa-regular fa-calendar"></i> Período</div>
               <div class="cr-fpills">
@@ -1336,21 +1341,24 @@ function bindEventos() {
                 <button class="cr-fpill${state.ordemDir === 'desc' && state.ordem === 'data_vencimento' ? ' cr-fpill--active' : ''}" data-fp-ordem="desc">↓ Mais recente</button>
               </div>
             </div>
-          </div>
-          <div class="cr-fi-footer">
-            <span class="cr-fi-footer-note"><i class="fa-solid fa-circle-info"></i> As alterações são aplicadas ao confirmar.</span>
-            <button class="btn btn-light btn-sm" id="crLimparFiltrosModal">
-              <i class="fa-solid fa-rotate-left"></i> Limpar filtros
-            </button>
-            <button class="btn btn-primary btn-sm" id="crAplicarFiltros">
-              Aplicar
-            </button>
+              </div>
+            </div>
+            <div class="modal-card__footer cr-fi-footer">
+              <span class="cr-fi-footer-note"><i class="fa-solid fa-circle-info"></i> As alterações são aplicadas ao confirmar.</span>
+              <button class="btn btn-light btn-sm" id="crLimparFiltrosModal">
+                <i class="fa-solid fa-rotate-left"></i> Limpar filtros
+              </button>
+              <button class="btn btn-primary btn-sm" id="crAplicarFiltros">
+                Aplicar filtros
+              </button>
+            </div>
           </div>`;
       };
       _renderPanel();
 
-      const _openPanel  = () => { _renderPanel(); inline.classList.remove('hidden'); };
-      const _closePanel = () => { inline.classList.add('hidden'); };
+      const _onEscape = (event) => { if (event.key === 'Escape') _closePanel(); };
+      const _openPanel  = () => { _renderPanel(); inline.classList.remove('hidden'); document.addEventListener('keydown', _onEscape); };
+      const _closePanel = () => { inline.classList.add('hidden'); document.removeEventListener('keydown', _onEscape); };
 
       const _applyFiltros = async () => {
         const selPeriod = inline.querySelector('[data-fp-period].cr-fpill--active');
@@ -1377,6 +1385,7 @@ function bindEventos() {
       };
 
       inline.addEventListener('click', e => {
+        if (e.target === inline || e.target.closest('#crFecharFiltros')) { _closePanel(); return; }
         const fpPeriod = e.target.closest('[data-fp-period]');
         const fpStatus = e.target.closest('[data-fp-status]');
         const fpOrdem  = e.target.closest('[data-fp-ordem]');
@@ -1407,8 +1416,7 @@ function bindEventos() {
 
       document.getElementById('btnFiltrosPanel')?.addEventListener('click', () => {
         document.getElementById('crMoreDropdown')?.classList.add('hidden');
-        if (inline.classList.contains('hidden')) _openPanel();
-        else _closePanel();
+        _openPanel();
       });
     }
   }
