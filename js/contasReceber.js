@@ -30,6 +30,7 @@ const state = {
   loading: false,
   ordem: 'data_vencimento',
   ordemDir: 'desc',
+  alertFocus: false,
   selecionadas: new Set()
 };
 
@@ -211,7 +212,12 @@ function renderAlertasVencCR() {
     </article>` : '';
   return `
     <section class="cr-alertas-venc" aria-label="Alertas de vencimento">
-      ${insight('Atenção necessária', atrasadas, valAtrasadas, 'danger', 'fa-triangle-exclamation', '<button type="button" class="cr-alert-insight__action" data-cr-alert-filter="atrasado">Ver títulos <i class="fa-solid fa-arrow-right"></i></button>')}
+      ${insight(
+        'Atenção necessária', atrasadas, valAtrasadas, 'danger', 'fa-triangle-exclamation',
+        state.alertFocus && state.filtros.status === 'atrasado'
+          ? '<button type="button" class="cr-alert-insight__action" data-cr-alert-action="back"><i class="fa-solid fa-arrow-left"></i> Voltar à visão geral</button>'
+          : '<button type="button" class="cr-alert-insight__action" data-cr-alert-filter="atrasado">Ver títulos <i class="fa-solid fa-arrow-right"></i></button>'
+      )}
       ${insight('Vencem hoje', hoje, valHoje, 'warning', 'fa-calendar-day')}
       ${insight('Próximos 7 dias', prox7, valProx7, 'info', 'fa-calendar-week')}
     </section>`;
@@ -1269,9 +1275,11 @@ function bindEventos() {
     abrirModalContaManual();
   });
 
-  document.querySelectorAll('[data-cr-alert-filter]').forEach((btn) => {
+  document.querySelectorAll('[data-cr-alert-filter], [data-cr-alert-action="back"]').forEach((btn) => {
     btn.addEventListener('click', async () => {
-      state.filtros.status = btn.dataset.crAlertFilter || '';
+      const voltarVisaoGeral = btn.dataset.crAlertAction === 'back';
+      state.filtros.status = voltarVisaoGeral ? '' : (btn.dataset.crAlertFilter || '');
+      state.alertFocus = !voltarVisaoGeral;
       state.pagina = 1;
       salvarFiltrosCR();
       await recarregar();
@@ -1280,6 +1288,7 @@ function bindEventos() {
 
   btnLimpar?.addEventListener('click', async () => {
     state.filtros = { status: '', cliente_id: '', busca: '' };
+    state.alertFocus = false;
     state.ordem = 'data_vencimento';
     state.ordemDir = 'desc';
     state.periodo.preset = 'mesAtual';
@@ -1415,6 +1424,7 @@ function bindEventos() {
           }
         }
         if (selStatus) state.filtros.status = selStatus.dataset.fpStatus;
+        state.alertFocus = false;
         if (selOrdem)  { state.ordem = 'data_vencimento'; state.ordemDir = selOrdem.dataset.fpOrdem; }
         state.pagina = 1;
         salvarFiltrosCR();
@@ -1445,6 +1455,7 @@ function bindEventos() {
         if (e.target.closest('#crAplicarFiltros'))  _applyFiltros();
         if (e.target.closest('#crLimparFiltrosModal')) {
           state.filtros = { status: '', cliente_id: '', busca: '' };
+          state.alertFocus = false;
           state.ordem = 'data_vencimento'; state.ordemDir = 'desc';
           // "Limpar" deve voltar ao estado-base da tela, igual ao botão
           // principal de limpar filtros: o mês vigente, não os últimos 30 dias.
