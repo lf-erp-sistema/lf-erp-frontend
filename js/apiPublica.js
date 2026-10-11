@@ -3,46 +3,6 @@ import { showToast, confirmarAcao, pedirInput } from './feedback.js';
 import { escapeHtml, buildFriendlyError } from './utils.js';
 const esc = escapeHtml;
 
-function injectApiPublicaStyles() {
-  if (document.getElementById('apipubStyles')) return;
-  const s = document.createElement('style');
-  s.id = 'apipubStyles';
-  s.textContent = `
-    .apipub-tabs { display:flex; gap:4px; border-bottom:1px solid var(--border); padding-bottom:0; }
-    .apipub-tab-btn { padding:10px 18px; border:none; background:none; font-size:13px; font-weight:500; color:var(--text-muted); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; display:flex; align-items:center; gap:6px; transition:.15s; }
-    .apipub-tab-btn.active { color:var(--primary); border-color:var(--primary); }
-    .apipub-tab-btn:hover:not(.active) { color:var(--text); }
-
-    .apipub-table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
-    .apipub-empty { display:flex; flex-direction:column; align-items:center; gap:8px; padding:48px 20px; text-align:center; color:var(--text-muted); font-size:13px; }
-    .apipub-empty i { font-size:2rem; opacity:.25; }
-    .apipub-badge { display:inline-flex; align-items:center; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:600; }
-    .apipub-badge--ok  { background:var(--success-soft); color:var(--success); }
-    .apipub-badge--off { background:var(--surface-3); color:var(--text-muted); }
-    .apipub-badge--err { background:var(--danger-soft); color:var(--danger); }
-    .apipub-info-box { position:relative; padding:12px 16px 12px 40px; background:var(--surface-2); border-radius:8px; font-size:12px; color:var(--text-muted); line-height:1.6; }
-    .apipub-info-box i { position:absolute; left:14px; top:13px; }
-
-    .apipub-ep-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:10px; }
-    .apipub-ep-head { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; gap:12px; }
-    .apipub-ep-eventos { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
-    .apipub-ev-badge { display:inline-flex; align-items:center; gap:5px; padding:3px 8px; background:var(--surface-2); border:1px solid var(--border); border-radius:6px; font-size:11px; color:var(--text-muted); }
-    .apipub-ep-actions { display:flex; gap:8px; flex-wrap:wrap; }
-
-    .apipub-docs { max-width:720px; }
-    .apipub-doc-section { margin-bottom:24px; }
-    .apipub-doc-section h3 { font-size:14px; font-weight:700; margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:6px; }
-    .apipub-doc-section p { font-size:13px; color:var(--text-muted); margin-bottom:8px; }
-    .apipub-doc-section pre { background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:12px; font-size:12px; overflow-x:auto; margin:0; white-space:pre-wrap; }
-    .apipub-doc-endpoint { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); flex-wrap:wrap; font-size:13px; }
-    .apipub-method { display:inline-flex; align-items:center; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:700; font-family:monospace; min-width:42px; justify-content:center; }
-    .apipub-method--get  { background:#dcfce7; color:#15803d; }
-    .apipub-method--post { background:#dbeafe; color:#1d4ed8; }
-    .btn-icon.danger:hover { color:var(--danger); }
-  `;
-  document.head.appendChild(s);
-}
-
 function dataBR(d) {
   if (!d) return '—';
   const s = String(d).substring(0, 10);
@@ -72,7 +32,6 @@ const ApiPublicaModule = {
   },
 
   async init() {
-    injectApiPublicaStyles();
     if (!this.state.initialized) {
       this.render();
       this.bindEvents();
