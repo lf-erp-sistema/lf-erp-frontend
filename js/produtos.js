@@ -2045,17 +2045,22 @@ const ProdutosModule = {
   async _configurarMkt(plataforma) {
     const resultado = await new Promise((resolve) => {
       const overlay = document.createElement('div');
-      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:3000;display:flex;align-items:center;justify-content:center;padding:20px';
+      overlay.className = 'modal-overlay modal-overlay--prompt';
       overlay.innerHTML = `
-        <div style="background:var(--surface);border-radius:16px;padding:24px;max-width:400px;width:100%;box-shadow:0 24px 50px rgba(0,0,0,.2)">
-          <p style="font-weight:600;margin:0 0 16px;font-size:15px">Configurar ${escapeHtml(plataforma)}</p>
-          <label style="display:block;font-size:13px;margin-bottom:4px">App ID / Client ID</label>
-          <input id="_mkt_appid" type="text" autocomplete="off" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:13px;margin-bottom:12px;box-sizing:border-box" />
-          <label style="display:block;font-size:13px;margin-bottom:4px">Client Secret</label>
-          <input id="_mkt_secret" type="password" autocomplete="new-password" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:13px;margin-bottom:20px;box-sizing:border-box" />
-          <div style="display:flex;gap:10px;justify-content:flex-end">
-            <button id="_mkt_cancel" style="padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface-3);font-size:13px;cursor:pointer">Cancelar</button>
-            <button id="_mkt_save" style="padding:8px 16px;border-radius:8px;border:none;background:var(--primary);color:#fff;font-size:13px;font-weight:600;cursor:pointer">Salvar</button>
+        <div class="modal-card modal-card--compact">
+          <div class="modal-card__header">
+            <div><h3>Configurar ${escapeHtml(plataforma)}</h3><p>Informe as credenciais de integraÃ§Ã£o.</p></div>
+            <button type="button" class="modal-close" id="_mkt_close" title="Fechar" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <div class="modal-card__body modal-prompt__body">
+            <div><label style="display:block;font-size:13px;margin-bottom:4px">App ID / Client ID</label>
+            <input id="_mkt_appid" type="text" autocomplete="off" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:13px;box-sizing:border-box" /></div>
+            <div><label style="display:block;font-size:13px;margin-bottom:4px">Client Secret</label>
+            <input id="_mkt_secret" type="password" autocomplete="new-password" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:13px;box-sizing:border-box" /></div>
+          </div>
+          <div class="modal-card__footer modal-prompt__actions">
+            <button id="_mkt_cancel" class="btn btn-secondary btn-sm">Cancelar</button>
+            <button id="_mkt_save" class="btn btn-primary btn-sm">Salvar</button>
           </div>
         </div>`;
       document.body.appendChild(overlay);
@@ -2067,6 +2072,7 @@ const ProdutosModule = {
         fechar(appId ? { appId, secret } : null);
       });
       overlay.querySelector('#_mkt_cancel').addEventListener('click', () => fechar(null));
+      overlay.querySelector('#_mkt_close').addEventListener('click', () => fechar(null));
       overlay.addEventListener('click', (e) => { if (e.target === overlay) fechar(null); });
       document.addEventListener('keydown', function onKey(e) {
         if (e.key === 'Escape') { document.removeEventListener('keydown', onKey); fechar(null); }
@@ -2131,9 +2137,9 @@ const ProdutosModule = {
 
     // Pede quantidade uniforme de cópias extras
     const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px';
+    overlay.className = 'modal-overlay modal-overlay--prompt';
     overlay.innerHTML = `
-      <div style="background:var(--surface);border-radius:16px;padding:24px;max-width:380px;width:100%;box-shadow:0 24px 50px rgba(0,0,0,.2)">
+      <div class="modal-card modal-card--compact" style="padding:24px">
         <h3 style="margin:0 0 6px;font-size:16px;font-weight:700">
           <i class="fa-solid fa-tags"></i> Imprimir etiquetas em lote
         </h3>
@@ -2147,8 +2153,8 @@ const ProdutosModule = {
           <small style="color:var(--text-muted);font-size:11px">Cada produto imprimirá esta quantidade de etiquetas</small>
         </div>
         <div style="display:flex;gap:10px;justify-content:flex-end">
-          <button id="_loteCancelar" style="padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface-3);font-size:13px;cursor:pointer">Cancelar</button>
-          <button id="_loteAbrir" style="padding:8px 16px;border-radius:8px;border:none;background:var(--primary);color:#fff;font-size:13px;font-weight:600;cursor:pointer">
+          <button id="_loteCancelar" class="btn btn-secondary btn-sm">Cancelar</button>
+          <button id="_loteAbrir" class="btn btn-primary btn-sm">
             <i class="fa-solid fa-print"></i> Abrir para impressão
           </button>
         </div>
@@ -2156,6 +2162,7 @@ const ProdutosModule = {
     document.body.appendChild(overlay);
 
     overlay.querySelector('#_loteCancelar').addEventListener('click', () => document.body.removeChild(overlay));
+    overlay.addEventListener('click', (event) => { if (event.target === overlay) overlay.remove(); });
     overlay.querySelector('#_loteAbrir').addEventListener('click', () => {
       const qtd = Math.max(1, Number(overlay.querySelector('#_loteQtd').value) || 1);
       document.body.removeChild(overlay);
@@ -2232,9 +2239,9 @@ const ProdutosModule = {
     if (!item) return;
 
     const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px';
+    overlay.className = 'modal-overlay modal-overlay--prompt';
     overlay.innerHTML = `
-      <div style="background:var(--surface);border-radius:16px;padding:24px;max-width:360px;width:100%;box-shadow:0 24px 50px rgba(0,0,0,.2)">
+      <div class="modal-card modal-card--compact" style="padding:24px">
         <h3 style="margin:0 0 6px;font-size:16px;font-weight:700"><i class="fa-solid fa-tag"></i> Imprimir Etiqueta</h3>
         <p style="font-size:13px;color:var(--text-muted);margin:0 0 16px">${escapeHtml(String(item.nome).substring(0, 50))}</p>
         <div style="display:grid;gap:12px;margin-bottom:16px">
@@ -2245,8 +2252,8 @@ const ProdutosModule = {
           </div>
         </div>
         <div style="display:flex;gap:10px;justify-content:flex-end">
-          <button id="_etiqCancelar" style="padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface-3);font-size:13px;cursor:pointer">Cancelar</button>
-          <button id="_etiqAbrir" style="padding:8px 16px;border-radius:8px;border:none;background:var(--primary);color:#fff;font-size:13px;font-weight:600;cursor:pointer">
+          <button id="_etiqCancelar" class="btn btn-secondary btn-sm">Cancelar</button>
+          <button id="_etiqAbrir" class="btn btn-primary btn-sm">
             <i class="fa-solid fa-print"></i> Abrir para impressão
           </button>
         </div>
@@ -2255,6 +2262,7 @@ const ProdutosModule = {
     document.body.appendChild(overlay);
 
     overlay.querySelector('#_etiqCancelar').addEventListener('click', () => document.body.removeChild(overlay));
+    overlay.addEventListener('click', (event) => { if (event.target === overlay) overlay.remove(); });
     overlay.querySelector('#_etiqAbrir').addEventListener('click', () => {
       const qtd = Math.max(1, Number(overlay.querySelector('#_etiqQtd').value) || 1);
       document.body.removeChild(overlay);
