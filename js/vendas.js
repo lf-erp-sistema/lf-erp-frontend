@@ -174,6 +174,51 @@ const VendasModule = {
     });
 
     document.addEventListener('click', async (event) => {
+      const filtersModal = document.getElementById('vendasFiltrosModal');
+      if (event.target.closest('#vendasFiltrosBtn')) {
+        filtersModal?.classList.remove('hidden');
+        return;
+      }
+      if (event.target === filtersModal || event.target.closest('#vendasFecharFiltros')) {
+        filtersModal?.classList.add('hidden');
+        return;
+      }
+      const modalPreset = event.target.closest('[data-vnd-period]');
+      if (modalPreset) {
+        const today = todayFortaleza();
+        const [year, month] = today.split('-').map(Number);
+        let initial = today;
+        if (modalPreset.dataset.vndPeriod === 'semana') {
+          const date = new Date(`${today}T12:00:00`); date.setDate(date.getDate() - date.getDay());
+          initial = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        } else if (modalPreset.dataset.vndPeriod === 'mes') initial = `${year}-${String(month).padStart(2, '0')}-01`;
+        else if (modalPreset.dataset.vndPeriod === 'trimestre') {
+          let targetMonth = month - 3, targetYear = year;
+          if (targetMonth <= 0) { targetMonth += 12; targetYear -= 1; }
+          initial = `${targetYear}-${String(targetMonth).padStart(2, '0')}-01`;
+        }
+        const ini = document.getElementById('vndDataIni'); const fim = document.getElementById('vndDataFim');
+        if (ini) ini.value = initial;
+        if (fim) fim.value = today;
+        return;
+      }
+      if (event.target.closest('#vendasAplicarFiltros')) {
+        this.state.filtros.pagamento = document.getElementById('vndPagamento')?.value || '';
+        this.state.filtros.status = document.getElementById('vndStatus')?.value || '';
+        this.state.filtros.dataInicial = document.getElementById('vndDataIni')?.value || '';
+        this.state.filtros.dataFinal = document.getElementById('vndDataFim')?.value || '';
+        this.salvarFiltros();
+        filtersModal?.classList.add('hidden');
+        await this.load();
+        return;
+      }
+      if (event.target.closest('#vendasLimparFiltrosModal')) {
+        this.clearFilters();
+        filtersModal?.classList.add('hidden');
+        await this.load();
+        return;
+      }
+
       if (event.target.closest('#vendasEmptyPdvBtn')) {
         document.querySelector('.nav-item[data-view=pdv], .nav-subitem[data-view=pdv]')?.click();
         return;
@@ -552,14 +597,15 @@ const VendasModule = {
               placeholder="Buscar por cliente, pagamento, observação ou número..."
               value="${escapeHtml(this.state.filtros.busca)}" />
           </div>
-          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <div class="hidden" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
             <button type="button" class="btn btn-light" style="font-size:12px;padding:4px 10px;height:30px" data-preset="hoje">Hoje</button>
             <button type="button" class="btn btn-light" style="font-size:12px;padding:4px 10px;height:30px" data-preset="semana">Esta semana</button>
             <button type="button" class="btn btn-light" style="font-size:12px;padding:4px 10px;height:30px" data-preset="mes">Este mês</button>
             <button type="button" class="btn btn-light" style="font-size:12px;padding:4px 10px;height:30px" data-preset="trimestre">3 meses</button>
           </div>
           <div class="cl-tb-actions">
-            <div class="actions-menu-wrapper" id="vendasActionsWrapper">
+            <button type="button" class="cl-tb-btn${this._filtrosVendasAtivos() ? ' vnd-filters-trigger--active' : ''}" id="vendasFiltrosBtn" title="Filtros avançados"><i class="fa-solid fa-sliders"></i><span class="cl-tb-btn-lbl">Filtros</span>${this._filtrosVendasAtivos() ? `<span class="vnd-filters-badge">${this._filtrosVendasAtivos()}</span>` : ''}</button>
+            <div class="actions-menu-wrapper hidden" id="vendasActionsWrapper">
               <button type="button" class="cl-tb-btn" id="vendasActionsBtn" title="Ações">
                 <i class="fa-solid fa-ellipsis"></i>
                 <span class="cl-tb-btn-lbl">Ações</span>
@@ -613,6 +659,17 @@ const VendasModule = {
             <button type="button" class="cl-tb-btn cl-tb-btn--icon" id="vendasAtualizarBtn" title="Atualizar" aria-label="Atualizar">
               <i class="fa-solid fa-rotate"></i>
             </button>
+          </div>
+        </div>
+
+        <div class="modal-overlay vnd-filters-overlay hidden" id="vendasFiltrosModal">
+          <div class="modal-card modal-card--large vnd-filters-modal-card" role="dialog" aria-modal="true" aria-labelledby="vendasFiltrosTitulo">
+            <div class="modal-card__header"><div><span class="vnd-fi-kicker"><i class="fa-solid fa-sliders"></i> Filtros avançados</span><p id="vendasFiltrosTitulo">Refine as vendas por período, pagamento e situação.</p></div><div class="vnd-fi-head-actions"><span class="vnd-fi-count${this._filtrosVendasAtivos() ? ' is-active' : ''}">${this._filtrosVendasAtivos() ? `${this._filtrosVendasAtivos()} filtro${this._filtrosVendasAtivos() > 1 ? 's' : ''}` : 'Padrão'}</span><button type="button" class="modal-close" id="vendasFecharFiltros" aria-label="Fechar filtros"><i class="fa-solid fa-xmark"></i></button></div></div>
+            <div class="modal-card__body vnd-filters-body"><div class="vnd-fi-sections">
+              <section class="vnd-fi-section"><div class="vnd-fi-label"><i class="fa-regular fa-calendar"></i> Período</div><div class="vnd-fi-presets"><button type="button" data-vnd-period="hoje">Hoje</button><button type="button" data-vnd-period="semana">Esta semana</button><button type="button" data-vnd-period="mes">Este mês</button><button type="button" data-vnd-period="trimestre">3 meses</button></div><div class="vnd-fi-dates"><input type="date" id="vndDataIni" class="input" value="${escapeHtml(this.state.filtros.dataInicial)}"><span>até</span><input type="date" id="vndDataFim" class="input" value="${escapeHtml(this.state.filtros.dataFinal)}"></div></section>
+              <section class="vnd-fi-section"><div class="vnd-fi-label"><i class="fa-solid fa-wallet"></i> Pagamento</div><select id="vndPagamento" class="vnd-fi-select"><option value="">Todos os pagamentos</option>${['Dinheiro','Pix','Cartão de Débito','Cartão de Crédito','Promissória'].map(p => `<option value="${p}" ${this.state.filtros.pagamento === p ? 'selected' : ''}>${p}</option>`).join('')}</select><div class="vnd-fi-label vnd-fi-label--sub"><i class="fa-solid fa-circle-check"></i> Status</div><select id="vndStatus" class="vnd-fi-select"><option value="">Todos os status</option>${[['pago','Pago'],['pendente','Pendente'],['parcial','Parcial'],['atrasado','Atrasado'],['parcial_atrasado','Parcial em atraso'],['cancelado','Cancelado']].map(([v,l]) => `<option value="${v}" ${this.state.filtros.status === v ? 'selected' : ''}>${l}</option>`).join('')}</select></section>
+            </div></div>
+            <div class="modal-card__footer vnd-fi-footer"><span><i class="fa-solid fa-circle-info"></i> As alterações são aplicadas ao confirmar.</span><button type="button" class="btn btn-light btn-sm" id="vendasLimparFiltrosModal"><i class="fa-solid fa-rotate-left"></i> Limpar filtros</button><button type="button" class="btn btn-primary btn-sm" id="vendasAplicarFiltros">Aplicar filtros</button></div>
           </div>
         </div>
 
