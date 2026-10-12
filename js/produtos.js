@@ -36,6 +36,8 @@ const ProdutosModule = {
     allProdutos: [],
     // imagens
     imagens: [],
+    detalhesCarregados: { imagens: false, grade: false, kit: false },
+    editingItem: null,
     // preço sugerido
     precoEditado: false,
     margemAlvo: 30
@@ -307,7 +309,7 @@ const ProdutosModule = {
       }
 
       // ── tabs
-      if (t.dataset.tab) { this.switchTab(t.dataset.tab); return; }
+      if (t.dataset.tab) { await this.switchTab(t.dataset.tab); return; }
 
       // ── GRADE
       if (action === 'gradeToggleBtn')  { await this.handleGradeToggle(); return; }
@@ -1349,6 +1351,8 @@ const ProdutosModule = {
 
   openCreateModal() {
     this.state.editingId = null;
+    this.state.editingItem = null;
+    this.state.detalhesCarregados = { imagens: false, grade: false, kit: false };
     this.state.activeTab = 'dados';
     this.state.precoEditado = false;
     this.cacheElements();
@@ -1376,6 +1380,8 @@ const ProdutosModule = {
     if (!item) { this.showModuleMessage('Produto não encontrado.', 'error'); return; }
 
     this.state.editingId = id;
+    this.state.editingItem = item;
+    this.state.detalhesCarregados = { imagens: false, grade: false, kit: false };
     this.state.precoEditado = true;
     this.cacheElements();
 
@@ -1403,25 +1409,21 @@ const ProdutosModule = {
     this.setFormFeedback('', 'info');
     this.el.modal?.classList.remove('hidden');
 
-    // Carrega tabs em paralelo
-    await Promise.all([
-      this.loadImagens(id),
-      this.loadGrade(item),
-      this.loadKit(item)
-    ]);
   },
 
   closeModal() {
     this.cacheElements();
     this.el.modal?.classList.add('hidden');
     this.state.editingId = null;
+    this.state.editingItem = null;
+    this.state.detalhesCarregados = { imagens: false, grade: false, kit: false };
     this.el.form?.reset();
     this.setFormFeedback('', 'info');
   },
 
   // ── Tabs ───────────────────────────────────────────────────────────────────
 
-  switchTab(tab) {
+  async switchTab(tab) {
     this.state.activeTab = tab;
     document.querySelectorAll('.prod-tab').forEach((btn) => {
       btn.classList.toggle('active', btn.dataset.tab === tab);
@@ -1431,6 +1433,19 @@ const ProdutosModule = {
       panel.classList.toggle('active', id === tab);
       panel.classList.toggle('hidden', id !== tab);
     });
+
+    if (!this.state.editingId || !this.state.editingItem || tab === 'dados' || this.state.detalhesCarregados[tab]) return;
+
+    this.state.detalhesCarregados[tab] = true;
+    try {
+      if (tab === 'imagens') await this.loadImagens(this.state.editingId);
+      if (tab === 'grade') await this.loadGrade(this.state.editingItem);
+      if (tab === 'kit') await this.loadKit(this.state.editingItem);
+    } catch (error) {
+      // Permite nova tentativa ao retornar à aba, sem expor detalhes do erro ao usuário.
+      this.state.detalhesCarregados[tab] = false;
+      showToast('Não foi possível carregar os dados desta aba.', 'error');
+    }
   },
 
   // ── Submit básico ──────────────────────────────────────────────────────────
