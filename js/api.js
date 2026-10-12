@@ -28,6 +28,10 @@ const API_CONFIG = {
 // que dados de uma sessão nunca sejam reaproveitados por outra.
 const CATALOG_CACHE_TTL_MS = 60_000;
 const _catalogCache = new Map();
+// Apenas requisições GET ainda em andamento. As respostas nunca são mantidas
+// aqui: o objetivo é evitar chamadas duplicadas causadas por renders ou cliques
+// muito próximos, sem reter dados de negócio no navegador.
+const _pendingGetRequests = new Map();
 
 function _catalogCacheScope() {
   const auth = getStoredAuth();
@@ -227,7 +231,7 @@ async function warmupServer() {
   }
 }
 
-async function request(path, options = {}) {
+async function performRequest(path, options = {}) {
   const { method = 'GET', body, headers = {}, query = {}, timeout = API_CONFIG.TIMEOUT } = options;
 
   const url = buildUrl(path, query);
@@ -280,6 +284,23 @@ async function request(path, options = {}) {
   } finally {
     clearTimeout(timeoutId);
   }
+}
+
+async function request(path, options = {}) {
+  const method = String(options.method || 'GET').toUpperCase();
+  if (method !== 'GET') return performRequest(path, options);
+
+  // Inclui URL completa e token atual para que uma nova autenticação nunca
+  // compartilhe uma resposta pendente com a sessão anterior.
+  const url = buildUrl(path, options.query || {});
+  const key = `${getAuthToken() || 'sem-token'}:${url}`;
+  const pendente = _pendingGetRequests.get(key);
+  if (pendente) return pendente;
+
+  const requisicao = performRequest(path, options)
+    .finally(() => _pendingGetRequests.delete(key));
+  _pendingGetRequests.set(key, requisicao);
+  return requisicao;
 }
 
 function normalizeLoginResponse(data) {
