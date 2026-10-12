@@ -574,6 +574,7 @@ function _abrirAcoesCPModal(btn) {
 
 function bindEventos() {
   const btnAtualizar = document.getElementById('btnAtualizarContasPagar');
+  const btnLimpar = document.getElementById('btnLimparFiltrosContasPagar');
   const busca = document.getElementById('cpBusca');
 
   document.getElementById('btnNovaContaPagar')?.addEventListener('click', async (event) => {
