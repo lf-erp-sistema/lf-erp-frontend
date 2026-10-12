@@ -15,7 +15,10 @@ const state = {
   aba: 'resumo',
   lucratSubAba: 'financeiro',
   lucratSort: { key: null, dir: 1 },
-  loading: false
+  loading: false,
+  abasCarregadas: new Set(),
+  abasCarregando: new Set(),
+  filtroKey: ''
 };
 
 function statusBadge(status) {
@@ -33,6 +36,9 @@ function statusBadge(status) {
 
 export async function initRelatoriosFinanceirosModule() {
   try {
+    const filtroKey = JSON.stringify(getFiltrosGlobais());
+    if (state.filtroKey && state.filtroKey !== filtroKey) limparDadosDetalhados();
+    state.filtroKey = filtroKey;
     renderLoading();
     await carregarDados();
     render();
@@ -42,51 +48,45 @@ export async function initRelatoriosFinanceirosModule() {
   }
 }
 
-async function carregarDados() {
+function limparDadosDetalhados() {
+  state.resumo = null;
+  state.receber = [];
+  state.pagar = [];
+  state.fluxo = [];
+  state.lucratividade = [];
+  state.grade = [];
+  state.dre = null;
+  state.inadimplencia = null;
+  state.abasCarregadas.clear();
+  state.abasCarregando.clear();
+}
+
+async function carregarDados(abas = [state.aba]) {
   const filtros = getFiltrosGlobais();
+  state.filtroKey = JSON.stringify(filtros);
+  const pendentes = [...new Set(abas)].filter((aba) => !state.abasCarregadas.has(aba) && !state.abasCarregando.has(aba));
+  if (!pendentes.length) return;
 
-  const [resumoResult, receberResult, pagarResult, fluxoResult, lucratividadeResult, gradeResult, dreResult, inadResult] =
-    await Promise.allSettled([
-      api.getRelatorioFinanceiroResumo(filtros),
-      api.getRelatorioFinanceiroContasReceber(filtros),
-      api.getRelatorioFinanceiroContasPagar(filtros),
-      api.getRelatorioFinanceiroFluxoCaixa(filtros),
-      api.getRelatorioFinanceiroLucratividade(filtros),
-      api.getRelatorioVendasPorGrade(filtros),
-      api.getRelatorioDRE(filtros),
-      api.getRelatorioInadimplencia(filtros)
-    ]);
+  const loaders = {
+    resumo: () => api.getRelatorioFinanceiroResumo(filtros).then((dados) => { state.resumo = dados || null; }),
+    receber: () => api.getRelatorioFinanceiroContasReceber(filtros).then((dados) => { state.receber = Array.isArray(dados) ? dados : []; }),
+    pagar: () => api.getRelatorioFinanceiroContasPagar(filtros).then((dados) => { state.pagar = Array.isArray(dados) ? dados : []; }),
+    fluxo: () => api.getRelatorioFinanceiroFluxoCaixa(filtros).then((dados) => {
+      state.fluxo = Array.isArray(dados) ? dados : (Array.isArray(dados?.movimentos) ? dados.movimentos : []);
+    }),
+    lucratividade: () => api.getRelatorioFinanceiroLucratividade(filtros).then((dados) => { state.lucratividade = Array.isArray(dados) ? dados : []; }),
+    grade: () => api.getRelatorioVendasPorGrade(filtros).then((dados) => { state.grade = Array.isArray(dados) ? dados : []; }),
+    dre: () => api.getRelatorioDRE(filtros).then((dados) => { state.dre = dados || null; }),
+    inadimplencia: () => api.getRelatorioInadimplencia(filtros).then((dados) => { state.inadimplencia = dados || null; })
+  };
 
-  state.resumo = resumoResult.status === 'fulfilled' ? resumoResult.value : null;
-
-  state.receber =
-    receberResult.status === 'fulfilled' && Array.isArray(receberResult.value)
-      ? receberResult.value
-      : [];
-
-  state.pagar =
-    pagarResult.status === 'fulfilled' && Array.isArray(pagarResult.value) ? pagarResult.value : [];
-
-  const fluxoData = fluxoResult.status === 'fulfilled' ? fluxoResult.value : null;
-
-  state.fluxo = Array.isArray(fluxoData)
-    ? fluxoData
-    : Array.isArray(fluxoData?.movimentos)
-      ? fluxoData.movimentos
-      : [];
-
-  state.lucratividade =
-    lucratividadeResult.status === 'fulfilled' && Array.isArray(lucratividadeResult.value)
-      ? lucratividadeResult.value
-      : [];
-
-  state.grade =
-    gradeResult.status === 'fulfilled' && Array.isArray(gradeResult.value)
-      ? gradeResult.value
-      : [];
-
-  state.dre          = dreResult.status  === 'fulfilled' ? dreResult.value  : null;
-  state.inadimplencia = inadResult.status === 'fulfilled' ? inadResult.value : null;
+  pendentes.forEach((aba) => state.abasCarregando.add(aba));
+  const resultados = await Promise.allSettled(pendentes.map((aba) => loaders[aba]?.()));
+  resultados.forEach((resultado, index) => {
+    const aba = pendentes[index];
+    state.abasCarregando.delete(aba);
+    if (resultado.status === 'fulfilled') state.abasCarregadas.add(aba);
+  });
 }
 
 function getFiltrosGlobais() {
@@ -134,23 +134,23 @@ function render() {
         <div class="module-toolbar__stats">
           <div class="mini-stat">
             <span>Contas a receber</span>
-            <strong>${state.receber.length}</strong>
+            <strong>${state.abasCarregadas.has('receber') ? state.receber.length : '—'}</strong>
           </div>
           <div class="mini-stat">
             <span>Contas a pagar</span>
-            <strong>${state.pagar.length}</strong>
+            <strong>${state.abasCarregadas.has('pagar') ? state.pagar.length : '—'}</strong>
           </div>
           <div class="mini-stat">
             <span>Movimentos fluxo</span>
-            <strong>${state.fluxo.length}</strong>
+            <strong>${state.abasCarregadas.has('fluxo') ? state.fluxo.length : '—'}</strong>
           </div>
           <div class="mini-stat">
             <span>Lucratividade</span>
-            <strong>${state.lucratividade.length}</strong>
+            <strong>${state.abasCarregadas.has('lucratividade') ? state.lucratividade.length : '—'}</strong>
           </div>
           <div class="mini-stat">
             <span>Variações vendidas</span>
-            <strong>${state.grade.length}</strong>
+            <strong>${state.abasCarregadas.has('grade') ? state.grade.length : '—'}</strong>
           </div>
         </div>
       </div>
@@ -203,6 +203,9 @@ function render() {
 }
 
 function renderConteudoAba() {
+  if (state.abasCarregando.has(state.aba)) {
+    return `<div class="module-skeleton" style="padding:24px"><div class="skeleton-line" style="height:28px;margin-bottom:14px"></div><div class="skeleton-line" style="height:160px"></div></div>`;
+  }
   if (state.aba === 'resumo') return renderResumo();
   if (state.aba === 'receber') return renderTabelaReceber();
   if (state.aba === 'pagar') return renderTabelaPagar();
@@ -1053,8 +1056,11 @@ function bindEventos() {
   });
 
   document.querySelectorAll('[data-aba]').forEach((btn) => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       state.aba = btn.dataset.aba;
+      const carregamento = carregarDados([state.aba]);
+      render();
+      await carregamento;
       render();
     });
   });
@@ -1084,8 +1090,10 @@ async function recarregarModulo(mensagem = '') {
   if (state.loading) return;
   state.loading = true;
   try {
+    limparDadosDetalhados();
+    state.filtroKey = JSON.stringify(getFiltrosGlobais());
     renderLoading();
-    await carregarDados();
+    await carregarDados([state.aba]);
     render();
     if (mensagem) renderFeedback(mensagem, 'success');
   } catch (error) {
