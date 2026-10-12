@@ -295,7 +295,7 @@ const AT = {
           </div>
           <div class="cl-tb-actions">
             <div class="actions-menu-wrapper" id="atActionsWrapper">
-              <button type="button" class="cl-tb-btn" id="atActionsBtn" title="Ações">
+              <button type="button" class="cl-tb-btn" id="atActionsBtn" title="Ações" aria-expanded="false" aria-controls="atActionsDropdown">
                 <i class="fa-solid fa-ellipsis"></i>
                 <span class="cl-tb-btn-lbl">Ações</span>
                 <span id="atFiltrosBadge" class="badge badge--primary${this.state.filtroStatus ? '' : ' hidden'}" style="font-size:.7rem">${this.state.filtroStatus ? 1 : 0}</span>
@@ -387,13 +387,22 @@ const AT = {
 
     // ── "Ações" dropdown
     document.getElementById('atActionsBtn')?.addEventListener('click', () => {
-      document.getElementById('atActionsDropdown')?.classList.toggle('hidden');
+      const dropdown = document.getElementById('atActionsDropdown');
+      const aberto = dropdown?.classList.toggle('hidden') === false;
+      document.getElementById('atActionsBtn')?.setAttribute('aria-expanded', String(aberto));
     });
     if (!this._atDropdownCloseBound) {
       this._atDropdownCloseBound = true;
       document.addEventListener('click', e => {
         if (!e.target.closest('#atActionsWrapper')) {
           document.getElementById('atActionsDropdown')?.classList.add('hidden');
+          document.getElementById('atActionsBtn')?.setAttribute('aria-expanded', 'false');
+        }
+      });
+      document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') {
+          document.getElementById('atActionsDropdown')?.classList.add('hidden');
+          document.getElementById('atActionsBtn')?.setAttribute('aria-expanded', 'false');
         }
       });
     }
@@ -407,6 +416,7 @@ const AT = {
         const badge = document.getElementById('atFiltrosBadge');
         if (badge) { badge.textContent = this.state.filtroStatus ? '1' : '0'; badge.classList.toggle('hidden', !this.state.filtroStatus); }
         document.getElementById('atActionsDropdown')?.classList.add('hidden');
+        document.getElementById('atActionsBtn')?.setAttribute('aria-expanded', 'false');
         this.loadOS();
         return;
       }

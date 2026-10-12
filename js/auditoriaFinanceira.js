@@ -170,7 +170,7 @@ function renderUI() {
       </div>
       <div class="cl-tb-actions">
         <div class="actions-menu-wrapper" id="audActionsWrapper">
-          <button type="button" class="cl-tb-btn" id="audActionsBtn" title="Ações">
+          <button type="button" class="cl-tb-btn" id="audActionsBtn" title="Ações" aria-expanded="false" aria-controls="audActionsDropdown">
             <i class="fa-solid fa-ellipsis"></i>
             <span class="cl-tb-btn-lbl">Ações</span>
             <span id="audFiltrosBadge" class="badge badge--primary${[state.filtros.tipo, state.filtros.entidade].filter(Boolean).length ? '' : ' hidden'}" style="font-size:.7rem">${[state.filtros.tipo, state.filtros.entidade].filter(Boolean).length}</span>
@@ -238,13 +238,22 @@ function bind() {
   ['audFiltroTipo', 'audFiltroEntidade', 'audFiltroPeriodo'].forEach(id => enhanceSelect(document.getElementById(id)));
   // ── "Ações" dropdown
   document.getElementById('audActionsBtn')?.addEventListener('click', () => {
-    document.getElementById('audActionsDropdown')?.classList.toggle('hidden');
+    const dropdown = document.getElementById('audActionsDropdown');
+    const aberto = dropdown?.classList.toggle('hidden') === false;
+    document.getElementById('audActionsBtn')?.setAttribute('aria-expanded', String(aberto));
   });
   if (!_audDropdownCloseBound) {
     _audDropdownCloseBound = true;
     document.addEventListener('click', (e) => {
       if (!e.target.closest('#audActionsWrapper')) {
         document.getElementById('audActionsDropdown')?.classList.add('hidden');
+        document.getElementById('audActionsBtn')?.setAttribute('aria-expanded', 'false');
+      }
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        document.getElementById('audActionsDropdown')?.classList.add('hidden');
+        document.getElementById('audActionsBtn')?.setAttribute('aria-expanded', 'false');
       }
     });
   }

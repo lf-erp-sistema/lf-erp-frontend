@@ -9868,3 +9868,53 @@ mark.cb-hl {
 @media (max-width: 700px) { .cb-stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }.cb-sessao-card { flex-direction: column; align-items: flex-start; }.cb-sessao-card__right { width: 100%; justify-content: flex-end; }.cb-busca-detalhe { max-width: 100%; } }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cb-info-card { border-color: rgba(59,130,246,.25); background: rgba(59,130,246,.1); color: #93c5fd; }:root:not([data-theme="light"]) .cb-sessao-card, :root:not([data-theme="light"]) .cb-busca-detalhe { background: var(--bg); } }
 :root[data-theme="dark"] .cb-info-card { border-color: rgba(59,130,246,.25); background: rgba(59,130,246,.1); color: #93c5fd; }:root[data-theme="dark"] .cb-sessao-card, :root[data-theme="dark"] .cb-busca-detalhe { background: var(--bg); }
+
+/* Consolidação final das barras de busca, filtros e menus de ação.
+   Estas regras atendem os módulos que ainda usam o toolbar compacto, sem
+   alterar o comportamento específico de cada tela. */
+body:not(.pdv-active) .cl-tb-row {
+  min-width: 0;
+}
+body:not(.pdv-active) .cl-tb-row > .cl-tb-search {
+  min-width: 0;
+}
+body:not(.pdv-active) .cl-tb-actions {
+  min-width: 0;
+}
+body:not(.pdv-active) .actions-menu-dropdown {
+  max-width: min(360px, calc(100vw - 28px));
+  overscroll-behavior: contain;
+}
+body:not(.pdv-active) .actions-menu-item:focus-visible,
+body:not(.pdv-active) .actions-menu-dropdown .cl-tb-select:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+body:not(.pdv-active) .cl-tb-btn[aria-expanded="true"] {
+  border-color: color-mix(in srgb, var(--primary) 42%, var(--border));
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+@media (max-width: 640px) {
+  body:not(.pdv-active) .cl-tb-row {
+    align-items: stretch;
+  }
+  body:not(.pdv-active) .cl-tb-row > .cl-tb-search {
+    flex-basis: 100%;
+    width: 100%;
+  }
+  body:not(.pdv-active) .cl-tb-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  body:not(.pdv-active) .actions-menu-dropdown {
+    position: fixed;
+    top: auto;
+    right: 14px;
+    left: 14px;
+    bottom: max(14px, env(safe-area-inset-bottom));
+    max-width: none;
+    max-height: min(70dvh, 560px);
+    overflow-y: auto;
+  }
+}
