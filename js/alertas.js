@@ -29,6 +29,8 @@ const AlertasModule = {
     aba: 'disparar',
     config: null,
     historico: [],
+    historicoCarregado: false,
+    historicoLoading: null,
     resultadoDisparo: null,
     carregando: false,
     promissorias: [],
@@ -43,7 +45,7 @@ const AlertasModule = {
     this.load();
   },
 
-  async load() {
+  async load({ atualizarHistorico = false } = {}) {
     if (this.state.carregando) return;
     this.state.carregando = true;
     this.setFeedback('', '');
@@ -52,12 +54,11 @@ const AlertasModule = {
       Array.from({length: 3}).map(() => '<div class="skeleton-line" style="height:40px;margin-bottom:10px;border-radius:6px"></div>').join('')
     }</div>`;
     try {
-      const [cfgRes, histRes] = await Promise.allSettled([
-        api.getAlertasConfig(),
-        api.getAlertasHistorico()
-      ]);
-      this.state.config    = cfgRes.status  === 'fulfilled' ? (cfgRes.value?.config   || null) : null;
-      this.state.historico = histRes.status === 'fulfilled' ? (histRes.value?.historico || []) : [];
+      const cfgRes = await api.getAlertasConfig();
+      this.state.config = cfgRes?.config || null;
+      if (atualizarHistorico || this.state.aba === 'historico') {
+        await this.carregarHistorico({ force: atualizarHistorico });
+      }
       this.renderConteudo();
     } catch (err) {
       console.error('[alertas] load:', err);
@@ -65,6 +66,24 @@ const AlertasModule = {
     } finally {
       this.state.carregando = false;
     }
+  },
+
+  async carregarHistorico({ force = false } = {}) {
+    if (this.state.historicoCarregado && !force) return;
+    if (this.state.historicoLoading && !force) return this.state.historicoLoading;
+
+    const requisicao = api.getAlertasHistorico()
+      .then((res) => {
+        this.state.historico = res?.historico || [];
+        this.state.historicoCarregado = true;
+      })
+      .catch((err) => {
+        console.error('[alertas] histórico:', err);
+        showToast('Não foi possível carregar o histórico de alertas.', 'error');
+      })
+      .finally(() => { this.state.historicoLoading = null; });
+    this.state.historicoLoading = requisicao;
+    return requisicao;
   },
 
   async loadPromissorias() {
@@ -130,9 +149,9 @@ const AlertasModule = {
     if (!c) return;
 
     const atuBtn = document.getElementById('alertasAtualizarBtn');
-    if (atuBtn) atuBtn.onclick = () => { if (this.state.carregando) return; this.load(); };
+    if (atuBtn) atuBtn.onclick = () => { if (this.state.carregando) return; this.load({ atualizarHistorico: true }); };
 
-    c.onclick = (e) => {
+    c.onclick = async (e) => {
       const abaBtn = e.target.closest('[data-al-aba]');
       if (abaBtn) {
         this.state.aba = abaBtn.dataset.alAba;
@@ -140,6 +159,10 @@ const AlertasModule = {
         abaBtn.classList.add('btn-inline--active');
         if (this.state.aba === 'promissorias' && !this.state.promissorias.length) {
           this.loadPromissorias();
+        } else if (this.state.aba === 'historico' && !this.state.historicoCarregado) {
+          this.renderConteudo();
+          await this.carregarHistorico();
+          if (this.state.aba === 'historico') this.renderConteudo();
         } else {
           this.renderConteudo();
         }
@@ -151,7 +174,12 @@ const AlertasModule = {
     const c = document.getElementById('alertasConteudo');
     if (!c) return;
     if (this.state.aba === 'config')       { c.innerHTML = this.renderConfig();       this.bindConfigEvents();       return; }
-    if (this.state.aba === 'historico')    { c.innerHTML = this.renderHistorico();     return; }
+    if (this.state.aba === 'historico') {
+      c.innerHTML = this.state.historicoLoading
+        ? '<div class="empty-table-state"><i class="fa-solid fa-spinner fa-spin"></i><strong>Carregando histórico...</strong></div>'
+        : this.renderHistorico();
+      return;
+    }
     if (this.state.aba === 'promissorias') { c.innerHTML = this.renderPromissorias();  this.bindPromissoriasEvents(); return; }
     c.innerHTML = this.renderDisparar();
     this.bindDispararEvents();
@@ -280,6 +308,7 @@ const AlertasModule = {
         showToast(result.mensagem || 'Alertas processados.', 'success');
         if (fb) { fb.className = 'module-feedback module-feedback--success'; fb.textContent = result.mensagem || 'Concluído.'; }
         this.renderConteudo();
+        this.state.historicoCarregado = false;
         await this.load();
       } catch (err) {
         const msg = buildFriendlyError(err);
