@@ -26,7 +26,8 @@ const state = {
   totalRegistros: 0,
   loading: false,
   ordem: 'data_vencimento',
-  ordemDir: 'desc'
+  ordemDir: 'desc',
+  alertFocus: false
 };
 
 let _cpDropdownCloseBound = false;
@@ -204,14 +205,26 @@ function renderAlertasVencCP() {
   const { atrasadas, valAtrasadas, hoje, valHoje, prox7, valProx7 } = calcAlertasVencCP();
   if (!atrasadas && !hoje && !prox7) return '';
   const fmtC = v => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-  const chip = (label, qtd, val, cls) =>
-    qtd ? `<div class="cp-alerta-chip cp-alerta-chip--${cls}"><span class="cp-alerta-chip__num">${qtd}</span><span class="cp-alerta-chip__label">${label}</span><span class="cp-alerta-chip__val">${fmtC(val)}</span></div>` : '';
+  const insight = (label, qtd, val, tone, icon, action = '') => qtd ? `
+    <article class="cp-alert-insight cp-alert-insight--${tone}">
+      <span class="cp-alert-insight__icon"><i class="fa-solid ${icon}"></i></span>
+      <div class="cp-alert-insight__content">
+        <span class="cp-alert-insight__eyebrow">${label}</span>
+        <strong>${qtd} título${qtd !== 1 ? 's' : ''} · ${fmtC(val)}</strong>
+      </div>
+      ${action}
+    </article>` : '';
   return `
-    <div class="cp-alertas-venc">
-      ${chip('Em atraso', atrasadas, valAtrasadas, 'danger')}
-      ${chip('Vencem hoje', hoje, valHoje, 'warning')}
-      ${chip('Próx. 7 dias', prox7, valProx7, 'info')}
-    </div>`;
+    <section class="cp-alertas-venc" aria-label="Alertas de vencimento">
+      ${insight(
+        'Atenção necessária', atrasadas, valAtrasadas, 'danger', 'fa-triangle-exclamation',
+        state.alertFocus && state.filtros.status === 'atrasado'
+          ? '<button type="button" class="cp-alert-insight__action" data-cp-alert-action="back"><i class="fa-solid fa-arrow-left"></i> Voltar à visão geral</button>'
+          : '<button type="button" class="cp-alert-insight__action" data-cp-alert-filter="atrasado">Ver títulos <i class="fa-solid fa-arrow-right"></i></button>'
+      )}
+      ${insight('Vencem hoje', hoje, valHoje, 'warning', 'fa-calendar-day')}
+      ${insight('Próximos 7 dias', prox7, valProx7, 'info', 'fa-calendar-week')}
+    </section>`;
 }
 
 function _sortItems() {
@@ -579,13 +592,26 @@ function bindEventos() {
     state.filtros.busca = busca?.value?.trim() || '';
     state.filtros.status = status?.value || '';
     state.filtros.fornecedor_id = fornecedor?.value || '';
+    state.alertFocus = false;
     state.pagina = 1;
     salvarFiltrosCP();
     await recarregar();
   });
 
+  document.querySelectorAll('[data-cp-alert-filter], [data-cp-alert-action="back"]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const voltarVisaoGeral = btn.dataset.cpAlertAction === 'back';
+      state.filtros.status = voltarVisaoGeral ? '' : (btn.dataset.cpAlertFilter || '');
+      state.alertFocus = !voltarVisaoGeral;
+      state.pagina = 1;
+      salvarFiltrosCP();
+      await recarregar();
+    });
+  });
+
   btnLimpar?.addEventListener('click', async () => {
     state.filtros = { status: '', fornecedor_id: '', busca: '' };
+    state.alertFocus = false;
     state.pagina = 1;
     salvarFiltrosCP();
     await recarregar();
@@ -2414,45 +2440,37 @@ function injectContasPagarStyles() {
     .lf-pagination__info small { font-weight: 600; font-size: 0.8rem; }
 
     .cp-alertas-venc {
-      display: flex;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
       gap: 10px;
-      flex-wrap: wrap;
       margin-bottom: 16px;
     }
-    .cp-alerta-chip {
+    .cp-alert-insight {
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 8px 14px;
-      border-radius: 10px;
-      border: 1px solid transparent;
-      font-size: 0.84rem;
-      font-weight: 700;
+      min-width: 0;
+      min-height: 74px;
+      gap: 11px;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--surface);
     }
-    .cp-alerta-chip--danger {
-      background: var(--danger-soft, rgba(220,38,38,.08));
-      border-color: rgba(220,38,38,.18);
-      color: #b91c1c;
-    }
-    .cp-alerta-chip--warning {
-      background: var(--warning-soft, rgba(217,119,6,.08));
-      border-color: rgba(217,119,6,.18);
-      color: #92400e;
-    }
-    .cp-alerta-chip--info {
-      background: var(--info-soft, rgba(8,145,178,.08));
-      border-color: rgba(8,145,178,.18);
-      color: #0e7490;
-    }
-    .cp-alerta-chip__num {
-      font-size: 1.1em;
-      font-weight: 900;
-    }
-    .cp-alerta-chip__label { opacity: .85; }
-    .cp-alerta-chip__val {
-      font-variant-numeric: tabular-nums;
-      font-weight: 800;
-    }
+    .cp-alert-insight__icon { display:grid; flex:0 0 34px; width:34px; height:34px; place-items:center; border-radius:10px; font-size:.86rem; }
+    .cp-alert-insight__content { display:flex; min-width:0; flex:1; flex-direction:column; gap:2px; }
+    .cp-alert-insight__eyebrow { color:var(--text-muted); font-size:.72rem; font-weight:800; letter-spacing:.03em; text-transform:uppercase; }
+    .cp-alert-insight__content strong { overflow:hidden; color:var(--text); font-size:.93rem; font-variant-numeric:tabular-nums; text-overflow:ellipsis; white-space:nowrap; }
+    .cp-alert-insight--danger { border-color:rgba(220,38,38,.18); background:linear-gradient(110deg,var(--danger-soft,rgba(220,38,38,.08)),var(--surface) 68%); }
+    .cp-alert-insight--danger .cp-alert-insight__icon { background:rgba(220,38,38,.12); color:#c62828; }
+    .cp-alert-insight--danger .cp-alert-insight__content strong { color:#c62828; }
+    .cp-alert-insight--warning { border-color:rgba(217,119,6,.18); background:linear-gradient(110deg,var(--warning-soft,rgba(217,119,6,.08)),var(--surface) 68%); }
+    .cp-alert-insight--warning .cp-alert-insight__icon { background:rgba(217,119,6,.12); color:#a16207; }
+    .cp-alert-insight--info { border-color:rgba(8,145,178,.18); background:linear-gradient(110deg,var(--info-soft,rgba(8,145,178,.08)),var(--surface) 68%); }
+    .cp-alert-insight--info .cp-alert-insight__icon { background:rgba(8,145,178,.12); color:#0e7490; }
+    .cp-alert-insight__action { display:inline-flex; flex:0 0 auto; align-items:center; gap:6px; padding:7px 9px; border:0; border-radius:8px; background:transparent; color:#b91c1c; cursor:pointer; font:inherit; font-size:.76rem; font-weight:800; }
+    .cp-alert-insight__action:hover { background:rgba(220,38,38,.10); }
+    .cp-alert-insight__action:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
+    @media (max-width:620px) { .cp-alertas-venc { grid-template-columns:1fr; } .cp-alert-insight { min-height:66px; } }
 
     /* ── Pagar conta modal (cp-pg-*) ── */
     .cp-pg-body { overflow-y: auto; }
