@@ -8,6 +8,8 @@ const PDVModule = {
     initialized: false,
     empresa: null,
     clientes: [],
+    clientesCarregados: false,
+    clientesLoading: null,
     produtos: [],
     produtosFiltrados: [],
     _categoriaAtiva: '',
@@ -36,6 +38,8 @@ const PDVModule = {
     // _keyboardBound e _offlineBound NÃO são resetados: listeners no document são registrados uma única vez
     this.state.carrinho = [];
     this.state.clientes = [];
+    this.state.clientesCarregados = false;
+    this.state.clientesLoading = null;
     this.state.produtos = [];
     this.state.produtosFiltrados = [];
     this.state.pagamentos = [{ forma: 'Dinheiro', valor: 0, parcelas: 1, vencimento: '' }];
@@ -122,17 +126,29 @@ const PDVModule = {
     });
 
     // Autocomplete de cliente
-    this.el.clienteBusca?.addEventListener('input', () => {
+    this.el.clienteBusca?.addEventListener('input', async () => {
       const term = this.el.clienteBusca.value.trim();
       if (!term) { this.limparCliente(); this.renderClienteDropdown([]); return; }
+      try {
+        await this.carregarClientesSobDemanda();
+      } catch (error) {
+        showToast('Não foi possível carregar os clientes agora.', 'error');
+        return;
+      }
       this.renderClienteDropdown(this.filterClientes(term));
     });
     this.el.clienteBusca?.addEventListener('blur', () => {
       setTimeout(() => this.renderClienteDropdown([]), 200);
     });
-    this.el.clienteBusca?.addEventListener('focus', () => {
+    this.el.clienteBusca?.addEventListener('focus', async () => {
       const term = this.el.clienteBusca.value.trim();
-      if (term) this.renderClienteDropdown(this.filterClientes(term));
+      if (!term) return;
+      try {
+        await this.carregarClientesSobDemanda();
+        this.renderClienteDropdown(this.filterClientes(term));
+      } catch (error) {
+        showToast('Não foi possível carregar os clientes agora.', 'error');
+      }
     });
 
     // â”€â”€ Split de pagamento — delegação de eventos â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -205,10 +221,10 @@ const PDVModule = {
     }
 
     // â”€â”€ Abas mobile â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    document.getElementById('pdvTabs')?.addEventListener('click', (e) => {
+    document.getElementById('pdvTabs')?.addEventListener('click', async (e) => {
       const btn = e.target.closest('[data-tab]');
       if (!btn) return;
-      this.switchTab(btn.dataset.tab);
+      await this.switchTab(btn.dataset.tab);
     });
 
     document.getElementById('pdvNovaVendaBtn')?.addEventListener('click', (e) => {
@@ -585,20 +601,16 @@ const PDVModule = {
 
     try {
       if (isOnline) {
-        const [clientes, produtos] = await Promise.all([
-          this.fetchClientes(),
+        const [produtos] = await Promise.all([
           this.fetchProdutos(),
           this.syncPendentesIfOnline().catch(() => {})
         ]);
-        this.state.clientes = Array.isArray(clientes) ? clientes : [];
         this.state.produtos = Array.isArray(produtos) ? produtos : [];
         PdvOffline.salvarProdutos(this.state.produtos).catch(() => {});
-        PdvOffline.salvarClientes(this.state.clientes).catch(() => {});
         this.carregarResumoDoDia(); // fire-and-forget: não deve atrasar a carga do PDV
       } else {
-        const [produtos, clientes] = await Promise.all([PdvOffline.getProdutos(), PdvOffline.getClientes()]);
+        const produtos = await PdvOffline.getProdutos();
         this.state.produtos = produtos;
-        this.state.clientes = clientes;
       }
 
       this.renderClientes();
@@ -625,7 +637,6 @@ const PDVModule = {
       if (!navigator.onLine) {
         try {
           this.state.produtos = await PdvOffline.getProdutos();
-          this.state.clientes = await PdvOffline.getClientes();
           this.state.produtosFiltrados = [...this.state.produtos];
           this.renderClientes();
           this.renderProdutos();
@@ -1006,6 +1017,25 @@ const PDVModule = {
     return r?.dados ?? r;
   },
 
+  async carregarClientesSobDemanda() {
+    if (this.state.clientesCarregados) return this.state.clientes;
+    if (this.state.clientesLoading) return this.state.clientesLoading;
+
+    const request = (async () => {
+      const clientes = navigator.onLine
+        ? await this.fetchClientes()
+        : await PdvOffline.getClientes();
+      this.state.clientes = Array.isArray(clientes) ? clientes : [];
+      this.state.clientesCarregados = true;
+      if (navigator.onLine) PdvOffline.salvarClientes(this.state.clientes).catch(() => {});
+      this.renderClientes();
+      return this.state.clientes;
+    })().finally(() => { this.state.clientesLoading = null; });
+
+    this.state.clientesLoading = request;
+    return request;
+  },
+
   async fetchProdutos() {
     return api.getProdutos();
   },
@@ -1325,7 +1355,7 @@ const PDVModule = {
 
   // â”€â”€ Abas mobile â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-  switchTab(tab) {
+  async switchTab(tab) {
     // Cliente e Pagamento ficam na mesma aba; 'pagamento' abre essa aba já na seção de pagamento
     const irParaPagamento = tab === 'pagamento';
     if (irParaPagamento) tab = 'cliente';
@@ -1343,6 +1373,14 @@ const PDVModule = {
       btn.classList.toggle('pdv-v2__tab--active', active);
       btn.classList.toggle('pdv-tab--active', active);
     });
+
+    if (tab === 'cliente') {
+      try {
+        await this.carregarClientesSobDemanda();
+      } catch (error) {
+        showToast('Não foi possível carregar os clientes agora.', 'error');
+      }
+    }
 
     if (irParaPagamento) {
       document.getElementById('pdvSecaoPagamento')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
