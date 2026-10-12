@@ -1,7 +1,7 @@
 ﻿import api from './api.js';
 import { showToast } from './feedback.js';
 import { todayFortaleza, escapeHtml, buildFriendlyError, calcPeriodoLocal, debounce, formatCurrency } from './utils.js';
-import { enhanceSelect } from './premiumSelect.js';
+let _cpFilterEscapeHandler = null;
 
 const state = {
   contas: [],
@@ -29,8 +29,6 @@ const state = {
   ordemDir: 'desc',
   alertFocus: false
 };
-
-let _cpDropdownCloseBound = false;
 
 function salvarFiltrosCP() {
   try { sessionStorage.setItem('lf_filtros_cp', JSON.stringify(state.filtros)); } catch {}
@@ -271,6 +269,12 @@ function render() {
   const si = col => state.ordem === col
     ? (state.ordemDir === 'asc' ? ' <span class="sort-icon sort-icon--asc">↑</span>' : ' <span class="sort-icon sort-icon--desc">↓</span>')
     : ' <span class="sort-icon sort-icon--idle">⇅</span>';
+  const filtrosAtivos = [
+    Boolean(state.filtros.status),
+    Boolean(state.filtros.fornecedor_id),
+    state.periodo.preset !== '30dias',
+    state.ordem !== 'data_vencimento' || state.ordemDir !== 'desc'
+  ].filter(Boolean).length;
 
   container.innerHTML = `
     <section class="module-card cp-module-card">
@@ -284,23 +288,6 @@ function render() {
       </div>
 
       ${renderAlertasVencCP()}
-
-      <div class="periodo-local">
-        <span class="periodo-local__label">Período:</span>
-        <div class="periodo-local__presets">
-          ${['hoje','7dias','30dias','mesAtual','mesAnterior'].map(p => {
-            const labels = { hoje:'Hoje', '7dias':'7 dias', '30dias':'30 dias', mesAtual:'Este mês', mesAnterior:'Mês ant.' };
-            return `<button type="button" class="periodo-local__btn${state.periodo.preset===p?' periodo-local__btn--active':''}" data-cp-period="${p}">${labels[p]}</button>`;
-          }).join('')}
-          <button type="button" class="periodo-local__btn${state.periodo.preset==='personalizado'?' periodo-local__btn--active':''}" data-cp-period="personalizado">Personalizado</button>
-        </div>
-        <div id="cpPeriodoCustom" class="periodo-local__custom${state.periodo.preset==='personalizado'?'':' hidden'}">
-          <input type="date" id="cpDataIni" class="input" value="${state.periodo.dataInicial}">
-          <span>até</span>
-          <input type="date" id="cpDataFim" class="input" value="${state.periodo.dataFinal}">
-          <button type="button" class="btn btn-primary" id="cpAplicarPeriodo">Aplicar</button>
-        </div>
-      </div>
 
       <div class="cl-tb-kpi-strip">
         <div class="cl-tb-kpi-item">
@@ -336,44 +323,11 @@ function render() {
             value="${escapeHtml(state.filtros.busca || '')}" />
         </div>
         <div class="cl-tb-actions">
-          <div class="actions-menu-wrapper" id="cpActionsWrapper">
-            <button type="button" class="cl-tb-btn" id="cpActionsBtn" title="Ações">
-              <i class="fa-solid fa-ellipsis"></i>
-              <span class="cl-tb-btn-lbl">Ações</span>
-              <span id="cpFiltrosBadge" class="badge badge--primary${[state.filtros.status, state.filtros.fornecedor_id].filter(Boolean).length ? '' : ' hidden'}" style="font-size:.7rem">${[state.filtros.status, state.filtros.fornecedor_id].filter(Boolean).length}</span>
-              <i class="fa-solid fa-chevron-down" style="font-size:10px"></i>
-            </button>
-            <div class="actions-menu-dropdown hidden" id="cpActionsDropdown" style="min-width:230px;padding:10px 0 4px;max-height:min(560px,80vh);overflow-y:auto">
-              <div style="padding:0 14px">
-                <label class="prd-filtro-lbl" for="cpStatus">Status</label>
-                <select id="cpStatus" class="cl-tb-select" style="width:100%;margin-bottom:12px">
-                  <option value="">Todos os status</option>
-                  <option value="pendente" ${state.filtros.status === 'pendente' ? 'selected' : ''}>Pendentes</option>
-                  <option value="atrasado" ${state.filtros.status === 'atrasado' ? 'selected' : ''}>Atrasadas</option>
-                  <option value="pago" ${state.filtros.status === 'pago' ? 'selected' : ''}>Pagas</option>
-                  <option value="parcial" ${state.filtros.status === 'parcial' ? 'selected' : ''}>Parciais</option>
-                  <option value="parcial_atrasado" ${state.filtros.status === 'parcial_atrasado' ? 'selected' : ''}>Parcial em atraso</option>
-                </select>
-                <label class="prd-filtro-lbl" for="cpFornecedor">Fornecedor</label>
-                <select id="cpFornecedor" class="cl-tb-select" style="width:100%;margin-bottom:12px">
-                  <option value="">Todos os fornecedores</option>
-                  ${state.fornecedores.map(fornecedor => `
-                    <option value="${fornecedor.id}" ${String(state.filtros.fornecedor_id) === String(fornecedor.id) ? 'selected' : ''}>
-                      ${escapeHtml(fornecedor.nome)}
-                    </option>
-                  `).join('')}
-                </select>
-                <div style="display:flex;gap:8px">
-                  <button type="button" class="btn btn-primary" id="btnFiltrarContasPagar" style="flex:1;justify-content:center">
-                    <i class="fa-solid fa-filter"></i> Filtrar
-                  </button>
-                  <button type="button" class="btn btn-light" id="btnLimparFiltrosContasPagar" style="flex:1;justify-content:center">
-                    <i class="fa-solid fa-eraser"></i> Limpar
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <button type="button" class="cl-tb-btn${filtrosAtivos ? ' cp-filters-trigger--active' : ''}" id="btnFiltrosContasPagar" title="Filtros avançados">
+            <i class="fa-solid fa-sliders"></i>
+            <span class="cl-tb-btn-lbl">Filtros</span>
+            ${filtrosAtivos ? `<span class="cp-filters-badge">${filtrosAtivos}</span>` : ''}
+          </button>
           <button class="cl-tb-btn cl-tb-btn--primary" id="btnNovaContaPagar" type="button">
             <i class="fa-solid fa-plus"></i>
             <span class="cl-tb-btn-lbl">Nova Conta</span>
@@ -381,6 +335,48 @@ function render() {
           <button class="cl-tb-btn cl-tb-btn--icon" id="btnAtualizarContasPagar" type="button" title="Atualizar" aria-label="Atualizar">
             <i class="fa-solid fa-rotate"></i>
           </button>
+        </div>
+      </div>
+
+      <div class="modal-overlay cp-filters-overlay hidden" id="cpFiltrosModal">
+        <div class="modal-card modal-card--xl cp-filters-modal-card" role="dialog" aria-modal="true" aria-labelledby="cpFiltrosTitulo">
+          <div class="modal-card__header">
+            <div>
+              <span class="cp-fi-panel-kicker"><i class="fa-solid fa-sliders"></i> Filtros avançados</span>
+              <p id="cpFiltrosTitulo">Refine as contas por período, situação, fornecedor e vencimento.</p>
+              <div class="cp-fi-draft"><i class="fa-solid fa-wand-magic-sparkles"></i><span id="cpDraftSummary">Ajuste os critérios antes de aplicar.</span></div>
+            </div>
+            <div class="cp-fi-head-actions">
+              <span class="cp-fi-active-count${filtrosAtivos ? ' is-active' : ''}">${filtrosAtivos ? `${filtrosAtivos} filtro${filtrosAtivos > 1 ? 's' : ''}` : 'Padrão'}</span>
+              <button type="button" class="modal-close" id="cpFecharFiltros" title="Fechar filtros" aria-label="Fechar filtros"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+          </div>
+          <div class="modal-card__body cp-filters-modal-body">
+            <div class="cp-fi-sections">
+              <section class="cp-fi-section">
+                <div class="cp-filtros-lbl"><i class="fa-regular fa-calendar"></i> Período</div>
+                <div class="cp-fpills">
+                  ${[['hoje','Hoje'],['7dias','7 dias'],['30dias','Últ. 30 dias'],['mesAtual','Este mês'],['mesAnterior','Mês ant.'],['personalizado','Personalizado']].map(([value,label]) => `<button type="button" class="cp-fpill${state.periodo.preset === value ? ' cp-fpill--active' : ''}" data-cp-fp-period="${value}">${label}</button>`).join('')}
+                </div>
+                <div id="cpFpCustomDates" class="cp-fp-custom-dates${state.periodo.preset === 'personalizado' ? '' : ' hidden'}">
+                  <input type="date" id="cpFpDataIni" class="input" value="${state.periodo.dataInicial}"><span>até</span><input type="date" id="cpFpDataFim" class="input" value="${state.periodo.dataFinal}">
+                </div>
+              </section>
+              <section class="cp-fi-section">
+                <div class="cp-filtros-lbl"><i class="fa-solid fa-circle-check"></i> Status</div>
+                <div class="cp-fpills">
+                  ${[['','Todos'],['pendente','Pendentes'],['atrasado','Atrasadas'],['pago','Pagas'],['parcial','Parciais'],['parcial_atrasado','Parcial atraso']].map(([value,label]) => `<button type="button" class="cp-fpill${state.filtros.status === value ? ' cp-fpill--active' : ''}" data-cp-fp-status="${value}">${label}</button>`).join('')}
+                </div>
+              </section>
+              <section class="cp-fi-section">
+                <div class="cp-filtros-lbl"><i class="fa-solid fa-building"></i> Fornecedor</div>
+                <select id="cpFpFornecedor" class="cp-fi-select"><option value="">Todos os fornecedores</option>${state.fornecedores.map(f => `<option value="${f.id}" ${String(state.filtros.fornecedor_id) === String(f.id) ? 'selected' : ''}>${escapeHtml(f.nome)}</option>`).join('')}</select>
+                <div class="cp-filtros-lbl cp-filtros-lbl--sub"><i class="fa-solid fa-arrow-down-wide-short"></i> Vencimento</div>
+                <div class="cp-fpills"><button type="button" class="cp-fpill${state.ordemDir === 'asc' ? ' cp-fpill--active' : ''}" data-cp-fp-order="asc">↑ Mais antigo</button><button type="button" class="cp-fpill${state.ordemDir === 'desc' ? ' cp-fpill--active' : ''}" data-cp-fp-order="desc">↓ Mais recente</button></div>
+              </section>
+            </div>
+          </div>
+          <div class="modal-card__footer cp-fi-footer"><span class="cp-fi-footer-note"><i class="fa-solid fa-circle-info"></i> As alterações são aplicadas ao confirmar.</span><button type="button" class="btn btn-light btn-sm" id="cpLimparFiltrosModal"><i class="fa-solid fa-rotate-left"></i> Limpar filtros</button><button type="button" class="btn btn-primary btn-sm" id="cpAplicarFiltros">Aplicar filtros</button></div>
         </div>
       </div>
 
@@ -552,28 +548,7 @@ function _abrirAcoesCPModal(btn) {
 
 function bindEventos() {
   const btnAtualizar = document.getElementById('btnAtualizarContasPagar');
-  const btnFiltrar = document.getElementById('btnFiltrarContasPagar');
-  const btnLimpar = document.getElementById('btnLimparFiltrosContasPagar');
   const busca = document.getElementById('cpBusca');
-  const status = document.getElementById('cpStatus');
-  const fornecedor = document.getElementById('cpFornecedor');
-  enhanceSelect(status);
-  enhanceSelect(fornecedor);
-
-  // ── "Ações" dropdown — elemento é recriado a cada render(), então o toggle
-  // é ligado direto nele (sem acumular); o fechar-ao-clicar-fora usa um
-  // listener único no document, registrado apenas na primeira vez.
-  document.getElementById('cpActionsBtn')?.addEventListener('click', () => {
-    document.getElementById('cpActionsDropdown')?.classList.toggle('hidden');
-  });
-  if (!_cpDropdownCloseBound) {
-    _cpDropdownCloseBound = true;
-    document.addEventListener('click', (e) => {
-      if (!e.target.closest('#cpActionsWrapper')) {
-        document.getElementById('cpActionsDropdown')?.classList.add('hidden');
-      }
-    });
-  }
 
   document.getElementById('btnNovaContaPagar')?.addEventListener('click', () => {
     abrirModalNovaContaPagar();
@@ -588,15 +563,86 @@ function bindEventos() {
     await recarregar();
   });
 
-  btnFiltrar?.addEventListener('click', async () => {
-    state.filtros.busca = busca?.value?.trim() || '';
-    state.filtros.status = status?.value || '';
-    state.filtros.fornecedor_id = fornecedor?.value || '';
-    state.alertFocus = false;
-    state.pagina = 1;
-    salvarFiltrosCP();
-    await recarregar();
+  // ── Modal de filtros: alterações só entram em vigor ao confirmar. ──────
+  const filtersModal = document.getElementById('cpFiltrosModal');
+  const closeFilters = () => {
+    filtersModal?.classList.add('hidden');
+    if (_cpFilterEscapeHandler) document.removeEventListener('keydown', _cpFilterEscapeHandler);
+    _cpFilterEscapeHandler = null;
+  };
+  const syncDraftSummary = () => {
+    if (!filtersModal) return;
+    const periodo = filtersModal.querySelector('[data-cp-fp-period].cp-fpill--active')?.textContent.trim() || 'Período';
+    const status = filtersModal.querySelector('[data-cp-fp-status].cp-fpill--active')?.textContent.trim() || 'Todos';
+    const fornecedor = filtersModal.querySelector('#cpFpFornecedor')?.selectedOptions?.[0]?.textContent.trim() || 'Todos os fornecedores';
+    const ordem = filtersModal.querySelector('[data-cp-fp-order].cp-fpill--active')?.textContent.trim() || 'Vencimento';
+    const summary = filtersModal.querySelector('#cpDraftSummary');
+    if (summary) summary.textContent = `${periodo} · ${status} · ${fornecedor} · ${ordem}`;
+  };
+  document.getElementById('btnFiltrosContasPagar')?.addEventListener('click', () => {
+    filtersModal?.classList.remove('hidden');
+    syncDraftSummary();
+    _cpFilterEscapeHandler = (event) => { if (event.key === 'Escape') closeFilters(); };
+    document.addEventListener('keydown', _cpFilterEscapeHandler);
   });
+  filtersModal?.addEventListener('click', async (event) => {
+    if (event.target === filtersModal || event.target.closest('#cpFecharFiltros')) { closeFilters(); return; }
+    const period = event.target.closest('[data-cp-fp-period]');
+    const status = event.target.closest('[data-cp-fp-status]');
+    const order = event.target.closest('[data-cp-fp-order]');
+    if (period) {
+      filtersModal.querySelectorAll('[data-cp-fp-period]').forEach(button => button.classList.remove('cp-fpill--active'));
+      period.classList.add('cp-fpill--active');
+      filtersModal.querySelector('#cpFpCustomDates')?.classList.toggle('hidden', period.dataset.cpFpPeriod !== 'personalizado');
+    }
+    if (status) {
+      filtersModal.querySelectorAll('[data-cp-fp-status]').forEach(button => button.classList.remove('cp-fpill--active'));
+      status.classList.add('cp-fpill--active');
+    }
+    if (order) {
+      filtersModal.querySelectorAll('[data-cp-fp-order]').forEach(button => button.classList.remove('cp-fpill--active'));
+      order.classList.add('cp-fpill--active');
+    }
+    if (period || status || order) syncDraftSummary();
+    if (event.target.closest('#cpAplicarFiltros')) {
+      const selectedPeriod = filtersModal.querySelector('[data-cp-fp-period].cp-fpill--active')?.dataset.cpFpPeriod || '30dias';
+      const selectedStatus = filtersModal.querySelector('[data-cp-fp-status].cp-fpill--active')?.dataset.cpFpStatus || '';
+      const selectedOrder = filtersModal.querySelector('[data-cp-fp-order].cp-fpill--active')?.dataset.cpFpOrder || 'desc';
+      state.periodo.preset = selectedPeriod;
+      if (selectedPeriod === 'personalizado') {
+        state.periodo.dataInicial = filtersModal.querySelector('#cpFpDataIni')?.value || '';
+        state.periodo.dataFinal = filtersModal.querySelector('#cpFpDataFim')?.value || '';
+      } else {
+        const { dataInicial, dataFinal } = calcPeriodoLocal(selectedPeriod);
+        state.periodo.dataInicial = dataInicial;
+        state.periodo.dataFinal = dataFinal;
+      }
+      state.filtros.status = selectedStatus;
+      state.filtros.fornecedor_id = filtersModal.querySelector('#cpFpFornecedor')?.value || '';
+      state.ordem = 'data_vencimento';
+      state.ordemDir = selectedOrder;
+      state.alertFocus = false;
+      state.pagina = 1;
+      salvarFiltrosCP();
+      closeFilters();
+      await recarregar();
+    }
+    if (event.target.closest('#cpLimparFiltrosModal')) {
+      state.filtros = { status: '', fornecedor_id: '', busca: '' };
+      state.periodo.preset = '30dias';
+      const { dataInicial, dataFinal } = calcPeriodoLocal('30dias');
+      state.periodo.dataInicial = dataInicial;
+      state.periodo.dataFinal = dataFinal;
+      state.ordem = 'data_vencimento';
+      state.ordemDir = 'desc';
+      state.alertFocus = false;
+      state.pagina = 1;
+      salvarFiltrosCP();
+      closeFilters();
+      await recarregar();
+    }
+  });
+  filtersModal?.querySelector('#cpFpFornecedor')?.addEventListener('change', syncDraftSummary);
 
   document.querySelectorAll('[data-cp-alert-filter], [data-cp-alert-action="back"]').forEach((btn) => {
     btn.addEventListener('click', async () => {
@@ -620,8 +666,6 @@ function bindEventos() {
   busca?.addEventListener('keydown', async (event) => {
     if (event.key === 'Enter') {
       state.filtros.busca = busca.value.trim();
-      state.filtros.status = status?.value || '';
-      state.filtros.fornecedor_id = fornecedor?.value || '';
       state.pagina = 1;
       salvarFiltrosCP();
       await recarregar();
@@ -632,8 +676,6 @@ function bindEventos() {
     const inp = document.getElementById('cpBusca');
     const curval = inp?.value || '';
     state.filtros.busca = curval.trim();
-    state.filtros.status = document.getElementById('cpStatus')?.value || '';
-    state.filtros.fornecedor_id = document.getElementById('cpFornecedor')?.value || '';
     state.pagina = 1;
     salvarFiltrosCP();
     await recarregar();
@@ -654,27 +696,6 @@ function bindEventos() {
       _sortItems();
       render();
     });
-  });
-
-  document.querySelectorAll('[data-cp-period]').forEach((btn) => {
-    btn.addEventListener('click', async () => {
-      const preset = btn.dataset.cpPeriod;
-      state.periodo.preset = preset;
-      if (preset !== 'personalizado') {
-        const { dataInicial, dataFinal } = calcPeriodoLocal(preset);
-        state.periodo.dataInicial = dataInicial;
-        state.periodo.dataFinal = dataFinal;
-      }
-      state.pagina = 1;
-      await recarregar();
-    });
-  });
-
-  document.getElementById('cpAplicarPeriodo')?.addEventListener('click', async () => {
-    state.periodo.dataInicial = document.getElementById('cpDataIni')?.value || '';
-    state.periodo.dataFinal = document.getElementById('cpDataFim')?.value || '';
-    state.pagina = 1;
-    await recarregar();
   });
 
   document.querySelectorAll("[data-action='cp-pagina']").forEach((btn) => {
@@ -2438,6 +2459,40 @@ function injectContasPagarStyles() {
     .lf-pagination__btn:disabled { opacity: 0.4; cursor: not-allowed; }
     .lf-pagination__info { font-size: 0.88rem; font-weight: 700; color: var(--text-muted); }
     .lf-pagination__info small { font-weight: 600; font-size: 0.8rem; }
+
+    /* ── Filtros avançados ─────────────────────────────────────────────── */
+    .cp-filters-overlay { padding: 20px; background: rgba(15,23,42,.46); backdrop-filter: blur(5px); }
+    .cp-filters-modal-card { width: min(980px, 100%); max-height: min(760px, calc(100dvh - 40px)); }
+    .cp-filters-modal-body { overflow-y: auto; padding: 22px 24px; }
+    .cp-fi-panel-kicker { display:flex; align-items:center; gap:8px; color:var(--text); font-size:.98rem; font-weight:800; }
+    .cp-fi-panel-kicker i, .cp-filtros-lbl i { color:var(--primary); }
+    .cp-filters-modal-card .modal-card__header p { margin:4px 0 0; color:var(--text-muted); font-size:.84rem; }
+    .cp-fi-draft { display:inline-flex; align-items:center; gap:7px; max-width:100%; margin-top:12px; padding:6px 10px; border:1px solid var(--border); border-radius:999px; background:var(--surface-2); color:var(--text-muted); font-size:.75rem; font-weight:700; }
+    .cp-fi-draft span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .cp-fi-head-actions { display:flex; align-items:center; gap:10px; }
+    .cp-fi-active-count { flex-shrink:0; padding:6px 10px; border:1px solid var(--border); border-radius:999px; background:var(--surface); color:var(--text-muted); font-size:.74rem; font-weight:800; }
+    .cp-fi-active-count.is-active { border-color:color-mix(in srgb,var(--primary) 32%,var(--border)); background:var(--primary-soft); color:var(--primary); }
+    .cp-fi-sections { display:grid; grid-template-columns:1.25fr 1fr 1fr; gap:12px; }
+    .cp-fi-section { display:flex; flex-direction:column; gap:10px; min-width:0; padding:14px; border:1px solid var(--border); border-radius:14px; background:color-mix(in srgb,var(--surface) 86%,var(--surface-2)); }
+    .cp-filtros-lbl { display:flex; align-items:center; gap:7px; color:var(--text-muted); font-size:.71rem; font-weight:800; letter-spacing:.06em; text-transform:uppercase; }
+    .cp-filtros-lbl--sub { margin-top:4px; }
+    .cp-fpills { display:flex; flex-wrap:wrap; gap:7px; }
+    .cp-fpill { min-height:36px; padding:6px 12px; border:1px solid var(--border); border-radius:10px; background:var(--surface); color:var(--text); cursor:pointer; font-size:.82rem; font-weight:650; transition:background .15s,border-color .15s,color .15s,box-shadow .15s; }
+    .cp-fpill:hover { border-color:var(--primary); background:var(--primary-soft); color:var(--primary); }
+    .cp-fpill--active { border-color:var(--primary)!important; background:var(--primary)!important; color:#fff!important; box-shadow:0 5px 12px color-mix(in srgb,var(--primary) 22%,transparent); }
+    .cp-fp-custom-dates { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .cp-fp-custom-dates .input, .cp-fi-select { min-height:38px; padding:0 10px; border:1px solid var(--border); border-radius:9px; background:var(--surface); color:var(--text); font:inherit; font-size:.82rem; }
+    .cp-fp-custom-dates .input { flex:1; min-width:110px; }
+    .cp-fp-custom-dates span { color:var(--text-muted); font-size:.8rem; }
+    .cp-fp-custom-dates.hidden { display:none; }
+    .cp-fi-select { width:100%; }
+    .cp-fi-footer { display:flex; align-items:center; justify-content:flex-end; gap:8px; }
+    .cp-fi-footer-note { margin-right:auto; color:var(--text-muted); font-size:.76rem; }
+    .cp-fi-footer-note i { margin-right:5px; color:var(--primary); }
+    .cp-filters-trigger--active { border-color:color-mix(in srgb,var(--primary) 36%,var(--border))!important; background:var(--primary-soft)!important; color:var(--primary)!important; }
+    .cp-filters-badge { display:inline-grid; min-width:18px; height:18px; place-items:center; border-radius:999px; background:var(--primary); color:#fff; font-size:.68rem; font-weight:800; }
+    @media (max-width:760px) { .cp-filters-overlay { padding:12px; } .cp-fi-sections { grid-template-columns:1fr; } .cp-fi-footer { flex-wrap:wrap; } .cp-fi-footer-note { width:100%; margin:0 0 4px; } }
+    @media (max-width:520px) { .cp-filters-modal-body { padding:16px; } .cp-filters-modal-card .modal-card__header { padding:18px; } .cp-fi-draft { max-width:230px; } .cp-fi-footer .btn { flex:1; justify-content:center; } }
 
     .cp-alertas-venc {
       display: grid;
