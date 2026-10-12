@@ -66,6 +66,7 @@ const NfeModule = {
     total: 0,
     pagina: 1,
     filtroStatus: '',
+    configCarregada: false,
     carregando: false
   },
 
@@ -76,7 +77,7 @@ const NfeModule = {
     this.load();
   },
 
-  async load() {
+  async load({ force = false } = {}) {
     if (this.state.carregando) return;
     this.state.carregando = true;
     this.setFeedback('', '');
@@ -85,7 +86,11 @@ const NfeModule = {
       Array.from({length: 5}).map(() => '<div class="skeleton-line" style="height:38px;margin-bottom:10px;border-radius:6px"></div>').join('')
     }</div>`;
     try {
-      await Promise.all([this.fetchLista(), this.fetchConfig()]);
+      if (this.state.aba === 'lista') {
+        await this.fetchLista();
+      } else if (this.state.aba === 'emitir' || this.state.aba === 'config') {
+        if (force || !this.state.configCarregada) await this.fetchConfig();
+      }
       this.renderConteudo();
     } catch (err) {
       console.error('[nfe] load:', err);
@@ -111,6 +116,8 @@ const NfeModule = {
     } catch {
       this.state.config  = null;
       this.state.empresa = null;
+    } finally {
+      this.state.configCarregada = true;
     }
   },
 
@@ -145,17 +152,21 @@ const NfeModule = {
   bindShellEvents() {
     document.getElementById('nfeAtualizarBtn')?.addEventListener('click', async () => {
       if (this.state.carregando) return;
-      await this.load();
+      await this.load({ force: true });
     });
 
-    document.getElementById('nfeContainer')?.addEventListener('click', (e) => {
+    document.getElementById('nfeContainer')?.addEventListener('click', async (e) => {
       const btn = e.target.closest('[data-nfe-aba]');
       if (!btn) return;
       this.state.aba = btn.dataset.nfeAba;
       // Update active tab
       document.querySelectorAll('[data-nfe-aba]').forEach((b) => b.classList.remove('btn-inline--active'));
       btn.classList.add('btn-inline--active');
-      this.renderConteudo();
+      if ((this.state.aba === 'emitir' || this.state.aba === 'config') && !this.state.configCarregada) {
+        await this.load();
+      } else {
+        this.renderConteudo();
+      }
     });
   },
 
