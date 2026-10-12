@@ -120,6 +120,10 @@ async function carregarContas() {
   const response = await api.getContasReceber({
     ...filtrosGlobais,
     ...state.filtros,
+    // A API aplica esta ordenação antes de paginar. Isso mantém a página 1
+    // realmente com os vencimentos mais recentes, mesmo com muitos clientes.
+    ordem: state.ordem,
+    ordem_dir: state.ordemDir,
     page: state.pagina,
     limit: 50
   });
@@ -1532,7 +1536,7 @@ function bindEventos() {
   busca?.addEventListener('input', debouncedBusca);
 
   document.querySelectorAll('th[data-sort-col]').forEach(th => {
-    th.addEventListener('click', () => {
+    th.addEventListener('click', async () => {
       const col = th.dataset.sortCol;
       if (state.ordem === col) {
         state.ordemDir = state.ordemDir === 'asc' ? 'desc' : 'asc';
@@ -1540,8 +1544,9 @@ function bindEventos() {
         state.ordem = col;
         state.ordemDir = 'asc';
       }
-      _sortItems();
-      render();
+      // A troca de coluna altera o conjunto completo, não só os 50 itens em tela.
+      state.pagina = 1;
+      await recarregar();
     });
   });
 
