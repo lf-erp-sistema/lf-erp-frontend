@@ -1,4 +1,5 @@
 ﻿import api from './api.js';
+import { getAuth } from './auth.js';
 import { showToast } from './feedback.js';
 import { todayFortaleza, escapeHtml, buildFriendlyError, calcPeriodoLocal, debounce, formatCurrency } from './utils.js';
 let _cpFilterEscapeHandler = null;
@@ -15,6 +16,9 @@ const state = {
     qtd_atrasado: 0
   },
   fornecedores: [],
+  fornecedoresCarregados: false,
+  fornecedoresLoading: null,
+  catalogoScope: '',
   filtros: {
     status: '',
     fornecedor_id: '',
@@ -82,6 +86,7 @@ function setLoading(value) {
 export async function initContasPagarModule() {
   try {
     state.loading = true;
+    garantirEscopoCatalogo();
     carregarFiltrosCP();
     if (!state.periodo.dataInicial) {
       const datas = calcPeriodoLocal(state.periodo.preset);
@@ -90,7 +95,7 @@ export async function initContasPagarModule() {
     }
     renderSkeleton();
 
-    await Promise.all([carregarFornecedores(), carregarContas()]);
+    await carregarContas();
 
     _sortItems();
     render();
@@ -104,9 +109,30 @@ export async function initContasPagarModule() {
   }
 }
 
-async function carregarFornecedores() {
-  const response = await api.getContasPagarFornecedores();
-  state.fornecedores = Array.isArray(response) ? response : [];
+function garantirEscopoCatalogo() {
+  const auth = getAuth();
+  const scope = `${auth?.user?.id || ''}:${api.getEmpresaId() || ''}`;
+  if (state.catalogoScope && state.catalogoScope !== scope) {
+    state.fornecedores = [];
+    state.fornecedoresCarregados = false;
+    state.fornecedoresLoading = null;
+  }
+  state.catalogoScope = scope;
+}
+
+async function carregarFornecedores({ force = false } = {}) {
+  if (state.fornecedoresCarregados && !force) return;
+  if (state.fornecedoresLoading && !force) return state.fornecedoresLoading;
+
+  const request = api.getContasPagarFornecedores({ force })
+    .then((response) => {
+      state.fornecedores = Array.isArray(response) ? response : [];
+      state.fornecedoresCarregados = true;
+    })
+    .finally(() => { state.fornecedoresLoading = null; });
+
+  state.fornecedoresLoading = request;
+  return request;
 }
 
 async function carregarContas() {
@@ -550,8 +576,17 @@ function bindEventos() {
   const btnAtualizar = document.getElementById('btnAtualizarContasPagar');
   const busca = document.getElementById('cpBusca');
 
-  document.getElementById('btnNovaContaPagar')?.addEventListener('click', () => {
-    abrirModalNovaContaPagar();
+  document.getElementById('btnNovaContaPagar')?.addEventListener('click', async (event) => {
+    const button = event.currentTarget;
+    button.disabled = true;
+    try {
+      await carregarFornecedores();
+      abrirModalNovaContaPagar();
+    } catch (error) {
+      showToast('Não foi possível carregar os fornecedores agora.', 'error');
+    } finally {
+      button.disabled = false;
+    }
   });
 
   document.addEventListener('click', (e) => {
@@ -560,7 +595,7 @@ function bindEventos() {
   }, { capture: false });
 
   btnAtualizar?.addEventListener('click', async () => {
-    await recarregar();
+    await recarregar({ atualizarFornecedores: true });
   });
 
   // ── Modal de filtros: alterações só entram em vigor ao confirmar. ──────
@@ -579,11 +614,31 @@ function bindEventos() {
     const summary = filtersModal.querySelector('#cpDraftSummary');
     if (summary) summary.textContent = `${periodo} · ${status} · ${fornecedor} · ${ordem}`;
   };
-  document.getElementById('btnFiltrosContasPagar')?.addEventListener('click', () => {
-    filtersModal?.classList.remove('hidden');
-    syncDraftSummary();
-    _cpFilterEscapeHandler = (event) => { if (event.key === 'Escape') closeFilters(); };
-    document.addEventListener('keydown', _cpFilterEscapeHandler);
+  document.getElementById('btnFiltrosContasPagar')?.addEventListener('click', async (event) => {
+    const button = event.currentTarget;
+    const precisaPreencherCatalogo = !state.fornecedoresCarregados;
+    button.disabled = true;
+    try {
+      await carregarFornecedores();
+      if (precisaPreencherCatalogo) {
+        // A primeira abertura preenche o select com o catálogo recém-carregado.
+        // A tela é recriada antes de exibir o modal para não manipular dados no DOM.
+        render();
+        document.getElementById('cpFiltrosModal')?.classList.remove('hidden');
+      } else {
+        filtersModal?.classList.remove('hidden');
+        syncDraftSummary();
+      }
+      if (_cpFilterEscapeHandler) document.removeEventListener('keydown', _cpFilterEscapeHandler);
+      _cpFilterEscapeHandler = (keyEvent) => {
+        if (keyEvent.key === 'Escape') document.getElementById('cpFiltrosModal')?.classList.add('hidden');
+      };
+      document.addEventListener('keydown', _cpFilterEscapeHandler);
+    } catch (error) {
+      showToast('Não foi possível carregar os fornecedores agora.', 'error');
+    } finally {
+      button.disabled = false;
+    }
   });
   filtersModal?.addEventListener('click', async (event) => {
     if (event.target === filtersModal || event.target.closest('#cpFecharFiltros')) { closeFilters(); return; }
@@ -730,7 +785,7 @@ function bindEventos() {
   });
 }
 
-async function recarregar() {
+async function recarregar({ atualizarFornecedores = false } = {}) {
   if (state.loading) return;
   setLoading(true);
   showMessage('Atualizando contas a pagar...', 'info');
@@ -738,7 +793,10 @@ async function recarregar() {
   try {
     renderSkeleton();
 
-    await Promise.all([carregarFornecedores(), carregarContas()]);
+    await Promise.all([
+      carregarContas(),
+      atualizarFornecedores ? carregarFornecedores({ force: true }) : Promise.resolve()
+    ]);
 
     _sortItems();
     render();

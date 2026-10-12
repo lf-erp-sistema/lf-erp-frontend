@@ -1,4 +1,5 @@
 ﻿import api from './api.js';
+import { getAuth } from './auth.js';
 import { showToast, confirmarAcao } from './feedback.js';
 import { gerarPIX } from './pix.js';
 import { escapeHtml, buildFriendlyError, todayFortaleza, calcPeriodoLocal, debounce, formatCurrency } from './utils.js';
@@ -18,6 +19,9 @@ const state = {
     qtd_atrasado: 0
   },
   clientes: [],
+  clientesCarregados: false,
+  clientesLoading: null,
+  catalogoScope: '',
   filtros: {
     status: '',
     cliente_id: '',
@@ -86,6 +90,7 @@ function setLoading(value) {
 export async function initContasReceberModule() {
   try {
     state.loading = true;
+    garantirEscopoCatalogo();
     carregarFiltrosCR();
     if (!state.periodo.dataInicial) {
       const datas = calcPeriodoLocal(state.periodo.preset);
@@ -94,7 +99,11 @@ export async function initContasReceberModule() {
     }
     renderSkeleton();
 
-    await Promise.all([carregarClientes(), carregarContas()]);
+    await Promise.all([
+      carregarContas(),
+      // Um filtro de cliente restaurado precisa do catálogo para exibir o nome correto.
+      state.filtros.cliente_id ? carregarClientes() : Promise.resolve()
+    ]);
 
     _sortItems();
     render();
@@ -108,9 +117,30 @@ export async function initContasReceberModule() {
   }
 }
 
-async function carregarClientes() {
-  const response = await api.getContasReceberClientes();
-  state.clientes = Array.isArray(response) ? response : [];
+function garantirEscopoCatalogo() {
+  const auth = getAuth();
+  const scope = `${auth?.user?.id || ''}:${api.getEmpresaId() || ''}`;
+  if (state.catalogoScope && state.catalogoScope !== scope) {
+    state.clientes = [];
+    state.clientesCarregados = false;
+    state.clientesLoading = null;
+  }
+  state.catalogoScope = scope;
+}
+
+async function carregarClientes({ force = false } = {}) {
+  if (state.clientesCarregados && !force) return;
+  if (state.clientesLoading && !force) return state.clientesLoading;
+
+  const request = api.getContasReceberClientes({ force })
+    .then((response) => {
+      state.clientes = Array.isArray(response) ? response : [];
+      state.clientesCarregados = true;
+    })
+    .finally(() => { state.clientesLoading = null; });
+
+  state.clientesLoading = request;
+  return request;
 }
 
 async function carregarContas() {
@@ -1254,7 +1284,7 @@ function bindEventos() {
 
   btnAtualizar?.addEventListener('click', async () => {
     document.getElementById('crMoreDropdown')?.classList.add('hidden');
-    await recarregar();
+    await recarregar({ atualizarClientes: true });
   });
 
   // ── Kebab menu ⋮ ───────────────────────────────────────────────────────────
@@ -1275,8 +1305,17 @@ function bindEventos() {
   document.getElementById('crMesAnterior')?.addEventListener('click', () => _navegarMes(-1));
   document.getElementById('crMesSeguinte')?.addEventListener('click', () => _navegarMes(+1));
 
-  btnNovaContaManual?.addEventListener('click', () => {
-    abrirModalContaManual();
+  btnNovaContaManual?.addEventListener('click', async (event) => {
+    const button = event.currentTarget;
+    button.disabled = true;
+    try {
+      await carregarClientes();
+      abrirModalContaManual();
+    } catch (error) {
+      showToast('Não foi possível carregar os clientes agora.', 'error');
+    } finally {
+      button.disabled = false;
+    }
   });
 
   document.querySelectorAll('[data-cr-alert-filter], [data-cr-alert-action="back"]').forEach((btn) => {
@@ -1612,7 +1651,24 @@ function bindEventos() {
   const crInput = document.getElementById('crClienteInput');
   const crDrop  = document.getElementById('crClienteDrop');
   if (crInput && crDrop) {
-    crInput.addEventListener('focus', () => { crDrop.style.display = 'block'; });
+    const preencherOpcoesClientes = () => {
+      crDrop.innerHTML = `
+        <div class="cr-combobox__opt" data-val="" data-lbl="Todos os clientes">Todos os clientes</div>
+        ${state.clientes.map(c => `<div class="cr-combobox__opt${String(state.filtros.cliente_id) === String(c.id) ? ' cr-combobox__opt--sel' : ''}" data-val="${c.id}" data-lbl="${escapeHtml(c.nome)}">${escapeHtml(c.nome)}</div>`).join('')}`;
+    };
+    crInput.addEventListener('focus', async () => {
+      try {
+        await carregarClientes();
+        preencherOpcoesClientes();
+        const q = crInput.value.toLowerCase().trim();
+        crDrop.querySelectorAll('.cr-combobox__opt').forEach(opt => {
+          opt.style.display = !q || opt.dataset.lbl.toLowerCase().includes(q) ? '' : 'none';
+        });
+        crDrop.style.display = 'block';
+      } catch (error) {
+        showToast('Não foi possível carregar os clientes agora.', 'error');
+      }
+    });
     crInput.addEventListener('input', () => {
       const q = crInput.value.toLowerCase().trim();
       crDrop.querySelectorAll('.cr-combobox__opt').forEach(opt => {
@@ -1771,7 +1827,7 @@ function _abrirAcoesCRModal(conta) {
   });
 }
 
-async function recarregar() {
+async function recarregar({ atualizarClientes = false } = {}) {
   if (state.loading) return;
   setLoading(true);
   showMessage('Atualizando contas a receber...', 'info');
@@ -1779,7 +1835,10 @@ async function recarregar() {
   try {
     renderSkeleton();
 
-    await Promise.all([carregarClientes(), carregarContas()]);
+    await Promise.all([
+      carregarContas(),
+      atualizarClientes ? carregarClientes({ force: true }) : Promise.resolve()
+    ]);
 
     _sortItems();
     render();
