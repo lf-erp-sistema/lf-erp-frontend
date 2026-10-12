@@ -10,6 +10,8 @@ const CaixaModule = {
     saldo_calculado: 0,
     vendas_dinheiro_pix: { total: 0, quantidade: 0 },
     historico: [],
+    historicoCarregado: false,
+    historicoLoading: null,
     carregando: false
   },
 
@@ -20,25 +22,23 @@ const CaixaModule = {
     return this.load();
   },
 
-  async load() {
+  async load({ atualizarHistorico = false } = {}) {
     this.state.carregando = true;
     this.setFeedback('Carregando...', 'info');
     try {
-      const [ativaRes, histRes] = await Promise.allSettled([
-        api.getCaixaSessaoAtiva(),
-        api.getCaixaHistorico()
-      ]);
+      const d = await api.getCaixaSessaoAtiva();
+      this.state.sessao              = d?.sessao || null;
+      this.state.movimentos          = d?.movimentos || [];
+      this.state.saldo_calculado     = d?.saldo_calculado ?? 0;
+      this.state.vendas_dinheiro_pix = d?.vendas_dinheiro_pix || { total: 0, quantidade: 0 };
 
-      if (ativaRes.status === 'fulfilled') {
-        const d = ativaRes.value;
-        this.state.sessao              = d?.sessao || null;
-        this.state.movimentos          = d?.movimentos || [];
-        this.state.saldo_calculado     = d?.saldo_calculado ?? 0;
-        this.state.vendas_dinheiro_pix = d?.vendas_dinheiro_pix || { total: 0, quantidade: 0 };
+      // Toda atualização do caixa pode ter criado/fechado uma sessão: invalida
+      // apenas o histórico local, que será solicitado ao abrir a respectiva aba.
+      if (!atualizarHistorico) {
+        this.state.historico = [];
+        this.state.historicoCarregado = false;
       }
-      if (histRes.status === 'fulfilled') {
-        this.state.historico = histRes.value?.sessoes || [];
-      }
+      if (atualizarHistorico || this.state.aba === 'historico') await this.carregarHistorico({ force: atualizarHistorico });
 
       this.renderConteudo();
       this.setFeedback('', '');
@@ -48,6 +48,25 @@ const CaixaModule = {
     } finally {
       this.state.carregando = false;
     }
+  },
+
+  async carregarHistorico({ force = false } = {}) {
+    if (this.state.historicoCarregado && !force) return;
+    if (this.state.historicoLoading && !force) return this.state.historicoLoading;
+
+    const requisicao = api.getCaixaHistorico()
+      .then((res) => {
+        this.state.historico = res?.sessoes || [];
+        this.state.historicoCarregado = true;
+      })
+      .catch((err) => {
+        console.error('[caixa] histórico:', err);
+        showToast('Não foi possível carregar o histórico do caixa.', 'error');
+      })
+      .finally(() => { this.state.historicoLoading = null; });
+
+    this.state.historicoLoading = requisicao;
+    return requisicao;
   },
 
   render() {
@@ -74,15 +93,19 @@ const CaixaModule = {
     const c = document.getElementById('caixaContainer');
     if (!c) return;
 
-    document.getElementById('caixaAtualizarBtn')?.addEventListener('click', () => this.load());
+    document.getElementById('caixaAtualizarBtn')?.addEventListener('click', () => this.load({ atualizarHistorico: true }));
 
-    c.addEventListener('click', (e) => {
+    c.addEventListener('click', async (e) => {
       const abaBtn = e.target.closest('[data-caixa-aba]');
       if (abaBtn) {
         this.state.aba = abaBtn.dataset.caixaAba;
         document.querySelectorAll('[data-caixa-aba]').forEach((b) => b.classList.remove('btn-inline--active'));
         abaBtn.classList.add('btn-inline--active');
         this.renderConteudo();
+        if (this.state.aba === 'historico' && !this.state.historicoCarregado) {
+          await this.carregarHistorico();
+          if (this.state.aba === 'historico') this.renderConteudo();
+        }
       }
     });
   },
@@ -90,7 +113,12 @@ const CaixaModule = {
   renderConteudo() {
     const c = document.getElementById('caixaConteudo');
     if (!c) return;
-    if (this.state.aba === 'historico') { c.innerHTML = this.renderHistorico(); return; }
+    if (this.state.aba === 'historico') {
+      c.innerHTML = this.state.historicoLoading
+        ? '<div class="empty-table-state"><i class="fa-solid fa-spinner fa-spin"></i><strong>Carregando histórico...</strong></div>'
+        : this.renderHistorico();
+      return;
+    }
     c.innerHTML = this.renderCaixa();
     this.bindCaixaEvents();
   },
