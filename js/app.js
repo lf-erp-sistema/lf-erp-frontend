@@ -27,6 +27,11 @@ const AppState = {
   }
 };
 
+// Estado efêmero de navegação: não guarda respostas nem dados de negócio.
+// Serve apenas para evitar a mesma tela iniciar duas cargas simultâneas.
+const _viewLoadPromises = new Map();
+const _loadedViews = new Set();
+
 const STORAGE_KEYS = {
   filters: 'lf_erp_global_filters',
   currentView: 'lf_erp_current_view'
@@ -1015,6 +1020,7 @@ function closeMobileSidebar() {
 
 export async function setActiveView(view) {
   if (view === 'usuarios') view = 'configuracoes';
+  const isCurrentView = view === AppState.currentView;
   if (view !== AppState.currentView) {
     const openModal = Array.from(document.querySelectorAll('.modal-overlay:not(.hidden), [role="dialog"]:not([aria-hidden="true"]):not(.hidden)')).find(el => !el.closest('.hidden'));
     if (openModal) {
@@ -1063,6 +1069,10 @@ export async function setActiveView(view) {
     closeMobileSidebar();
   }
 
+  // Reabrir o item já ativo não é uma atualização de dados. O botão de
+  // atualização e os filtros continuam usando carregamento forçado.
+  if (isCurrentView && _loadedViews.has(view)) return;
+
   await loadCurrentView(view);
 }
 
@@ -1105,13 +1115,32 @@ const VIEW_LOADERS = {
   'configuracoes':       loadConfigReal,
 };
 
-async function loadCurrentView(view) {
+async function loadCurrentView(view, { force = false } = {}) {
   const loader = VIEW_LOADERS[view];
-  if (loader) {
-    await loader();
-  } else {
+  if (!loader) {
     renderViewFeedback(view);
+    _loadedViews.add(view);
+    return;
   }
+
+  if (!force && _viewLoadPromises.has(view)) {
+    return _viewLoadPromises.get(view);
+  }
+
+  const loadPromise = Promise.resolve()
+    .then(() => loader())
+    .then((result) => {
+      _loadedViews.add(view);
+      return result;
+    })
+    .finally(() => {
+      if (_viewLoadPromises.get(view) === loadPromise) {
+        _viewLoadPromises.delete(view);
+      }
+    });
+
+  _viewLoadPromises.set(view, loadPromise);
+  return loadPromise;
 }
 
 function updateNavigationState(view) {
@@ -1330,7 +1359,7 @@ async function applyGlobalFilters() {
   }
 
   if (VIEWS_WITH_GLOBAL_FILTER.has(AppState.currentView)) {
-    await loadCurrentView(AppState.currentView);
+    await loadCurrentView(AppState.currentView, { force: true });
   }
 }
 
@@ -2521,7 +2550,7 @@ async function simulateRefresh() {
     return;
   }
 
-  await loadCurrentView(AppState.currentView);
+  await loadCurrentView(AppState.currentView, { force: true });
   showToast('Dados atualizados.', 'success');
 }
 
