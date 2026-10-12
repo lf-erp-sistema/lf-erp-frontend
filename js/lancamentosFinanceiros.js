@@ -1,7 +1,8 @@
 import api from './api.js';
 import { showToast, confirmarAcao } from './feedback.js';
 import { escapeHtml, buildFriendlyError, calcPeriodoLocal, todayFortaleza, debounce, toCurrency } from './utils.js';
-import { enhanceSelect } from './premiumSelect.js';
+
+let _lfFilterEscapeHandler = null;
 
 const state = {
   itens:   [],
@@ -378,6 +379,12 @@ function render() {
   if (!c) return;
 
   const r = calcResumo();
+  const filtrosAtivos = [
+    Boolean(state.filtros.tipo),
+    Boolean(state.filtros.status),
+    state.periodo.preset !== '30dias',
+    state.ordem !== 'vencimento' || state.ordemDir !== 'desc'
+  ].filter(Boolean).length;
   const itensFiltrados = filtrarItens();
 
   c.innerHTML = `
@@ -393,23 +400,6 @@ function render() {
           estimativa baseada apenas nos ${state.itens.length} lançamento(s) desta página, não no total do período.
         </div>
       ` : ''}
-
-      <div class="periodo-local">
-        <span class="periodo-local__label">Período:</span>
-        <div class="periodo-local__presets">
-          ${['hoje','7dias','30dias','mesAtual','mesAnterior'].map(p => {
-            const labels = { hoje:'Hoje', '7dias':'7 dias', '30dias':'30 dias', mesAtual:'Este mês', mesAnterior:'Mês ant.' };
-            return `<button type="button" class="periodo-local__btn${state.periodo.preset===p?' periodo-local__btn--active':''}" data-lf-period="${p}">${labels[p]}</button>`;
-          }).join('')}
-          <button type="button" class="periodo-local__btn${state.periodo.preset==='personalizado'?' periodo-local__btn--active':''}" data-lf-period="personalizado">Personalizado</button>
-        </div>
-        <div id="lfPeriodoCustom" class="periodo-local__custom${state.periodo.preset==='personalizado'?'':' hidden'}">
-          <input type="date" id="lfDataIni" class="input" value="${state.periodo.dataInicial}">
-          <span>até</span>
-          <input type="date" id="lfDataFim" class="input" value="${state.periodo.dataFinal}">
-          <button type="button" class="btn btn-primary" id="lfAplicarPeriodo">Aplicar</button>
-        </div>
-      </div>
 
       <!-- KPI Strip -->
       <div class="cl-tb-kpi-strip">
@@ -439,7 +429,10 @@ function render() {
           <input type="text" id="lfBusca" placeholder="Buscar descrição, categoria..." value="${esc(state.filtros.busca)}"/>
         </div>
         <div class="cl-tb-actions">
-          <div class="actions-menu-wrapper" id="lfActionsWrapper">
+          <button type="button" class="cl-tb-btn${filtrosAtivos ? ' lf-filters-trigger--active' : ''}" id="lfBtnFiltros" title="Filtros avançados">
+            <i class="fa-solid fa-sliders"></i><span class="cl-tb-btn-lbl">Filtros</span>${filtrosAtivos ? `<span class="lf-filters-badge">${filtrosAtivos}</span>` : ''}
+          </button>
+          <div class="actions-menu-wrapper hidden" id="lfActionsWrapper">
             <button type="button" class="cl-tb-btn" id="lfActionsBtn" title="Ações">
               <i class="fa-solid fa-ellipsis"></i>
               <span class="cl-tb-btn-lbl">Ações</span>
@@ -481,6 +474,18 @@ function render() {
           <button class="cl-tb-btn cl-tb-btn--icon" id="lfBtnAtualizar" type="button" title="Atualizar" aria-label="Atualizar">
             <i class="fa-solid fa-rotate"></i>
           </button>
+        </div>
+      </div>
+
+      <div class="modal-overlay lf-filters-overlay hidden" id="lfFiltrosModal">
+        <div class="modal-card modal-card--xl lf-filters-modal-card" role="dialog" aria-modal="true" aria-labelledby="lfFiltrosTitulo">
+          <div class="modal-card__header"><div><span class="lf-fi-panel-kicker"><i class="fa-solid fa-sliders"></i> Filtros avançados</span><p id="lfFiltrosTitulo">Refine os lançamentos por período, tipo, situação e vencimento.</p></div><div class="lf-fi-head-actions"><span class="lf-fi-active-count${filtrosAtivos ? ' is-active' : ''}">${filtrosAtivos ? `${filtrosAtivos} filtro${filtrosAtivos > 1 ? 's' : ''}` : 'Padrão'}</span><button type="button" class="modal-close" id="lfFecharFiltros" aria-label="Fechar filtros"><i class="fa-solid fa-xmark"></i></button></div></div>
+          <div class="modal-card__body lf-filters-modal-body"><div class="lf-fi-sections">
+            <section class="lf-fi-section"><div class="lf-filtros-lbl"><i class="fa-regular fa-calendar"></i> Período</div><div class="lf-fpills">${[['hoje','Hoje'],['7dias','7 dias'],['30dias','Últ. 30 dias'],['mesAtual','Este mês'],['mesAnterior','Mês ant.'],['personalizado','Personalizado']].map(([v,l]) => `<button type="button" class="lf-fpill${state.periodo.preset === v ? ' lf-fpill--active' : ''}" data-lf-fp-period="${v}">${l}</button>`).join('')}</div><div id="lfFpCustomDates" class="lf-fp-custom-dates${state.periodo.preset === 'personalizado' ? '' : ' hidden'}"><input type="date" id="lfFpDataIni" class="input" value="${state.periodo.dataInicial}"><span>até</span><input type="date" id="lfFpDataFim" class="input" value="${state.periodo.dataFinal}"></div></section>
+            <section class="lf-fi-section"><div class="lf-filtros-lbl"><i class="fa-solid fa-arrow-right-arrow-left"></i> Tipo</div><div class="lf-fpills">${[['','Todos'],['receita','Receitas'],['despesa','Despesas']].map(([v,l]) => `<button type="button" class="lf-fpill${state.filtros.tipo === v ? ' lf-fpill--active' : ''}" data-lf-fp-tipo="${v}">${l}</button>`).join('')}</div><div class="lf-filtros-lbl lf-filtros-lbl--sub"><i class="fa-solid fa-circle-check"></i> Status</div><div class="lf-fpills">${[['','Todos'],['pendente','Pendentes'],['pago','Pagos'],['atrasado','Atrasados'],['parcial','Parciais'],['parcial_atrasado','Parcial atraso']].map(([v,l]) => `<button type="button" class="lf-fpill${state.filtros.status === v ? ' lf-fpill--active' : ''}" data-lf-fp-status="${v}">${l}</button>`).join('')}</div></section>
+            <section class="lf-fi-section"><div class="lf-filtros-lbl"><i class="fa-solid fa-arrow-down-wide-short"></i> Vencimento</div><div class="lf-fpills"><button type="button" class="lf-fpill${state.ordemDir === 'asc' ? ' lf-fpill--active' : ''}" data-lf-fp-order="asc">↑ Mais antigo</button><button type="button" class="lf-fpill${state.ordemDir === 'desc' ? ' lf-fpill--active' : ''}" data-lf-fp-order="desc">↓ Mais recente</button></div></section>
+          </div></div>
+          <div class="modal-card__footer lf-fi-footer"><span class="lf-fi-footer-note"><i class="fa-solid fa-circle-info"></i> As alterações são aplicadas ao confirmar.</span><button type="button" class="btn btn-light btn-sm" id="lfLimparFiltrosModal"><i class="fa-solid fa-rotate-left"></i> Limpar filtros</button><button type="button" class="btn btn-primary btn-sm" id="lfAplicarFiltros">Aplicar filtros</button></div>
         </div>
       </div>
 
@@ -783,6 +788,68 @@ function bindEventos() {
     setLoading(true);
     try { await carregarLancamentos(); render(); } finally { setLoading(false); }
   };
+
+  const filtersModal = document.getElementById('lfFiltrosModal');
+  const closeFilters = () => {
+    filtersModal?.classList.add('hidden');
+    if (_lfFilterEscapeHandler) document.removeEventListener('keydown', _lfFilterEscapeHandler);
+    _lfFilterEscapeHandler = null;
+  };
+  const reloadWithFilters = async () => {
+    if (state.loading) return;
+    setLoading(true);
+    try { await carregarLancamentos(); render(); } finally { setLoading(false); }
+  };
+  document.getElementById('lfBtnFiltros')?.addEventListener('click', () => {
+    filtersModal?.classList.remove('hidden');
+    _lfFilterEscapeHandler = (event) => { if (event.key === 'Escape') closeFilters(); };
+    document.addEventListener('keydown', _lfFilterEscapeHandler);
+  });
+  filtersModal?.addEventListener('click', async (event) => {
+    if (event.target === filtersModal || event.target.closest('#lfFecharFiltros')) { closeFilters(); return; }
+    const groups = [
+      ['[data-lf-fp-period]', 'lf-fpill--active', '#lfFpCustomDates', 'data-lf-fp-period'],
+      ['[data-lf-fp-tipo]', 'lf-fpill--active', null, null],
+      ['[data-lf-fp-status]', 'lf-fpill--active', null, null],
+      ['[data-lf-fp-order]', 'lf-fpill--active', null, null]
+    ];
+    for (const [selector, activeClass, customId, attr] of groups) {
+      const button = event.target.closest(selector);
+      if (!button) continue;
+      filtersModal.querySelectorAll(selector).forEach(item => item.classList.remove(activeClass));
+      button.classList.add(activeClass);
+      if (customId) filtersModal.querySelector(customId)?.classList.toggle('hidden', button.getAttribute(attr) !== 'personalizado');
+    }
+    if (event.target.closest('#lfAplicarFiltros')) {
+      const period = filtersModal.querySelector('[data-lf-fp-period].lf-fpill--active')?.dataset.lfFpPeriod || '30dias';
+      state.periodo.preset = period;
+      if (period === 'personalizado') {
+        state.periodo.dataInicial = filtersModal.querySelector('#lfFpDataIni')?.value || '';
+        state.periodo.dataFinal = filtersModal.querySelector('#lfFpDataFim')?.value || '';
+      } else {
+        const dates = calcPeriodoLocal(period);
+        state.periodo.dataInicial = dates.dataInicial;
+        state.periodo.dataFinal = dates.dataFinal;
+      }
+      state.filtros.tipo = filtersModal.querySelector('[data-lf-fp-tipo].lf-fpill--active')?.dataset.lfFpTipo || '';
+      state.filtros.status = filtersModal.querySelector('[data-lf-fp-status].lf-fpill--active')?.dataset.lfFpStatus || '';
+      state.ordem = 'vencimento';
+      state.ordemDir = filtersModal.querySelector('[data-lf-fp-order].lf-fpill--active')?.dataset.lfFpOrder || 'desc';
+      state.pagina = 1;
+      closeFilters();
+      await reloadWithFilters();
+    }
+    if (event.target.closest('#lfLimparFiltrosModal')) {
+      state.filtros = { tipo: '', status: '', busca: '' };
+      state.periodo.preset = '30dias';
+      const dates = calcPeriodoLocal('30dias');
+      state.periodo.dataInicial = dates.dataInicial;
+      state.periodo.dataFinal = dates.dataFinal;
+      state.ordem = 'vencimento'; state.ordemDir = 'desc'; state.pagina = 1;
+      closeFilters();
+      await reloadWithFilters();
+    }
+  });
 
   // Busca com debounce
   const debouncedBusca = debounce(async () => {
