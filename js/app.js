@@ -1645,6 +1645,48 @@ function _initSortObserver() {
   _sortObserver.observe(document.body, { childList: true, subtree: true });
 }
 
+// Menus compactos de filtros/ações são criados pelos módulos após a navegação.
+// Mantemos a semântica e o fechamento por teclado num único ponto, para que
+// Produtos, Compras, Fluxo de Caixa e telas futuras não dependam de uma
+// implementação isolada em cada módulo.
+let _toolbarMenuObserver = null;
+function _syncToolbarMenuAccessibility(root = document) {
+  root.querySelectorAll?.('.actions-menu-wrapper').forEach((wrapper) => {
+    const menu = wrapper.querySelector('.actions-menu-dropdown');
+    const trigger = wrapper.querySelector('.cl-tb-btn, .est-filter-dd-btn');
+    if (!menu || !trigger) return;
+    if (!menu.id) menu.id = `toolbar-menu-${Math.random().toString(36).slice(2, 9)}`;
+    trigger.setAttribute('aria-controls', menu.id);
+    trigger.setAttribute('aria-haspopup', 'menu');
+    trigger.setAttribute('aria-expanded', String(!menu.classList.contains('hidden')));
+  });
+}
+
+function _initToolbarMenuAccessibility() {
+  if (_toolbarMenuObserver) return;
+  _syncToolbarMenuAccessibility();
+  _toolbarMenuObserver = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      if (mutation.type === 'attributes') {
+        const menu = mutation.target;
+        const wrapper = menu.closest('.actions-menu-wrapper');
+        const trigger = wrapper?.querySelector('.cl-tb-btn, .est-filter-dd-btn');
+        if (trigger) trigger.setAttribute('aria-expanded', String(!menu.classList.contains('hidden')));
+      }
+      for (const node of mutation.addedNodes) {
+        if (node.nodeType !== 1) continue;
+        if (node.matches?.('.actions-menu-wrapper')) _syncToolbarMenuAccessibility(node.parentElement);
+        node.querySelectorAll?.('.actions-menu-wrapper').forEach((wrapper) => _syncToolbarMenuAccessibility(wrapper.parentElement));
+      }
+    }
+  });
+  _toolbarMenuObserver.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+    document.querySelectorAll('.actions-menu-dropdown:not(.hidden)').forEach((menu) => menu.classList.add('hidden'));
+  });
+}
+
 function showMainScreen() {
   const loginScreen = document.getElementById('loginScreen');
   const mainScreen = document.getElementById('mainScreen');
@@ -1653,6 +1695,7 @@ function showMainScreen() {
   if (mainScreen) mainScreen.classList.remove('hidden');
 
   _initSortObserver();
+  _initToolbarMenuAccessibility();
   restoreNavGroupState();
 
   // Conecta SSE para notificações em tempo real (sem polling)
