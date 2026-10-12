@@ -10,6 +10,11 @@ const ComprasModule = {
     fornecedores: [],
     produtos: [],
     filteredItems: [],
+    fornecedoresCarregados: false,
+    produtosCarregados: false,
+    fornecedoresLoading: null,
+    produtosLoading: null,
+    catalogosScope: '',
     empresa: null,
     initialized: false,
     eventsBound: false,
@@ -45,6 +50,16 @@ const ComprasModule = {
     const auth = getAuth();
 
     this.state.empresa = auth?.empresa?.nome || auth?.user?.empresa || 'LF ERP';
+    const scope = `${auth?.user?.id || ''}:${auth?.empresa?.id || auth?.empresa_id || ''}`;
+    if (this.state.catalogosScope && this.state.catalogosScope !== scope) {
+      this.state.fornecedores = [];
+      this.state.produtos = [];
+      this.state.fornecedoresCarregados = false;
+      this.state.produtosCarregados = false;
+      this.state.fornecedoresLoading = null;
+      this.state.produtosLoading = null;
+    }
+    this.state.catalogosScope = scope;
   },
 
   cache() {
@@ -98,11 +113,28 @@ const ComprasModule = {
     this._injectCmpStyles();
 
     // ── "Ações" dropdown (status, fornecedor, Importar XML)
-    document.addEventListener('click', (e) => {
+    document.addEventListener('click', async (e) => {
       const btn = e.target.closest('#comprasActionsBtn');
       const dropdown = document.getElementById('comprasActionsDropdown');
       if (!dropdown) return;
-      if (btn) { dropdown.classList.toggle('hidden'); return; }
+      if (btn) {
+        if (!this.state.fornecedoresCarregados) {
+          btn.disabled = true;
+          try {
+            await this.carregarCatalogos({ fornecedores: true, produtos: false });
+            this.render();
+            this.cache();
+            enhanceSelect(document.getElementById('comprasFiltroStatus'));
+            enhanceSelect(document.getElementById('comprasFiltroFornecedor'));
+            document.getElementById('comprasActionsDropdown')?.classList.remove('hidden');
+          } catch (error) {
+            showToast('Não foi possível carregar os fornecedores agora.', 'error');
+          }
+          return;
+        }
+        dropdown.classList.toggle('hidden');
+        return;
+      }
       if (!e.target.closest('#comprasActionsWrapper')) {
         dropdown.classList.add('hidden');
       }
@@ -174,12 +206,18 @@ const ComprasModule = {
       }
 
       if (btn.id === 'importarXmlBtn') {
+        try {
+          await this.carregarCatalogos();
+        } catch (error) {
+          showToast('Não foi possível preparar os dados para a importação.', 'error');
+          return;
+        }
         document.getElementById('xmlNFInput')?.click();
         return;
       }
 
       if (btn.id === 'novaCompraBtn' || btn.id === 'comprasEmptyNewBtn') {
-        this.openModal();
+        await this.openModal();
         return;
       }
 
@@ -241,15 +279,9 @@ const ComprasModule = {
     this.setLoading(true);
 
     try {
-      const [compras, fornecedores, produtos] = await Promise.all([
-        api.getCompras(),
-        api.getFornecedores(),
-        api.getProdutos()
-      ]);
+      const compras = await api.getCompras();
 
       this.state.items = Array.isArray(compras) ? compras : (compras?.dados ?? []);
-      this.state.fornecedores = Array.isArray(fornecedores) ? fornecedores : (fornecedores?.dados ?? []);
-      this.state.produtos = Array.isArray(produtos) ? produtos : (produtos?.dados ?? []);
 
       this.render();
       this.cache();
@@ -260,9 +292,6 @@ const ComprasModule = {
 
       this.state.items = [];
       this.state.filteredItems = [];
-      this.state.fornecedores = [];
-      this.state.produtos = [];
-
       this.render();
       this.cache();
       this.search('');
@@ -272,6 +301,36 @@ const ComprasModule = {
       this.state.loading = false;
       this.setLoading(false);
     }
+  },
+
+  async carregarCatalogos({ fornecedores = true, produtos = true } = {}) {
+    const tasks = [];
+
+    if (fornecedores && !this.state.fornecedoresCarregados) {
+      if (!this.state.fornecedoresLoading) {
+        this.state.fornecedoresLoading = api.getFornecedores()
+          .then((dados) => {
+            this.state.fornecedores = Array.isArray(dados) ? dados : (dados?.dados ?? []);
+            this.state.fornecedoresCarregados = true;
+          })
+          .finally(() => { this.state.fornecedoresLoading = null; });
+      }
+      tasks.push(this.state.fornecedoresLoading);
+    }
+
+    if (produtos && !this.state.produtosCarregados) {
+      if (!this.state.produtosLoading) {
+        this.state.produtosLoading = api.getProdutos()
+          .then((dados) => {
+            this.state.produtos = Array.isArray(dados) ? dados : (dados?.dados ?? []);
+            this.state.produtosCarregados = true;
+          })
+          .finally(() => { this.state.produtosLoading = null; });
+      }
+      tasks.push(this.state.produtosLoading);
+    }
+
+    await Promise.all(tasks);
   },
 
   render() {
@@ -645,8 +704,33 @@ const ComprasModule = {
     this.renderTable();
   },
 
-  openModal() {
+  async openModal() {
+    try {
+      await this.carregarCatalogos();
+    } catch (error) {
+      showToast('Não foi possível carregar produtos e fornecedores agora.', 'error');
+      return;
+    }
+
     this.cache();
+    this._atualizarCatalogosDoFormulario();
+    this._abrirModalPronto();
+  },
+
+  _atualizarCatalogosDoFormulario() {
+    if (this.el.fornecedor) {
+      this.el.fornecedor.innerHTML = `
+        <option value="">Selecione o fornecedor</option>
+        ${this.state.fornecedores.map((f) => `<option value="${f.id}">${escapeHtml(f.nome)}</option>`).join('')}`;
+    }
+    if (this.el.produto) {
+      this.el.produto.innerHTML = `
+        <option value="">Selecione um produto</option>
+        ${this.state.produtos.map((p) => `<option value="${p.id}" data-custo="${Number(p.custo || 0)}">${escapeHtml(p.nome)}</option>`).join('')}`;
+    }
+  },
+
+  _abrirModalPronto() {
 
     this.state.itensCompra = [];
 
@@ -682,11 +766,14 @@ const ComprasModule = {
   async openEditModal(id) {
     try {
       this.showMessage('Carregando compra...', 'info');
-      const compra = await api.getCompraDetalhe(id);
+      const [compra] = await Promise.all([
+        api.getCompraDetalhe(id),
+        this.carregarCatalogos()
+      ]);
 
       this.state.editingId = Number(id);
 
-      // Salva os itens antes de openModal() resetar state.itensCompra
+      // Salva os itens antes de _abrirModalPronto() resetar state.itensCompra
       const itensCarregados = (compra.itens || []).map(i => ({
         produto_id: i.produto_id,
         produto_nome: i.produto_nome,
@@ -695,7 +782,9 @@ const ComprasModule = {
         subtotal: Number(i.subtotal || 0)
       }));
 
-      this.openModal(); // openModal() faz state.itensCompra = [] — restauramos logo abaixo
+      this.cache();
+      this._atualizarCatalogosDoFormulario();
+      this._abrirModalPronto();
 
       this.state.itensCompra = itensCarregados;
 
