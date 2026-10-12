@@ -1016,12 +1016,16 @@ export async function loadDashboard({ filters = {}, state = {} } = {}) {
     };
 
     const isFuncionario = api.getUserTipo() === 'funcionario';
-    const [rawDashboard, rawResumoFinanceiro, rawEmpresaStatus, rawAlertas, rawTabelaPrecos] = await Promise.all([
+    const dashboardConfig = getDashboardConfig();
+    const widgetAtivo = (id) => !dashboardConfig || dashboardConfig[id] !== false;
+    const deveCarregarGraficos = widgetAtivo('chart-vendas') || widgetAtivo('chart-forma-pagamento');
+    const deveCarregarTabelaPrecos = !isFuncionario && widgetAtivo('panel-tabela-precos');
+
+    const [rawDashboard, rawResumoFinanceiro, rawAlertas, rawTabelaPrecos] = await Promise.all([
       api.getDashboard(params).catch(() => ({})),
       isFuncionario ? Promise.resolve({}) : api.getRelatorioFinanceiroResumo(params).catch(() => ({})),
-      api.getEmpresaStatus().catch(() => null),
       isFuncionario ? Promise.resolve({ alertas: [] }) : api.getAlertas().catch(() => ({ alertas: [] })),
-      isFuncionario ? Promise.resolve(null) : api.getTabelaPrecosDashboard().catch(() => null)
+      deveCarregarTabelaPrecos ? api.getTabelaPrecosDashboard().catch(() => null) : Promise.resolve(null)
     ]);
 
     if (reqId !== _dashReqId) return;
@@ -1053,9 +1057,14 @@ export async function loadDashboard({ filters = {}, state = {} } = {}) {
     renderTopProdutos(payload);
     renderAlertas(payload, financeiro);
     renderTabelaPrecos(rawTabelaPrecos);
-    renderGraficos(params);
+    if (deveCarregarGraficos) {
+      renderGraficos(params);
+    } else {
+      destroyCharts();
+      _setChartSkeletons(false);
+    }
 
-    applyDashboardConfig(getDashboardConfig());
+    applyDashboardConfig(dashboardConfig);
 
     const tsEl = document.getElementById('dashUltimaAtualizacao');
     if (tsEl) {
@@ -1065,8 +1074,7 @@ export async function loadDashboard({ filters = {}, state = {} } = {}) {
 
     return {
       dashboard: payload,
-      financeiro,
-      empresaStatus: rawEmpresaStatus
+      financeiro
     };
   } catch (error) {
     console.error('Erro ao carregar dashboard:', error);
