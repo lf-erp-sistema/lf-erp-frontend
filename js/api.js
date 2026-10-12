@@ -23,6 +23,47 @@ const API_CONFIG = {
   STORAGE_KEY: 'lf_erp_auth'
 };
 
+// Cache curto e exclusivamente em memória para catálogos usados por filtros.
+// Não usa localStorage/sessionStorage e a chave inclui empresa + usuário, para
+// que dados de uma sessão nunca sejam reaproveitados por outra.
+const CATALOG_CACHE_TTL_MS = 60_000;
+const _catalogCache = new Map();
+
+function _catalogCacheScope() {
+  const auth = getStoredAuth();
+  const userId = auth?.user?.id || auth?.user?.usuario || 'anonimo';
+  return `${userId}:${getEmpresaId() || 'sem-empresa'}`;
+}
+
+async function _readCatalogCache(catalogo, loader, { force = false } = {}) {
+  const key = `${_catalogCacheScope()}:${catalogo}`;
+  const now = Date.now();
+  const cached = _catalogCache.get(key);
+  if (!force && cached?.value && now - cached.createdAt < CATALOG_CACHE_TTL_MS) {
+    return cached.value;
+  }
+  if (!force && cached?.pending) return cached.pending;
+
+  const pending = Promise.resolve(loader())
+    .then((value) => {
+      _catalogCache.set(key, { value, createdAt: Date.now() });
+      return value;
+    })
+    .catch((error) => {
+      _catalogCache.delete(key);
+      throw error;
+    });
+  _catalogCache.set(key, { pending, createdAt: now });
+  return pending;
+}
+
+function _invalidateCatalogCache(catalogo) {
+  const suffix = `:${catalogo}`;
+  for (const key of _catalogCache.keys()) {
+    if (key.endsWith(suffix)) _catalogCache.delete(key);
+  }
+}
+
 function getStoredAuth() {
   try {
     const localAuth = localStorage.getItem(API_CONFIG.STORAGE_KEY);
@@ -557,7 +598,7 @@ async function createCliente(payload) {
   const empresa = getEmpresaNome();
   const empresaId = getEmpresaId();
 
-  return request('/clientes', {
+  const response = await request('/clientes', {
     method: 'POST',
     body: {
       ...payload,
@@ -565,13 +606,15 @@ async function createCliente(payload) {
       empresa_id: empresaId
     }
   });
+  _invalidateCatalogCache('clientes-financeiro');
+  return response;
 }
 
 async function updateCliente(id, payload) {
   const empresa = getEmpresaNome();
   const empresaId = getEmpresaId();
 
-  return request(`/clientes/${id}`, {
+  const response = await request(`/clientes/${id}`, {
     method: 'PUT',
     body: {
       ...payload,
@@ -579,19 +622,23 @@ async function updateCliente(id, payload) {
       empresa_id: empresaId
     }
   });
+  _invalidateCatalogCache('clientes-financeiro');
+  return response;
 }
 
 async function deleteCliente(id) {
   const empresa = getEmpresaNome();
   const empresaId = getEmpresaId();
 
-  return request(`/clientes/${id}`, {
+  const response = await request(`/clientes/${id}`, {
     method: 'DELETE',
     query: {
       empresa,
       empresa_id: empresaId
     }
   });
+  _invalidateCatalogCache('clientes-financeiro');
+  return response;
 }
 
 async function getFornecedores(params = {}) {
@@ -604,7 +651,7 @@ async function createFornecedor(payload) {
   const empresa = getEmpresaNome();
   const empresaId = getEmpresaId();
 
-  return request('/fornecedores', {
+  const response = await request('/fornecedores', {
     method: 'POST',
     body: {
       ...payload,
@@ -612,13 +659,15 @@ async function createFornecedor(payload) {
       empresa_id: empresaId
     }
   });
+  _invalidateCatalogCache('fornecedores-financeiro');
+  return response;
 }
 
 async function updateFornecedor(id, payload) {
   const empresa = getEmpresaNome();
   const empresaId = getEmpresaId();
 
-  return request(`/fornecedores/${id}`, {
+  const response = await request(`/fornecedores/${id}`, {
     method: 'PUT',
     body: {
       ...payload,
@@ -626,19 +675,23 @@ async function updateFornecedor(id, payload) {
       empresa_id: empresaId
     }
   });
+  _invalidateCatalogCache('fornecedores-financeiro');
+  return response;
 }
 
 async function deleteFornecedor(id) {
   const empresa = getEmpresaNome();
   const empresaId = getEmpresaId();
 
-  return request(`/fornecedores/${id}`, {
+  const response = await request(`/fornecedores/${id}`, {
     method: 'DELETE',
     query: {
       empresa,
       empresa_id: empresaId
     }
   });
+  _invalidateCatalogCache('fornecedores-financeiro');
+  return response;
 }
 
 async function getUsuarios(params = {}) {
@@ -837,13 +890,12 @@ async function getContaReceberDetalhe(id) {
   });
 }
 
-async function getContasReceberClientes() {
+async function getContasReceberClientes(options = {}) {
   const empresa = ensureEmpresa();
-
-  return request(`/contas-receber-clientes/${empresa}`, {
+  return _readCatalogCache('clientes-financeiro', () => request(`/contas-receber-clientes/${empresa}`, {
     method: 'GET',
     query: { empresa_id: getEmpresaId() }
-  });
+  }), options);
 }
 
 async function baixarContaReceber(id, payload = {}) {
@@ -885,13 +937,12 @@ async function getContaPagarDetalhe(id) {
   });
 }
 
-async function getContasPagarFornecedores() {
+async function getContasPagarFornecedores(options = {}) {
   const empresa = ensureEmpresa();
-
-  return request(`/contas-pagar-fornecedores/${empresa}`, {
+  return _readCatalogCache('fornecedores-financeiro', () => request(`/contas-pagar-fornecedores/${empresa}`, {
     method: 'GET',
     query: { empresa_id: getEmpresaId() }
-  });
+  }), options);
 }
 
 async function pagarContaPagar(id, payload = {}) {
