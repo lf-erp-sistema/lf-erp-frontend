@@ -36,6 +36,8 @@ const ComissoesModule = {
     filtroStatus: '',
     filtroUsuario: '',
     filtroPeriodo: 'mes_atual',
+    abasCarregadas: new Set(),
+    abasCarregando: new Map(),
     carregando: false
   },
 
@@ -46,8 +48,15 @@ const ComissoesModule = {
     this.bindShellEvents();
   },
 
-  async load() {
-    if (this.state.carregando) return;
+  async load({ force = false } = {}) {
+    const aba = this.state.aba;
+    if (force) this.state.abasCarregadas.delete(aba);
+    if (this.state.abasCarregadas.has(aba)) {
+      this.renderConteudo();
+      return;
+    }
+    if (this.state.abasCarregando.has(aba)) return this.state.abasCarregando.get(aba);
+
     this.state.carregando = true;
     this.setFeedback('', '');
     const conteudo = document.getElementById('comConteudo');
@@ -55,28 +64,39 @@ const ComissoesModule = {
       Array.from({length: 3}).map(() => '<div class="skeleton-line" style="height:40px;margin-bottom:10px;border-radius:6px"></div>').join('')
     }</div>`;
     const periodo = this._calcPeriodo();
-    try {
-      const [resumoRes, configsRes, comissoesRes, usuariosRes] = await Promise.allSettled([
-        api.getComissoesResumo(periodo),
-        api.getComissoesConfig(),
-        api.getComissoes(periodo),
-        api.getUsuarios()
-      ]);
+    const requisicao = (async () => {
+      try {
+        if (aba === 'resumo') {
+          const res = await api.getComissoesResumo(periodo);
+          this.state.resumo = res?.resumo || [];
+        } else if (aba === 'detalhes') {
+          const res = await api.getComissoes(periodo);
+          this.state.comissoes = res?.comissoes || [];
+        } else {
+          const [configsRes, usuariosRes] = await Promise.all([
+            api.getComissoesConfig(),
+            api.getUsuarios()
+          ]);
+          this.state.configs = configsRes?.configs || [];
+          this.state.usuarios = Array.isArray(usuariosRes) ? usuariosRes : (usuariosRes?.usuarios || []);
+        }
+        this.state.abasCarregadas.add(aba);
+        if (this.state.aba === aba) this.renderConteudo();
+      } catch (err) {
+        console.error('[comissoes] load:', err);
+        this.setFeedback(buildFriendlyError(err), 'error');
+        if (this.state.aba === aba) this.renderConteudo();
+      } finally {
+        this.state.abasCarregando.delete(aba);
+        this.state.carregando = this.state.abasCarregando.size > 0;
+      }
+    })();
+    this.state.abasCarregando.set(aba, requisicao);
+    return requisicao;
+  },
 
-      this.state.resumo    = resumoRes.status    === 'fulfilled' ? (resumoRes.value?.resumo    || []) : [];
-      this.state.configs   = configsRes.status   === 'fulfilled' ? (configsRes.value?.configs   || []) : [];
-      this.state.comissoes = comissoesRes.status === 'fulfilled' ? (comissoesRes.value?.comissoes || []) : [];
-      this.state.usuarios  = usuariosRes.status  === 'fulfilled'
-        ? (Array.isArray(usuariosRes.value) ? usuariosRes.value : (usuariosRes.value?.usuarios || []))
-        : [];
-
-      this.renderConteudo();
-    } catch (err) {
-      console.error('[comissoes] load:', err);
-      this.setFeedback(buildFriendlyError(err), 'error');
-    } finally {
-      this.state.carregando = false;
-    }
+  invalidarDados() {
+    this.state.abasCarregadas.clear();
   },
 
   _calcPeriodo() {
@@ -172,11 +192,12 @@ const ComissoesModule = {
       });
     }
 
-    document.getElementById('comAtualizarBtn')?.addEventListener('click', () => { if (this.state.carregando) return; this.load(); });
+    document.getElementById('comAtualizarBtn')?.addEventListener('click', () => this.load({ force: true }));
     document.getElementById('comExportarBtn')?.addEventListener('click', () => this.exportar());
     document.getElementById('comFiltroPeriodo')?.addEventListener('change', (e) => {
       this.state.filtroPeriodo = e.target.value;
-      this.load();
+      this.invalidarDados();
+      this.load({ force: true });
     });
 
     c.addEventListener('click', async (e) => {
@@ -185,7 +206,7 @@ const ComissoesModule = {
         this.state.aba = abaBtn.dataset.comAba;
         document.querySelectorAll('[data-com-aba]').forEach((b) => b.classList.remove('btn-inline--active'));
         abaBtn.classList.add('btn-inline--active');
-        this.renderConteudo();
+        await this.load();
         return;
       }
 
@@ -495,7 +516,8 @@ const ComissoesModule = {
       try {
         await api.salvarComissaoConfig({ usuario_id: usuarioId, percentual, ativa: true });
         showToast('Configuração de comissão salva.', 'success');
-        await this.load();
+        this.invalidarDados();
+        await this.load({ force: true });
       } catch (err) {
         if (feedback) { feedback.className = 'module-feedback module-feedback--error'; feedback.textContent = buildFriendlyError(err); }
       } finally {
@@ -523,7 +545,8 @@ const ComissoesModule = {
         await api.deleteComissaoConfig(id);
         showToast('Configuração removida.', 'success');
       }
-      await this.load();
+      this.invalidarDados();
+      await this.load({ force: true });
     } catch (err) {
       showToast(buildFriendlyError(err), 'error');
       if (btnEl) btnEl.disabled = false;
