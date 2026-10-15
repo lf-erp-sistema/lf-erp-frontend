@@ -1,6 +1,7 @@
 import api from './api.js';
 import { showToast, confirmarAcao } from './feedback.js';
 import { escapeHtml, buildFriendlyError, calcPeriodoLocal, todayFortaleza, debounce, toCurrency } from './utils.js';
+import { enhanceSelect } from './premiumSelect.js';
 
 let _lfFilterEscapeHandler = null;
 

@@ -506,13 +506,13 @@ const OrdensServicoModule = {
       const { ordem: os, itens } = await api.getOrdemServico(id);
       const fmt    = (v)  => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
       const fmtD   = (d)  => d ? new Date(d).toLocaleDateString('pt-BR') : '—';
-      const equip  = [os.equipamento_tipo, os.equipamento_marca, os.equipamento_modelo].filter(Boolean).join(' — ') || '—';
+      const equip  = escapeHtml([os.equipamento_tipo, os.equipamento_marca, os.equipamento_modelo].filter(Boolean).join(' — ') || '—');
 
       const itensHtml = itens.length
         ? itens.map((it, i) => `
             <tr>
               <td>${i + 1}</td>
-              <td>${it.descricao}</td>
+              <td>${escapeHtml(it.descricao || '')}</td>
               <td style="text-align:center">${Number(it.quantidade)}</td>
               <td style="text-align:right">${fmt(it.valor_unitario)}</td>
               <td style="text-align:right">${fmt(it.valor_total)}</td>
@@ -573,27 +573,27 @@ const OrdensServicoModule = {
 
 <h2>Dados do Cliente</h2>
 <div class="grid3">
-  <div class="field"><label>Nome</label><span>${os.cliente_nome || os.cliente_id || '—'}</span></div>
-  <div class="field"><label>Telefone</label><span>${os.cliente_telefone || '—'}</span></div>
-  <div class="field"><label>CPF</label><span>${os.cliente_cpf || '—'}</span></div>
+  <div class="field"><label>Nome</label><span>${escapeHtml(os.cliente_nome || String(os.cliente_id || '—'))}</span></div>
+  <div class="field"><label>Telefone</label><span>${escapeHtml(os.cliente_telefone || '—')}</span></div>
+  <div class="field"><label>CPF</label><span>${escapeHtml(os.cliente_cpf || '—')}</span></div>
 </div>
-<div class="field" style="margin-bottom:10px"><label>Endereço</label><span>${os.cliente_endereco || '—'}</span></div>
+<div class="field" style="margin-bottom:10px"><label>Endereço</label><span>${escapeHtml(os.cliente_endereco || '—')}</span></div>
 
 <h2>Equipamento</h2>
 <div class="grid2">
   <div class="field"><label>Tipo / Marca / Modelo</label><span>${equip}</span></div>
-  <div class="field"><label>Nº Série / IMEI</label><span>${os.equipamento_serie || '—'}</span></div>
+  <div class="field"><label>Nº Série / IMEI</label><span>${escapeHtml(os.equipamento_serie || '—')}</span></div>
 </div>
 
 <h2>Diagnóstico</h2>
 <div class="grid2">
-  <div class="field"><label>Problema Relatado pelo Cliente</label><span style="min-height:40px">${os.problema_relatado || '—'}</span></div>
-  <div class="field"><label>Diagnóstico Técnico</label><span style="min-height:40px">${os.diagnostico || '—'}</span></div>
+  <div class="field"><label>Problema Relatado pelo Cliente</label><span style="min-height:40px">${escapeHtml(os.problema_relatado || '—')}</span></div>
+  <div class="field"><label>Diagnóstico Técnico</label><span style="min-height:40px">${escapeHtml(os.diagnostico || '—')}</span></div>
 </div>
-<div class="field" style="margin-bottom:10px"><label>Serviços Realizados</label><span style="min-height:32px">${os.servicos_realizados || '—'}</span></div>
+<div class="field" style="margin-bottom:10px"><label>Serviços Realizados</label><span style="min-height:32px">${escapeHtml(os.servicos_realizados || '—')}</span></div>
 
 <div class="grid3">
-  <div class="field"><label>Técnico Responsável</label><span>${os.tecnico || '—'}</span></div>
+  <div class="field"><label>Técnico Responsável</label><span>${escapeHtml(os.tecnico || '—')}</span></div>
   <div class="field"><label>Previsão de Entrega</label><span>${fmtD(os.data_prevista)}</span></div>
   <div class="field"><label>Data de Conclusão</label><span>${fmtD(os.data_conclusao)}</span></div>
 </div>
@@ -612,7 +612,7 @@ const OrdensServicoModule = {
   <tr class="total-final"><td>TOTAL</td><td style="text-align:right">${fmt(os.valor_total)}</td></tr>
 </table>
 
-${os.observacoes ? `<div class="field" style="margin-bottom:12px"><label>Observações</label><span>${os.observacoes}</span></div>` : ''}
+${os.observacoes ? `<div class="field" style="margin-bottom:12px"><label>Observações</label><span>${escapeHtml(os.observacoes)}</span></div>` : ''}
 
 <div class="terms">
   <h3>TERMOS E CONDIÇÕES DE SERVIÇO</h3>
@@ -632,7 +632,7 @@ ${os.observacoes ? `<div class="field" style="margin-bottom:12px"><label>Observa
     <div style="text-align:center;font-size:9px;margin-top:4px">Data: ____/____/________</div>
   </div>
   <div>
-    <div class="sig-line">Assinatura do Técnico — ${os.tecnico || '__________________'}</div>
+    <div class="sig-line">Assinatura do Técnico — ${escapeHtml(os.tecnico || '__________________')}</div>
   </div>
 </div>
 
@@ -803,11 +803,11 @@ ${os.observacoes ? `<div class="field" style="margin-bottom:12px"><label>Observa
 
       lista.innerHTML = servicos.map(s => `
         <div class="os-catalogo-item"
-             data-catalogo-nome="${(s.nome || '').replace(/"/g, '&quot;')}"
+             data-catalogo-nome="${escapeHtml(s.nome || '')}"
              data-catalogo-valor="${s.valor_padrao || 0}"
              style="padding:6px 8px;cursor:pointer;border-radius:4px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border)">
-          <span>${s.nome}</span>
-          <span style="color:var(--text-muted);font-size:11px;white-space:nowrap;margin-left:8px">${s.categoria}</span>
+          <span>${escapeHtml(s.nome || '')}</span>
+          <span style="color:var(--text-muted);font-size:11px;white-space:nowrap;margin-left:8px">${escapeHtml(s.categoria || '')}</span>
         </div>`).join('');
 
       lista.querySelectorAll('.os-catalogo-item').forEach(el => {

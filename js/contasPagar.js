@@ -2,6 +2,7 @@
 import { getAuth } from './auth.js';
 import { showToast } from './feedback.js';
 import { todayFortaleza, escapeHtml, buildFriendlyError, calcPeriodoLocal, debounce, formatCurrency } from './utils.js';
+import { enhanceSelect } from './premiumSelect.js';
 let _cpFilterEscapeHandler = null;
 
 const state = {
