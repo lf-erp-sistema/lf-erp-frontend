@@ -1,6 +1,7 @@
 import api from './api.js';
 import { escapeHtml, buildFriendlyError, debounce, toCurrency } from './utils.js';
 import { enhanceSelect } from './premiumSelect.js';
+let _auditoriaLoadVersion = 0;
 
 const state = {
   logs:    [],
@@ -100,11 +101,12 @@ function renderSkeleton() {
 }
 
 async function carregarLogs() {
-  if (state.loading) return;
+  const loadVersion = ++_auditoriaLoadVersion;
   const container = document.getElementById('auditoriaFinanceiraContainer');
   if (!container) return;
 
   state.loading = true;
+  container.setAttribute('aria-busy', 'true');
   try {
     const params = { periodo: state.filtros.periodo };
     if (state.filtros.tipo)     params.tipo     = state.filtros.tipo;
@@ -112,6 +114,7 @@ async function carregarLogs() {
     if (state.filtros.busca)    params.busca    = state.filtros.busca;
 
     const data = await api.request('/financeiro/auditoria', { method:'GET', query: params });
+    if (loadVersion !== _auditoriaLoadVersion) return;
     state.logs    = data.logs || [];
     state.truncado = !!data.truncado;
     _sortItems();
@@ -119,9 +122,13 @@ async function carregarLogs() {
     container.innerHTML = renderUI();
     bind();
   } catch (err) {
+    if (loadVersion !== _auditoriaLoadVersion) return;
     renderErro(buildFriendlyError(err));
   } finally {
-    state.loading = false;
+    if (loadVersion === _auditoriaLoadVersion) {
+      state.loading = false;
+      container.setAttribute('aria-busy', 'false');
+    }
   }
 }
 

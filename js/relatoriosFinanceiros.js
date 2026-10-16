@@ -2,6 +2,7 @@ import api from './api.js';
 import { exportCSV, numCSV } from './exportUtils.js';
 import { showToast } from './feedback.js';
 import { escapeHtml, todayFortaleza, buildFriendlyError, formatCurrency } from './utils.js';
+let _relatoriosLoadVersion = 0;
 
 const state = {
   resumo: null,
@@ -35,20 +36,25 @@ function statusBadge(status) {
 }
 
 export async function initRelatoriosFinanceirosModule() {
+  let loadVersion;
   try {
     const filtroKey = JSON.stringify(getFiltrosGlobais());
     if (state.filtroKey && state.filtroKey !== filtroKey) limparDadosDetalhados();
     state.filtroKey = filtroKey;
+    loadVersion = _relatoriosLoadVersion;
     renderLoading();
     await carregarDados();
+    if (loadVersion !== _relatoriosLoadVersion) return;
     render();
   } catch (error) {
+    if (loadVersion !== _relatoriosLoadVersion) return;
     console.error('Erro ao iniciar relatórios financeiros:', error);
     renderErro(buildFriendlyError(error));
   }
 }
 
 function limparDadosDetalhados() {
+  ++_relatoriosLoadVersion;
   state.resumo = null;
   state.receber = [];
   state.pagar = [];
@@ -62,26 +68,31 @@ function limparDadosDetalhados() {
 }
 
 async function carregarDados(abas = [state.aba]) {
+  const loadVersion = _relatoriosLoadVersion;
   const filtros = getFiltrosGlobais();
   state.filtroKey = JSON.stringify(filtros);
   const pendentes = [...new Set(abas)].filter((aba) => !state.abasCarregadas.has(aba) && !state.abasCarregando.has(aba));
   if (!pendentes.length) return;
 
+  const aplicar = (campo, dados) => {
+    if (loadVersion === _relatoriosLoadVersion) state[campo] = dados;
+  };
   const loaders = {
-    resumo: () => api.getRelatorioFinanceiroResumo(filtros).then((dados) => { state.resumo = dados || null; }),
-    receber: () => api.getRelatorioFinanceiroContasReceber(filtros).then((dados) => { state.receber = Array.isArray(dados) ? dados : []; }),
-    pagar: () => api.getRelatorioFinanceiroContasPagar(filtros).then((dados) => { state.pagar = Array.isArray(dados) ? dados : []; }),
+    resumo: () => api.getRelatorioFinanceiroResumo(filtros).then((dados) => aplicar('resumo', dados || null)),
+    receber: () => api.getRelatorioFinanceiroContasReceber(filtros).then((dados) => aplicar('receber', Array.isArray(dados) ? dados : [])),
+    pagar: () => api.getRelatorioFinanceiroContasPagar(filtros).then((dados) => aplicar('pagar', Array.isArray(dados) ? dados : [])),
     fluxo: () => api.getRelatorioFinanceiroFluxoCaixa(filtros).then((dados) => {
-      state.fluxo = Array.isArray(dados) ? dados : (Array.isArray(dados?.movimentos) ? dados.movimentos : []);
+      aplicar('fluxo', Array.isArray(dados) ? dados : (Array.isArray(dados?.movimentos) ? dados.movimentos : []));
     }),
-    lucratividade: () => api.getRelatorioFinanceiroLucratividade(filtros).then((dados) => { state.lucratividade = Array.isArray(dados) ? dados : []; }),
-    grade: () => api.getRelatorioVendasPorGrade(filtros).then((dados) => { state.grade = Array.isArray(dados) ? dados : []; }),
-    dre: () => api.getRelatorioDRE(filtros).then((dados) => { state.dre = dados || null; }),
-    inadimplencia: () => api.getRelatorioInadimplencia(filtros).then((dados) => { state.inadimplencia = dados || null; })
+    lucratividade: () => api.getRelatorioFinanceiroLucratividade(filtros).then((dados) => aplicar('lucratividade', Array.isArray(dados) ? dados : [])),
+    grade: () => api.getRelatorioVendasPorGrade(filtros).then((dados) => aplicar('grade', Array.isArray(dados) ? dados : [])),
+    dre: () => api.getRelatorioDRE(filtros).then((dados) => aplicar('dre', dados || null)),
+    inadimplencia: () => api.getRelatorioInadimplencia(filtros).then((dados) => aplicar('inadimplencia', dados || null))
   };
 
   pendentes.forEach((aba) => state.abasCarregando.add(aba));
   const resultados = await Promise.allSettled(pendentes.map((aba) => loaders[aba]?.()));
+  if (loadVersion !== _relatoriosLoadVersion) return;
   resultados.forEach((resultado, index) => {
     const aba = pendentes[index];
     state.abasCarregando.delete(aba);
@@ -1087,20 +1098,27 @@ function bindEventos() {
 }
 
 async function recarregarModulo(mensagem = '') {
-  if (state.loading) return;
   state.loading = true;
+  limparDadosDetalhados();
+  const loadVersion = _relatoriosLoadVersion;
+  const container = document.getElementById('relatoriosContainer');
+  container?.setAttribute('aria-busy', 'true');
   try {
-    limparDadosDetalhados();
     state.filtroKey = JSON.stringify(getFiltrosGlobais());
-    renderLoading();
+    renderFeedback('Carregando período selecionado...', 'info');
     await carregarDados([state.aba]);
+    if (loadVersion !== _relatoriosLoadVersion) return;
     render();
     if (mensagem) renderFeedback(mensagem, 'success');
   } catch (error) {
+    if (loadVersion !== _relatoriosLoadVersion) return;
     console.error(error);
-    renderErro(buildFriendlyError(error));
+    renderFeedback(buildFriendlyError(error), 'error');
   } finally {
-    state.loading = false;
+    if (loadVersion === _relatoriosLoadVersion) {
+      state.loading = false;
+      container?.setAttribute('aria-busy', 'false');
+    }
   }
 }
 

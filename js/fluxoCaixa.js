@@ -2,6 +2,8 @@ import api from './api.js';
 import { showToast } from './feedback.js';
 import { escapeHtml, buildFriendlyError, calcPeriodoLocal, debounce, formatCurrency } from './utils.js';
 import { enhanceSelect } from './premiumSelect.js';
+let _fluxoLoadVersion = 0;
+let _projecaoLoadVersion = 0;
 
 const state = {
   resumo: {
@@ -46,6 +48,7 @@ function showMessage(message, type = 'info') {
 
 function setLoading(value) {
   state.loading = value;
+  document.getElementById('fluxoCaixaContainer')?.setAttribute('aria-busy', String(value));
 
   const btnAtualizar = document.getElementById('btnAtualizarFluxoCaixa');
   const btnFiltrar = document.getElementById('btnFiltrarFluxoCaixa');
@@ -64,7 +67,7 @@ function setLoading(value) {
 
 
 export async function initFluxoCaixaModule() {
-  if (state.loading) return;
+  const loadVersion = ++_fluxoLoadVersion;
   try {
     state.loading = true;
     if (!state.periodo.dataInicial) {
@@ -74,29 +77,32 @@ export async function initFluxoCaixaModule() {
     }
     renderSkeleton();
 
-    await Promise.all([
-      carregarFluxoCaixa(),
+    const [atual] = await Promise.all([
+      carregarFluxoCaixa(loadVersion),
       carregarCashflowFuturo(state.diasProjecao)
     ]);
+    if (!atual || loadVersion !== _fluxoLoadVersion) return;
 
     render();
     renderCashflowFuturo();
   } catch (error) {
+    if (loadVersion !== _fluxoLoadVersion) return;
     console.error('Erro ao iniciar fluxo de caixa:', error);
     const message = buildFriendlyError(error);
     renderErro(message);
     showMessage(message, 'error');
   } finally {
-    state.loading = false;
+    if (loadVersion === _fluxoLoadVersion) setLoading(false);
   }
 }
 
-async function carregarFluxoCaixa() {
+async function carregarFluxoCaixa(loadVersion) {
   const filtrosGlobais = getFiltrosGlobais();
 
   const response = await api.getFluxoCaixa({
     ...filtrosGlobais
   });
+  if (loadVersion !== _fluxoLoadVersion) return false;
 
   state.resumo = {
     entradas: Number(response?.entradas || 0),
@@ -108,6 +114,7 @@ async function carregarFluxoCaixa() {
   state.resumoFormasPagamento = Array.isArray(response?.resumo_formas_pagamento)
     ? response.resumo_formas_pagamento
     : [];
+  return true;
 }
 
 function getFiltrosGlobais() {
@@ -542,6 +549,7 @@ function renderResumoOrigens() {
 // ── Cashflow Futuro ───────────────────────────────────────────────────────────
 
 async function carregarCashflowFuturo(dias = 30) {
+  const loadVersion = ++_projecaoLoadVersion;
   try {
     const empresa   = api.getEmpresaNome() || '';
     const empresaId = api.getEmpresaId()   || '';
@@ -549,8 +557,9 @@ async function carregarCashflowFuturo(dias = 30) {
       method: 'GET',
       query: { dias, empresa, empresa_id: empresaId }
     });
-    state.cashflowFuturo = data;
+    if (loadVersion === _projecaoLoadVersion) state.cashflowFuturo = data;
   } catch (err) {
+    if (loadVersion !== _projecaoLoadVersion) return;
     console.error('[fluxoCaixa] Erro ao carregar cashflow futuro:', err);
     state.cashflowFuturo = null;
   }
@@ -676,7 +685,6 @@ function bindEventos() {
 
   btnFiltrar?.addEventListener('click', () => {
     if (state.loading) return;
-    showMessage('Filtros aplicados.', 'info');
     state.filtros.busca = busca?.value?.trim() || '';
     state.filtros.tipo = tipo?.value || '';
     state.filtros.origem = origem?.value || '';
@@ -688,7 +696,6 @@ function bindEventos() {
 
   btnLimpar?.addEventListener('click', () => {
     if (state.loading) return;
-    showMessage('Filtros limpos.', 'info');
     state.filtros = {
       busca: '',
       tipo: '',
@@ -736,7 +743,7 @@ function bindEventos() {
         state.periodo.dataFinal = dataFinal;
       }
       state.pagina = 1;
-      await recarregar();
+      await recarregar({ atualizarProjecao: false });
     });
   });
 
@@ -744,7 +751,7 @@ function bindEventos() {
     state.periodo.dataInicial = document.getElementById('fcDataIni')?.value || '';
     state.periodo.dataFinal = document.getElementById('fcDataFim')?.value || '';
     state.pagina = 1;
-    await recarregar();
+    await recarregar({ atualizarProjecao: false });
   });
 
   document.querySelectorAll("[data-action='fluxo-pagina']").forEach((btn) => {
@@ -760,26 +767,30 @@ function bindEventos() {
   });
 }
 
-async function recarregar() {
-  if (state.loading) return;
+async function recarregar({ atualizarProjecao = true } = {}) {
+  const loadVersion = ++_fluxoLoadVersion;
   setLoading(true);
-  showMessage('Atualizando fluxo de caixa...', 'info');
+  const feedback = document.getElementById('fluxoCaixaFeedback');
+  if (feedback) {
+    feedback.className = 'module-feedback module-feedback--info';
+    feedback.textContent = 'Carregando período selecionado...';
+  }
 
   try {
-    renderSkeleton();
-    await Promise.all([
-      carregarFluxoCaixa(),
-      carregarCashflowFuturo(state.diasProjecao)
+    const [atual] = await Promise.all([
+      carregarFluxoCaixa(loadVersion),
+      atualizarProjecao ? carregarCashflowFuturo(state.diasProjecao) : Promise.resolve()
     ]);
+    if (!atual || loadVersion !== _fluxoLoadVersion) return;
     render();
     renderCashflowFuturo();
   } catch (error) {
+    if (loadVersion !== _fluxoLoadVersion) return;
     console.error('Erro ao atualizar fluxo de caixa:', error);
     const message = buildFriendlyError(error);
-    renderErro(message);
     showMessage(message, 'error');
   } finally {
-    setLoading(false);
+    if (loadVersion === _fluxoLoadVersion) setLoading(false);
   }
 }
 

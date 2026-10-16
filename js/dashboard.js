@@ -3,6 +3,7 @@ import { showToast } from './feedback.js';
 import { buildFriendlyError, escapeHtml, toCurrency } from './utils.js';
 
 let _dashReqId = 0;
+let _dashDataScope = '';
 let lastDashboardContext = {
   filters: {},
   state: {}
@@ -1000,13 +1001,16 @@ export function bindDashboardConfig() {
 
 export async function loadDashboard({ filters = {}, state = {} } = {}) {
   const reqId = ++_dashReqId;
+  const scope = `${api.getAuthToken() || ''}:${api.getEmpresaId() || ''}`;
+  const refreshButton = document.getElementById('refreshDataBtn');
+  if (refreshButton) refreshButton.disabled = true;
   try {
     lastDashboardContext = {
       filters: { ...filters },
       state: { ...state }
     };
 
-    renderDashboardSkeleton();
+    if (_dashDataScope !== scope) renderDashboardSkeleton();
 
     const params = {
       empresa_id: api.getEmpresaId(),
@@ -1065,6 +1069,7 @@ export async function loadDashboard({ filters = {}, state = {} } = {}) {
     }
 
     applyDashboardConfig(dashboardConfig);
+    _dashDataScope = scope;
 
     const tsEl = document.getElementById('dashUltimaAtualizacao');
     if (tsEl) {
@@ -1077,18 +1082,23 @@ export async function loadDashboard({ filters = {}, state = {} } = {}) {
       financeiro
     };
   } catch (error) {
+    if (reqId !== _dashReqId) return null;
     console.error('Erro ao carregar dashboard:', error);
 
     const message = buildFriendlyError(error);
 
-    renderErrorState(message);
+    if (_dashDataScope !== scope) renderErrorState(message);
     showMessage(message, 'error');
 
     return null;
+  } finally {
+    if (reqId === _dashReqId && refreshButton) refreshButton.disabled = false;
   }
 }
 
 export function resetDashboard(message) {
+  ++_dashReqId;
+  _dashDataScope = '';
   renderErrorState(message);
 }
 
@@ -1105,8 +1115,6 @@ export default dashboard;
 
 window.refreshDashboard = async function () {
   try {
-    showMessage('Atualizando dashboard...', 'info');
-
     if (typeof loadDashboard === 'function') {
       await loadDashboard(lastDashboardContext);
     }

@@ -849,7 +849,6 @@ function bindTopbarEvents() {
 
   if (refreshDataBtn) {
     refreshDataBtn.addEventListener('click', async () => {
-      showToast('Atualizando dados...', 'info');
       await simulateRefresh();
     });
   }
