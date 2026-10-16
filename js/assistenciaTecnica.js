@@ -693,10 +693,10 @@ const AT = {
         <h3><i class="fa-solid fa-clipboard-check" style="margin-right:6px;opacity:.6"></i>Checklist de Entrada</h3>
         <div class="at-checklist-grid">
           ${checklist.map(item => `
-            <div class="at-cl-item ${item.resultado}">
+            <div class="at-cl-item ${escapeHtml(item.resultado)}">
               <i class="fa-solid fa-${item.resultado === 'ok' ? 'check' : item.resultado === 'problema' ? 'xmark' : 'minus'}" style="font-size:13px;opacity:.7"></i>
               <span>${escapeHtml(item.item_label)}</span>
-              <span style="margin-left:auto;font-size:11px;font-weight:700;opacity:.7">${checkResult[item.resultado]||item.resultado}</span>
+              <span style="margin-left:auto;font-size:11px;font-weight:700;opacity:.7">${escapeHtml(checkResult[item.resultado]||item.resultado)}</span>
             </div>`).join('')}
         </div>
       </div>` : ''}
@@ -1337,7 +1337,7 @@ const AT = {
       : `<tr><td colspan="4" style="text-align:center;color:#999">Sem peças lançadas</td></tr>`;
 
     const checklistHtml = checklist.length
-      ? checklist.map(c => `<tr><td>${esc(c.item_label)}</td><td>${checkResult[c.resultado]||c.resultado}</td></tr>`).join('')
+      ? checklist.map(c => `<tr><td>${esc(c.item_label)}</td><td>${esc(checkResult[c.resultado]||c.resultado)}</td></tr>`).join('')
       : '';
 
     const win = window.open('', '_blank', 'width=800,height=900');

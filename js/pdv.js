@@ -2732,7 +2732,7 @@ const PDVModule = {
         <div class="pdv-cliente-item" data-id="${c.id}" data-nome="${this.escapeHtml(c.nome)}"
           style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px">
           <strong>${this.escapeHtml(c.nome)}</strong>
-          ${c.telefone ? `<small style="display:block;color:var(--text-muted);font-size:11px">${c.telefone}</small>` : ''}
+          ${c.telefone ? `<small style="display:block;color:var(--text-muted);font-size:11px">${this.escapeHtml(c.telefone)}</small>` : ''}
         </div>`)
     ].join('');
 
