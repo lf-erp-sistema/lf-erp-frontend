@@ -96,8 +96,12 @@ function renderBody(co, token) {
   // Boleto
   if (temBoleto) {
     html += `<div class="boleto-section ${temPix ? '' : 'active'}" id="abaBoletoSection">`;
-    if (co.boleto_url) {
-      html += `<a href="${esc(co.boleto_url)}" target="_blank" rel="noopener noreferrer" class="btn btn-boleto"><i class="fa fa-file-lines"></i> Ver boleto</a>`;
+    const boletoUrlSegura = co.boleto_url && /^https:\/\//i.test(co.boleto_url) ? co.boleto_url : null;
+    if (co.boleto_url && !boletoUrlSegura) {
+      console.warn('[Checkout] boleto_url com esquema inválido:', co.boleto_url);
+    }
+    if (boletoUrlSegura) {
+      html += `<a href="${esc(boletoUrlSegura)}" target="_blank" rel="noopener noreferrer" class="btn btn-boleto"><i class="fa fa-file-lines"></i> Ver boleto</a>`;
       if (co.boleto_linha) {
         html += `<div class="pix-key-box" id="boletoLinhaBox" style="margin-top:12px;">${esc(co.boleto_linha)}</div>`;
         html += `<button class="btn btn-secondary" data-action="copiar-boleto"><i class="fa fa-copy"></i> Copiar linha digitável</button>`;
