@@ -6,6 +6,8 @@ import { escapeHtml, buildFriendlyError, todayFortaleza, calcPeriodoLocal, debou
 import { enhanceSelect } from './premiumSelect.js';
 
 let _dropClickHandler = null;
+let _crMoreClickHandler = null;
+let _crLoadVersion = 0;
 
 const state = {
   contas: [],
@@ -70,6 +72,7 @@ function showMessage(message, type = 'info') {
 
 function setLoading(value) {
   state.loading = value;
+  document.getElementById('contasReceberContainer')?.setAttribute('aria-busy', String(value));
 
   const btnAtualizar = document.getElementById('btnAtualizarContasReceber');
   const btnFiltrar = document.getElementById('btnFiltrarContasReceber');
@@ -88,6 +91,7 @@ function setLoading(value) {
 
 
 export async function initContasReceberModule() {
+  const loadVersion = ++_crLoadVersion;
   try {
     state.loading = true;
     garantirEscopoCatalogo();
@@ -99,21 +103,23 @@ export async function initContasReceberModule() {
     }
     renderSkeleton();
 
-    await Promise.all([
-      carregarContas(),
+    const [atual] = await Promise.all([
+      carregarContas(loadVersion),
       // Um filtro de cliente restaurado precisa do catálogo para exibir o nome correto.
       state.filtros.cliente_id ? carregarClientes() : Promise.resolve()
     ]);
+    if (!atual || loadVersion !== _crLoadVersion) return;
 
     _sortItems();
     render();
   } catch (error) {
+    if (loadVersion !== _crLoadVersion) return;
     console.error('Erro ao iniciar contas a receber:', error);
     const message = buildFriendlyError(error);
     renderErro(message);
     showMessage(message, 'error');
   } finally {
-    state.loading = false;
+    if (loadVersion === _crLoadVersion) setLoading(false);
   }
 }
 
@@ -143,8 +149,7 @@ async function carregarClientes({ force = false } = {}) {
   return request;
 }
 
-async function carregarContas() {
-  state.selecionadas.clear();
+async function carregarContas(loadVersion) {
   const filtrosGlobais = getFiltrosGlobais();
 
   const response = await api.getContasReceber({
@@ -157,6 +162,10 @@ async function carregarContas() {
     page: state.pagina,
     limit: 50
   });
+
+  // Uma troca rápida de mês pode terminar antes da consulta anterior.
+  if (loadVersion !== _crLoadVersion) return false;
+  state.selecionadas.clear();
 
   state.contas = Array.isArray(response?.contas) ? response.contas : [];
 
@@ -174,6 +183,7 @@ async function carregarContas() {
     state.totalPaginas = response.paginacao.total_paginas || 1;
     state.totalRegistros = response.paginacao.total || 0;
   }
+  return true;
 }
 
 function getFiltrosGlobais() {
@@ -1295,12 +1305,14 @@ function bindEventos() {
   document.getElementById('crMoreDropdown')?.addEventListener('click', () => {
     setTimeout(() => document.getElementById('crMoreDropdown')?.classList.add('hidden'), 80);
   });
-  document.addEventListener('click', (e) => {
+  if (_crMoreClickHandler) document.removeEventListener('click', _crMoreClickHandler);
+  _crMoreClickHandler = (e) => {
     const drop = document.getElementById('crMoreDropdown');
     if (drop && !drop.classList.contains('hidden') && !e.target.closest('#crMoreMenu')) {
       drop.classList.add('hidden');
     }
-  });
+  };
+  document.addEventListener('click', _crMoreClickHandler);
 
   document.getElementById('crMesAnterior')?.addEventListener('click', () => _navegarMes(-1));
   document.getElementById('crMesSeguinte')?.addEventListener('click', () => _navegarMes(+1));
@@ -1828,27 +1840,30 @@ function _abrirAcoesCRModal(conta) {
 }
 
 async function recarregar({ atualizarClientes = false } = {}) {
-  if (state.loading) return;
+  const loadVersion = ++_crLoadVersion;
   setLoading(true);
-  showMessage('Atualizando contas a receber...', 'info');
+  const feedback = document.getElementById('contasReceberFeedback');
+  if (feedback) {
+    feedback.className = 'module-feedback module-feedback--info';
+    feedback.textContent = 'Carregando período selecionado...';
+  }
 
   try {
-    renderSkeleton();
-
-    await Promise.all([
-      carregarContas(),
+    const [atual] = await Promise.all([
+      carregarContas(loadVersion),
       atualizarClientes ? carregarClientes({ force: true }) : Promise.resolve()
     ]);
+    if (!atual || loadVersion !== _crLoadVersion) return;
 
     _sortItems();
     render();
   } catch (error) {
+    if (loadVersion !== _crLoadVersion) return;
     console.error('Erro ao recarregar contas a receber:', error);
     const message = buildFriendlyError(error);
-    renderErro(message);
     showMessage(message, 'error');
   } finally {
-    setLoading(false);
+    if (loadVersion === _crLoadVersion) setLoading(false);
   }
 }
 
