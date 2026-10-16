@@ -1,0 +1,15 @@
+{
+  "backend": {
+    "suites": 50,
+    "testes": 599,
+    "falhas": 0
+  },
+  "frontend": {
+    "testes": 21,
+    "falhas": 0
+  },
+  "sintaxe": {
+    "backend": 170,
+    "frontend": 57
+  }
+}

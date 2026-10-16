@@ -1,0 +1,50 @@
+[
+  {
+    "id": "SEC-01-gerente-cria-admin",
+    "resultado": "comportamento confirmado localmente"
+  },
+  {
+    "id": "SEC-02-usuario-excluido-token-aceito",
+    "resultado": "comportamento confirmado localmente"
+  },
+  {
+    "id": "SEC-03-falha-banco-auth-libera",
+    "resultado": "comportamento confirmado localmente"
+  },
+  {
+    "id": "SEC-02b-admin-rebaixado-mantem-claim-admin",
+    "resultado": "comportamento confirmado localmente"
+  },
+  {
+    "id": "SEC-04-ipv6-privado-aceito-pelo-guard",
+    "resultado": "comportamento confirmado localmente"
+  },
+  {
+    "id": "SEC-05-csv-formula-sem-neutralizacao",
+    "resultado": "comportamento confirmado localmente"
+  },
+  {
+    "id": "SEC-06-reset-portal-nao-revoga-token",
+    "resultado": "comportamento confirmado localmente"
+  },
+  {
+    "id": "SEC-07-blacklist-nao-propaga-entre-instancias",
+    "resultado": "comportamento confirmado localmente"
+  },
+  {
+    "id": "PERF-01-adapter-descarta-total-produtos",
+    "resultado": "comportamento confirmado localmente"
+  },
+  {
+    "id": "OBS-01-relatorio-falha-marcada-como-sucesso",
+    "resultado": "comportamento confirmado localmente"
+  },
+  {
+    "id": "PERF-02-bi-executa-tendencia-duas-vezes",
+    "resultado": "comportamento confirmado localmente"
+  },
+  {
+    "id": "OPS-02-json-upload-bloqueado-em-1mb",
+    "resultado": "comportamento confirmado localmente"
+  }
+]
