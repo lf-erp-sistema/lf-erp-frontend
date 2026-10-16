@@ -4,6 +4,8 @@ import { showToast } from './feedback.js';
 import { todayFortaleza, escapeHtml, buildFriendlyError, calcPeriodoLocal, debounce, formatCurrency } from './utils.js';
 import { enhanceSelect } from './premiumSelect.js';
 let _cpFilterEscapeHandler = null;
+let _cpLoadVersion = 0;
+let _cpActionsHandler = null;
 
 const state = {
   contas: [],
@@ -67,6 +69,7 @@ function showMessage(message, type = 'info') {
 
 function setLoading(value) {
   state.loading = value;
+  document.getElementById('contasPagarContainer')?.setAttribute('aria-busy', String(value));
 
   const btnAtualizar = document.getElementById('btnAtualizarContasPagar');
   const btnFiltrar = document.getElementById('btnFiltrarContasPagar');
@@ -85,6 +88,7 @@ function setLoading(value) {
 
 
 export async function initContasPagarModule() {
+  const loadVersion = ++_cpLoadVersion;
   try {
     state.loading = true;
     garantirEscopoCatalogo();
@@ -96,17 +100,18 @@ export async function initContasPagarModule() {
     }
     renderSkeleton();
 
-    await carregarContas();
+    if (!await carregarContas(loadVersion)) return;
 
     _sortItems();
     render();
   } catch (error) {
+    if (loadVersion !== _cpLoadVersion) return;
     console.error('Erro ao iniciar contas a pagar:', error);
     const message = buildFriendlyError(error);
     renderErro(message);
     showMessage(message, 'error');
   } finally {
-    state.loading = false;
+    if (loadVersion === _cpLoadVersion) setLoading(false);
   }
 }
 
@@ -136,7 +141,7 @@ async function carregarFornecedores({ force = false } = {}) {
   return request;
 }
 
-async function carregarContas() {
+async function carregarContas(loadVersion) {
   const filtrosGlobais = getFiltrosGlobais();
 
   const response = await api.getContasPagar({
@@ -145,6 +150,9 @@ async function carregarContas() {
     page: state.pagina,
     limit: 50
   });
+
+  // Uma resposta de um filtro anterior nunca deve sobrescrever o mês atual.
+  if (loadVersion !== _cpLoadVersion) return false;
 
   state.contas = Array.isArray(response?.contas) ? response.contas : [];
 
@@ -162,6 +170,7 @@ async function carregarContas() {
     state.totalPaginas = response.paginacao.total_paginas || 1;
     state.totalRegistros = response.paginacao.total || 0;
   }
+  return true;
 }
 
 function getFiltrosGlobais() {
@@ -591,10 +600,12 @@ function bindEventos() {
     }
   });
 
-  document.addEventListener('click', (e) => {
+  if (_cpActionsHandler) document.removeEventListener('click', _cpActionsHandler);
+  _cpActionsHandler = (e) => {
     const btn = e.target.closest('[data-action="cp-acoes"]');
     if (btn) _abrirAcoesCPModal(btn);
-  }, { capture: false });
+  };
+  document.addEventListener('click', _cpActionsHandler);
 
   btnAtualizar?.addEventListener('click', async () => {
     await recarregar({ atualizarFornecedores: true });
@@ -788,27 +799,30 @@ function bindEventos() {
 }
 
 async function recarregar({ atualizarFornecedores = false } = {}) {
-  if (state.loading) return;
+  const loadVersion = ++_cpLoadVersion;
   setLoading(true);
-  showMessage('Atualizando contas a pagar...', 'info');
+  const feedback = document.getElementById('contasPagarFeedback');
+  if (feedback) {
+    feedback.className = 'module-feedback module-feedback--info';
+    feedback.textContent = 'Atualizando contas a pagar...';
+  }
 
   try {
-    renderSkeleton();
-
-    await Promise.all([
-      carregarContas(),
+    const [atual] = await Promise.all([
+      carregarContas(loadVersion),
       atualizarFornecedores ? carregarFornecedores({ force: true }) : Promise.resolve()
     ]);
+    if (!atual || loadVersion !== _cpLoadVersion) return;
 
     _sortItems();
     render();
   } catch (error) {
+    if (loadVersion !== _cpLoadVersion) return;
     console.error('Erro ao recarregar contas a pagar:', error);
     const message = buildFriendlyError(error);
-    renderErro(message);
     showMessage(message, 'error');
   } finally {
-    setLoading(false);
+    if (loadVersion === _cpLoadVersion) setLoading(false);
   }
 }
 
