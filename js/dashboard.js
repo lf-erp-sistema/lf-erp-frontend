@@ -1026,9 +1026,9 @@ export async function loadDashboard({ filters = {}, state = {} } = {}) {
     const deveCarregarTabelaPrecos = !isFuncionario && widgetAtivo('panel-tabela-precos');
 
     const [rawDashboard, rawResumoFinanceiro, rawAlertas, rawTabelaPrecos] = await Promise.all([
-      api.getDashboard(params).catch(() => ({})),
-      isFuncionario ? Promise.resolve({}) : api.getRelatorioFinanceiroResumo(params).catch(() => ({})),
-      isFuncionario ? Promise.resolve({ alertas: [] }) : api.getAlertas().catch(() => ({ alertas: [] })),
+      api.getDashboard(params),
+      isFuncionario ? Promise.resolve({}) : api.getRelatorioFinanceiroResumo(params),
+      isFuncionario ? Promise.resolve({ alertas: [] }) : api.getAlertas(),
       deveCarregarTabelaPrecos ? api.getTabelaPrecosDashboard().catch(() => null) : Promise.resolve(null)
     ]);
 

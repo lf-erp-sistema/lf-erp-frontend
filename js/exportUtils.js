@@ -12,6 +12,14 @@
  * @param {string}   arquivo   — nome sem extensão (padrão: 'exportacao')
  * @param {Object}   [opcoes]  — { titulo?, empresa?, periodo? }
  */
+export function csvCell(value) {
+  const numeric = (typeof value === 'number' && Number.isFinite(value))
+    || (typeof value === 'string' && /^-?\d+(?:[.,]\d+)?$/.test(value));
+  let text = String(value ?? '');
+  if (!numeric && /^[\s\uFEFF]*[=+\-@\t\r\n]/.test(text)) text = "'" + text;
+  return `"${text.replace(/"/g, '""')}"`;
+}
+
 export function exportCSV(linhas, arquivo = 'exportacao', opcoes = {}) {
   if (!Array.isArray(linhas) || linhas.length === 0) return;
 
@@ -20,23 +28,20 @@ export function exportCSV(linhas, arquivo = 'exportacao', opcoes = {}) {
   const linhasCSV = linhas.map((row) =>
     cabecalhos
       .map((k) => {
-        const v = String(row[k] ?? '');
-        return v.includes(';') || v.includes('\n') || v.includes('"')
-          ? `"${v.replace(/"/g, '""')}"`
-          : v;
+        return csvCell(row[k]);
       })
       .join(';')
   );
 
   const metaLinhas = [];
-  if (opcoes.titulo)   metaLinhas.push(`"${opcoes.titulo}"`);
-  if (opcoes.empresa)  metaLinhas.push(`"Empresa: ${opcoes.empresa}"`);
-  if (opcoes.periodo)  metaLinhas.push(`"Período: ${opcoes.periodo}"`);
-  metaLinhas.push(`"Gerado em: ${new Date().toLocaleString('pt-BR')}"`);
+  if (opcoes.titulo)   metaLinhas.push(csvCell(opcoes.titulo));
+  if (opcoes.empresa)  metaLinhas.push(csvCell(`Empresa: ${opcoes.empresa}`));
+  if (opcoes.periodo)  metaLinhas.push(csvCell(`Período: ${opcoes.periodo}`));
+  metaLinhas.push(csvCell(`Gerado em: ${new Date().toLocaleString('pt-BR')}`));
   metaLinhas.push('');
 
   // UTF-8 BOM (﻿) garante que Excel abra o arquivo em português corretamente
-  const csv = '﻿' + [...metaLinhas, cabecalhos.join(';'), ...linhasCSV].join('\r\n');
+  const csv = '﻿' + [...metaLinhas, cabecalhos.map(csvCell).join(';'), ...linhasCSV].join('\r\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url  = URL.createObjectURL(blob);
 

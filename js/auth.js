@@ -102,8 +102,9 @@ export async function validateSession(timeout) {
 export function logout() {
   _refreshInProgress = false;
   clearRefreshTimer();
-  api.request('/auth/logout', { method: 'POST' }).catch(() => {});
+  const revogacao = api.request('/auth/logout', { method: 'POST' }).then(() => true, () => false);
   clearAuth();
+  return revogacao;
 }
 
 export function clearRefreshTimer() {

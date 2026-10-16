@@ -1744,7 +1744,7 @@ function showLoginScreen() {
   api.warmupServer();
 }
 
-function handleLogout(showMessage = true) {
+async function handleLogout(showMessage = true) {
   AppState.isAuthenticated = false;
   AppState.authToken = null;
   AppState.user = null;
@@ -1756,7 +1756,7 @@ function handleLogout(showMessage = true) {
   localStorage.removeItem(STORAGE_KEYS.currentView);
 
   desconectarSSE();
-  authLogout();
+  const revogacao = authLogout();
   api.config._isRedirecting401 = false;
   showLoginScreen();
   clearLoginInputs();
@@ -1765,7 +1765,8 @@ function handleLogout(showMessage = true) {
   renderInitialDashboardState();
 
   if (showMessage) {
-    showToast('Sessão encerrada com sucesso.', 'success');
+    const confirmada = await revogacao;
+    showToast(confirmada ? 'Sessão encerrada com sucesso.' : 'Acesso removido deste dispositivo. Não foi possível confirmar a revogação no servidor.', confirmada ? 'success' : 'warning');
   }
 }
 
@@ -2545,12 +2546,10 @@ function renderModuleError(containerId, title, message) {
 async function simulateRefresh() {
   if (!AppState.isAuthenticated) {
     renderInitialDashboardState();
-    showToast('Dados atualizados.', 'success');
     return;
   }
 
   await loadCurrentView(AppState.currentView, { force: true });
-  showToast('Dados atualizados.', 'success');
 }
 
 function getPeriodLabel() {

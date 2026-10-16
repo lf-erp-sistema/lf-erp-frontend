@@ -271,7 +271,7 @@ async function performRequest(path, options = {}) {
       // Token revogado é retornado pelo backend como 403 para diferenciar de
       // credenciais ausentes. Para a SPA, porém, a sessão não é mais válida e
       // deve ter exatamente o mesmo tratamento de uma expiração (401).
-      if (error?.status === 403 && error?.payload?.codigo === 'TOKEN_REVOGADO') {
+      if (error?.status === 403 && ['TOKEN_REVOGADO', 'SESSAO_REVOGADA', 'SENHA_ALTERADA', 'TOKEN_EXPIRADO'].includes(error?.payload?.codigo)) {
         encerrarSessao();
       }
       throw error;
@@ -454,8 +454,28 @@ async function updateMePerfil(payload) {
 
 async function getProdutos(params = {}) {
   const empresa = ensureEmpresa();
-  const r = await request(`/produtos/${empresa}`, { method: 'GET', query: { ...params } });
-  return r?.dados ?? r;
+  // Consumidores legados (PDV/offline/estoque) esperam o catálogo completo.
+  // Uma página explícita continua disponível sem perder seu contrato.
+  if (params.limit != null || params.offset != null) {
+    const r = await getProdutosPagina(params);
+    return r?.dados ?? r;
+  }
+  const itens = [];
+  let offset = 0;
+  while (true) {
+    const r = await request(`/produtos/${empresa}`, { method: 'GET', query: { ...params, limit: 500, offset } });
+    const dados = Array.isArray(r?.dados) ? r.dados : (Array.isArray(r) ? r : []);
+    itens.push(...dados);
+    offset += dados.length;
+    if (!dados.length || Array.isArray(r) || offset >= Number(r.total)) break;
+    if (r.total == null && dados.length < 500) break;
+  }
+  return itens;
+}
+
+async function getProdutosPagina(params = {}) {
+  const empresa = ensureEmpresa();
+  return request(`/produtos/${empresa}`, { method: 'GET', query: { ...params } });
 }
 
 async function createProduto(payload) {
@@ -1611,6 +1631,7 @@ const api = {
   updateMePerfil,
 
   getProdutos,
+  getProdutosPagina,
   createProduto,
   updateProduto,
   deleteProduto,

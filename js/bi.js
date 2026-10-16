@@ -172,28 +172,28 @@ async function carregarBI() {
   const fb  = document.getElementById('biFeedback');
   if (fb) { fb.className = 'module-feedback'; fb.textContent = ''; }
   if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Carregando...'; }
-  document.querySelectorAll('#biKpis .bi-kpi').forEach(el => {
-    el.innerHTML = '<div class="skeleton-line" style="height:14px;width:55%;border-radius:4px;margin-bottom:8px"></div><div class="skeleton-line" style="height:26px;width:75%;border-radius:4px"></div>';
-  });
 
   try {
     const [comp, tendencia, topProd, topCli, mixPag, margemCat, funil] = await Promise.allSettled([
       api.get(`/bi/comparativo${q}`),
       api.get(`/bi/tendencia-vendas?meses=${meses}`),
-      api.get(`/bi/top-produtos${q}&limit=10`),
-      api.get(`/bi/top-clientes${q}&limit=10`),
+      api.get('/bi/top-produtos', { inicio, fim, limit: 10 }),
+      api.get('/bi/top-clientes', { inicio, fim, limit: 10 }),
       api.get(`/bi/mix-pagamentos${q}`),
       api.get(`/bi/margem-categorias${q}`),
       api.get(`/bi/funil${q}`)
     ]);
 
     if (comp.status === 'fulfilled' && comp.value?.sucesso) renderKpis(comp.value);
-    if (tendencia.status === 'fulfilled' && tendencia.value?.sucesso) renderTendencia(tendencia.value.dados);
+    if (tendencia.status === 'fulfilled') renderTendencia(Array.isArray(tendencia.value) ? tendencia.value : tendencia.value.dados);
     if (mixPag.status === 'fulfilled' && mixPag.value?.sucesso) renderMixPagamentos(mixPag.value.metodos);
     if (margemCat.status === 'fulfilled' && margemCat.value?.sucesso) renderMargemCategorias(margemCat.value.categorias);
     if (funil.status === 'fulfilled' && funil.value?.sucesso) renderFunil(funil.value.etapas);
     if (topProd.status === 'fulfilled' && topProd.value?.sucesso) renderTopProdutos(topProd.value.produtos);
     if (topCli.status === 'fulfilled' && topCli.value?.sucesso) renderTopClientes(topCli.value.clientes);
+    if ([comp, tendencia, topProd, topCli, mixPag, margemCat, funil].some(r => r.status === 'rejected')) {
+      throw new Error('Alguns painéis não puderam ser atualizados. Os dados anteriores desses painéis foram mantidos.');
+    }
   } catch (err) {
     const msg = buildFriendlyError(err);
     if (fb) { fb.className = 'module-feedback module-feedback--error'; fb.textContent = msg; }

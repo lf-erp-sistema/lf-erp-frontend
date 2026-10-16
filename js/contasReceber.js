@@ -153,6 +153,7 @@ async function carregarContas(loadVersion) {
   const filtrosGlobais = getFiltrosGlobais();
 
   const response = await api.getContasReceber({
+    incluir_recebidos_parciais: false,
     ...filtrosGlobais,
     ...state.filtros,
     // A API aplica esta ordenação antes de paginar. Isso mantém a página 1

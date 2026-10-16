@@ -98,6 +98,8 @@ async function carregarDados(abas = [state.aba]) {
     state.abasCarregando.delete(aba);
     if (resultado.status === 'fulfilled') state.abasCarregadas.add(aba);
   });
+  const falha = resultados.find(resultado => resultado.status === 'rejected');
+  if (falha) throw falha.reason;
 }
 
 function getFiltrosGlobais() {
@@ -216,6 +218,9 @@ function render() {
 function renderConteudoAba() {
   if (state.abasCarregando.has(state.aba)) {
     return `<div class="module-skeleton" style="padding:24px"><div class="skeleton-line" style="height:28px;margin-bottom:14px"></div><div class="skeleton-line" style="height:160px"></div></div>`;
+  }
+  if (!state.abasCarregadas.has(state.aba)) {
+    return '<div class="module-feedback module-feedback--error">Dados indisponíveis para este período. Atualize para tentar novamente.</div>';
   }
   if (state.aba === 'resumo') return renderResumo();
   if (state.aba === 'receber') return renderTabelaReceber();
@@ -935,6 +940,10 @@ function renderTabelaFluxo() {
 }
 
 function exportarAbaAtual() {
+  if (state.loading || !state.abasCarregadas.has(state.aba)) {
+    showToast('Aguarde a atualização dos dados antes de exportar.', 'info');
+    return;
+  }
   const { aba } = state;
 
   const f = getFiltrosGlobais();
@@ -1033,7 +1042,10 @@ function bindEventos() {
 
   document
     .getElementById('btnImprimirRelatorios')
-    ?.addEventListener('click', () => { window.print(); });
+    ?.addEventListener('click', () => {
+      if (!state.loading && state.abasCarregadas.has(state.aba)) window.print();
+      else showToast('Atualize os dados antes de imprimir.', 'info');
+    });
 
   document.querySelectorAll('[data-rel-preset]').forEach((btn) => {
     btn.addEventListener('click', async () => {
@@ -1069,10 +1081,15 @@ function bindEventos() {
   document.querySelectorAll('[data-aba]').forEach((btn) => {
     btn.addEventListener('click', async () => {
       state.aba = btn.dataset.aba;
-      const carregamento = carregarDados([state.aba]);
-      render();
-      await carregamento;
-      render();
+      try {
+        const carregamento = carregarDados([state.aba]);
+        render();
+        await carregamento;
+        render();
+      } catch (error) {
+        render();
+        renderFeedback(buildFriendlyError(error), 'error');
+      }
     });
   });
 
@@ -1099,7 +1116,9 @@ function bindEventos() {
 
 async function recarregarModulo(mensagem = '') {
   state.loading = true;
-  limparDadosDetalhados();
+  ++_relatoriosLoadVersion;
+  state.abasCarregadas.clear();
+  state.abasCarregando.clear();
   const loadVersion = _relatoriosLoadVersion;
   const container = document.getElementById('relatoriosContainer');
   container?.setAttribute('aria-busy', 'true');

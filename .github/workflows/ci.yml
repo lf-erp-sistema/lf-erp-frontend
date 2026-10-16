@@ -16,7 +16,10 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
+
+      - name: Test frontend behavior
+        run: node --test test/*.test.cjs
 
       - name: Check essential files exist
         run: |
@@ -39,7 +42,7 @@ jobs:
         run: |
           ERROS=0
           for f in js/*.js; do
-            result=$(node --input-type=module < "$f" 2>&1)
+            result=$(node --input-type=module --check < "$f" 2>&1)
             if echo "$result" | grep -qiE "SyntaxError"; then
               echo "SYNTAX ERROR em $f:"
               echo "$result"
@@ -62,10 +65,10 @@ jobs:
 
       - name: Check no window.confirm or window.prompt
         run: |
-          count=$(grep -rn "window\.confirm\|window\.prompt" js/ --include="*.js" | grep -v "//.*window\." | wc -l)
+          count=$(grep -rn "window\.confirm\|window\.prompt" js/ --include="*.js" | grep -vE '//.*window\.|:[0-9]+:[[:space:]]*\*' | wc -l)
           if [ "$count" -gt 0 ]; then
             echo "ERRO: $count window.confirm/window.prompt encontrados:"
-            grep -rn "window\.confirm\|window\.prompt" js/ --include="*.js" | grep -v "//.*window\."
+            grep -rn "window\.confirm\|window\.prompt" js/ --include="*.js" | grep -vE '//.*window\.|:[0-9]+:[[:space:]]*\*'
             exit 1
           fi
           echo "OK: nenhum window.confirm/window.prompt encontrado"
@@ -74,7 +77,7 @@ jobs:
         run: |
           ERROS=0
           for f in js/*.js; do
-            imports=$(grep "^import.*from '\./\|^import.*from \"\./" "$f" 2>/dev/null | grep -oP "(?<=['\"]\./)[^'\"]+")
+            imports=$(grep "^import.*from '\./\|^import.*from \"\./" "$f" 2>/dev/null | grep -oP "(?<=['\"]\./)[^'\"]+" || true)
             for imp in $imports; do
               target="js/${imp}.js"
               if [ ! -f "$target" ] && [ ! -f "js/${imp}" ]; then
