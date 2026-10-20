@@ -1,6 +1,6 @@
 import api from './api.js';
 import { getAuth } from './auth.js';
-import { confirmarAcao, showToast } from './feedback.js';
+import { confirmarAcao, pedirInput, showToast } from './feedback.js';
 import { buildFriendlyError } from './utils.js';
 import { setActiveView } from './app.js';
 
@@ -31,7 +31,8 @@ const ConfigModule = {
     const auth = getAuth();
     this.state.empresa = auth?.empresa?.nome || auth?.user?.empresa || 'LF ERP';
     this.state.user = auth?.user || {};
-    this.state.isAdmin = ['admin', 'administrador'].includes((auth?.user?.perfil || '').toLowerCase());
+    const perfil = String(auth?.user?.perfil || auth?.user?.tipo || '').toLowerCase();
+    this.state.isAdmin = ['admin', 'administrador'].includes(perfil);
 
     const tipo = auth?.user?.tipo;
     this.state.podeVerLixeira = tipo === 'admin' || tipo === 'gerente' || !!auth?.user?.is_saas_owner;
@@ -201,6 +202,48 @@ const ConfigModule = {
       showToast(buildFriendlyError(err), 'error');
     } finally {
       if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-download"></i> Baixar meus dados'; }
+    }
+  },
+
+  async excluirDadosOperacionais() {
+    const btn = document.getElementById('excluirDadosOperacionaisBtn');
+    const confirmado = await confirmarAcao(
+      'Esta operação apagará permanentemente vendas, compras, financeiro, estoque, clientes, fornecedores e demais registros operacionais. Empresa, usuários e configurações serão preservados.',
+      'Continuar',
+      'danger'
+    );
+    if (!confirmado) return;
+
+    const frase = await pedirInput(
+      'Digite APAGAR DADOS OPERACIONAIS para confirmar.',
+      'APAGAR DADOS OPERACIONAIS',
+      'text',
+      {
+        titulo: 'Confirmar exclusão permanente',
+        descricao: 'Esta ação não pode ser desfeita. Faça a exportação dos dados antes de continuar.',
+        tipoVisual: 'danger',
+        validar: (valor) => valor === 'APAGAR DADOS OPERACIONAIS' || 'Digite a frase exatamente como informada.'
+      }
+    );
+    if (!frase) return;
+
+    try {
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Excluindo...';
+      }
+      await api.request('/empresa/dados-operacionais', {
+        method: 'DELETE',
+        body: { confirmacao: frase }
+      });
+      showToast('Dados operacionais excluídos. A página será atualizada.', 'success');
+      setTimeout(() => window.location.reload(), 1200);
+    } catch (err) {
+      showToast(buildFriendlyError(err), 'error');
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-trash-can"></i> Excluir dados operacionais';
+      }
     }
   },
 
@@ -842,6 +885,20 @@ const ConfigModule = {
         <button id="exportarDadosBtn" class="btn btn-light">
           <i class="fa-solid fa-download"></i> Baixar meus dados
         </button>
+        ${this.state.isAdmin ? `
+        <details style="margin-top:24px;padding-top:16px;border-top:1px solid var(--border)">
+          <summary style="color:var(--text-muted);font-size:.8rem;cursor:pointer;user-select:none">
+            Opções avançadas
+          </summary>
+          <div style="margin-top:14px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+            <small style="color:var(--text-muted);max-width:520px">
+              Reinicie a operação removendo dados operacionais. Empresa, plano, usuários e configurações serão mantidos.
+            </small>
+            <button id="excluirDadosOperacionaisBtn" class="btn btn-light" style="color:var(--danger);border-color:color-mix(in srgb, var(--danger) 35%, var(--border))">
+              <i class="fa-solid fa-trash-can"></i> Excluir dados operacionais
+            </button>
+          </div>
+        </details>` : ''}
       </section>
       </div>
     `;
@@ -880,6 +937,7 @@ const ConfigModule = {
         document.getElementById('cfgSalvarPixBtn')?.addEventListener('click', () => this.salvarPix());
         document.getElementById('cfgSalvarAsaasBtn')?.addEventListener('click', () => this.salvarAsaas());
         document.getElementById('exportarDadosBtn')?.addEventListener('click', () => this.exportarDados());
+        document.getElementById('excluirDadosOperacionaisBtn')?.addEventListener('click', () => this.excluirDadosOperacionais());
 
         // Cor primária
         const colorInput = document.getElementById('cfgCorPrimaria');
