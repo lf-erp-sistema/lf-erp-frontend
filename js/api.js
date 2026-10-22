@@ -852,6 +852,9 @@ async function getCompras(params = {}) {
 
   return request(`/compras/${empresa}`, {
     method: 'GET',
+    // Uma listagem logo após uma edição extensa pode aguardar a transação do
+    // servidor; não usar o limite global curto nesse ponto.
+    timeout: 60000,
     query: {
       ...params
     }
@@ -871,6 +874,7 @@ async function createCompra(payload) {
 
   return request('/compras', {
     method: 'POST',
+    timeout: 90000,
     body: {
       ...payload,
       empresa,
@@ -885,6 +889,9 @@ async function updateCompra(id, payload) {
 
   return request(`/compras/${id}`, {
     method: 'PUT',
+    // Edição recompõe estoque, itens e financeiro na mesma transação. Para
+    // compras extensas, 20s era insuficiente e gerava falso erro no cliente.
+    timeout: 90000,
     body: {
       ...payload,
       empresa,

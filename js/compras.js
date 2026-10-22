@@ -297,7 +297,7 @@ const ComprasModule = {
     });
   },
 
-  async load() {
+  async load({ preserveOnError = false, afterMutation = false } = {}) {
     this.resolveEmpresa();
     this.state.loading = true;
 
@@ -319,8 +319,21 @@ const ComprasModule = {
       this.cache();
       this.search('');
       this.setFeedback('', '');
+      return true;
     } catch (error) {
       console.error('Erro ao carregar compras:', error);
+
+      if (preserveOnError) {
+        // A gravação já foi confirmada; não substituir a lista existente por
+        // uma tela de erro se apenas a atualização visual atrasar.
+        this.setFeedback(
+          afterMutation
+            ? 'Compra salva. A lista será atualizada na próxima atualização da tela.'
+            : this.buildFriendlyError(error),
+          afterMutation ? 'info' : 'error'
+        );
+        return false;
+      }
 
       this.state.items = [];
       this.state.filteredItems = [];
@@ -329,6 +342,7 @@ const ComprasModule = {
       this.search('');
       const message = this.buildFriendlyError(error);
       this.setFeedback(message, 'error');
+      return false;
     } finally {
       this.state.loading = false;
       this.setLoading(false);
@@ -1300,7 +1314,7 @@ const ComprasModule = {
 
       this.state.editingId = null;
       this.closeModal();
-      await this.load();
+      await this.load({ preserveOnError: true, afterMutation: true });
     } catch (error) {
       console.error('Erro ao salvar compra:', error);
       const message = this.buildFriendlyError(error);
