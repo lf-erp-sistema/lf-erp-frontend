@@ -1466,10 +1466,26 @@ const ComprasModule = {
       .cmp-nc-field-hint { margin: 7px 2px 0; color: var(--text-muted); font-size: .72rem; }
       .cmp-nc-obs { width: 100%; resize: none; font-size: 0.9rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; font-family: inherit; color: var(--text); box-sizing: border-box; }
       .cmp-nc-items-section { margin: 0; }
-      .cmp-nc-items-inner { padding: 12px 0 4px; }
-      .cmp-nc-items-add { display: grid; grid-template-columns: minmax(210px, 1.8fr) minmax(110px, .65fr) minmax(135px, .85fr) minmax(160px, 1fr); gap: 12px; align-items: end; margin-bottom: 14px; }
+      .cmp-nc-items-inner { padding: 0; }
+      .cmp-nc-items-add { display: grid; grid-template-columns: minmax(210px, 1.8fr) minmax(110px, .65fr) minmax(135px, .85fr) minmax(160px, 1fr); gap: 12px; align-items: end; margin-bottom: 14px; padding: 14px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface-2); }
       .cmp-nc-items-add .form-field { min-width: 0; }
       .cmp-nc-items-add .btn { min-height: 44px; justify-content: center; }
+      .cmp-nc-items-inner .table-wrapper { margin-top: 12px; border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+      .cmp-nc-items-inner .compra-total-box { margin-top: 12px; padding: 14px 16px; border-radius: 16px; }
+      @media (min-width: 761px) {
+        .cmp-nc-card { padding: 0 !important; border-radius: 24px !important; box-shadow: 0 24px 80px rgba(0,0,0,.18), 0 2px 8px rgba(0,0,0,.08) !important; }
+        .cmp-nc-card .modal-card__header { padding: 22px 28px 18px; }
+        .cmp-nc-card .modal-card__footer { padding: 16px 28px; }
+        .cmp-nc-body { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); align-items: start; column-gap: 24px; row-gap: 18px; padding: 22px 28px; }
+        .cmp-nc-body > .cmp-nc-section { padding: 0; min-width: 0; }
+        .cmp-nc-body > .cmp-nc-section:nth-child(1) { grid-column: 1; grid-row: 1; }
+        .cmp-nc-body > .cmp-nc-section:nth-child(2) { grid-column: 1; grid-row: 2; }
+        .cmp-nc-body > .cmp-nc-section:nth-child(3) { grid-column: 2; grid-row: 1 / span 2; }
+        .cmp-nc-body > .cmp-nc-section:nth-child(4) { grid-column: 1 / -1; }
+        .cmp-nc-items-add { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+        .cmp-nc-items-add .form-field:first-child,
+        .cmp-nc-items-add .form-field:last-child { grid-column: 1 / -1; }
+      }
       @media (max-width: 600px) {
         .cmp-nc-section { padding: 14px 16px 0; }
         .cmp-nc-cells-2col { grid-template-columns: 1fr; }
