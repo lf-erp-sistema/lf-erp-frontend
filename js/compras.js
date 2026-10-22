@@ -608,7 +608,7 @@ const ComprasModule = {
                   <div class="form-grid cmp-nc-items-add">
                     <div class="form-field">
                       <label for="compraProduto">Produto</label>
-                      <select id="compraProduto">
+                      <select id="compraProduto" data-premium-search="true" data-premium-search-placeholder="Buscar produto..." aria-label="Produto da compra">
                         <option value="">Selecione...</option>
                         ${this.state.produtos.map((p) => `<option value="${p.id}" data-custo="${Number(p.custo || 0)}">${escapeHtml(p.nome)}</option>`).join('')}
                       </select>
@@ -1796,6 +1796,9 @@ const ComprasModule = {
       .cmp-nc-items-inner { padding: 0; }
       .cmp-nc-items-add { display: grid; width: 100%; grid-template-columns: minmax(0, 1.8fr) minmax(0, .65fr) minmax(0, .85fr) minmax(148px, 1fr); gap: 12px; align-items: end; margin-bottom: 14px; padding: 14px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface-2); }
       .cmp-nc-items-add .form-field { min-width: 0; }
+      .cmp-nc-items-add .premium-select { position: relative; z-index: 2; width: 100%; }
+      .cmp-nc-items-add .premium-select.is-open { z-index: calc(var(--z-modal) + 2); }
+      .cmp-nc-items-add .premium-select__menu { z-index: calc(var(--z-modal) + 3); max-height: 260px; }
       .cmp-nc-items-add .btn { width: 100%; min-width: 0; min-height: 44px; padding-inline: 10px; justify-content: center; overflow-wrap: anywhere; }
       .cmp-nc-items-add #addItemCompraBtn { border-color: color-mix(in srgb, var(--primary) 34%, var(--border)); background: var(--primary-soft); color: var(--primary); font-weight: 800; }
       .cmp-nc-items-add #addItemCompraBtn:hover { border-color: var(--primary); background: var(--primary); color: var(--white); }
