@@ -1428,7 +1428,7 @@ const ComprasModule = {
     const s = document.createElement('style');
     s.id = 'cmp-nc-styles';
     s.textContent = `
-      .cmp-nc-card { width: min(96vw, 600px) !important; max-height: 92vh; display: flex; flex-direction: column; overflow: hidden; }
+      .cmp-nc-card { width: min(94vw, 880px) !important; max-height: 92vh; display: flex; flex-direction: column; overflow: hidden; }
       .cmp-nc-card > form { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
       .cmp-nc-body { overflow-y: auto; flex: 1 1 auto; min-height: 0; }
       .cmp-nc-section { padding: 16px 20px 0; }
@@ -1467,11 +1467,17 @@ const ComprasModule = {
       .cmp-nc-obs { width: 100%; resize: none; font-size: 0.9rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; font-family: inherit; color: var(--text); box-sizing: border-box; }
       .cmp-nc-items-section { margin: 0; }
       .cmp-nc-items-inner { padding: 12px 0 4px; }
-      .cmp-nc-items-add { margin-bottom: 12px; }
+      .cmp-nc-items-add { display: grid; grid-template-columns: minmax(210px, 1.8fr) minmax(110px, .65fr) minmax(135px, .85fr) minmax(160px, 1fr); gap: 12px; align-items: end; margin-bottom: 14px; }
+      .cmp-nc-items-add .form-field { min-width: 0; }
+      .cmp-nc-items-add .btn { min-height: 44px; justify-content: center; }
       @media (max-width: 600px) {
         .cmp-nc-section { padding: 14px 16px 0; }
         .cmp-nc-cells-2col { grid-template-columns: 1fr; }
         .cmp-nc-cells-2col .cmp-nc-cell:first-child { border-right: none; border-bottom: 1px solid var(--border); }
+        .cmp-nc-items-add { grid-template-columns: 1fr 1fr; }
+      }
+      @media (max-width: 420px) {
+        .cmp-nc-items-add { grid-template-columns: 1fr; }
       }
     `;
     document.head.appendChild(s);
