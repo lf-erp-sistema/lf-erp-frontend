@@ -266,7 +266,19 @@ async function performRequest(path, options = {}) {
     }
 
     try {
-      return await parseResponse(response);
+      const data = await parseResponse(response);
+
+      // Contrato global de atualização interna: toda mutação concluída pela
+      // API avisa os módulos interessados, sem transportar dados sensíveis.
+      // Cada tela decide se o recurso alterado invalida algum cache local.
+      if (method !== 'GET' && typeof window !== 'undefined') {
+        const recurso = String(path || '').replace(/^\/+/, '').split(/[/?]/)[0];
+        window.dispatchEvent(new CustomEvent('lferp:data-changed', {
+          detail: { method, recurso }
+        }));
+      }
+
+      return data;
     } catch (error) {
       // Token revogado é retornado pelo backend como 403 para diferenciar de
       // credenciais ausentes. Para a SPA, porém, a sessão não é mais válida e

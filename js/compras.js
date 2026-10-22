@@ -116,6 +116,23 @@ const ComprasModule = {
     this._injectStyles();
     this._injectCmpStyles();
 
+    // Catálogos ficam em memória para a tela responder rápido. Quando uma
+    // mutação confirmada pela API muda seu recurso, apenas o cache relacionado
+    // é invalidado e será atualizado na próxima abertura do formulário.
+    window.addEventListener('lferp:data-changed', (event) => {
+      const recurso = event.detail?.recurso;
+
+      if (recurso === 'fornecedores') {
+        this.state.fornecedoresCarregados = false;
+        this.state.fornecedoresLoading = null;
+      }
+
+      if (recurso === 'produtos') {
+        this.state.produtosCarregados = false;
+        this.state.produtosLoading = null;
+      }
+    });
+
     // ── "Ações" dropdown (status, fornecedor, Importar XML)
     document.addEventListener('click', async (e) => {
       const btn = e.target.closest('#comprasActionsBtn');
