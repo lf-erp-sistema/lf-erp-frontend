@@ -149,6 +149,10 @@ const ComprasModule = {
     });
 
     document.addEventListener('change', (e) => {
+      if (e.target.dataset.action === 'update-item-compra') {
+        this.updateItem(e.target.dataset.index, e.target.dataset.field, e.target.value);
+        return;
+      }
       if (e.target.id === 'compraFormaPagamento') {
         this.toggleVencimentoField();
       }
@@ -561,12 +565,12 @@ const ComprasModule = {
                   </div>
 
                   <div class="table-wrapper">
-                    <table class="data-table">
+                    <table class="data-table cmp-nc-items-table">
                       <thead>
                         <tr>
                           <th>Produto</th>
                           <th>Qtd.</th>
-                          <th>Custo unit.</th>
+                          <th>Custo</th>
                           <th class="text-right">Subtotal</th>
                           <th class="text-right">Ações</th>
                         </tr>
@@ -917,6 +921,24 @@ const ComprasModule = {
     this.renderItensCompra();
   },
 
+  updateItem(index, field, value) {
+    const idx = Number(index);
+    const item = this.state.itensCompra[idx];
+    if (!item || !['quantidade', 'custo_unitario'].includes(field)) return;
+
+    const nextValue = Number(value);
+    const minimo = field === 'quantidade' ? 0.001 : 0;
+    if (!Number.isFinite(nextValue) || nextValue < minimo) {
+      this.showMessage(field === 'quantidade' ? 'Informe uma quantidade válida.' : 'Informe um custo válido.', 'error');
+      this.renderItensCompra();
+      return;
+    }
+
+    item[field] = nextValue;
+    item.subtotal = Number((Number(item.quantidade) * Number(item.custo_unitario)).toFixed(2));
+    this.renderItensCompra();
+  },
+
   renderItensCompra() {
     this.cache();
 
@@ -940,19 +962,25 @@ const ComprasModule = {
           <td>
             <strong>${escapeHtml(item.produto_nome)}</strong>
           </td>
-          <td>${Number(item.quantidade || 0)}</td>
-          <td>${formatCurrency(item.custo_unitario || 0)}</td>
+          <td>
+            <input type="number" class="cmp-nc-item-input" data-action="update-item-compra" data-index="${index}" data-field="quantidade" min="0.001" step="0.001" value="${Number(item.quantidade || 0)}" aria-label="Quantidade de ${escapeHtml(item.produto_nome)}" />
+          </td>
+          <td>
+            <input type="number" class="cmp-nc-item-input" data-action="update-item-compra" data-index="${index}" data-field="custo_unitario" min="0" step="0.01" value="${Number(item.custo_unitario || 0)}" aria-label="Custo unitário de ${escapeHtml(item.produto_nome)}" />
+          </td>
           <td class="text-right">
             <strong>${formatCurrency(item.subtotal || 0)}</strong>
           </td>
           <td class="text-right">
             <button
               type="button"
-              class="btn-inline btn-inline--danger"
+              class="cmp-nc-item-remove"
               data-action="remove-item-compra"
               data-index="${index}"
+              aria-label="Remover ${escapeHtml(item.produto_nome)}"
+              title="Remover item"
             >
-              Remover
+              <i class="fa-solid fa-trash-can"></i>
             </button>
           </td>
         </tr>
@@ -1471,6 +1499,20 @@ const ComprasModule = {
       .cmp-nc-items-add .form-field { min-width: 0; }
       .cmp-nc-items-add .btn { min-height: 44px; justify-content: center; }
       .cmp-nc-items-inner .table-wrapper { margin-top: 12px; border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+      .cmp-nc-items-table { min-width: 0; width: 100%; table-layout: fixed; }
+      .cmp-nc-items-table th,
+      .cmp-nc-items-table td { padding: 10px 8px; font-size: .76rem; white-space: normal; }
+      .cmp-nc-items-table th { font-size: .66rem; letter-spacing: .04em; }
+      .cmp-nc-items-table th:nth-child(1) { width: 39%; }
+      .cmp-nc-items-table th:nth-child(2) { width: 12%; }
+      .cmp-nc-items-table th:nth-child(3) { width: 17%; }
+      .cmp-nc-items-table th:nth-child(4) { width: 21%; }
+      .cmp-nc-items-table th:nth-child(5) { width: 11%; }
+      .cmp-nc-items-table td:first-child strong { display: -webkit-box; overflow: hidden; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.3; }
+      .cmp-nc-item-input { width: 100%; min-width: 0; height: 32px; padding: 0 6px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; font-weight: 700; text-align: center; outline: none; }
+      .cmp-nc-item-input:focus { border-color: var(--primary); box-shadow: var(--control-shadow-focus); }
+      .cmp-nc-item-remove { display: inline-grid; width: 32px; height: 32px; place-items: center; padding: 0; border: 1px solid color-mix(in srgb, var(--danger) 25%, var(--border)); border-radius: 8px; background: transparent; color: var(--danger); cursor: pointer; }
+      .cmp-nc-item-remove:hover { background: color-mix(in srgb, var(--danger) 9%, transparent); }
       .cmp-nc-items-inner .compra-total-box { margin-top: 12px; padding: 14px 16px; border-radius: 16px; }
       @media (min-width: 761px) {
         .cmp-nc-card { padding: 0 !important; border-radius: 24px !important; box-shadow: 0 24px 80px rgba(0,0,0,.18), 0 2px 8px rgba(0,0,0,.08) !important; }
@@ -1491,6 +1533,8 @@ const ComprasModule = {
         .cmp-nc-cells-2col { grid-template-columns: 1fr; }
         .cmp-nc-cells-2col .cmp-nc-cell:first-child { border-right: none; border-bottom: 1px solid var(--border); }
         .cmp-nc-items-add { grid-template-columns: 1fr 1fr; }
+        .cmp-nc-items-inner .table-wrapper { overflow-x: auto; }
+        .cmp-nc-items-table { min-width: 560px; }
       }
       @media (max-width: 420px) {
         .cmp-nc-items-add { grid-template-columns: 1fr; }
