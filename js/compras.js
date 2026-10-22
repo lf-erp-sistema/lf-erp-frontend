@@ -486,7 +486,7 @@ const ComprasModule = {
               </div>
 
               <div class="cmp-nc-section">
-                <p class="cmp-nc-section-title">Pagamento</p>
+                <p class="cmp-nc-section-title"><i class="fa-solid fa-wallet"></i> Pagamento</p>
                 <div class="cmp-nc-card-group">
                   <div class="cmp-nc-cells-2col">
                     <div class="cmp-nc-cell">
@@ -537,7 +537,7 @@ const ComprasModule = {
               </div>
 
               <div class="cmp-nc-section cmp-nc-items-section">
-                <p class="cmp-nc-section-title">Itens da Compra</p>
+                <p class="cmp-nc-section-title cmp-nc-items-title"><i class="fa-solid fa-basket-shopping"></i> Itens da compra <span id="compraItensCont" class="cmp-nc-items-count">0 itens</span></p>
                 <div class="cmp-nc-items-inner">
                   <div class="form-grid cmp-nc-items-add">
                     <div class="form-field">
@@ -587,7 +587,7 @@ const ComprasModule = {
               </div>
 
               <div class="cmp-nc-section">
-                <p class="cmp-nc-section-title">Observação</p>
+                <p class="cmp-nc-section-title"><i class="fa-regular fa-note-sticky"></i> Observação</p>
                 <textarea id="compraObservacao" class="cmp-nc-obs" placeholder="Observações internas da compra" rows="3"></textarea>
               </div>
 
@@ -990,6 +990,12 @@ const ComprasModule = {
     }
 
     const total = this.getTotalItensCompra();
+
+    const itensCont = document.getElementById('compraItensCont');
+    if (itensCont) {
+      const quantidadeItens = this.state.itensCompra.length;
+      itensCont.textContent = `${quantidadeItens} ${quantidadeItens === 1 ? 'item' : 'itens'}`;
+    }
 
     if (this.el.totalCompra) {
       this.el.totalCompra.textContent = formatCurrency(total);
@@ -1461,7 +1467,10 @@ const ComprasModule = {
       .cmp-nc-body { overflow-y: auto; flex: 1 1 auto; min-height: 0; }
       .cmp-nc-section { padding: 16px 20px 0; }
       .cmp-nc-section:last-child { padding-bottom: 20px; }
-      .cmp-nc-section-title { font-size: 0.7rem; font-weight: 900; color: var(--text-muted); text-transform: uppercase; letter-spacing: .08em; margin: 0 0 8px; }
+      .cmp-nc-section-title { display: flex; align-items: center; gap: 7px; font-size: 0.7rem; font-weight: 900; color: var(--text-muted); text-transform: uppercase; letter-spacing: .08em; margin: 0 0 8px; }
+      .cmp-nc-section-title > i { color: var(--primary); font-size: .8rem; }
+      .cmp-nc-items-title { margin-bottom: 10px; }
+      .cmp-nc-items-count { margin-left: auto; padding: 3px 8px; border-radius: 999px; background: var(--surface-2); color: var(--text-muted); font-size: .63rem; letter-spacing: 0; text-transform: none; }
       .cmp-nc-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
       .cmp-nc-section-heading .cmp-nc-section-title { display: flex; align-items: center; gap: 7px; }
       .cmp-nc-section-heading .cmp-nc-section-title i { color: var(--primary); font-size: .82rem; }
@@ -1498,18 +1507,20 @@ const ComprasModule = {
       .cmp-nc-items-add { display: grid; grid-template-columns: minmax(210px, 1.8fr) minmax(110px, .65fr) minmax(135px, .85fr) minmax(160px, 1fr); gap: 12px; align-items: end; margin-bottom: 14px; padding: 14px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface-2); }
       .cmp-nc-items-add .form-field { min-width: 0; }
       .cmp-nc-items-add .btn { min-height: 44px; justify-content: center; }
+      .cmp-nc-items-add #addItemCompraBtn { border-color: color-mix(in srgb, var(--primary) 34%, var(--border)); background: var(--primary-soft); color: var(--primary); font-weight: 800; }
+      .cmp-nc-items-add #addItemCompraBtn:hover { border-color: var(--primary); background: var(--primary); color: var(--white); }
       .cmp-nc-items-inner .table-wrapper { margin-top: 12px; border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
       .cmp-nc-items-table { min-width: 0; width: 100%; table-layout: fixed; }
       .cmp-nc-items-table th,
-      .cmp-nc-items-table td { padding: 10px 8px; font-size: .76rem; white-space: normal; }
-      .cmp-nc-items-table th { font-size: .66rem; letter-spacing: .04em; }
+      .cmp-nc-items-table td { padding: 11px 10px; font-size: .78rem; white-space: normal; }
+      .cmp-nc-items-table th { font-size: .67rem; letter-spacing: .045em; }
       .cmp-nc-items-table th:nth-child(1) { width: 39%; }
       .cmp-nc-items-table th:nth-child(2) { width: 12%; }
       .cmp-nc-items-table th:nth-child(3) { width: 17%; }
       .cmp-nc-items-table th:nth-child(4) { width: 21%; }
       .cmp-nc-items-table th:nth-child(5) { width: 11%; }
       .cmp-nc-items-table td:first-child strong { display: -webkit-box; overflow: hidden; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.3; }
-      .cmp-nc-item-input { width: 100%; min-width: 0; height: 32px; padding: 0 6px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; font-weight: 700; text-align: center; outline: none; }
+      .cmp-nc-item-input { width: 100%; min-width: 0; height: 34px; padding: 0 7px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface); color: var(--text); font: inherit; font-weight: 800; text-align: center; outline: none; }
       .cmp-nc-item-input:focus { border-color: var(--primary); box-shadow: var(--control-shadow-focus); }
       .cmp-nc-item-remove { display: inline-grid; width: 32px; height: 32px; place-items: center; padding: 0; border: 1px solid color-mix(in srgb, var(--danger) 25%, var(--border)); border-radius: 8px; background: transparent; color: var(--danger); cursor: pointer; }
       .cmp-nc-item-remove:hover { background: color-mix(in srgb, var(--danger) 9%, transparent); }
@@ -1518,15 +1529,17 @@ const ComprasModule = {
         .cmp-nc-card { padding: 0 !important; border-radius: 24px !important; box-shadow: 0 24px 80px rgba(0,0,0,.18), 0 2px 8px rgba(0,0,0,.08) !important; }
         .cmp-nc-card .modal-card__header { padding: 22px 28px 18px; }
         .cmp-nc-card .modal-card__footer { padding: 16px 28px; }
-        .cmp-nc-body { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); align-items: start; column-gap: 24px; row-gap: 18px; padding: 22px 28px; }
+        .cmp-nc-body { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(270px, .75fr); align-items: start; column-gap: 24px; row-gap: 18px; padding: 22px 28px; }
         .cmp-nc-body > .cmp-nc-section { padding: 0; min-width: 0; }
         .cmp-nc-body > .cmp-nc-section:nth-child(1) { grid-column: 1; grid-row: 1; }
-        .cmp-nc-body > .cmp-nc-section:nth-child(2) { grid-column: 1; grid-row: 2; }
-        .cmp-nc-body > .cmp-nc-section:nth-child(3) { grid-column: 2; grid-row: 1 / span 2; }
-        .cmp-nc-body > .cmp-nc-section:nth-child(4) { grid-column: 1 / -1; }
-        .cmp-nc-items-add { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+        .cmp-nc-body > .cmp-nc-section:nth-child(2) { grid-column: 2; grid-row: 1; }
+        .cmp-nc-body > .cmp-nc-section:nth-child(3) { grid-column: 1 / -1; grid-row: 2; }
+        .cmp-nc-body > .cmp-nc-section:nth-child(4) { grid-column: 1 / -1; grid-row: 3; }
+        .cmp-nc-body > .cmp-nc-section:nth-child(2) .cmp-nc-cells-2col { grid-template-columns: 1fr; }
+        .cmp-nc-body > .cmp-nc-section:nth-child(2) .cmp-nc-cells-2col .cmp-nc-cell:first-child { border-right: none; border-bottom: 1px solid var(--border); }
+        .cmp-nc-items-add { grid-template-columns: minmax(250px, 1.8fr) minmax(105px, .6fr) minmax(130px, .8fr) minmax(160px, 1fr); }
         .cmp-nc-items-add .form-field:first-child,
-        .cmp-nc-items-add .form-field:last-child { grid-column: 1 / -1; }
+        .cmp-nc-items-add .form-field:last-child { grid-column: auto; }
       }
       @media (max-width: 600px) {
         .cmp-nc-section { padding: 14px 16px 0; }
