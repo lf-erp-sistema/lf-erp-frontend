@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Guia de estoque</title>
+  <style>
+    @page { size: A5 portrait; margin: 11mm 10mm 12mm; }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: #17233a; font-family: Arial, sans-serif; font-size: 10.5pt; line-height: 1.42; }
+    h1 { margin: 0; color: #102247; font-size: 22pt; line-height: 1.08; }
+    h2 { margin: 15px 0 7px; color: #1e4f9b; font-size: 13.5pt; }
+    h3 { margin: 10px 0 4px; font-size: 11.5pt; color: #102247; }
+    p { margin: 5px 0; }
+    ol, ul { margin: 5px 0 8px; padding-left: 21px; }
+    li { margin: 3px 0; }
+    .cover { min-height: 174mm; display: flex; flex-direction: column; justify-content: center; }
+    .brand { display: inline-block; width: fit-content; margin-bottom: 18px; padding: 5px 10px; border-radius: 14px; background: #eaf1ff; color: #2663df; font-weight: bold; font-size: 9pt; letter-spacing: .5px; text-transform: uppercase; }
+    .subtitle { margin-top: 11px; color: #60718e; font-size: 13pt; }
+    .note { margin: 16px 0; padding: 11px; border-left: 4px solid #2864e7; border-radius: 4px; background: #f2f6ff; }
+    .step { display: inline-flex; width: 18px; height: 18px; align-items: center; justify-content: center; margin-right: 4px; border-radius: 50%; background: #2864e7; color: white; font-size: 9pt; font-weight: bold; }
+    .checklist { margin-top: 12px; padding: 10px 12px; border: 1px solid #cfdcf3; border-radius: 8px; background: #fbfcff; }
+    .care { margin: 12px 0; padding: 11px; border: 1px solid #efc45d; border-radius: 7px; background: #fff8e8; }
+    .problem { margin: 12px 0; padding: 11px; border: 1px solid #efb0b0; border-radius: 7px; background: #fff3f3; }
+    .lines { margin-top: 9px; height: 54mm; background: repeating-linear-gradient(to bottom, transparent 0, transparent 8mm, #cbd7e8 8.2mm, transparent 8.4mm); }
+    .footer { position: fixed; bottom: -7mm; left: 0; right: 0; color: #8290a8; font-size: 8pt; text-align: center; }
+    .page-break { break-before: page; }
+  </style>
+</head>
+<body>
+  <div class="footer">LF ERP · Guia de uso diário</div>
+
+  <section class="cover">
+    <span class="brand">LF ERP</span>
+    <h1>Estoque e<br>produtos</h1>
+    <p class="subtitle">Guia simples para cadastrar produtos e conferir quantidades.</p>
+    <div class="note"><strong>Antes de cadastrar:</strong> pesquise o produto. Assim evitamos cadastrar o mesmo item duas vezes.</div>
+    <p><strong>Use este guia quando:</strong></p>
+    <ul>
+      <li>chegar mercadoria nova;</li>
+      <li>for cadastrar um produto;</li>
+      <li>precisar corrigir uma quantidade.</li>
+    </ul>
+  </section>
+
+  <section class="page-break">
+    <h2>1. Cadastrar produto novo</h2>
+    <ol>
+      <li>Entre no sistema com seu usuário.</li>
+      <li>No menu esquerdo, clique em <strong>Cadastros → Produtos</strong>.</li>
+      <li>Clique em <strong>+ Novo produto</strong>.</li>
+      <li>Preencha os campos principais:</li>
+    </ol>
+    <ul>
+      <li><strong>Nome:</strong> nome fácil de entender.</li>
+      <li><strong>Preço de venda:</strong> quanto o cliente paga.</li>
+      <li><strong>Custo:</strong> quanto a loja pagou.</li>
+      <li><strong>Estoque inicial:</strong> quantidade que chegou.</li>
+      <li><strong>Estoque mínimo:</strong> sugestão de 2 ou 3 unidades.</li>
+      <li><strong>Código de barras:</strong> preencha se existir na embalagem.</li>
+    </ul>
+    <ol start="5">
+      <li>Clique em <strong>Salvar produto</strong>.</li>
+      <li>Espere a mensagem de sucesso antes de fechar a tela.</li>
+    </ol>
+    <div class="care"><strong>Atenção:</strong> preço de venda é o valor cobrado do cliente. Não coloque o custo nesse campo.</div>
+
+    <h2>2. Corrigir quantidade</h2>
+    <ol>
+      <li>Vá em <strong>Cadastros → Produtos</strong>.</li>
+      <li>Pesquise o produto pelo nome ou código de barras.</li>
+      <li>Clique no botão <strong>±</strong> ao lado da quantidade.</li>
+      <li>Digite a quantidade que existe de verdade na loja.</li>
+      <li>Confirme e espere a mensagem <strong>“Estoque atualizado”</strong>.</li>
+    </ol>
+    <div class="note"><strong>Exemplo:</strong> se o sistema mostra 3, mas você contou 8, digite <strong>8</strong>.</div>
+  </section>
+
+  <section class="page-break">
+    <h2>3. Conferir o estoque</h2>
+    <ol>
+      <li>Abra <strong>Movimentações → Estoque</strong>.</li>
+      <li>Pesquise o produto.</li>
+      <li>Confira se a quantidade mostrada é a mesma que foi contada.</li>
+    </ol>
+    <div class="checklist">
+      <strong>Checklist antes de salvar</strong><br>
+      □ Produto não está duplicado<br>
+      □ Nome está correto<br>
+      □ Preço de venda está correto<br>
+      □ Quantidade foi conferida
+    </div>
+    <div class="care"><strong>Lembrete:</strong> as vendas feitas no PDV baixam o estoque automaticamente. Não é preciso baixar manualmente após cada venda.</div>
+    <div class="problem"><strong>Se aparecer mensagem vermelha:</strong> pare, tire uma foto da tela e envie para quem cuida do sistema. Não tente criar outro produto para resolver.</div>
+    <h3>Anotações</h3>
+    <div class="lines"></div>
+  </section>
+</body>
+</html>

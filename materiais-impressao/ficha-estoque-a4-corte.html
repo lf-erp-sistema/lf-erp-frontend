@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"><title>Fichas de estoque — A4 para corte</title>
+  <style>
+    @page { size: A4 landscape; margin: 0; }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: #17233a; font-family: Arial, sans-serif; }
+    .sheet { width: 297mm; height: 210mm; display: flex; break-after: page; }
+    .sheet:last-child { break-after: auto; }
+    .card { width: 148.5mm; height: 210mm; padding: 6mm 7mm; position: relative; }
+    .card:first-child { border-right: 1px dashed #8a9ab1; }
+    .cut { position: absolute; top: 2mm; right: -17mm; color: #7b8ba1; font-size: 7pt; transform: rotate(90deg); transform-origin: top right; }
+    header { display: flex; align-items: flex-start; justify-content: space-between; padding-bottom: 2mm; border-bottom: 1.5px solid #2864e7; }
+    .brand { color: #2864e7; font-size: 7pt; font-weight: bold; letter-spacing: .6px; }
+    h1 { margin: 1mm 0 0; color: #102247; font-size: 15pt; }
+    .folio { font-size: 7.5pt; white-space: nowrap; }
+    .blank { display: inline-block; min-width: 25mm; border-bottom: 1px solid #7e8da2; }
+    .helper { margin: 2mm 0; padding: 1.5mm 2.5mm; border-radius: 3px; background: #f0f5ff; color: #455d80; font-size: 7.6pt; line-height: 1.2; }
+    .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 6mm; margin: 2mm 0; font-size: 7.7pt; }
+    .line { display: inline-block; width: 100%; min-height: 4mm; border-bottom: 1px solid #6f7f95; }
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 6.6pt; }
+    th { height: 7mm; padding: 1mm; background: #2864e7; color: white; border: 1px solid #174aa9; line-height: 1.05; text-align: center; }
+    td { height: 7mm; border: 1px solid #a8b6c8; }
+    th:nth-child(1) { width: 12%; } th:nth-child(2) { width: 35%; } th:nth-child(3) { width: 12%; }
+    th:nth-child(4) { width: 12%; } th:nth-child(5) { width: 13%; } th:nth-child(6) { width: 16%; }
+    footer { margin-top: 1mm; color: #718199; font-size: 6pt; line-height: 1; text-align: center; }
+    /* ProporÃ§Ãµes pensadas para anotaÃ§Ã£o manual: quantidade compacta e produto amplo. */
+    table th:nth-child(1) { width: 9%; }
+    table th:nth-child(2) { width: 39%; }
+    table th:nth-child(3) { width: 16%; }
+    table th:nth-child(4) { width: 16%; }
+    table th:nth-child(5) { width: 20%; }
+  </style>
+</head>
+<body>
+  <div id="pages"></div>
+  <script>
+    const tabela = () => `<table><thead><tr><th>Data</th><th>Produto / código</th><th>Entrada</th><th>Saída /<br>ajuste</th><th>Saldo<br>final</th><th>Observação</th></tr></thead><tbody>${'<tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>'.repeat(18)}</tbody></table>`;
+    const ficha = (n) => `<article class="card"><header><div><div class="brand">LF ERP · FICHA MANUAL</div><h1>Controle de estoque</h1></div><div class="folio">Folha nº: <span class="blank"></span></div></header><div class="helper">Anote conferências e mercadorias recebidas. Depois atualize a quantidade em <strong>Cadastros → Produtos</strong>.</div><div class="fields"><div>Data: <span class="line"></span></div><div>Responsável: <span class="line"></span></div></div>${tabela()}<footer>Confira a quantidade física antes de alterar o estoque no sistema.</footer>${n % 2 ? '<span class="cut">✂ CORTE AQUI</span>' : ''}</article>`;
+    document.getElementById('pages').innerHTML = `<section class="sheet">${ficha(1)}${ficha(2)}</section><section class="sheet">${ficha(3)}${ficha(4)}</section>`;
+  </script>
+  <script>
+    document.querySelectorAll('tbody').forEach((tbody) => {
+      tbody.insertAdjacentHTML('beforeend', '<tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>'.repeat(2));
+    });
+  </script>
+  <script>
+    document.querySelectorAll('table').forEach((table) => {
+      table.querySelector('thead').innerHTML = '<tr><th>Qtd.</th><th>Produto</th><th>Custo</th><th>Venda</th><th>Observa&ccedil;&atilde;o</th></tr>';
+      table.querySelector('tbody').innerHTML = '<tr><td></td><td></td><td></td><td></td><td></td></tr>'.repeat(20);
+    });
+  </script>
+</body>
+</html>

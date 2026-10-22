@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Guia de vendas</title>
+  <style>
+    @page { size: A5 portrait; margin: 11mm 10mm 12mm; }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: #17233a; font-family: Arial, sans-serif; font-size: 10.5pt; line-height: 1.42; }
+    h1 { margin: 0; color: #102247; font-size: 22pt; line-height: 1.08; }
+    h2 { margin: 15px 0 7px; color: #1e4f9b; font-size: 13.5pt; }
+    h3 { margin: 10px 0 4px; font-size: 11.5pt; color: #102247; }
+    p { margin: 5px 0; }
+    ol, ul { margin: 5px 0 8px; padding-left: 21px; }
+    li { margin: 3px 0; }
+    .cover { min-height: 174mm; display: flex; flex-direction: column; justify-content: center; }
+    .brand { display: inline-block; width: fit-content; margin-bottom: 18px; padding: 5px 10px; border-radius: 14px; background: #eaf1ff; color: #2663df; font-weight: bold; font-size: 9pt; letter-spacing: .5px; text-transform: uppercase; }
+    .subtitle { margin-top: 11px; color: #60718e; font-size: 13pt; }
+    .note { margin: 16px 0; padding: 11px; border-left: 4px solid #2864e7; border-radius: 4px; background: #f2f6ff; }
+    .care { margin: 12px 0; padding: 11px; border: 1px solid #efc45d; border-radius: 7px; background: #fff8e8; }
+    .problem { margin: 12px 0; padding: 11px; border: 1px solid #efb0b0; border-radius: 7px; background: #fff3f3; }
+    .checklist { margin-top: 12px; padding: 10px 12px; border: 1px solid #cfdcf3; border-radius: 8px; background: #fbfcff; }
+    .lines { margin-top: 9px; height: 45mm; background: repeating-linear-gradient(to bottom, transparent 0, transparent 8mm, #cbd7e8 8.2mm, transparent 8.4mm); }
+    .footer { position: fixed; bottom: -7mm; left: 0; right: 0; color: #8290a8; font-size: 8pt; text-align: center; }
+    .page-break { break-before: page; }
+  </style>
+</head>
+<body>
+  <div class="footer">LF ERP · Guia de uso diário</div>
+
+  <section class="cover">
+    <span class="brand">LF ERP</span>
+    <h1>Registrar<br>vendas</h1>
+    <p class="subtitle">Guia rápido para usar o PDV da loja.</p>
+    <div class="note"><strong>Antes de finalizar:</strong> confira produtos, quantidades, valor total e forma de pagamento.</div>
+    <p><strong>Use este guia para cada venda feita na loja.</strong></p>
+  </section>
+
+  <section class="page-break">
+    <h2>1. Começar uma venda</h2>
+    <ol>
+      <li>Entre no sistema e clique em <strong>PDV</strong>.</li>
+      <li>Se o sistema avisar que o caixa está fechado, abra o caixa ou peça ajuda.</li>
+      <li>Clique em <strong>+ Nova venda</strong>.</li>
+    </ol>
+
+    <h2>2. Adicionar produtos</h2>
+    <ol>
+      <li>Na busca, digite o nome, código ou código de barras.</li>
+      <li>Clique no produto correto para colocá-lo no carrinho.</li>
+      <li>Se forem várias unidades, ajuste a quantidade.</li>
+      <li>Repita para todos os produtos.</li>
+      <li>Confira o total no canto inferior direito.</li>
+    </ol>
+
+    <h2>3. Cliente</h2>
+    <p>Na maior parte das vendas, deixe como <strong>Consumidor final</strong>.</p>
+    <p>Se precisar registrar para alguém, abra <strong>Cliente e pagamento</strong>, pesquise o nome e escolha a pessoa correta.</p>
+    <div class="care"><strong>Não encontrou o cliente?</strong> Pesquise novamente antes de cadastrar outro. Isso evita cliente duplicado.</div>
+  </section>
+
+  <section class="page-break">
+    <h2>4. Receber o pagamento</h2>
+    <ol>
+      <li>Abra <strong>Cliente e pagamento</strong>.</li>
+      <li>Escolha: Dinheiro, Pix, Cartão de Débito, Cartão de Crédito ou Promissória.</li>
+      <li>Confira o valor antes de finalizar.</li>
+    </ol>
+    <h3>Quando for dinheiro</h3>
+    <ul>
+      <li>Digite o valor recebido.</li>
+      <li>Confira o troco mostrado pelo sistema.</li>
+    </ul>
+    <h3>Quando dividir o pagamento</h3>
+    <ol>
+      <li>Clique em <strong>Adicionar forma</strong>.</li>
+      <li>Informe cada pagamento e seu valor.</li>
+      <li>A soma deve ser igual ao total da venda.</li>
+    </ol>
+    <div class="checklist">
+      <strong>Antes de finalizar</strong><br>
+      □ Produtos corretos<br>
+      □ Quantidades corretas<br>
+      □ Valor total conferido<br>
+      □ Pagamento conferido
+    </div>
+  </section>
+
+  <section class="page-break">
+    <h2>5. Finalizar</h2>
+    <ol>
+      <li>Confira tudo mais uma vez.</li>
+      <li>Clique em <strong>✓ Finalizar venda</strong>.</li>
+      <li>Espere a mensagem de sucesso.</li>
+      <li>Só então entregue o comprovante ou conclua o atendimento.</li>
+    </ol>
+    <div class="care"><strong>Não clique duas vezes:</strong> se a tela estiver carregando, espere. A venda pode demorar alguns segundos para ser confirmada.</div>
+    <h2>Se algo der errado</h2>
+    <ul>
+      <li><strong>Antes de finalizar:</strong> corrija produto, quantidade ou pagamento no carrinho.</li>
+      <li><strong>Depois de finalizar:</strong> não faça outra venda para corrigir. Anote o horário e peça ajuda.</li>
+      <li><strong>Internet caiu ou mensagem vermelha:</strong> tire foto da tela e não repita a venda várias vezes.</li>
+    </ul>
+    <h3>Anotações</h3>
+    <div class="lines"></div>
+  </section>
+</body>
+</html>
