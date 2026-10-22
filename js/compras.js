@@ -842,7 +842,9 @@ const ComprasModule = {
         produto_nome: i.produto_nome,
         quantidade: Number(i.quantidade),
         custo_unitario: Number(i.custo_unitario || 0),
-        subtotal: Number(i.subtotal || 0)
+        // O subtotal exibido não deve depender de um dado histórico gravado:
+        // ele é sempre derivado da quantidade e do custo unitário atuais.
+        subtotal: Number((Number(i.quantidade || 0) * Number(i.custo_unitario || 0)).toFixed(2))
       }));
 
       this.cache();
@@ -1177,7 +1179,7 @@ const ComprasModule = {
             <input type="number" class="cmp-nc-item-input" data-action="update-item-compra" data-index="${index}" data-field="custo_unitario" min="0" step="0.01" value="${Number(item.custo_unitario || 0)}" aria-label="Custo unitário de ${escapeHtml(item.produto_nome)}" />
           </td>
           <td class="text-right">
-            <strong>${formatCurrency(item.subtotal || 0)}</strong>
+            <strong>${formatCurrency(this.calcularSubtotalItemCompra(item))}</strong>
           </td>
           <td class="text-right">
             <button
@@ -1227,8 +1229,14 @@ const ComprasModule = {
 
   getTotalItensCompra() {
     return this.state.itensCompra.reduce((acc, item) => {
-      return acc + Number(item.subtotal || 0);
+      return Number((acc + this.calcularSubtotalItemCompra(item)).toFixed(2));
     }, 0);
+  },
+
+  calcularSubtotalItemCompra(item) {
+    const quantidade = Number(item?.quantidade || 0);
+    const custoUnitario = Number(item?.custo_unitario || 0);
+    return Number((quantidade * custoUnitario).toFixed(2));
   },
 
   async save() {
