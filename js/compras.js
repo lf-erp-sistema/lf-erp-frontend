@@ -20,6 +20,7 @@ const ComprasModule = {
     eventsBound: false,
     itensCompra: [],
     loading: false,
+    itensBusca: '',
     filtroStatus: '',
     filtroFornecedor: '',
     ordem: 'data',
@@ -148,6 +149,10 @@ const ComprasModule = {
     document.addEventListener('input', (e) => {
       if (e.target.id === 'comprasSearch') {
         debouncedSearch(e.target.value);
+      }
+      if (e.target.id === 'compraItensSearch') {
+        this.state.itensBusca = e.target.value || '';
+        this.renderItensCompra();
       }
     });
 
@@ -506,6 +511,17 @@ const ComprasModule = {
                   </div>
                 </div>
                 <p class="cmp-nc-field-hint">Escolha o fornecedor responsável por esta compra.</p>
+                <div class="cmp-nc-conference-search">
+                  <div class="cmp-nc-conference-search__heading">
+                    <span><i class="fa-solid fa-magnifying-glass"></i> Conferir itens da compra</span>
+                    <small id="compraItensBuscaCount">0 itens</small>
+                  </div>
+                  <label class="cmp-nc-conference-search__field" for="compraItensSearch">
+                    <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                    <input id="compraItensSearch" type="search" autocomplete="off" placeholder="Buscar item nesta compra..." aria-label="Buscar item nesta compra" />
+                  </label>
+                  <p>Localize rapidamente um produto já incluído para conferência.</p>
+                </div>
               </div>
 
               <div class="cmp-nc-section">
@@ -616,7 +632,10 @@ const ComprasModule = {
                   </div>
 
                   <div class="compra-total-box">
-                    <span>Total da compra</span>
+                    <div class="cmp-nc-total-copy">
+                      <span>Total da compra</span>
+                      <small id="compraTotalProdutos">0 produtos · 0 itens diferentes</small>
+                    </div>
                     <strong id="compraTotalValor">R$ 0,00</strong>
                   </div>
                 </div>
@@ -774,6 +793,7 @@ const ComprasModule = {
   _abrirModalPronto() {
 
     this.state.itensCompra = [];
+    this.state.itensBusca = '';
 
     if (this.el.form) {
       this.el.form.reset();
@@ -863,6 +883,7 @@ const ComprasModule = {
     }
 
     this.state.itensCompra = [];
+    this.state.itensBusca = '';
     this.state.editingId = null;
     this.closeCompraPaymentPicker();
 
@@ -1118,6 +1139,11 @@ const ComprasModule = {
 
     if (!this.el.itensTable) return;
 
+    const busca = String(this.state.itensBusca || '').trim().toLocaleLowerCase('pt-BR');
+    const itensVisiveis = this.state.itensCompra
+      .map((item, index) => ({ item, index }))
+      .filter(({ item }) => !busca || String(item.produto_nome || '').toLocaleLowerCase('pt-BR').includes(busca));
+
     if (!this.state.itensCompra.length) {
       this.el.itensTable.innerHTML = `
         <tr>
@@ -1128,10 +1154,18 @@ const ComprasModule = {
           </td>
         </tr>
       `;
+    } else if (!itensVisiveis.length) {
+      this.el.itensTable.innerHTML = `
+        <tr>
+          <td colspan="5">
+            <div class="empty-table-state compact">Nenhum item desta compra corresponde à busca.</div>
+          </td>
+        </tr>
+      `;
     } else {
-      this.el.itensTable.innerHTML = this.state.itensCompra
+      this.el.itensTable.innerHTML = itensVisiveis
         .map(
-          (item, index) => `
+          ({ item, index }) => `
         <tr>
           <td>
             <strong>${escapeHtml(item.produto_nome)}</strong>
@@ -1171,8 +1205,23 @@ const ComprasModule = {
       itensCont.textContent = `${quantidadeItens} ${quantidadeItens === 1 ? 'item' : 'itens'}`;
     }
 
+    const buscaCount = document.getElementById('compraItensBuscaCount');
+    if (buscaCount) {
+      buscaCount.textContent = busca ? `${itensVisiveis.length} de ${this.state.itensCompra.length}` : `${this.state.itensCompra.length} ${this.state.itensCompra.length === 1 ? 'item' : 'itens'}`;
+    }
+
     if (this.el.totalCompra) {
       this.el.totalCompra.textContent = formatCurrency(total);
+    }
+
+    const totalProdutos = this.state.itensCompra.reduce((acc, item) => acc + Number(item.quantidade || 0), 0);
+    const totalProdutosLabel = Number.isInteger(totalProdutos)
+      ? String(totalProdutos)
+      : totalProdutos.toLocaleString('pt-BR', { maximumFractionDigits: 3 });
+    const totalProdutosEl = document.getElementById('compraTotalProdutos');
+    if (totalProdutosEl) {
+      const tipos = this.state.itensCompra.length;
+      totalProdutosEl.textContent = `${totalProdutosLabel} ${totalProdutos === 1 ? 'produto' : 'produtos'} · ${tipos} ${tipos === 1 ? 'item diferente' : 'itens diferentes'}`;
     }
   },
 
@@ -1710,6 +1759,16 @@ const ComprasModule = {
       .cmp-nc-supplier-control .premium-select__menu { z-index: calc(var(--z-modal) + 2); max-height: 230px; }
       .cmp-nc-supplier-control .premium-select__option { min-height: 38px; }
       .cmp-nc-field-hint { margin: 7px 2px 0; color: var(--text-muted); font-size: .72rem; }
+      .cmp-nc-conference-search { margin-top: 18px; padding: 14px; border: 1px solid color-mix(in srgb, var(--primary) 18%, var(--border)); border-radius: 16px; background: linear-gradient(135deg, color-mix(in srgb, var(--primary) 6%, var(--surface)), var(--surface)); }
+      .cmp-nc-conference-search__heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; color: var(--text); font-size: .75rem; font-weight: 850; }
+      .cmp-nc-conference-search__heading span { display: flex; align-items: center; gap: 7px; }
+      .cmp-nc-conference-search__heading i { color: var(--primary); }
+      .cmp-nc-conference-search__heading small { padding: 3px 7px; border-radius: 999px; background: var(--surface); color: var(--text-muted); font-size: .65rem; font-weight: 800; }
+      .cmp-nc-conference-search__field { display: flex; align-items: center; gap: 9px; min-height: 42px; padding: 0 12px; border: 1px solid var(--border); border-radius: 11px; background: var(--surface); color: var(--text-muted); transition: border-color .15s, box-shadow .15s; }
+      .cmp-nc-conference-search__field:focus-within { border-color: var(--primary); box-shadow: var(--control-shadow-focus); }
+      .cmp-nc-conference-search__field input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--text); font: inherit; font-size: .83rem; }
+      .cmp-nc-conference-search__field input::-webkit-search-cancel-button { cursor: pointer; }
+      .cmp-nc-conference-search > p { margin: 8px 1px 0; color: var(--text-muted); font-size: .68rem; line-height: 1.35; }
       .cmp-nc-obs { width: 100%; resize: none; font-size: 0.9rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; font-family: inherit; color: var(--text); box-sizing: border-box; }
       .cmp-nc-items-section { margin: 0; }
       .cmp-nc-items-inner { padding: 0; }
@@ -1734,6 +1793,8 @@ const ComprasModule = {
       .cmp-nc-item-remove { display: inline-grid; width: 32px; height: 32px; place-items: center; padding: 0; border: 1px solid color-mix(in srgb, var(--danger) 25%, var(--border)); border-radius: 8px; background: transparent; color: var(--danger); cursor: pointer; }
       .cmp-nc-item-remove:hover { background: color-mix(in srgb, var(--danger) 9%, transparent); }
       .cmp-nc-items-inner .compra-total-box { margin-top: 12px; padding: 14px 16px; border-radius: 16px; }
+      .cmp-nc-total-copy { display: grid; gap: 3px; }
+      .cmp-nc-total-copy small { color: var(--text-muted); font-size: .72rem; font-weight: 650; }
       @media (min-width: 1400px) {
         .cmp-nc-card { padding: 0 !important; border-radius: 24px !important; box-shadow: 0 24px 80px rgba(0,0,0,.18), 0 2px 8px rgba(0,0,0,.08) !important; }
         .cmp-nc-card .modal-card__header { padding: 22px 28px 18px; }
