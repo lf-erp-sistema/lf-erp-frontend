@@ -1565,7 +1565,10 @@ const ComprasModule = {
     const s = document.createElement('style');
     s.id = 'cmp-nc-styles';
     s.textContent = `
-      .cmp-nc-card { width: min(96vw, 1040px) !important; max-height: 92vh; display: flex; flex-direction: column; overflow: hidden; }
+      /* O modal usa uma grade fluida: nunca deixa controles escaparem para a
+         lateral, mas aproveita uma tela ampla para dar espaço à edição. */
+      .cmp-nc-card { width: min(calc(100vw - 32px), 1200px) !important; max-height: 92vh; display: flex; flex-direction: column; overflow: hidden; }
+      .cmp-nc-card *, .cmp-nc-card *::before, .cmp-nc-card *::after { box-sizing: border-box; }
       .cmp-nc-card > form { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
       .cmp-nc-body { overflow-y: auto; flex: 1 1 auto; min-height: 0; }
       .cmp-nc-section { padding: 16px 20px 0; }
@@ -1582,10 +1585,11 @@ const ComprasModule = {
       .cmp-nc-cell { display: flex; align-items: center; gap: 14px; padding: 13px 16px; border-bottom: 1px solid var(--border); background: var(--surface); transition: background .1s; }
       .cmp-nc-cell:last-child { border-bottom: none; }
       .cmp-nc-cell:focus-within { background: var(--surface-2, rgba(0,0,0,.025)); }
-      .cmp-nc-cells-2col { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--border); }
+      .cmp-nc-cells-2col { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); border-bottom: 1px solid var(--border); }
       .cmp-nc-cells-2col:last-child { border-bottom: none; }
       .cmp-nc-cells-2col .cmp-nc-cell { border-bottom: none; }
       .cmp-nc-cells-2col .cmp-nc-cell:first-child { border-right: 1px solid var(--border); }
+      .cmp-nc-cell { min-width: 0; }
       .cmp-nc-cell-ico { width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 0.88rem; background: var(--surface-2); color: var(--text-muted); }
       .cmp-nc-cell-ico--green { background: rgba(22,163,74,.1); color: #16a34a; }
       .cmp-nc-cell-ico--blue { background: rgba(37,99,235,.1); color: #2563eb; }
@@ -1623,7 +1627,7 @@ const ComprasModule = {
       .cmp-nc-obs { width: 100%; resize: none; font-size: 0.9rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; font-family: inherit; color: var(--text); box-sizing: border-box; }
       .cmp-nc-items-section { margin: 0; }
       .cmp-nc-items-inner { padding: 0; }
-      .cmp-nc-items-add { display: grid; grid-template-columns: minmax(210px, 1.8fr) minmax(110px, .65fr) minmax(135px, .85fr) minmax(160px, 1fr); gap: 12px; align-items: end; margin-bottom: 14px; padding: 14px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface-2); }
+      .cmp-nc-items-add { display: grid; width: 100%; grid-template-columns: minmax(0, 1.8fr) minmax(0, .65fr) minmax(0, .85fr) minmax(148px, 1fr); gap: 12px; align-items: end; margin-bottom: 14px; padding: 14px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface-2); }
       .cmp-nc-items-add .form-field { min-width: 0; }
       .cmp-nc-items-add .btn { min-height: 44px; justify-content: center; }
       .cmp-nc-items-add #addItemCompraBtn { border-color: color-mix(in srgb, var(--primary) 34%, var(--border)); background: var(--primary-soft); color: var(--primary); font-weight: 800; }
@@ -1644,19 +1648,30 @@ const ComprasModule = {
       .cmp-nc-item-remove { display: inline-grid; width: 32px; height: 32px; place-items: center; padding: 0; border: 1px solid color-mix(in srgb, var(--danger) 25%, var(--border)); border-radius: 8px; background: transparent; color: var(--danger); cursor: pointer; }
       .cmp-nc-item-remove:hover { background: color-mix(in srgb, var(--danger) 9%, transparent); }
       .cmp-nc-items-inner .compra-total-box { margin-top: 12px; padding: 14px 16px; border-radius: 16px; }
-      @media (min-width: 761px) {
+      @media (min-width: 1101px) {
         .cmp-nc-card { padding: 0 !important; border-radius: 24px !important; box-shadow: 0 24px 80px rgba(0,0,0,.18), 0 2px 8px rgba(0,0,0,.08) !important; }
         .cmp-nc-card .modal-card__header { padding: 22px 28px 18px; }
         .cmp-nc-card .modal-card__footer { padding: 16px 28px; }
-        .cmp-nc-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; column-gap: 24px; row-gap: 18px; padding: 22px 28px; overflow-x: hidden; }
+        .cmp-nc-body { display: grid; grid-template-columns: minmax(360px, .85fr) minmax(0, 1.15fr); align-items: start; column-gap: 28px; row-gap: 18px; padding: 22px 28px; overflow-x: hidden; }
         .cmp-nc-body > .cmp-nc-section { padding: 0; min-width: 0; }
         .cmp-nc-body > .cmp-nc-section:nth-child(1) { grid-column: 1; grid-row: 1; }
         .cmp-nc-body > .cmp-nc-section:nth-child(2) { grid-column: 2; grid-row: 1; }
         .cmp-nc-body > .cmp-nc-section:nth-child(3) { grid-column: 1 / -1; grid-row: 2; }
         .cmp-nc-body > .cmp-nc-section:nth-child(4) { grid-column: 1 / -1; grid-row: 3; }
-        .cmp-nc-items-add { grid-template-columns: minmax(250px, 1.8fr) minmax(105px, .6fr) minmax(130px, .8fr) minmax(160px, 1fr); }
+        .cmp-nc-items-add { grid-template-columns: minmax(230px, 1.8fr) minmax(100px, .6fr) minmax(120px, .8fr) minmax(160px, 1fr); }
         .cmp-nc-items-add .form-field:first-child,
         .cmp-nc-items-add .form-field:last-child { grid-column: auto; }
+      }
+      /* Em janelas compactas, fornecedor e pagamento tornam-se blocos largos.
+         Isso evita que a forma de pagamento seja cortada, como ocorria na
+         grade de duas colunas em resoluções de notebook. */
+      @media (min-width: 601px) and (max-width: 1100px) {
+        .cmp-nc-card { padding: 0 !important; border-radius: 24px !important; }
+        .cmp-nc-card .modal-card__header { padding: 20px 24px 16px; }
+        .cmp-nc-card .modal-card__footer { padding: 14px 24px; }
+        .cmp-nc-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; padding: 20px 24px; overflow-x: hidden; }
+        .cmp-nc-body > .cmp-nc-section { grid-column: 1 !important; grid-row: auto !important; padding: 0; min-width: 0; }
+        .cmp-nc-items-add { grid-template-columns: minmax(0, 1.8fr) minmax(90px, .62fr) minmax(115px, .78fr) minmax(145px, .9fr); }
       }
       @media (max-width: 600px) {
         .cmp-nc-section { padding: 14px 16px 0; }
