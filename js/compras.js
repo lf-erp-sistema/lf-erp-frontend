@@ -176,6 +176,18 @@ const ComprasModule = {
 
     document.addEventListener('click', async (e) => {
       if (e.target.id === 'compraModal') { this.closeModal(); return; }
+      if (!e.target.closest('#compraDataPicker')) this.closeCompraDatePicker();
+
+      const dateAction = e.target.closest('[data-cmp-date-action]');
+      if (dateAction) {
+        const action = dateAction.dataset.cmpDateAction;
+        if (action === 'toggle') this.toggleCompraDatePicker();
+        if (action === 'prev-month') this.moveCompraDatePickerMonth(-1);
+        if (action === 'next-month') this.moveCompraDatePickerMonth(1);
+        if (action === 'today') this.selectCompraDate(getTodayDate());
+        if (action === 'select') this.selectCompraDate(dateAction.dataset.date);
+        return;
+      }
 
       const th = e.target.closest('th[data-sort-col]');
       if (th) {
@@ -495,7 +507,14 @@ const ComprasModule = {
                       </span>
                       <div class="cmp-nc-cell-content">
                         <label class="cmp-nc-lbl" for="compraData">Data da compra <span class="cmp-nc-req">*</span></label>
-                        <input type="date" id="compraData" class="cmp-nc-cell-input" value="${getTodayDate()}" required />
+                        <div class="cmp-nc-date-picker" id="compraDataPicker">
+                          <input type="hidden" id="compraData" value="${getTodayDate()}" required />
+                          <button type="button" class="cmp-nc-date-trigger" id="compraDataTrigger" data-cmp-date-action="toggle" aria-haspopup="dialog" aria-expanded="false">
+                            <span id="compraDataLabel"></span>
+                            <i class="fa-regular fa-calendar"></i>
+                          </button>
+                          <div class="cmp-nc-date-popover hidden" id="compraDataPopover" role="dialog" aria-label="Selecionar data da compra"></div>
+                        </div>
                       </div>
                     </div>
                     <div class="cmp-nc-cell">
@@ -746,6 +765,7 @@ const ComprasModule = {
     if (this.el.data) {
       this.el.data.value = getTodayDate();
     }
+    this.syncCompraDatePicker();
 
     if (this.el.parcelas) {
       this.el.parcelas.value = '1';
@@ -797,6 +817,7 @@ const ComprasModule = {
         // Backend retorna campos planificados no topo: compra.fornecedor_id, não compra.compra.fornecedor_id
         if (this.el.fornecedor) this.el.fornecedor.value = compra.fornecedor_id || '';
         if (this.el.data) this.el.data.value = (compra.data || '').slice(0, 10);
+        this.syncCompraDatePicker();
         if (this.el.formaPagamento) this.el.formaPagamento.value = compra.pagamento || '';
         if (this.el.parcelas) this.el.parcelas.value = compra.parcelas || 1;
         if (this.el.primeiroVencimento && compra.primeiro_vencimento) {
@@ -827,6 +848,88 @@ const ComprasModule = {
 
     const titulo = document.querySelector('#compraModal h3');
     if (titulo) titulo.textContent = 'Nova Compra';
+  },
+
+  syncCompraDatePicker() {
+    const input = this.el?.data || document.getElementById('compraData');
+    const label = document.getElementById('compraDataLabel');
+    if (!label) return;
+
+    const value = input?.value || '';
+    const [year, month, day] = value.split('-');
+    label.textContent = year && month && day ? `${day}/${month}/${year}` : 'Selecionar data';
+  },
+
+  closeCompraDatePicker() {
+    document.getElementById('compraDataPopover')?.classList.add('hidden');
+    document.getElementById('compraDataTrigger')?.setAttribute('aria-expanded', 'false');
+  },
+
+  toggleCompraDatePicker() {
+    const popover = document.getElementById('compraDataPopover');
+    const trigger = document.getElementById('compraDataTrigger');
+    const input = this.el?.data || document.getElementById('compraData');
+    if (!popover || !trigger || !input) return;
+
+    if (!popover.classList.contains('hidden')) {
+      this.closeCompraDatePicker();
+      return;
+    }
+
+    this._compraDatePickerMonth = (input.value || getTodayDate()).slice(0, 7);
+    this.renderCompraDatePicker();
+    popover.classList.remove('hidden');
+    trigger.setAttribute('aria-expanded', 'true');
+  },
+
+  moveCompraDatePickerMonth(offset) {
+    const [year, month] = String(this._compraDatePickerMonth || getTodayDate().slice(0, 7)).split('-').map(Number);
+    const date = new Date(year, month - 1 + offset, 1);
+    this._compraDatePickerMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    this.renderCompraDatePicker();
+  },
+
+  selectCompraDate(value) {
+    const input = this.el?.data || document.getElementById('compraData');
+    if (!input || !/^\d{4}-\d{2}-\d{2}$/.test(String(value || ''))) return;
+    input.value = value;
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    this.syncCompraDatePicker();
+    this.closeCompraDatePicker();
+  },
+
+  renderCompraDatePicker() {
+    const popover = document.getElementById('compraDataPopover');
+    const input = this.el?.data || document.getElementById('compraData');
+    if (!popover || !input) return;
+
+    const [year, month] = String(this._compraDatePickerMonth || input.value || getTodayDate().slice(0, 7)).split('-').map(Number);
+    const firstDay = new Date(year, month - 1, 1).getDay();
+    const totalDays = new Date(year, month, 0).getDate();
+    const selected = input.value;
+    const today = getTodayDate();
+    const monthLabel = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(new Date(year, month - 1, 1));
+    const weekDays = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+    const blanks = Array.from({ length: firstDay }, () => '<span class="cmp-nc-date-empty"></span>').join('');
+    const days = Array.from({ length: totalDays }, (_, index) => {
+      const day = index + 1;
+      const value = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const classes = ['cmp-nc-date-day'];
+      if (value === selected) classes.push('is-selected');
+      if (value === today) classes.push('is-today');
+      return `<button type="button" class="${classes.join(' ')}" data-cmp-date-action="select" data-date="${value}">${day}</button>`;
+    }).join('');
+
+    popover.innerHTML = `
+      <div class="cmp-nc-date-head">
+        <button type="button" class="cmp-nc-date-nav" data-cmp-date-action="prev-month" aria-label="Mês anterior"><i class="fa-solid fa-chevron-left"></i></button>
+        <strong>${monthLabel}</strong>
+        <button type="button" class="cmp-nc-date-nav" data-cmp-date-action="next-month" aria-label="Próximo mês"><i class="fa-solid fa-chevron-right"></i></button>
+      </div>
+      <div class="cmp-nc-date-week">${weekDays.map(day => `<span>${day}</span>`).join('')}</div>
+      <div class="cmp-nc-date-grid">${blanks}${days}</div>
+      <button type="button" class="cmp-nc-date-today" data-cmp-date-action="today">Hoje</button>
+    `;
   },
 
   toggleVencimentoField() {
@@ -1462,7 +1565,7 @@ const ComprasModule = {
     const s = document.createElement('style');
     s.id = 'cmp-nc-styles';
     s.textContent = `
-      .cmp-nc-card { width: min(94vw, 880px) !important; max-height: 92vh; display: flex; flex-direction: column; overflow: hidden; }
+      .cmp-nc-card { width: min(96vw, 1040px) !important; max-height: 92vh; display: flex; flex-direction: column; overflow: hidden; }
       .cmp-nc-card > form { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
       .cmp-nc-body { overflow-y: auto; flex: 1 1 auto; min-height: 0; }
       .cmp-nc-section { padding: 16px 20px 0; }
@@ -1493,6 +1596,22 @@ const ComprasModule = {
       .cmp-nc-req { color: #dc2626; }
       .cmp-nc-cell-input { border: none !important; outline: none !important; background: transparent !important; padding: 0 !important; font-size: 0.93rem; font-weight: 600; color: var(--text); width: 100%; font-family: inherit; -webkit-appearance: none; appearance: none; }
       select.cmp-nc-cell-input { cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat !important; background-position: right 0 center !important; padding-right: 16px !important; }
+      .cmp-nc-date-picker { position: relative; }
+      .cmp-nc-date-trigger { display: flex; width: 100%; min-height: 28px; align-items: center; justify-content: space-between; gap: 10px; padding: 0; border: 0; background: transparent; color: var(--text); cursor: pointer; font: inherit; font-size: .95rem; font-weight: 700; text-align: left; }
+      .cmp-nc-date-trigger i { color: var(--primary); font-size: .9rem; }
+      .cmp-nc-date-popover { position: absolute; z-index: calc(var(--z-modal) + 3); top: calc(100% + 11px); left: -52px; width: 292px; padding: 12px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); box-shadow: 0 18px 42px rgba(15,23,42,.2); }
+      .cmp-nc-date-popover.hidden { display: none; }
+      .cmp-nc-date-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; color: var(--text); font-size: .82rem; text-transform: capitalize; }
+      .cmp-nc-date-nav { display: grid; width: 30px; height: 30px; place-items: center; border: 1px solid var(--border); border-radius: 9px; background: var(--surface); color: var(--text-muted); cursor: pointer; }
+      .cmp-nc-date-nav:hover { border-color: var(--primary); color: var(--primary); }
+      .cmp-nc-date-week, .cmp-nc-date-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; text-align: center; }
+      .cmp-nc-date-week { margin-bottom: 4px; color: var(--text-muted); font-size: .63rem; font-weight: 800; }
+      .cmp-nc-date-day, .cmp-nc-date-empty { width: 100%; height: 31px; }
+      .cmp-nc-date-day { border: 0; border-radius: 8px; background: transparent; color: var(--text); cursor: pointer; font: inherit; font-size: .76rem; }
+      .cmp-nc-date-day:hover { background: var(--primary-soft); color: var(--primary); }
+      .cmp-nc-date-day.is-today { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 48%, var(--border)); }
+      .cmp-nc-date-day.is-selected { background: var(--primary); color: var(--white); font-weight: 800; box-shadow: var(--shadow-sm); }
+      .cmp-nc-date-today { width: 100%; margin-top: 9px; padding: 8px; border: 0; border-top: 1px solid var(--border); background: transparent; color: var(--primary); cursor: pointer; font: inherit; font-size: .75rem; font-weight: 800; }
       .cmp-nc-supplier-control { display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); transition: border-color .15s, box-shadow .15s; }
       .cmp-nc-supplier-control:focus-within { border-color: var(--primary); box-shadow: var(--control-shadow-focus); }
       .cmp-nc-supplier-control .premium-select { width: 100%; }
@@ -1529,14 +1648,12 @@ const ComprasModule = {
         .cmp-nc-card { padding: 0 !important; border-radius: 24px !important; box-shadow: 0 24px 80px rgba(0,0,0,.18), 0 2px 8px rgba(0,0,0,.08) !important; }
         .cmp-nc-card .modal-card__header { padding: 22px 28px 18px; }
         .cmp-nc-card .modal-card__footer { padding: 16px 28px; }
-        .cmp-nc-body { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(270px, .75fr); align-items: start; column-gap: 24px; row-gap: 18px; padding: 22px 28px; }
+        .cmp-nc-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; column-gap: 24px; row-gap: 18px; padding: 22px 28px; overflow-x: hidden; }
         .cmp-nc-body > .cmp-nc-section { padding: 0; min-width: 0; }
         .cmp-nc-body > .cmp-nc-section:nth-child(1) { grid-column: 1; grid-row: 1; }
         .cmp-nc-body > .cmp-nc-section:nth-child(2) { grid-column: 2; grid-row: 1; }
         .cmp-nc-body > .cmp-nc-section:nth-child(3) { grid-column: 1 / -1; grid-row: 2; }
         .cmp-nc-body > .cmp-nc-section:nth-child(4) { grid-column: 1 / -1; grid-row: 3; }
-        .cmp-nc-body > .cmp-nc-section:nth-child(2) .cmp-nc-cells-2col { grid-template-columns: 1fr; }
-        .cmp-nc-body > .cmp-nc-section:nth-child(2) .cmp-nc-cells-2col .cmp-nc-cell:first-child { border-right: none; border-bottom: 1px solid var(--border); }
         .cmp-nc-items-add { grid-template-columns: minmax(250px, 1.8fr) minmax(105px, .6fr) minmax(130px, .8fr) minmax(160px, 1fr); }
         .cmp-nc-items-add .form-field:first-child,
         .cmp-nc-items-add .form-field:last-child { grid-column: auto; }
@@ -1548,6 +1665,7 @@ const ComprasModule = {
         .cmp-nc-items-add { grid-template-columns: 1fr 1fr; }
         .cmp-nc-items-inner .table-wrapper { overflow-x: auto; }
         .cmp-nc-items-table { min-width: 560px; }
+        .cmp-nc-date-popover { left: 0; width: min(292px, calc(100vw - 64px)); }
       }
       @media (max-width: 420px) {
         .cmp-nc-items-add { grid-template-columns: 1fr; }
