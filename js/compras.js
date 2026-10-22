@@ -87,9 +87,9 @@ const ComprasModule = {
   },
 
   _enhanceFormSelects(sync = false) {
-    // A forma de pagamento permanece um select nativo estilizado: o popup do
-    // navegador não é recortado pelo corpo rolável do modal e funciona de
-    // forma consistente em qualquer escala/zoom.
+    // A forma de pagamento tem um seletor premium próprio, renderizado no
+    // document.body; por isso não usa o enhancer genérico (que seria cortado
+    // pela área rolável do modal).
     [this.el?.fornecedor, this.el?.produto].forEach((select) => {
       if (!select) return;
       enhanceSelect(select);
@@ -180,6 +180,7 @@ const ComprasModule = {
     document.addEventListener('click', async (e) => {
       if (e.target.id === 'compraModal') { this.closeModal(); return; }
       if (!e.target.closest('#compraDataPicker')) this.closeCompraDatePicker();
+      if (!e.target.closest('#compraFormaPagamentoPicker') && !e.target.closest('#compraFormaPagamentoMenu')) this.closeCompraPaymentPicker();
 
       const dateAction = e.target.closest('[data-cmp-date-action]');
       if (dateAction) {
@@ -189,6 +190,13 @@ const ComprasModule = {
         if (action === 'next-month') this.moveCompraDatePickerMonth(1);
         if (action === 'today') this.selectCompraDate(getTodayDate());
         if (action === 'select') this.selectCompraDate(dateAction.dataset.date);
+        return;
+      }
+
+      const paymentAction = e.target.closest('[data-cmp-payment-action]');
+      if (paymentAction) {
+        if (paymentAction.dataset.cmpPaymentAction === 'toggle') this.toggleCompraPaymentPicker();
+        if (paymentAction.dataset.cmpPaymentAction === 'select') this.selectCompraPayment(paymentAction.dataset.value);
         return;
       }
 
@@ -526,7 +534,8 @@ const ComprasModule = {
                       </span>
                       <div class="cmp-nc-cell-content">
                         <label class="cmp-nc-lbl" for="compraFormaPagamento">Forma de pagamento <span class="cmp-nc-req">*</span></label>
-                        <select id="compraFormaPagamento" class="cmp-nc-cell-input cmp-nc-payment-select" required>
+                        <div class="cmp-nc-payment-picker" id="compraFormaPagamentoPicker">
+                          <select id="compraFormaPagamento" class="cmp-nc-payment-native" required tabindex="-1" aria-hidden="true">
                           <option value="" selected disabled>Selecionar</option>
                           <option value="Dinheiro">Dinheiro</option>
                           <option value="Pix">Pix</option>
@@ -534,7 +543,11 @@ const ComprasModule = {
                           <option value="Cartão de Crédito">Cartão de Crédito</option>
                           <option value="Boleto">Boleto</option>
                           <option value="Promissoria">Promissória</option>
-                        </select>
+                          </select>
+                          <button type="button" class="cmp-nc-payment-trigger" id="compraFormaPagamentoTrigger" data-cmp-payment-action="toggle" aria-haspopup="listbox" aria-expanded="false">
+                            <span id="compraFormaPagamentoLabel">Selecionar</span><i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -770,6 +783,7 @@ const ComprasModule = {
       this.el.data.value = getTodayDate();
     }
     this.syncCompraDatePicker();
+    this.syncCompraPaymentPicker();
 
     if (this.el.parcelas) {
       this.el.parcelas.value = '1';
@@ -823,6 +837,7 @@ const ComprasModule = {
         if (this.el.data) this.el.data.value = (compra.data || '').slice(0, 10);
         this.syncCompraDatePicker();
         if (this.el.formaPagamento) this.el.formaPagamento.value = compra.pagamento || '';
+        this.syncCompraPaymentPicker();
         if (this.el.parcelas) this.el.parcelas.value = compra.parcelas || 1;
         if (this.el.primeiroVencimento && compra.primeiro_vencimento) {
           this.el.primeiroVencimento.value = String(compra.primeiro_vencimento).slice(0, 10);
@@ -849,6 +864,7 @@ const ComprasModule = {
 
     this.state.itensCompra = [];
     this.state.editingId = null;
+    this.closeCompraPaymentPicker();
 
     const titulo = document.querySelector('#compraModal h3');
     if (titulo) titulo.textContent = 'Nova Compra';
@@ -862,6 +878,57 @@ const ComprasModule = {
     const value = input?.value || '';
     const [year, month, day] = value.split('-');
     label.textContent = year && month && day ? `${day}/${month}/${year}` : 'Selecionar data';
+  },
+
+  syncCompraPaymentPicker() {
+    const select = this.el?.formaPagamento || document.getElementById('compraFormaPagamento');
+    const label = document.getElementById('compraFormaPagamentoLabel');
+    if (!select || !label) return;
+    label.textContent = select.options[select.selectedIndex]?.text || 'Selecionar';
+  },
+
+  closeCompraPaymentPicker() {
+    document.getElementById('compraFormaPagamentoMenu')?.remove();
+    document.getElementById('compraFormaPagamentoTrigger')?.setAttribute('aria-expanded', 'false');
+  },
+
+  toggleCompraPaymentPicker() {
+    const select = this.el?.formaPagamento || document.getElementById('compraFormaPagamento');
+    const trigger = document.getElementById('compraFormaPagamentoTrigger');
+    if (!select || !trigger) return;
+    if (document.getElementById('compraFormaPagamentoMenu')) {
+      this.closeCompraPaymentPicker();
+      return;
+    }
+
+    const menu = document.createElement('div');
+    menu.id = 'compraFormaPagamentoMenu';
+    menu.className = 'cmp-nc-payment-menu';
+    menu.setAttribute('role', 'listbox');
+    menu.setAttribute('aria-label', 'Formas de pagamento');
+    menu.innerHTML = Array.from(select.options).map((option) => `
+      <button type="button" class="cmp-nc-payment-option${option.selected ? ' is-selected' : ''}" role="option" aria-selected="${option.selected}" data-cmp-payment-action="select" data-value="${escapeHtml(option.value)}">${escapeHtml(option.text)}</button>
+    `).join('');
+    document.body.appendChild(menu);
+
+    const rect = trigger.getBoundingClientRect();
+    const margin = 12;
+    const width = Math.max(rect.width, 230);
+    menu.style.width = `${width}px`;
+    menu.style.left = `${Math.max(margin, Math.min(rect.left, window.innerWidth - width - margin))}px`;
+    const menuHeight = menu.offsetHeight;
+    const fitsBelow = rect.bottom + 8 + menuHeight <= window.innerHeight - margin;
+    menu.style.top = `${fitsBelow ? rect.bottom + 8 : Math.max(margin, rect.top - menuHeight - 8)}px`;
+    trigger.setAttribute('aria-expanded', 'true');
+  },
+
+  selectCompraPayment(value) {
+    const select = this.el?.formaPagamento || document.getElementById('compraFormaPagamento');
+    if (!select || !Array.from(select.options).some((option) => option.value === value)) return;
+    select.value = value;
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    this.syncCompraPaymentPicker();
+    this.closeCompraPaymentPicker();
   },
 
   closeCompraDatePicker() {
@@ -1608,8 +1675,17 @@ const ComprasModule = {
       .cmp-nc-req { color: #dc2626; }
       .cmp-nc-cell-input { border: none !important; outline: none !important; background: transparent !important; padding: 0 !important; font-size: 0.93rem; font-weight: 600; color: var(--text); width: 100%; font-family: inherit; -webkit-appearance: none; appearance: none; }
       select.cmp-nc-cell-input { cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat !important; background-position: right 0 center !important; padding-right: 16px !important; }
-      select.cmp-nc-payment-select { display: block; min-height: 42px; padding: 0 36px 0 13px !important; border: 1px solid var(--border) !important; border-radius: 11px; background-color: var(--surface-2) !important; background-position: right 13px center !important; color: var(--text); font-weight: 700; }
-      select.cmp-nc-payment-select:focus { border-color: var(--primary) !important; box-shadow: var(--control-shadow-focus); }
+      .cmp-nc-payment-picker { position: relative; }
+      .cmp-nc-payment-native { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+      .cmp-nc-payment-trigger { display: flex; width: 100%; min-height: 42px; align-items: center; justify-content: space-between; gap: 12px; padding: 0 13px; border: 1px solid var(--border); border-radius: 11px; background: var(--surface-2); color: var(--text); cursor: pointer; font: inherit; font-size: .93rem; font-weight: 700; text-align: left; }
+      .cmp-nc-payment-trigger:hover { border-color: color-mix(in srgb, var(--primary) 45%, var(--border)); background: var(--surface); }
+      .cmp-nc-payment-trigger[aria-expanded="true"] { border-color: var(--primary); box-shadow: var(--control-shadow-focus); }
+      .cmp-nc-payment-trigger i { color: var(--primary); font-size: .72rem; transition: transform .16s ease; }
+      .cmp-nc-payment-trigger[aria-expanded="true"] i { transform: rotate(180deg); }
+      .cmp-nc-payment-menu { position: fixed; z-index: calc(var(--z-modal) + 10); display: grid; gap: 3px; max-height: min(304px, calc(100vh - 24px)); overflow-y: auto; padding: 6px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); box-shadow: 0 18px 42px rgba(15,23,42,.22); }
+      .cmp-nc-payment-option { width: 100%; min-height: 39px; padding: 8px 11px; border: 0; border-radius: 9px; background: transparent; color: var(--text); cursor: pointer; font: inherit; font-size: .84rem; font-weight: 650; text-align: left; }
+      .cmp-nc-payment-option:hover, .cmp-nc-payment-option.is-selected { background: var(--primary-soft); color: var(--primary); }
+      .cmp-nc-payment-option.is-selected::after { content: '✓'; float: right; font-weight: 900; }
       .cmp-nc-date-picker { position: relative; }
       .cmp-nc-date-trigger { display: flex; width: 100%; min-height: 28px; align-items: center; justify-content: space-between; gap: 10px; padding: 0; border: 0; background: transparent; color: var(--text); cursor: pointer; font: inherit; font-size: .95rem; font-weight: 700; text-align: left; }
       .cmp-nc-date-trigger i { color: var(--primary); font-size: .9rem; }
