@@ -1572,6 +1572,7 @@ const ComprasModule = {
       .cmp-nc-card > form { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
       .cmp-nc-body { overflow-y: auto; flex: 1 1 auto; min-height: 0; }
       .cmp-nc-section { padding: 16px 20px 0; }
+      .cmp-nc-body > .cmp-nc-section:nth-child(2) { container-type: inline-size; }
       .cmp-nc-section:last-child { padding-bottom: 20px; }
       .cmp-nc-section-title { display: flex; align-items: center; gap: 7px; font-size: 0.7rem; font-weight: 900; color: var(--text-muted); text-transform: uppercase; letter-spacing: .08em; margin: 0 0 8px; }
       .cmp-nc-section-title > i { color: var(--primary); font-size: .8rem; }
@@ -1629,7 +1630,7 @@ const ComprasModule = {
       .cmp-nc-items-inner { padding: 0; }
       .cmp-nc-items-add { display: grid; width: 100%; grid-template-columns: minmax(0, 1.8fr) minmax(0, .65fr) minmax(0, .85fr) minmax(148px, 1fr); gap: 12px; align-items: end; margin-bottom: 14px; padding: 14px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface-2); }
       .cmp-nc-items-add .form-field { min-width: 0; }
-      .cmp-nc-items-add .btn { min-height: 44px; justify-content: center; }
+      .cmp-nc-items-add .btn { width: 100%; min-width: 0; min-height: 44px; padding-inline: 10px; justify-content: center; overflow-wrap: anywhere; }
       .cmp-nc-items-add #addItemCompraBtn { border-color: color-mix(in srgb, var(--primary) 34%, var(--border)); background: var(--primary-soft); color: var(--primary); font-weight: 800; }
       .cmp-nc-items-add #addItemCompraBtn:hover { border-color: var(--primary); background: var(--primary); color: var(--white); }
       .cmp-nc-items-inner .table-wrapper { margin-top: 12px; border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
@@ -1648,7 +1649,7 @@ const ComprasModule = {
       .cmp-nc-item-remove { display: inline-grid; width: 32px; height: 32px; place-items: center; padding: 0; border: 1px solid color-mix(in srgb, var(--danger) 25%, var(--border)); border-radius: 8px; background: transparent; color: var(--danger); cursor: pointer; }
       .cmp-nc-item-remove:hover { background: color-mix(in srgb, var(--danger) 9%, transparent); }
       .cmp-nc-items-inner .compra-total-box { margin-top: 12px; padding: 14px 16px; border-radius: 16px; }
-      @media (min-width: 1101px) {
+      @media (min-width: 1400px) {
         .cmp-nc-card { padding: 0 !important; border-radius: 24px !important; box-shadow: 0 24px 80px rgba(0,0,0,.18), 0 2px 8px rgba(0,0,0,.08) !important; }
         .cmp-nc-card .modal-card__header { padding: 22px 28px 18px; }
         .cmp-nc-card .modal-card__footer { padding: 16px 28px; }
@@ -1665,13 +1666,19 @@ const ComprasModule = {
       /* Em janelas compactas, fornecedor e pagamento tornam-se blocos largos.
          Isso evita que a forma de pagamento seja cortada, como ocorria na
          grade de duas colunas em resoluções de notebook. */
-      @media (min-width: 601px) and (max-width: 1100px) {
+      @media (min-width: 601px) and (max-width: 1399px) {
         .cmp-nc-card { padding: 0 !important; border-radius: 24px !important; }
         .cmp-nc-card .modal-card__header { padding: 20px 24px 16px; }
         .cmp-nc-card .modal-card__footer { padding: 14px 24px; }
         .cmp-nc-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; padding: 20px 24px; overflow-x: hidden; }
         .cmp-nc-body > .cmp-nc-section { grid-column: 1 !important; grid-row: auto !important; padding: 0; min-width: 0; }
         .cmp-nc-items-add { grid-template-columns: minmax(0, 1.8fr) minmax(90px, .62fr) minmax(115px, .78fr) minmax(145px, .9fr); }
+      }
+      /* A largura útil da área de pagamento é a referência, não a largura
+         da janela (que muda quando o navegador usa zoom). */
+      @container (max-width: 650px) {
+        .cmp-nc-cells-2col { grid-template-columns: minmax(0, 1fr); }
+        .cmp-nc-cells-2col .cmp-nc-cell:first-child { border-right: 0; border-bottom: 1px solid var(--border); }
       }
       @media (max-width: 600px) {
         .cmp-nc-section { padding: 14px 16px 0; }
