@@ -87,7 +87,10 @@ const ComprasModule = {
   },
 
   _enhanceFormSelects(sync = false) {
-    [this.el?.fornecedor, this.el?.formaPagamento, this.el?.produto].forEach((select) => {
+    // A forma de pagamento permanece um select nativo estilizado: o popup do
+    // navegador não é recortado pelo corpo rolável do modal e funciona de
+    // forma consistente em qualquer escala/zoom.
+    [this.el?.fornecedor, this.el?.produto].forEach((select) => {
       if (!select) return;
       enhanceSelect(select);
       if (sync) select.dispatchEvent(new Event('change', { bubbles: true }));
@@ -523,7 +526,8 @@ const ComprasModule = {
                       </span>
                       <div class="cmp-nc-cell-content">
                         <label class="cmp-nc-lbl" for="compraFormaPagamento">Forma de pagamento <span class="cmp-nc-req">*</span></label>
-                        <select id="compraFormaPagamento" class="cmp-nc-cell-input" required>
+                        <select id="compraFormaPagamento" class="cmp-nc-cell-input cmp-nc-payment-select" required>
+                          <option value="" selected disabled>Selecionar</option>
                           <option value="Dinheiro">Dinheiro</option>
                           <option value="Pix">Pix</option>
                           <option value="Cartão de Débito">Cartão de Débito</option>
@@ -1582,7 +1586,10 @@ const ComprasModule = {
       .cmp-nc-section-heading .cmp-nc-section-title { display: flex; align-items: center; gap: 7px; }
       .cmp-nc-section-heading .cmp-nc-section-title i { color: var(--primary); font-size: .82rem; }
       .cmp-nc-required-hint { padding: 3px 8px; border-radius: 999px; background: var(--primary-soft); color: var(--primary); font-size: .65rem; font-weight: 800; }
-      .cmp-nc-card-group { border: 1px solid var(--border); border-radius: 18px; overflow: hidden; background: var(--surface); }
+      .cmp-nc-card-group { position: relative; border: 1px solid var(--border); border-radius: 18px; overflow: visible; background: var(--surface); }
+      .cmp-nc-card-group .premium-select { position: relative; z-index: 1; min-width: 0; }
+      .cmp-nc-card-group .premium-select.is-open { z-index: calc(var(--z-modal) + 4); }
+      .cmp-nc-card-group .premium-select__menu { z-index: calc(var(--z-modal) + 5); }
       .cmp-nc-cell { display: flex; align-items: center; gap: 14px; padding: 13px 16px; border-bottom: 1px solid var(--border); background: var(--surface); transition: background .1s; }
       .cmp-nc-cell:last-child { border-bottom: none; }
       .cmp-nc-cell:focus-within { background: var(--surface-2, rgba(0,0,0,.025)); }
@@ -1601,6 +1608,8 @@ const ComprasModule = {
       .cmp-nc-req { color: #dc2626; }
       .cmp-nc-cell-input { border: none !important; outline: none !important; background: transparent !important; padding: 0 !important; font-size: 0.93rem; font-weight: 600; color: var(--text); width: 100%; font-family: inherit; -webkit-appearance: none; appearance: none; }
       select.cmp-nc-cell-input { cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat !important; background-position: right 0 center !important; padding-right: 16px !important; }
+      select.cmp-nc-payment-select { display: block; min-height: 42px; padding: 0 36px 0 13px !important; border: 1px solid var(--border) !important; border-radius: 11px; background-color: var(--surface-2) !important; background-position: right 13px center !important; color: var(--text); font-weight: 700; }
+      select.cmp-nc-payment-select:focus { border-color: var(--primary) !important; box-shadow: var(--control-shadow-focus); }
       .cmp-nc-date-picker { position: relative; }
       .cmp-nc-date-trigger { display: flex; width: 100%; min-height: 28px; align-items: center; justify-content: space-between; gap: 10px; padding: 0; border: 0; background: transparent; color: var(--text); cursor: pointer; font: inherit; font-size: .95rem; font-weight: 700; text-align: left; }
       .cmp-nc-date-trigger i { color: var(--primary); font-size: .9rem; }
