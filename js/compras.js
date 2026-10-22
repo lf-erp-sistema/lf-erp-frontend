@@ -462,22 +462,23 @@ const ComprasModule = {
           <form id="compraForm">
             <div class="cmp-nc-body">
 
-              <div class="cmp-nc-section">
-                <p class="cmp-nc-section-title">Fornecedor</p>
-                <div class="cmp-nc-card-group">
-                  <div class="cmp-nc-cell">
-                    <span class="cmp-nc-cell-ico">
-                      <i class="fa-solid fa-building"></i>
-                    </span>
-                    <div class="cmp-nc-cell-content">
-                      <label class="cmp-nc-lbl" for="compraFornecedor">Fornecedor <span class="cmp-nc-req">*</span></label>
-                      <select id="compraFornecedor" class="cmp-nc-cell-input" required>
-                        <option value="">Selecione...</option>
-                        ${this.state.fornecedores.map((f) => `<option value="${f.id}">${escapeHtml(f.nome)}</option>`).join('')}
-                      </select>
-                    </div>
+              <div class="cmp-nc-section cmp-nc-section--supplier">
+                <div class="cmp-nc-section-heading">
+                  <p class="cmp-nc-section-title"><i class="fa-solid fa-building"></i> Fornecedor <span class="cmp-nc-req">*</span></p>
+                  <span class="cmp-nc-required-hint">Obrigatório</span>
+                </div>
+                <div class="cmp-nc-supplier-control">
+                  <span class="cmp-nc-cell-ico cmp-nc-cell-ico--supplier" aria-hidden="true">
+                    <i class="fa-solid fa-building"></i>
+                  </span>
+                  <div class="cmp-nc-cell-content">
+                    <select id="compraFornecedor" class="cmp-nc-cell-input" data-premium-search="true" aria-label="Fornecedor" required>
+                      <option value="">Selecione o fornecedor</option>
+                      ${this.state.fornecedores.map((f) => `<option value="${f.id}">${escapeHtml(f.nome)}</option>`).join('')}
+                    </select>
                   </div>
                 </div>
+                <p class="cmp-nc-field-hint">Escolha o fornecedor responsável por esta compra.</p>
               </div>
 
               <div class="cmp-nc-section">
@@ -1433,6 +1434,10 @@ const ComprasModule = {
       .cmp-nc-section { padding: 16px 20px 0; }
       .cmp-nc-section:last-child { padding-bottom: 20px; }
       .cmp-nc-section-title { font-size: 0.7rem; font-weight: 900; color: var(--text-muted); text-transform: uppercase; letter-spacing: .08em; margin: 0 0 8px; }
+      .cmp-nc-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+      .cmp-nc-section-heading .cmp-nc-section-title { display: flex; align-items: center; gap: 7px; }
+      .cmp-nc-section-heading .cmp-nc-section-title i { color: var(--primary); font-size: .82rem; }
+      .cmp-nc-required-hint { padding: 3px 8px; border-radius: 999px; background: var(--primary-soft); color: var(--primary); font-size: .65rem; font-weight: 800; }
       .cmp-nc-card-group { border: 1px solid var(--border); border-radius: 18px; overflow: hidden; background: var(--surface); }
       .cmp-nc-cell { display: flex; align-items: center; gap: 14px; padding: 13px 16px; border-bottom: 1px solid var(--border); background: var(--surface); transition: background .1s; }
       .cmp-nc-cell:last-child { border-bottom: none; }
@@ -1445,11 +1450,20 @@ const ComprasModule = {
       .cmp-nc-cell-ico--green { background: rgba(22,163,74,.1); color: #16a34a; }
       .cmp-nc-cell-ico--blue { background: rgba(37,99,235,.1); color: #2563eb; }
       .cmp-nc-cell-ico--orange { background: rgba(234,88,12,.1); color: #ea580c; }
+      .cmp-nc-cell-ico--supplier { width: 40px; height: 40px; border-radius: 12px; background: var(--primary-soft); color: var(--primary); }
       .cmp-nc-cell-content { flex: 1; min-width: 0; }
       .cmp-nc-lbl { display: block; font-size: 0.67rem; font-weight: 900; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 2px; }
       .cmp-nc-req { color: #dc2626; }
       .cmp-nc-cell-input { border: none !important; outline: none !important; background: transparent !important; padding: 0 !important; font-size: 0.93rem; font-weight: 600; color: var(--text); width: 100%; font-family: inherit; -webkit-appearance: none; appearance: none; }
       select.cmp-nc-cell-input { cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat !important; background-position: right 0 center !important; padding-right: 16px !important; }
+      .cmp-nc-supplier-control { display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); transition: border-color .15s, box-shadow .15s; }
+      .cmp-nc-supplier-control:focus-within { border-color: var(--primary); box-shadow: var(--control-shadow-focus); }
+      .cmp-nc-supplier-control .premium-select { width: 100%; }
+      .cmp-nc-supplier-control .premium-select__trigger { min-height: 42px; padding: 0 13px; border-color: transparent; border-radius: 10px; background: var(--surface-2); color: var(--text); font-size: .94rem; font-weight: 700; }
+      .cmp-nc-supplier-control .premium-select__trigger:hover { background: var(--primary-soft); }
+      .cmp-nc-supplier-control .premium-select__menu { z-index: calc(var(--z-modal) + 2); max-height: 230px; }
+      .cmp-nc-supplier-control .premium-select__option { min-height: 38px; }
+      .cmp-nc-field-hint { margin: 7px 2px 0; color: var(--text-muted); font-size: .72rem; }
       .cmp-nc-obs { width: 100%; resize: none; font-size: 0.9rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; font-family: inherit; color: var(--text); box-sizing: border-box; }
       .cmp-nc-items-section { margin: 0; }
       .cmp-nc-items-inner { padding: 12px 0 4px; }
