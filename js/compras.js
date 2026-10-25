@@ -1,7 +1,7 @@
 ﻿import api from './api.js';
 import { getAuth } from './auth.js';
 import { showToast, confirmarAcao } from './feedback.js';
-import { escapeHtml, calcPeriodoLocal, debounce, formatCurrency } from './utils.js';
+import { escapeHtml, calcPeriodoLocal, debounce, formatCurrency, buildFriendlyError } from './utils.js';
 import { enhanceSelect } from './premiumSelect.js';
 
 const ComprasModule = {
@@ -277,6 +277,11 @@ const ComprasModule = {
 
       if (btn.id === 'addItemCompraBtn') {
         this.addItem();
+        return;
+      }
+
+      if (btn.id === 'compraNovoProdutoBtn') {
+        this.abrirCadastroRapidoProduto();
         return;
       }
 
@@ -624,7 +629,7 @@ const ComprasModule = {
                 <div class="cmp-nc-items-inner">
                   <div class="form-grid cmp-nc-items-add">
                     <div class="form-field">
-                      <label for="compraProduto">Produto</label>
+                      <div class="cmp-nc-product-label"><label for="compraProduto">Produto</label><button type="button" id="compraNovoProdutoBtn" class="cmp-nc-new-product"><i class="fa-solid fa-plus"></i> Novo produto</button></div>
                       <select id="compraProduto" data-premium-search="true" data-premium-search-placeholder="Buscar produto..." aria-label="Produto da compra">
                         <option value="">Selecione...</option>
                         ${this.state.produtos.map((p) => `<option value="${p.id}" data-custo="${Number(p.custo || 0)}">${escapeHtml(p.nome)}</option>`).join('')}
@@ -819,6 +824,74 @@ const ComprasModule = {
         <option value="">Selecione um produto</option>
         ${this.state.produtos.map((p) => `<option value="${p.id}" data-custo="${Number(p.custo || 0)}">${escapeHtml(p.nome)}</option>`).join('')}`;
     }
+  },
+
+  abrirCadastroRapidoProduto() {
+    if (document.getElementById('compraProdutoRapido')) return;
+    const overlay = document.createElement('div');
+    overlay.id = 'compraProdutoRapido';
+    overlay.className = 'modal-overlay modal-overlay--prompt cmp-product-overlay';
+    overlay.innerHTML = `
+      <div class="modal-card cmp-product-card" role="dialog" aria-modal="true" aria-labelledby="cmpProductTitle">
+        <div class="cmp-product-header"><div><h3 id="cmpProductTitle">Novo produto</h3><p>Cadastre o produto sem sair da compra.</p></div><button type="button" class="icon-button" data-close aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button></div>
+        <form class="cmp-product-form">
+          <div class="form-field cmp-product-full"><label for="cmpProductName">Nome do produto *</label><input id="cmpProductName" name="nome" required maxlength="255" autocomplete="off" placeholder="Nome do produto"></div>
+          <div class="form-field cmp-product-full"><label for="cmpProductCategory">Categoria</label><input id="cmpProductCategory" name="categoria" autocomplete="off" placeholder="Ex.: Acessórios"></div>
+          <div class="form-field"><label for="cmpProductCost">Custo unitário</label><input id="cmpProductCost" name="custo" type="number" min="0" step="0.01" value="0" required></div>
+          <div class="form-field"><label for="cmpProductPrice">Preço de venda *</label><input id="cmpProductPrice" name="preco" type="number" min="0.01" step="0.01" required placeholder="0,00"></div>
+          <p class="cmp-product-hint cmp-product-full">O estoque inicial será zero. A quantidade será registrada ao salvar a compra.</p>
+          <div class="cmp-product-error cmp-product-full" role="alert" aria-live="polite"></div>
+          <div class="cmp-product-footer cmp-product-full"><button type="button" class="btn btn-light" data-close>Cancelar</button><button type="submit" class="btn btn-primary">Salvar produto</button></div>
+        </form>
+      </div>`;
+    document.body.appendChild(overlay);
+    const form = overlay.querySelector('form');
+    const save = form.querySelector('[type="submit"]');
+    const errorBox = overlay.querySelector('.cmp-product-error');
+    let saving = false;
+    const close = () => { if (!saving) { overlay.remove(); document.getElementById('compraNovoProdutoBtn')?.focus(); } };
+    overlay.addEventListener('click', event => { if (event.target === overlay || event.target.closest('[data-close]')) close(); });
+    overlay.addEventListener('keydown', event => { if (event.key === 'Escape') { event.stopPropagation(); close(); } });
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      if (saving) return;
+      const nome = form.elements.nome.value.trim();
+      const preco = Number(form.elements.preco.value);
+      const custo = Number(form.elements.custo.value);
+      if (!nome || !Number.isFinite(preco) || preco <= 0 || !Number.isFinite(custo) || custo < 0) {
+        errorBox.textContent = 'Informe o nome e valores válidos para o produto.';
+        return;
+      }
+      saving = true; save.disabled = true; errorBox.textContent = '';
+      let produto;
+      try {
+        produto = await api.createProduto({ nome, categoria: form.elements.categoria.value.trim(), custo, preco, estoque: 0, estoque_minimo: 0, unidade: 'UN', codigo_barras: '' });
+      } catch (error) {
+        errorBox.textContent = buildFriendlyError(error);
+        saving = false; save.disabled = false;
+        return;
+      }
+      // O produto já foi salvo: nunca refazer o cadastro se a atualização da lista falhar.
+      saving = false;
+      close();
+      try {
+        await this.carregarCatalogos({ fornecedores: false });
+        const select = this.el.produto;
+        if (select && this.el.modal && !this.el.modal.classList.contains('hidden')) {
+          select.innerHTML = `<option value="">Selecione um produto</option>${this.state.produtos.map(p => `<option value="${p.id}" data-custo="${Number(p.custo || 0)}">${escapeHtml(p.nome)}</option>`).join('')}`;
+          const id = produto?.id ?? produto?.produto?.id;
+          if (id != null && this.state.produtos.some(p => String(p.id) === String(id))) {
+            select.value = String(id);
+            if (this.el.custoUnitario) this.el.custoUnitario.value = String(custo);
+          }
+          select.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        showToast('Produto cadastrado. Confira a quantidade e adicione à compra.', 'success');
+      } catch {
+        showToast('Produto cadastrado, mas não foi possível atualizar a lista. Reabra a compra para selecioná-lo.', 'error');
+      }
+    });
+    overlay.querySelector('#cmpProductName').focus();
   },
 
   _abrirModalPronto() {
@@ -1813,6 +1886,20 @@ const ComprasModule = {
       .cmp-nc-items-inner { padding: 0; }
       .cmp-nc-items-add { display: grid; width: 100%; grid-template-columns: minmax(0, 1.8fr) minmax(0, .65fr) minmax(0, .85fr) minmax(148px, 1fr); gap: 12px; align-items: end; margin-bottom: 14px; padding: 14px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface-2); }
       .cmp-nc-items-add .form-field { min-width: 0; }
+      .cmp-nc-product-label { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+      .cmp-nc-new-product { border:0; padding:2px 0; background:transparent; color:var(--primary); font:inherit; font-size:.75rem; font-weight:700; cursor:pointer; white-space:nowrap; }
+      .cmp-product-overlay { z-index: calc(var(--z-modal) + 30); }
+      .cmp-product-card { width:min(560px, 100%); max-height:90vh; overflow:auto; padding:24px; }
+      .cmp-product-header { display:flex; justify-content:space-between; gap:16px; align-items:start; margin-bottom:20px; }
+      .cmp-product-header h3 { margin:0 0 5px; }
+      .cmp-product-header p { margin:0; color:var(--text-muted); }
+      .cmp-product-form { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+      .cmp-product-full { grid-column:1 / -1; }
+      .cmp-product-hint { margin:0; color:var(--text-muted); font-size:.8rem; }
+      .cmp-product-error { color:var(--danger); font-size:.85rem; }
+      .cmp-product-error:empty { display:none; }
+      .cmp-product-footer { display:flex; justify-content:flex-end; gap:10px; }
+      @media (max-width:480px) { .cmp-product-form { grid-template-columns:1fr; } .cmp-product-full { grid-column:auto; } .cmp-product-footer { flex-wrap:wrap; } }
       .cmp-nc-items-add .premium-select { position: relative; z-index: 2; width: 100%; }
       .cmp-nc-items-add .premium-select.is-open { z-index: calc(var(--z-modal) + 2); }
       .cmp-nc-items-add .premium-select__menu { z-index: calc(var(--z-modal) + 3); max-height: 260px; }
