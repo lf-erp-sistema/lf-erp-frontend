@@ -301,6 +301,11 @@ const ComprasModule = {
         return;
       }
 
+      if (btn.dataset.action === 'print-compra') {
+        await this.imprimirCompra(btn.dataset.id);
+        return;
+      }
+
       if (btn.dataset.action === 'edit-compra') {
         await this.openEditModal(btn.dataset.id);
         return;
@@ -1459,6 +1464,10 @@ const ComprasModule = {
             <span class="cr-mai-ico cr-mai-ico--success"><i class="fa-solid fa-eye"></i></span>
             <span class="cr-mai-texts"><span class="cr-mai-lbl">Detalhes</span><span class="cr-mai-desc">Ver itens e informações da compra</span></span>
           </button>
+          <button type="button" class="cr-mai-item" data-action="print-compra" data-id="${comp.id}">
+            <span class="cr-mai-ico cr-mai-ico--pix"><i class="fa-solid fa-print"></i></span>
+            <span class="cr-mai-texts"><span class="cr-mai-lbl">Imprimir conferência</span><span class="cr-mai-desc">Imprimir todos os itens da compra</span></span>
+          </button>
           <button type="button" class="cr-mai-item" data-action="edit-compra" data-id="${comp.id}">
             <span class="cr-mai-ico cr-mai-ico--pix"><i class="fa-solid fa-pen"></i></span>
             <span class="cr-mai-texts"><span class="cr-mai-lbl">Editar</span><span class="cr-mai-desc">Alterar dados da compra</span></span>
@@ -1485,6 +1494,46 @@ const ComprasModule = {
       console.error('Erro ao carregar detalhe da compra:', error);
       const message = this.buildFriendlyError(error);
       this.setFeedback(message, 'error');
+    }
+  },
+
+  async imprimirCompra(id, detalhe = null) {
+    // Abrir na interação do usuário evita o bloqueio de pop-ups durante a consulta.
+    const janela = window.open('', '_blank', 'width=900,height=750');
+    if (!janela) {
+      showToast('Permita pop-ups para imprimir a compra.', 'error');
+      return;
+    }
+    janela.document.title = 'Preparando impressão';
+    try {
+      const compra = detalhe || await api.getCompraDetalhe(id);
+      const itens = Array.isArray(compra?.itens) ? compra.itens : [];
+      const quantidade = itens.reduce((total, item) => total + (Number(item.quantidade) || 0), 0);
+      const linhas = itens.map((item, index) => {
+        const qtd = Number(item.quantidade) || 0;
+        const custo = Number(item.custo_unitario) || 0;
+        return `<tr><td class="check"><span class="box"></span></td><td class="number">${index + 1}</td><td>${escapeHtml(item.produto_nome || 'Produto')}</td><td class="number">${escapeHtml(qtd.toLocaleString('pt-BR'))}</td><td class="number">${escapeHtml(formatCurrency(custo))}</td><td class="number">${escapeHtml(formatCurrency(Number((qtd * custo).toFixed(2))))}</td></tr>`;
+      }).join('');
+      janela.document.open();
+      janela.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Conferência da compra ${escapeHtml(compra?.id || '')}</title><style>
+        @page { size: A4 portrait; margin: 13mm; }
+        * { box-sizing: border-box; } body { font: 12px Arial, sans-serif; color:#111; margin:0; }
+        h1 { font-size:20px; margin:0 0 5px; } p { margin:4px 0; } .header { border-bottom:2px solid #222; padding-bottom:12px; margin-bottom:12px; }
+        .meta { display:grid; grid-template-columns: 2fr 1fr 1fr; gap:8px 16px; margin:12px 0; } .meta strong { display:block; font-size:10px; text-transform:uppercase; margin-bottom:3px; }
+        table { width:100%; border-collapse:collapse; table-layout:fixed; } thead { display:table-header-group; } tr { break-inside:avoid; page-break-inside:avoid; }
+        th,td { border:1px solid #777; padding:7px 6px; overflow-wrap:anywhere; } th { background:#eee; text-align:left; font-size:10px; } .number { text-align:right; } .check { text-align:center; } .box { display:inline-block; border:1px solid #333; width:12px; height:12px; }
+        .summary { margin-top:12px; text-align:right; font-size:14px; font-weight:bold; } .note { white-space:pre-wrap; margin-top:14px; } .toolbar { padding:14px 0; } button { padding:9px 16px; cursor:pointer; }
+        @media print { .toolbar { display:none; } th { print-color-adjust:exact; -webkit-print-color-adjust:exact; } }
+      </style></head><body><div class="toolbar"><button type="button" onclick="window.print()">Imprimir</button></div><div class="header"><h1>Conferência de compra #${escapeHtml(compra?.id || '-')}</h1><p>Confira os itens e marque a caixa ao lado de cada produto.</p></div>
+      <div class="meta"><div><strong>Fornecedor</strong>${escapeHtml(compra?.fornecedor_nome || 'Não informado')}</div><div><strong>Data da compra</strong>${escapeHtml(formatDate(compra?.data))}</div><div><strong>Pagamento</strong>${escapeHtml(compra?.pagamento || compra?.forma_pagamento || '-')}</div><div><strong>Itens diferentes</strong>${itens.length}</div><div><strong>Quantidade total</strong>${escapeHtml(quantidade.toLocaleString('pt-BR'))}</div><div><strong>Parcelas</strong>${escapeHtml(compra?.parcelas || 1)}</div></div>
+      <table><colgroup><col style="width:7%"><col style="width:6%"><col style="width:43%"><col style="width:11%"><col style="width:16%"><col style="width:17%"></colgroup><thead><tr><th>OK</th><th>Nº</th><th>Produto</th><th class="number">Qtd.</th><th class="number">Custo unit.</th><th class="number">Subtotal</th></tr></thead><tbody>${linhas || '<tr><td colspan="6">Nenhum item vinculado.</td></tr>'}</tbody></table>
+      <div class="summary">Total da compra: ${escapeHtml(formatCurrency(compra?.total || 0))}</div>${compra?.observacao ? `<p class="note"><strong>Observação:</strong> ${escapeHtml(compra.observacao)}</p>` : ''}</body></html>`);
+      janela.document.close();
+      janela.focus();
+      janela.print();
+    } catch (error) {
+      janela.close();
+      showToast('Não foi possível carregar a compra para impressão.', 'error');
     }
   },
 
@@ -1622,6 +1671,7 @@ const ComprasModule = {
         </div>
 
         <div class="compra-detail-footer">
+          <button type="button" class="btn btn-primary" id="imprimirCompraDetalhe"><i class="fa-solid fa-print"></i> Imprimir conferência</button>
           <button type="button" class="btn btn-light" id="fecharCompraDetalheFooter">
             Fechar
           </button>
@@ -1630,6 +1680,8 @@ const ComprasModule = {
     `;
 
     document.body.appendChild(modal);
+
+    modal.querySelector('#imprimirCompraDetalhe')?.addEventListener('click', () => this.imprimirCompra(compra.id, compra));
 
     document.getElementById('fecharCompraDetalhe')?.addEventListener('click', () => modal.remove());
     document
