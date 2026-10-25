@@ -32,7 +32,9 @@ export function enhanceSelect(select) {
     search.className = 'premium-select__search';
     search.placeholder = select.dataset.premiumSearchPlaceholder || 'Buscar...';
     search.setAttribute('aria-label', `Buscar ${select.getAttribute('aria-label') || 'opção'}`);
+    menu.append(search);
   }
+  let searchTimer;
   const renderOptions = (query = '') => {
     const normalizedQuery = query.trim().toLocaleLowerCase('pt-BR');
     const options = [...select.options].filter(option => !normalizedQuery || option.text.toLocaleLowerCase('pt-BR').includes(normalizedQuery));
@@ -55,9 +57,11 @@ export function enhanceSelect(select) {
       empty.textContent = 'Nenhuma opção encontrada.';
       items.push(empty);
     }
-    menu.replaceChildren(...(search ? [search] : []), ...items);
+    // Preserve o campo no DOM: removê-lo durante a digitação faz perder o foco.
+    [...menu.children].forEach(child => { if (child !== search) child.remove(); });
+    menu.append(...items);
   };
-  const sync = () => { trigger.textContent = select.options[select.selectedIndex]?.text || 'Selecionar'; renderOptions(search?.value || ''); };
+  const sync = () => { clearTimeout(searchTimer); trigger.textContent = select.options[select.selectedIndex]?.text || 'Selecionar'; renderOptions(search?.value || ''); };
   select.parentNode.insertBefore(wrap, select); wrap.append(trigger, menu, select); select.classList.add('premium-select__native'); sync();
   trigger.addEventListener('click', () => {
     const willOpen = !wrap.classList.contains('is-open');
@@ -65,7 +69,10 @@ export function enhanceSelect(select) {
     wrap.classList.toggle('is-open');
     if (willOpen && search) requestAnimationFrame(() => search.focus());
   });
-  search?.addEventListener('input', () => renderOptions(search.value));
+  search?.addEventListener('input', () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => renderOptions(search.value), 300);
+  });
   select.addEventListener('change', sync);
   new MutationObserver(sync).observe(select, { childList: true, subtree: true, characterData: true });
   document.addEventListener('click', event => { if (!wrap.contains(event.target)) wrap.classList.remove('is-open'); });
