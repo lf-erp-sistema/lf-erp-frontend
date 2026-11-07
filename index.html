@@ -38,6 +38,7 @@
     />
 
     <link rel="stylesheet" href="./css/style.css" />
+    <link rel="stylesheet" href="./css/operacao.css" />
     <script
       src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"
       integrity="sha384-NrKB+u6Ts6AtkIhwPixiKTzgSKNblyhlk0Sohlgar9UHUBzai/sgnNNWWd291xqt"
@@ -300,7 +301,12 @@
           <nav class="sidebar__nav">
 
             <!-- Topo -->
-            <button class="nav-item active" data-view="dashboard" title="Dashboard">
+            <button class="nav-item active" data-view="inicio" title="Início" type="button">
+              <span class="nav-item__icon"><i class="fa-solid fa-house"></i></span>
+              <span class="nav-item__label">Início</span>
+            </button>
+
+            <button class="nav-item" data-view="dashboard" title="Dashboard">
               <span class="nav-item__icon"><i class="fa-solid fa-chart-pie"></i></span>
               <span class="nav-item__label">Dashboard</span>
               <span id="alertasBadge" class="nav-badge hidden"></span>
@@ -600,8 +606,52 @@
 
           <!-- CONTEÚDO DINÂMICO -->
           <main id="viewContainer" class="view-container">
+            <!-- INÍCIO -->
+            <section class="view-section active" data-view="inicio">
+              <section class="operation-start" aria-labelledby="operationStartTitle">
+                <div class="operation-start__heading">
+                  <div>
+                    <span class="operation-start__eyebrow">Sua loja, em movimento</span>
+                    <h2 id="operationStartTitle">O que vamos fazer agora?</h2>
+                    <p>Acesse as tarefas do dia a dia em um clique.</p>
+                  </div>
+                  <button type="button" class="operation-search" id="operationSearchBtn">
+                    <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                    <span>Buscar no sistema</span><kbd>Ctrl K</kbd>
+                  </button>
+                </div>
+                <div class="operation-start__grid">
+                  <button type="button" class="operation-action operation-action--primary nav-shortcut" data-view="pdv">
+                    <span class="operation-action__icon"><i class="fa-solid fa-cash-register" aria-hidden="true"></i></span>
+                    <span class="operation-action__copy"><strong>Nova venda</strong><small>Abra o PDV e comece o atendimento</small></span>
+                    <i class="fa-solid fa-arrow-right operation-action__arrow" aria-hidden="true"></i>
+                  </button>
+                  <button type="button" class="operation-action nav-shortcut" data-view="produtos">
+                    <span class="operation-action__icon"><i class="fa-solid fa-box-open" aria-hidden="true"></i></span>
+                    <span class="operation-action__copy"><strong>Produtos</strong><small>Consulte preços e cadastros</small></span>
+                  </button>
+                  <button type="button" class="operation-action nav-shortcut" data-view="clientes">
+                    <span class="operation-action__icon"><i class="fa-solid fa-users" aria-hidden="true"></i></span>
+                    <span class="operation-action__copy"><strong>Clientes</strong><small>Encontre ou cadastre um cliente</small></span>
+                  </button>
+                  <button type="button" class="operation-action nav-shortcut" data-view="compras">
+                    <span class="operation-action__icon"><i class="fa-solid fa-basket-shopping" aria-hidden="true"></i></span>
+                    <span class="operation-action__copy"><strong>Compras</strong><small>Acompanhe as compras da loja</small></span>
+                  </button>
+                  <button type="button" class="operation-action nav-shortcut" data-view="contas-receber">
+                    <span class="operation-action__icon"><i class="fa-solid fa-money-bill-trend-up" aria-hidden="true"></i></span>
+                    <span class="operation-action__copy"><strong>Contas a receber</strong><small>Acompanhe valores e vencimentos</small></span>
+                  </button>
+                  <button type="button" class="operation-action nav-shortcut" data-view="contas-pagar">
+                    <span class="operation-action__icon"><i class="fa-solid fa-money-bill-transfer" aria-hidden="true"></i></span>
+                    <span class="operation-action__copy"><strong>Contas a pagar</strong><small>Organize os pagamentos da loja</small></span>
+                  </button>
+                </div>
+              </section>
+            </section>
+
             <!-- DASHBOARD -->
-            <section class="view-section active" data-view="dashboard">
+            <section class="view-section" data-view="dashboard">
               <div class="dash-toolbar">
                 <div class="dash-month-nav-group">
                   <button class="btn-month-nav" type="button" id="dashPrevMonth" title="Mês anterior" aria-label="Mês anterior">

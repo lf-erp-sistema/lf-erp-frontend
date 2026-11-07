@@ -4,6 +4,7 @@ const SHELL = [
   '/index.html',
   '/admin.html',
   '/css/style.css',
+  '/css/operacao.css',
   '/manifest.json',
 ];
 

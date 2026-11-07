@@ -6,7 +6,7 @@ import { escapeHtml, makeSortable } from './utils.js';
 
 const AppState = {
   isAuthenticated: false,
-  currentView: 'dashboard',
+  currentView: 'inicio',
   sidebarCollapsed: false,
   sidebarMobileOpen: false,
   globalFiltersExpanded: false,
@@ -38,6 +38,7 @@ const STORAGE_KEYS = {
 };
 
 const VIEW_CONFIG = {
+  inicio:               { icon: 'house',                  title: 'Início',                subtitle: 'Acessos rápidos para o dia a dia da loja' },
   cadastros:            { icon: 'database',               title: 'Cadastros',             subtitle: 'Produtos, clientes, fornecedores e usuários' },
   movimentacoes:        { icon: 'arrow-right-arrow-left', title: 'Movimentações',         subtitle: 'Vendas, compras e estoque' },
   financeiro:           { icon: 'wallet',                 title: 'Financeiro',            subtitle: 'Contas, fluxo de caixa e lançamentos' },
@@ -345,7 +346,7 @@ function bindLoginEvents() {
       renderTrialBanner();
       await Promise.all([carregarPermissoes(), carregarEmpresaFeatures()]);
       showMainScreen();
-      await setActiveView('dashboard');
+      await setActiveView('inicio');
       showToast(`Bem-vindo! Seu trial de 14 dias começou.`, 'success');
       mostrarWizardBoasVindas(data.empresa?.nome);
     } catch (err) {
@@ -933,7 +934,7 @@ async function handleLoginSubmit(event) {
     await Promise.all([carregarPermissoes(), carregarEmpresaFeatures()]);
     showMainScreen();
     scheduleTokenRefresh();
-    await setActiveView('dashboard');
+    await setActiveView('inicio');
     setLoginMessage('', 'info');
     showToast(`Bem-vindo, ${AppState.user?.nome || 'usuário'}!`, 'success');
   } catch (error) {
@@ -1076,6 +1077,7 @@ export async function setActiveView(view) {
 }
 
 const VIEW_LOADERS = {
+  'inicio':              () => {},
   'dashboard':           loadDashboardReal,
   'produtos':            loadProdutosReal,
   'clientes':            loadClientesReal,
@@ -1492,7 +1494,7 @@ async function restoreAuthSession() {
     await Promise.all([carregarPermissoes(), carregarEmpresaFeatures()]);
     showMainScreen();
     scheduleTokenRefresh();
-    await setActiveView(AppState.currentView || 'dashboard');
+    await setActiveView(AppState.currentView || 'inicio');
     showToast('Sessão restaurada com sucesso.', 'success');
   } catch (error) {
     handleLogout(false);
@@ -1751,7 +1753,7 @@ async function handleLogout(showMessage = true) {
   AppState.empresa = null;
   AppState.empresaId = null;
   AppState.permissoes = null;
-  AppState.currentView = 'dashboard';
+  AppState.currentView = 'inicio';
 
   localStorage.removeItem(STORAGE_KEYS.currentView);
 
@@ -2682,7 +2684,7 @@ function mostrarWizardBoasVindas(nomeEmpresa) {
       if (currentStep === 2) await setActiveView('produtos');
       if (currentStep === 3) await setActiveView('clientes');
       if (currentStep === 4) await setActiveView('pdv');
-      if (currentStep === 5) await setActiveView('dashboard');
+      if (currentStep === 5) await setActiveView('inicio');
     });
 
     document.getElementById('_wzVoltar')?.addEventListener('click', () => { currentStep--; renderStep(); });
@@ -2708,6 +2710,7 @@ if ('serviceWorker' in navigator) {
 // ── Command Palette (Ctrl+K) ──────────────────────────────────────────────────
 
 const _CP_NAV = [
+  { label: 'Início',              view: 'inicio',             icon: 'fa-house',                group: '' },
   { label: 'Dashboard',           view: 'dashboard',          icon: 'fa-chart-pie',            group: '' },
   { label: 'PDV — Ponto de Venda', view: 'pdv',               icon: 'fa-cash-register',         group: '' },
   { label: 'Produtos',            view: 'produtos',            icon: 'fa-box-open',              group: 'Cadastros' },
@@ -2733,6 +2736,7 @@ let _cpSelectedIdx = -1;
 function initCommandPalette() {
   const overlay = document.getElementById('cmdPaletteOverlay');
   if (!overlay) return;
+  document.getElementById('operationSearchBtn')?.addEventListener('click', openCmdPalette);
   overlay.addEventListener('click', (e) => { if (e.target === overlay) closeCmdPalette(); });
   document.getElementById('cmdPaletteInput')?.addEventListener('input', _cpRender);
   document.getElementById('cmdPaletteInput')?.addEventListener('keydown', _cpKeydown);

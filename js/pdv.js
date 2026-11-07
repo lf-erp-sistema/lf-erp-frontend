@@ -439,8 +439,8 @@ const PDVModule = {
 
     document.addEventListener('keydown', (e) => {
       // Só ativa quando o PDV está visível
-      const buscaEl = document.getElementById('pdvBuscaProduto');
-      if (!buscaEl || !buscaEl.offsetParent) return;
+      const container = document.getElementById('pdvContainer');
+      if (!container || !container.offsetParent) return;
 
       const tag      = document.activeElement?.tagName?.toLowerCase();
       const inInput  = ['input', 'textarea', 'select'].includes(tag);
@@ -596,6 +596,7 @@ const PDVModule = {
 
     const isOnline = navigator.onLine;
     this.updateOfflineIndicator(isOnline);
+    this.carregarStatusCaixa();
     this.setLoading(true);
     this.setFeedback('Carregando dados do PDV...', 'info');
 
@@ -662,6 +663,37 @@ const PDVModule = {
     }
   },
 
+  async carregarStatusCaixa() {
+    const badge = document.getElementById('pdvCaixaStatus');
+    const operador = document.getElementById('pdvCaixaOperador');
+    if (!badge || !operador) return;
+    const empresaId = api.getEmpresaId();
+    const requestId = this._caixaStatusReqId = (this._caixaStatusReqId || 0) + 1;
+    const atualizar = (status, texto, detalhe) => {
+      if (requestId !== this._caixaStatusReqId || empresaId !== api.getEmpresaId()
+        || badge !== document.getElementById('pdvCaixaStatus')) return;
+      badge.dataset.status = status;
+      badge.textContent = texto;
+      operador.textContent = detalhe;
+    };
+    atualizar('loading', 'Consultando caixa', 'Verificando a sessão atual');
+    if (!navigator.onLine) {
+      atualizar('unknown', 'Caixa não verificado', 'Sem conexão para consultar');
+      return;
+    }
+    try {
+      const data = await api.getCaixaSessaoAtiva();
+      const sessao = data?.sessao;
+      if (sessao) {
+        atualizar('open', 'Caixa aberto', sessao.usuario_nome ? `Aberto por ${sessao.usuario_nome}` : 'Sessão de caixa ativa');
+      } else {
+        atualizar('closed', 'Caixa fechado', 'Abra o caixa no módulo Caixa');
+      }
+    } catch {
+      atualizar('unknown', 'Caixa não verificado', 'Use Atualizar dados para tentar novamente');
+    }
+  },
+
   render() {
     const container = document.getElementById('pdvContainer');
     if (!container) return;
@@ -674,8 +706,9 @@ const PDVModule = {
           <div class="pdv-v2__header-left">
             <div class="pdv-v2__sale-context">
               <span><i class="fa-solid fa-cash-register"></i> Venda atual</span>
-              <small>Caixa principal</small>
+              <small id="pdvCaixaOperador">Verificando a sessão atual</small>
             </div>
+            <span class="pdv-cash-status" id="pdvCaixaStatus" data-status="loading" role="status">Consultando caixa</span>
             <span id="pdvOfflineIndicator" class="pdv-offline-badge hidden">
               <i class="fa-solid fa-wifi-slash"></i> Offline
             </span>
@@ -697,14 +730,15 @@ const PDVModule = {
                 <button type="button" class="pdv-mais-item" id="pdvCobrarOSBtn">
                   <i class="fa-solid fa-screwdriver-wrench"></i> Cobrar OS
                 </button>
-                <button type="button" class="pdv-mais-item" id="pdvSalvarOrcamentoBtn">
-                  <i class="fa-solid fa-file-lines"></i> Orçamento
-                </button>
               </div>
             </div>
+            <button type="button" class="btn btn-light btn-sm" id="pdvSalvarOrcamentoBtn" title="Salvar os itens como orçamento">
+              <i class="fa-solid fa-file-lines"></i> Orçamento
+            </button>
             <div class="pdv-espera-wrap" id="pdvEsperaWrap">
-              <button type="button" class="btn btn-light btn-icon" id="pdvEsperaBtn" title="Vendas em espera">
+              <button type="button" class="btn btn-light btn-icon" id="pdvEsperaBtn" title="Retomar vendas em espera" aria-label="Retomar vendas em espera">
                 <i class="fa-solid fa-clock-rotate-left"></i>
+                <span class="pdv-wait-label">Retomar</span>
                 <span class="pdv-espera-badge hidden" id="pdvEsperaBadge">0</span>
               </button>
               <div class="pdv-espera-dropdown hidden" id="pdvEsperaDropdown"></div>
@@ -734,7 +768,8 @@ const PDVModule = {
             </div>
 
             <!-- Painel: Produto -->
-            <div class="pdv-v2__panel pdv-v2__panel--active" data-pdv-panel="produtos">
+            <div class="pdv-v2__panel pdv-v2__panel--active pdv-panel--active" data-pdv-panel="produtos">
+              <label class="pdv-search-label" for="pdvBuscaProduto">Encontre um produto <span>Nome, código ou leitor de barras</span></label>
               <div class="pdv-v2__search-wrap">
                 <i class="fa-solid fa-magnifying-glass pdv-v2__search-icon"></i>
                 <input type="text" id="pdvBuscaProduto" class="pdv-v2__search-input"
@@ -880,9 +915,16 @@ const PDVModule = {
             <strong id="pdvTotal">R$ 0,00</strong>
           </div>
           <button type="button" class="btn btn-primary pdv-v2__btn-finalizar" id="pdvFinalizarBtn">
-            <i class="fa-solid fa-check"></i> Finalizar venda
+            <i class="fa-solid fa-check"></i> Finalizar venda <kbd class="pdv-v2__kbd">F9</kbd>
           </button>
         </footer>
+        <div class="pdv-shortcut-strip" aria-label="Atalhos de teclado do PDV">
+          <span><kbd>F2</kbd> Buscar produto</span>
+          <span><kbd>Alt C</kbd> Cliente</span>
+          <span><kbd>Alt B</kbd> Pagamento</span>
+          <span><kbd>Alt P</kbd> Colocar em espera</span>
+          <span><kbd>F9</kbd> Finalizar venda</span>
+        </div>
 
       </div>
     `;
